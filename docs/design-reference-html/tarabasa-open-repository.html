@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaraBasa AI — Open Repository</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-50:#eef6ff; --sky-100:#dcedff;
+    --blue-500:#1c7ed6; --blue-600:#0f5fae; --blue-700:#0a3d73;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --owl-orange-400:#f5a544; --owl-orange-600:#dd7014;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --purple:#7c5cd6; --purple-bg:#f1edfc;
+    --success:#1f9e83; --success-bg:#e9f7f3;
+    --amber:#c9820b; --amber-bg:#fef6e6;
+    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+    --shadow-card:0 20px 40px -24px rgba(15,60,110,0.18);
+  }
+  [data-theme="dark"]{
+    --sky-50:#0c1620; --sky-100:#0f1d2b;
+    --blue-500:#4d9fe8; --blue-600:#3a86cf; --blue-700:#7fc0ff;
+    --navy-900:#eaf1f7; --slate-600:#a9b8c4; --slate-400:#7c8b98;
+    --owl-orange-400:#f5a544; --owl-orange-600:#e88420;
+    --line:#20303e; --surface:#101c28; --bg-0:#0a131c;
+    --purple:#a794f0; --purple-bg:#1e1a2e;
+    --success:#3fc4a4; --success-bg:#0f2620;
+    --amber:#f0b03e; --amber-bg:#2a2110;
+    --shadow-card:0 20px 40px -24px rgba(0,0,0,0.55);
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
+    background: radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%), var(--bg-0);
+    background-attachment:fixed; transition:background-color .35s ease, color .35s ease;
+  }
+  .shell{ max-width:1000px; margin:0 auto; padding:22px 24px 64px; }
+
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--slate-600);
+    text-decoration:none; margin-bottom:18px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;
+  }
+  .back-link:hover{ color:var(--blue-600); }
+
+  .head-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; flex-wrap:wrap; gap:12px; }
+  .head-left{ display:flex; align-items:center; gap:12px; }
+  .head-icon{
+    width:42px;height:42px;border-radius:13px; background:var(--purple-bg); color:var(--purple);
+    display:flex;align-items:center;justify-content:center;
+  }
+  h1{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:0; }
+  .theme-toggle{
+    display:inline-flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line);
+    padding:7px 14px 7px 7px; border-radius:999px; cursor:pointer; font:600 13px/1 'Inter',sans-serif;
+    color:var(--slate-600); box-shadow:var(--shadow-sm);
+  }
+  .theme-toggle .dot{ width:22px;height:22px;border-radius:50%; background:linear-gradient(145deg, var(--owl-orange-400), var(--owl-orange-600)); display:flex;align-items:center;justify-content:center;font-size:12px; }
+  [data-theme="dark"] .theme-toggle .dot{ background:linear-gradient(145deg,#3a86cf,#0f5fae); }
+
+  .sub{ color:var(--slate-600); font-size:13.5px; font-weight:500; margin:6px 0 20px; }
+
+  /* filters */
+  .filters{ display:flex; gap:9px; flex-wrap:wrap; margin-bottom:22px; }
+  .filter-chip{
+    padding:8px 15px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface);
+    font-size:13px; font-weight:700; color:var(--slate-600); cursor:pointer; transition:border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .filter-chip.active{ border-color:var(--blue-500); background:var(--sky-50); color:var(--blue-600); }
+
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:16px; }
+  .item-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:18px;
+    box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:10px; transition:box-shadow .18s ease, transform .18s ease;
+  }
+  .item-card:hover{ box-shadow:var(--shadow-card); transform:translateY(-2px); }
+  .tag-row{ display:flex; gap:6px; flex-wrap:wrap; }
+  .tag{
+    font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; background:var(--purple-bg); color:var(--purple);
+  }
+  .tag.diff{ background:var(--sky-50); color:var(--blue-600); }
+  .tag.free{ background:var(--success-bg); color:var(--success); }
+  .tag.paid{ background:var(--amber-bg); color:var(--amber); }
+  .tag.owned{ background:var(--success-bg); color:var(--success); }
+
+  .item-title{ font-family:'Baloo 2',sans-serif; font-size:16.5px; font-weight:700; margin:0; }
+  .item-meta{ font-size:12.5px; color:var(--slate-600); font-weight:600; }
+
+  .item-action{
+    margin-top:6px; display:flex; align-items:center; justify-content:center; gap:7px; padding:10px;
+    border-radius:11px; font:700 13px/1 'Inter',sans-serif; cursor:pointer; border:none; transition:transform .15s ease, opacity .15s ease;
+  }
+  .item-action:hover{ transform:translateY(-1px); }
+  .item-action.free{ background:var(--navy-900); color:var(--bg-0); }
+  .item-action.paid{ background:var(--navy-900); color:var(--bg-0); }
+  .item-action.owned{ background:var(--success-bg); color:var(--success); cursor:default; }
+  .item-action.owned:hover{ transform:none; }
+
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--slate-600); }
+  .empty-state.hidden{ display:none; }
+</style>
+</head>
+<body data-theme="light">
+<div class="shell">
+  <button class="back-link" id="backLink">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back to Dashboard
+  </button>
+
+  <div class="head-row">
+    <div class="head-left">
+      <div class="head-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 8l1.5-4h13L20 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="8" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/></svg>
+      </div>
+      <h1>Open Repository</h1>
+    </div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+      <span class="dot" id="themeDot">☀️</span>
+      <span id="themeLabel">Light mode</span>
+    </button>
+  </div>
+  <p class="sub">Extra reading activities shared by teachers across TaraBasa AI — for Sofia, Grade 1.</p>
+
+  <div class="filters">
+    <button class="filter-chip active" data-filter="all">All</button>
+    <button class="filter-chip" data-filter="free">Free</button>
+    <button class="filter-chip" data-filter="paid">Paid</button>
+    <button class="filter-chip" data-filter="owned">Unlocked</button>
+  </div>
+
+  <div class="grid" id="grid">
+
+    <div class="item-card" data-status="free">
+      <div class="tag-row"><span class="tag">Syllable Sorter</span><span class="tag diff">Easy</span><span class="tag free">Free</span></div>
+      <p class="item-title">Phonics — Syllable Practice</p>
+      <p class="item-meta">Grade 1 · Phonics</p>
+      <button class="item-action free">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3v13M6 10l6 6 6-6M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Get for Free
+      </button>
+    </div>
+
+    <div class="item-card" data-status="paid">
+      <div class="tag-row"><span class="tag">Story Sequencer</span><span class="tag diff">Easy</span><span class="tag paid">₱80</span></div>
+      <p class="item-title">Pronunciation Practice Pack</p>
+      <p class="item-meta">Grade 1 · Pronunciation</p>
+      <button class="item-action paid" data-price="80">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg>
+        Unlock for ₱80
+      </button>
+    </div>
+
+    <div class="item-card" data-status="paid">
+      <div class="tag-row"><span class="tag">Word Builder</span><span class="tag diff">Medium</span><span class="tag paid">₱25</span></div>
+      <p class="item-title">Sight Words — High Frequency</p>
+      <p class="item-meta">Grade 1 · Word Recognition</p>
+      <button class="item-action paid" data-price="25">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg>
+        Unlock for ₱25
+      </button>
+    </div>
+
+    <div class="item-card" data-status="owned">
+      <div class="tag-row"><span class="tag">Letter-Sound Match</span><span class="tag diff">Easy</span><span class="tag owned">Unlocked</span></div>
+      <p class="item-title">Phonics — Letter Blending</p>
+      <p class="item-meta">Grade 1 · Phonemic Awareness</p>
+      <button class="item-action owned">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Ready to Play
+      </button>
+    </div>
+
+  </div>
+
+  <div class="empty-state hidden" id="emptyState">
+    <p style="font-weight:700; font-size:15px;">No activities match this filter</p>
+    <p style="font-size:13px;">Try a different tab above.</p>
+  </div>
+</div>
+
+<script>
+  const toggle = document.getElementById('themeToggle');
+  const dot = document.getElementById('themeDot');
+  const label = document.getElementById('themeLabel');
+  const body = document.body;
+  toggle.addEventListener('click', () => {
+    const isDark = body.getAttribute('data-theme') === 'dark';
+    body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    dot.textContent = isDark ? '☀️' : '🌙';
+    label.textContent = isDark ? 'Light mode' : 'Dark mode';
+  });
+
+  document.getElementById('backLink').addEventListener('click', () => alert('→ Would navigate back to /dashboard'));
+
+  const chips = document.querySelectorAll('.filter-chip');
+  const cards = document.querySelectorAll('.item-card');
+  const emptyState = document.getElementById('emptyState');
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const f = chip.dataset.filter;
+      let visibleCount = 0;
+      cards.forEach(card => {
+        const show = f === 'all' || card.dataset.status === f;
+        card.style.display = show ? 'flex' : 'none';
+        if (show) visibleCount++;
+      });
+      emptyState.classList.toggle('hidden', visibleCount > 0);
+    });
+  });
+
+  document.querySelectorAll('.item-action.free').forEach(btn => {
+    btn.addEventListener('click', () => alert('→ Would unlock this activity instantly (free) and add it to Sofia\\'s library'));
+  });
+  document.querySelectorAll('.item-action.paid').forEach(btn => {
+    btn.addEventListener('click', () => alert(`→ Would start checkout for ₱${btn.dataset.price}, then unlock for Sofia on payment success`));
+  });
+  document.querySelectorAll('.item-action.owned').forEach(btn => {
+    btn.addEventListener('click', () => alert('→ Would open this activity directly in a practice session'));
+  });
+</script>
+</body>
+</html>

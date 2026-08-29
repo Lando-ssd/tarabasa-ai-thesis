@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaraBasa AI — My Activities</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-50:#eef6ff; --sky-100:#dcedff;
+    --blue-500:#1c7ed6; --blue-600:#0f5fae;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --success:#1f9e83; --success-bg:#e9f7f3;
+    --danger:#d64545; --danger-bg:#fdecec;
+    --purple:#7c5cd6; --purple-bg:#f1edfc;
+    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+  }
+  [data-theme="dark"]{
+    --sky-50:#0c1620; --sky-100:#0f1d2b;
+    --blue-500:#4d9fe8; --blue-600:#3a86cf;
+    --navy-900:#eaf1f7; --slate-600:#a9b8c4; --slate-400:#7c8b98;
+    --line:#20303e; --surface:#101c28; --bg-0:#0a131c;
+    --success:#3fc4a4; --success-bg:#0f2620;
+    --danger:#ff6b6b; --danger-bg:#2a1414;
+    --purple:#a794f0; --purple-bg:#1e1a2e;
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
+    background: radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%), var(--bg-0);
+    background-attachment:fixed; transition:background-color .35s ease, color .35s ease;
+  }
+  .shell{ max-width:820px; margin:0 auto; padding:22px 24px 64px; }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--slate-600);
+    text-decoration:none; margin-bottom:16px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;
+  }
+  .back-link:hover{ color:var(--blue-600); }
+  h1{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:0 0 16px; }
+
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .tab{ padding:9px 16px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface); font:700 13px/1 'Inter',sans-serif; color:var(--slate-600); cursor:pointer; }
+  .tab.active{ background:var(--navy-900); color:var(--bg-0); border-color:var(--navy-900); }
+  [data-theme="dark"] .tab.active{ background:var(--blue-600); border-color:var(--blue-600); color:#fff; }
+
+  .activity-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:var(--shadow-sm); margin-bottom:14px; }
+  .tag-row{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:9px; }
+  .tag{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; }
+  .tag.status-draft{ background:var(--sky-50); color:var(--blue-600); }
+  .tag.status-approved{ background:var(--success-bg); color:var(--success); }
+  .tag.status-rejected{ background:var(--danger-bg); color:var(--danger); }
+  .tag.game{ background:var(--purple-bg); color:var(--purple); }
+  .tag.diff{ background:var(--bg-0); color:var(--slate-600); border:1px solid var(--line); }
+  .shared-badge{ margin-left:auto; font-size:11.5px; font-weight:800; color:var(--success); display:flex; align-items:center; gap:4px; }
+
+  .act-title{ font-family:'Baloo 2',sans-serif; font-size:16px; font-weight:700; margin:0 0 2px; }
+  .act-meta{ font-size:12.5px; color:var(--slate-600); font-weight:600; margin-bottom:14px; }
+
+  .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .actions button{ padding:9px 15px; border-radius:10px; font:700 12.5px/1 'Inter',sans-serif; cursor:pointer; }
+  .btn-approve{ background:var(--success); color:#fff; border:none; }
+  .btn-edit{ background:var(--surface); color:var(--navy-900); border:1.5px solid var(--line); }
+  .btn-reject{ background:var(--danger-bg); color:var(--danger); border:1px solid transparent; }
+  .btn-assign{ background:var(--blue-600); color:#fff; border:none; }
+  .btn-share{ background:var(--surface); color:var(--navy-900); border:1.5px solid var(--line); }
+
+  .empty-note{ text-align:center; padding:40px 20px; color:var(--slate-600); font-size:13.5px; font-weight:500; }
+</style>
+</head>
+<body data-theme="light">
+<div class="shell">
+  <button class="back-link" id="backLink">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Dashboard
+  </button>
+  <h1>My Activities</h1>
+
+  <div class="tabs">
+    <button class="tab active" data-filter="all">All (4)</button>
+    <button class="tab" data-filter="draft">Drafts (0)</button>
+    <button class="tab" data-filter="approved">Approved (3)</button>
+    <button class="tab" data-filter="rejected">Rejected (1)</button>
+  </div>
+
+  <div id="list">
+    <div class="activity-card" data-status="approved">
+      <div class="tag-row">
+        <span class="tag status-approved">Approved</span>
+        <span class="tag game">Story Sequencer</span>
+        <span class="tag diff">Easy</span>
+        <span class="shared-badge">☁ Shared</span>
+      </div>
+      <p class="act-title">phonics</p>
+      <p class="act-meta">Grade 2 · Phonics</p>
+      <div class="actions">
+        <button class="btn-assign">Assign</button>
+      </div>
+    </div>
+
+    <div class="activity-card" data-status="approved">
+      <div class="tag-row">
+        <span class="tag status-approved">Approved</span>
+        <span class="tag game">Word Builder</span>
+        <span class="tag diff">Easy</span>
+      </div>
+      <p class="act-title">Reading</p>
+      <p class="act-meta">Grade 2 · Phonemic</p>
+      <div class="actions">
+        <button class="btn-assign">Assign</button>
+        <button class="btn-share">Share to Repository</button>
+      </div>
+    </div>
+
+    <div class="activity-card" data-status="approved">
+      <div class="tag-row">
+        <span class="tag status-approved">Approved</span>
+        <span class="tag game">Syllable Sorter</span>
+        <span class="tag diff">Easy</span>
+      </div>
+      <p class="act-title">phonics</p>
+      <p class="act-meta">Grade 1 · phonics</p>
+      <div class="actions">
+        <button class="btn-assign">Assign</button>
+        <button class="btn-share">Share to Repository</button>
+      </div>
+    </div>
+
+    <div class="activity-card" data-status="rejected">
+      <div class="tag-row">
+        <span class="tag status-rejected">Rejected</span>
+        <span class="tag game">Rhyme Finder</span>
+        <span class="tag diff">Easy</span>
+      </div>
+      <p class="act-title">Rhyme Finder — off-topic draft</p>
+      <p class="act-meta">Grade 1 · Vocabulary</p>
+      <div class="actions">
+        <span style="font-size:12px;color:var(--slate-400);font-weight:600;">No further action available</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-note" id="emptyNote" style="display:none;">No activities in this category yet.</div>
+</div>
+
+<script>
+  document.getElementById('backLink').addEventListener('click', () => alert('→ Would navigate back to /teacher/dashboard'));
+
+  const tabs = document.querySelectorAll('.tab');
+  const cards = document.querySelectorAll('.activity-card');
+  const emptyNote = document.getElementById('emptyNote');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const f = tab.dataset.filter;
+      let count = 0;
+      cards.forEach(card => {
+        const show = f === 'all' || card.dataset.status === f;
+        card.style.display = show ? 'block' : 'none';
+        if (show) count++;
+      });
+      emptyNote.style.display = count === 0 ? 'block' : 'none';
+    });
+  });
+
+  document.querySelectorAll('.btn-assign').forEach(btn => btn.addEventListener('click', () => alert('→ Would open Assign modal: choose exactly ONE of a Learner, Class, or Group')));
+  document.querySelectorAll('.btn-share').forEach(btn => btn.addEventListener('click', () => alert('→ Would open Share modal: Free or Paid (with price). On success: +2 credits, card shows "✓ Shared to Repository"')));
+</script>
+</body>
+</html>

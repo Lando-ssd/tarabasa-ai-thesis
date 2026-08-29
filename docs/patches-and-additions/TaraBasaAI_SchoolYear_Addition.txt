@@ -1,0 +1,81 @@
+TARABASA AI — ADDITION TO TEACHER PROMPT
+PATCHES: Teacher Actor Prompt, Step 6 (Class Management), and the
+Class entity in the data model (one new required field).
+ALSO STRENGTHENS: the Learner History addition (Part 1, promotion
+history) by giving each class a year label to show in that history.
+
+PURPOSE: Right now a Class has no concept of WHICH school year it
+belongs to. Without that, there is no clean way to tell "this year's
+Grade 2 - CCS" apart from "next year's Grade 2 - CCS" if a teacher
+reuses the same class name, and no way for a future teacher to look
+back and see which class/teacher a learner had in a prior year. This
+adds that missing continuity.
+
+------------------------------------------------------------
+PART 1 — NEW FIELD
+------------------------------------------------------------
+
+Class gains one new REQUIRED field:
+
+  schoolYear: string, e.g. "2025-2026"
+
+Every class must belong to exactly one school year. A class is never
+edited to "become" next year's class — a new school year always means
+creating a NEW Class row, never overwriting last year's.
+
+This is the same philosophy already used for Learners and Promotions:
+never overwrite history, always create a new record and let the old
+one stand as a permanent record of what happened that year.
+
+------------------------------------------------------------
+PART 2 — CREATING A CLASS
+------------------------------------------------------------
+
+The "New Class" form gains one more field, School Year, alongside
+Name/Grade Level/Section/Group Tag. Default it to the current school
+year (computed from today's date — Philippine school years typically
+run June to March/April, so default sensibly rather than always using
+the calendar year), but let the Teacher override it, since a Teacher
+might reasonably set up next year's class slightly ahead of time.
+
+------------------------------------------------------------
+PART 3 — HOW CLASS MANAGEMENT DISPLAYS THIS
+------------------------------------------------------------
+
+1. By default, Class Management shows only classes from the CURRENT
+   school year — this keeps the everyday view focused on what's
+   actually active right now, not cluttered with old years.
+2. Add a simple school-year filter/switcher at the top of Class
+   Management (e.g. a dropdown of every school year this Teacher has
+   ever had a class in) so a Teacher CAN look back at a past year's
+   class if needed.
+3. A class from a PAST school year (not the current one) should open
+   in a read-only view — no Add Learner, no Edit, no New Class actions
+   available on it. It exists purely as a historical record now.
+
+------------------------------------------------------------
+PART 4 — HOW THIS CONNECTS TO PROMOTION HISTORY
+------------------------------------------------------------
+
+This directly enriches the Learner History addition from before. When
+showing a Learner's promotion history inside Class Management, now
+also show which school year each class belonged to, e.g.:
+
+  "Grade 1 - CCS (SY 2025-2026, Teacher: Jenny Reyes)
+   -> Grade 2 - CCS (SY 2026-2027, Teacher: Maria Santos)"
+
+This gives a genuinely complete year-over-year trail: not just "what
+grade were they," but "which specific class, which specific teacher,
+which specific year" — the full continuity a receiving teacher would
+actually want to see.
+
+------------------------------------------------------------
+NOTE ON WHAT THIS AFFECTS ELSEWHERE
+------------------------------------------------------------
+
+- Class gains one new required field: schoolYear (string).
+- No other table changes.
+- The Class creation form, the Class Management list view, and the
+  promotion-history display (from the earlier Learner History
+  addition) all need small updates to use this new field. Nothing
+  else in the system is affected.

@@ -1,0 +1,80 @@
+TARABASA AI — ADDITION
+PATCHES: Parent Actor Prompt (Step 6, Open Repository) and Teacher
+Actor Prompt (Step 8, My Activities — Approved cards now also show
+their own rating). Adds ONE new table.
+
+------------------------------------------------------------
+PART 1 — CLARIFYING WHAT THE REPOSITORY ACTUALLY IS FOR (no logic change)
+------------------------------------------------------------
+
+This is a framing clarification, not a functional change to anything
+already built: the Open Repository is not a side feature for "extra
+practice." It is how a Parent teaches their own child at home using
+the same curriculum-grounded, AI-generated, Teacher-approved content
+used in real classrooms — Free or Paid, unlocked per child, exactly as
+already specified. Worth stating this plainly in any documentation or
+pitch material, since it is the actual bridge between classroom
+instruction and home learning, not an optional extra.
+
+Also worth restating clearly: TaraBasa AI itself is free for Teachers
+to use — the only thing that costs anything is a Teacher running out
+of free generation credits, which is solved by sharing (not by paying
+money). The Repository's Free/Paid choice is entirely the Teacher's
+own decision about THEIR content, not a cost imposed by the platform.
+
+------------------------------------------------------------
+PART 2 — NEW: REPOSITORY RATINGS
+------------------------------------------------------------
+
+New table: repository_ratings
+  id, listing_id (FK -> open_repository_listings), parent_id (FK),
+  learner_id (FK, which child this rating is about), rating (integer,
+  1-5), comment (text, optional, nullable), rated_at
+
+RULES:
+
+1. Only a Parent who has an actual RepositoryUnlock record for that
+   listing may rate it — no rating without having genuinely used the
+   content first. Enforce this server-side, not just in the UI.
+2. One rating per Parent per listing. If they rate it again, UPDATE
+   the existing row rather than creating a duplicate — this reflects
+   their current opinion, not a running log of every time they rated.
+3. A short optional comment can go alongside the star rating, but the
+   star rating itself is the primary signal — keep the comment field
+   genuinely optional, never required to submit a rating.
+4. Show the average rating (and total rating count) on every listing
+   card in the Parent's Browse Repository screen, e.g. "★ 4.6 (12
+   ratings)" — this is the actual quality signal that helps a
+   different parent decide whether to unlock something, especially for
+   Paid listings where real money (even simulated) is involved.
+5. On the Teacher's "My Activities" screen, any Approved card that has
+   been shared to the Repository should also show its own average
+   rating — this is the Teacher's actual feedback loop, separate from
+   and in addition to the credit-earning mechanic. A Teacher whose
+   shared content consistently rates well is a meaningfully different,
+   more trustworthy signal than one who has simply shared *something*.
+6. Ratings are about the LISTING (the shared Activity), not about the
+   Teacher's account directly — there is no separate "Teacher
+   reputation score" table. A Teacher's overall reputation, if ever
+   needed later, could be computed on the fly as an average across all
+   their listings' ratings — but that computation, not a stored field,
+   is the correct approach, since it stays automatically accurate as
+   new ratings come in rather than needing to be kept in sync
+   separately.
+
+------------------------------------------------------------
+NOTE ON WHAT THIS AFFECTS ELSEWHERE
+------------------------------------------------------------
+
+- One new table: repository_ratings, as above.
+- Two new endpoints: submit/update a rating (Parent, requires an
+  existing unlock), and the average/count is included in the response
+  of the existing repository listings and my-activities endpoints —
+  no separate "fetch ratings" call needed for the common case of just
+  displaying the average.
+- No changes to OpenRepositoryListing, RepositoryUnlock, or any other
+  existing table.
+- No change to the credit-replenishment rule (sharing still earns +2
+  credits regardless of rating) — ratings are a quality/trust signal
+  for Parents and a reputation signal for Teachers, not a mechanic that
+  affects the credit system.

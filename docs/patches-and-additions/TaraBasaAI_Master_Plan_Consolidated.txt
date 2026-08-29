@@ -1,0 +1,115 @@
+TARABASA AI — MASTER PLAN (Consolidated, Corrects Earlier Confusion)
+Send this to Account 3 and Account 4 as the definitive current state.
+This supersedes any earlier document where it disagrees.
+
+------------------------------------------------------------
+FINAL, CONFIRMED ARCHITECTURE — NO MORE CHANGES AFTER THIS
+------------------------------------------------------------
+
+Database: Cloud Firestore. ONLY. Cloud SQL/MySQL is NOT used anywhere
+in this project — that was in the original planning document before
+we confirmed no account here can host a PHP server. Ignore any
+reference to Cloud SQL/Laravel/Sanctum in older documents.
+
+Auth: Firebase Authentication (Admin/Teacher/Parent email+password) +
+a Cloud Function-issued custom token for Learner PIN access.
+
+Notifications: Firebase Cloud Messaging. Free, unlimited, works fully
+on the Spark (free) plan. No issue, no billing needed.
+
+Reading audio: sent DIRECTLY inside the Speech-to-Text API request as
+inline base64-encoded audio — NOT uploaded to Cloud Storage first.
+This works because a Grade 1-3 reading passage is well under the ~1
+minute / ~10MB limit for this method. This means Cloud Storage and
+the Blaze billing plan are NOT required anywhere in this build.
+
+Billing plan needed: SPARK (free) is sufficient for the entire
+project as currently scoped. No credit card, no Blaze upgrade needed
+for anything specified so far.
+
+Cloud Functions: still needed (PIN verification, rate limiting,
+status checks, the future Speech-to-Text/LLM calls) — Cloud Functions
+themselves have a generous free quota on Spark (2M invocations/month)
+and do NOT require Blaze at low usage. Only Storage specifically
+required Blaze — that requirement no longer applies since Storage
+isn't being used.
+
+------------------------------------------------------------
+WHAT WENT WRONG EARLIER (so it doesn't happen again)
+------------------------------------------------------------
+
+1. The original Backend Implementation Prompt specified Laravel +
+   Cloud SQL. A later document (Module 1 Auth Firebase Prompt)
+   corrected this to Firebase + Firestore, but that correction wasn't
+   propagated to every account working on this project. Lesson: any
+   time an architecture decision changes, it needs to be explicitly
+   sent to every active account, not just the one it was said to.
+2. Cloud Storage's Blaze requirement was flagged as a real blocker
+   before checking whether Storage was even necessary. It wasn't —
+   Speech-to-Text's inline-audio method avoids it entirely for content
+   this short.
+
+------------------------------------------------------------
+CURRENT STATUS BY ACCOUNT
+------------------------------------------------------------
+
+Account 1 (frontend): Next.js UI/UX built. Wiring Firebase Auth into
+the existing frontend — in progress.
+
+Account 3 (backend, broad scope): Account Management module — done,
+tested (36/36 passing), was built correctly against Firestore already
+per the corrected instruction. Moving to Activity Generation module
+next — currently blocked/paused on the curriculum content question
+(resolved: use placeholder entries now, real MATATAG English +
+Reading/Literacy content later, as its own separate task).
+
+Account 4 (backend, Cloud Functions + Security Rules specifically):
+Given the Module 1 Auth Firebase Prompt as its starting task. Status
+unknown/not yet confirmed — check in on this.
+
+This conversation (planning): built a working REFERENCE
+implementation of Account Management (Next.js + Firebase Auth +
+Firestore) to prove the pattern works end-to-end. Available as a
+working example if any account needs to see real, running code for
+the pattern.
+
+------------------------------------------------------------
+THE ACTUAL PLAN, IN ORDER
+------------------------------------------------------------
+
+STEP 1 (do this first, today): send this document to Account 3 and
+Account 4. Confirm both have the same corrected architecture
+understanding before either writes another line of code.
+
+STEP 2: Account 3 continues Activity Generation with placeholder
+curriculum data, using the inline-audio Speech-to-Text method (no
+Storage) when it reaches that part.
+
+STEP 3: Account 4 builds/confirms the Module 1 Cloud Functions
+(PIN verification, rate limiting, status checks) and deploys them.
+These are what Account 1's frontend will actually call.
+
+STEP 4: Account 1 finishes wiring Firebase Auth into the real UI,
+calling Account 4's deployed Cloud Functions rather than reimplementing
+that logic client-side.
+
+STEP 5: once Account Management is confirmed working end-to-end
+(Account 1's real UI + Account 4's real Cloud Functions + real
+Firestore data, not just each piece tested in isolation), move
+together to the next module (Activity Generation) as a coordinated
+step — don't let modules drift out of sync across accounts again.
+
+STEP 6 onward: repeat the same rhythm per module (Reading Sessions,
+Open Repository, Analytics, Notifications, Promotions) — backend
+builds + deploys, frontend wires up, confirm together before moving on.
+
+------------------------------------------------------------
+THE ONE HABIT THAT WOULD HAVE PREVENTED TODAY'S CONFUSION
+------------------------------------------------------------
+
+Whenever an architecture decision changes in ANY one conversation,
+copy the correction to every other active account immediately, not
+just the one where the question came up. This document is itself an
+example of catching up multiple accounts after a change didn't
+propagate — the goal going forward is to not need documents like this
+one.

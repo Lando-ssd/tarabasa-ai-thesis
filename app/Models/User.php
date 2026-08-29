@@ -2,31 +2,49 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    // MustVerifyEmailTrait is the actual working code (sendEmailVerificationNotification,
+    // hasVerifiedEmail, etc.) — the `implements MustVerifyEmail` above is just the
+    // interface/contract. You need both; the interface alone has no real behavior.
+    use HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    protected $fillable = [
+        'first_name',
+        'last_name',
+        'email',
+        'password',
+        'user_type',
+        'contact_number',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function teacher(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Teacher::class);
+    }
+
+    public function parentProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ParentAccount::class, 'user_id');
     }
 }

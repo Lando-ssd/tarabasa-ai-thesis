@@ -1,0 +1,149 @@
+TARABASA AI — ADDITION TO LEARNER + PARENT PROMPTS
+PATCHES: Learner Actor Prompt (new step, inserted between "Access" and
+the normal Dashboard) AND Parent Actor Prompt (reframes the onboarding
+placement check as preliminary, not final).
+USES AN EXISTING FIELD — no data model changes needed. ReadingSession
+already has a sessionType field with values "Diagnostic" | "Practice" |
+"Assessment" — this addition is what finally makes the "Diagnostic"
+value get used for real, instead of sitting unused.
+
+PURPOSE: Right now the Parent's 3-question yes/no placement check
+during Learner creation is the ONLY thing that sets a starting
+masteryLevel. That is a rough estimate, not a real AI assessment. This
+adds a genuine, AI-scored placement test the first time the Learner
+logs into their own dashboard, grounded in the Curriculum Guide, whose
+result becomes the actual validated starting point everything adaptive
+builds on afterward.
+
+------------------------------------------------------------
+PART 1 — REFRAMING THE PARENT'S PLACEMENT CHECK (small wording change only)
+------------------------------------------------------------
+
+The 3-question check during Parent onboarding still happens exactly as
+before, and still sets an initial masteryLevel on the Learner record
+right away (so the account is never left with a blank level). The only
+change is what it MEANS going forward:
+
+- This level is now understood as PRELIMINARY, used only to pick a
+  reasonable starting difficulty for the real diagnostic test below.
+- It is NOT treated as final or authoritative anymore. The real
+  diagnostic test's result is what actually counts once it happens.
+- No change to the Parent-facing wording is strictly required, but if
+  you want to be precise, the success screen at the end of Add-a-Learner
+  can say: "Estimated starting level: [level]. [Name] will take a
+  quick first reading check the first time they log in to confirm
+  this."
+
+------------------------------------------------------------
+PART 2 — DETECTING "IS THIS THE FIRST LOGIN"
+------------------------------------------------------------
+
+Do not add a new boolean field for this. Instead, check for the
+PRESENCE of a Diagnostic session, since that is a more honest single
+source of truth than a separate flag that could drift out of sync:
+
+  hasCompletedDiagnostic = ANY ReadingSession exists where
+    learnerId = this Learner AND sessionType = "Diagnostic"
+
+Run this check every time a Learner successfully logs in (right after
+PIN entry succeeds, before showing the normal Dashboard).
+
+If hasCompletedDiagnostic is false: route into the Placement Test flow
+below INSTEAD of the normal Dashboard. The Learner cannot skip this or
+reach "Start Reading Activity" until it is completed.
+
+If hasCompletedDiagnostic is true: skip straight to the normal
+Dashboard exactly as already specified in the Learner Actor prompt —
+this only ever happens once per Learner, ever.
+
+------------------------------------------------------------
+PART 3 — THE PLACEMENT TEST ITSELF
+------------------------------------------------------------
+
+1. Select content grounded in the Curriculum Guide, matched to this
+   Learner's gradeLevel and their PRELIMINARY masteryLevel from the
+   Parent's estimate (use the preliminary level to pick an
+   appropriately-pitched starting passage, not something wildly too
+   easy or too hard).
+2. Show 1 to 3 short passages, ideally increasing slightly in
+   difficulty if using more than one (mirrors how a real teacher would
+   informally gauge a new student — start comfortable, see how far
+   they can go) — starting with just 1 passage is an acceptable
+   simpler version of this if build time is limited.
+3. Each passage goes through the EXACT SAME AI scoring pipeline already
+   specified in the Learner Actor prompt Step 5 (real Google
+   Speech-to-Text call, word-diff alignment, all 7 criteria computed).
+   Nothing new to build here — this reuses that exact logic.
+4. After the passage(s) are read, compute the FINAL masteryLevel using
+   the same thresholds already defined elsewhere in the system:
+   accuracy <70% -> Beginning, 70-89% -> Developing, >=90% ->
+   Proficient. If multiple passages were used, use the average
+   accuracy, or the result of the last (hardest) passage they
+   attempted — pick one consistent rule and apply it.
+5. Save this as a real ReadingSession with sessionType = "Diagnostic",
+   initiatedBy = "Parent" (a first login is inherently something a
+   Parent set up and handed to the child, even if the Learner is the
+   one reading), levelBefore = the preliminary estimate, levelAfter =
+   the new validated final level.
+6. Update the Learner's actual masteryLevel field to this final
+   result. From this point forward, this is the number everything
+   adaptive uses (Teacher's difficulty targeting at generation time,
+   PersonalWordBank-based word selection, etc.) — nothing about those
+   other systems needs to change, since they already just read
+   whatever the current masteryLevel is.
+7. Notify the linked Parent(s): "[Name]'s starting reading level has
+   been confirmed: [level]." This keeps the Parent informed of the
+   real result, not just the rough estimate they gave at signup.
+8. Only after this completes does the Learner proceed to their normal
+   Dashboard for the first time.
+
+------------------------------------------------------------
+PART 4 — SUGGESTED UX ENHANCEMENTS (you asked for ideas — here are the good ones)
+------------------------------------------------------------
+
+1. NEVER use the word "test" in anything the Learner sees. Frame it as
+   "Let's Read Together!" or "Your First Reading Adventure!" — a
+   6-8 year old should feel welcomed, not evaluated. The word "test"
+   alone can create anxiety before they even start.
+
+2. No visible score or pass/fail framing during this flow. The child
+   just reads; only afterward do they get a warm, positive result
+   screen ("Great reading! You're ready to start your first activity.")
+   regardless of what level they landed on. A child placed at
+   "Beginning" should feel exactly as celebrated as one placed at
+   "Proficient" — this is a starting point, not a grade.
+
+3. Keep this flow visually consistent with the Claymorphic Learner
+   style already specified elsewhere (soft, playful, big friendly
+   buttons) — this should feel like the fun start of their journey
+   with the app, not a separate "serious" mode that breaks the tone.
+
+4. Consider a small one-time celebratory animation/badge for
+   completing this first reading check specifically (separate from the
+   regular badge system) — something like "First Reading Star" — since
+   this is a meaningful first milestone worth marking, and it gives the
+   child a small win right at the very start, before they've even
+   earned their first real points.
+
+5. If using multiple passages (Part 3, step 2), show simple visual
+   progress ("Passage 1 of 2") so the child knows there's a clear end
+   in sight, rather than an open-ended, potentially anxiety-inducing
+   unknown length.
+
+------------------------------------------------------------
+NOTE ON WHAT THIS AFFECTS ELSEWHERE
+------------------------------------------------------------
+
+- No new database fields or tables. Reuses the existing sessionType
+  field on ReadingSession.
+- Learner Actor Prompt: insert this as a new mandatory step between
+  successful PIN entry and the normal Dashboard, only on a Learner's
+  very first login (detected as described in Part 2), never again
+  after that.
+- Parent Actor Prompt: small wording adjustment only, reframing the
+  onboarding placement check as preliminary (Part 1). No functional
+  change to that step itself.
+- Nothing about Teacher-side generation, PersonalWordBank, or Analytics
+  needs to change — they already just read whatever the Learner's
+  current masteryLevel is, and this addition simply makes that number
+  more trustworthy by the time anything else uses it.

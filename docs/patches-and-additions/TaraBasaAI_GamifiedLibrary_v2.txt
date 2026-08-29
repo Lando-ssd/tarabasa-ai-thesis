@@ -1,0 +1,150 @@
+TARABASA AI — GAMIFIED PRACTICE LIBRARY (v2, Detailed)
+SUPERSEDES: the simpler 6-game-type list in the earlier Game Templates
+addition. Same registry PATTERN (add a template, build one component,
+register it — no database changes) — this replaces the CONTENT of
+that list with the real, pedagogy-grounded set below.
+
+------------------------------------------------------------
+PART 1 — THE CORE DISTINCTION (this was the source of confusion — fixed here)
+------------------------------------------------------------
+
+There are NOT two separate systems. There is only ONE Activity
+system, already fully specified — this document just enriches its
+gameType library:
+
+- A Teacher generates an Activity (AI-assisted, grounded in Curriculum
+  Guide, reviewed/edited/approved by the Teacher) — exactly as already
+  specified in the Teacher Actor Prompt and Activity Content addition.
+- Every Activity HAS a gameType. This document is the full, detailed
+  list of what gameType can actually be, replacing the shorter
+  placeholder list from before.
+- The Teacher still assigns that Activity to a Learner/Class/Group, or
+  shares it to the Open Repository — nothing about that flow changes.
+- "The gamified part" is not a separate feature a Learner accesses
+  outside of Activities — it IS what an Activity looks like when a
+  Learner plays it. One system, richer game vocabulary.
+
+------------------------------------------------------------
+PART 2 — THE FULL GAME TEMPLATE LIBRARY
+------------------------------------------------------------
+
+Organized into the 4 real early-literacy skill categories these
+templates target — this grouping should also be how Teachers browse
+gameType options when generating, since it maps to actual teaching
+goals, not arbitrary game names.
+
+CATEGORY: Letter Formation & Fine Motor
+  - "Trace It Out"
+    content = { passageText, traceItems: [{ letter, case: "upper"|"lower",
+      strokePath: [...coordinates or a path definition] }] }
+    Learner traces guided letter paths. Requires animated stroke-order
+    guidance (see Part 4, animation).
+
+CATEGORY: Phonemic Awareness & Sound Matching
+  - "Sound Pop" (tap-the-sound)
+    content = { passageText, targetPhoneme, objects: [{ label, sound,
+      isMatch: boolean }] }
+    Learner taps only the objects/bubbles whose sound matches the
+    target phoneme.
+  - "Sound Sorting" (initial/final sound)
+    content = { passageText, sortMode: "initial"|"final", items: [{
+      label, imageHint, correctBasket }], baskets: [phoneme labels] }
+    Learner drags pictures into the basket matching their beginning or
+    ending sound.
+
+CATEGORY: Blending & Word Decoding
+  - "Word Builder" (letter drag)
+    content = { passageText, targetWords: [{ word, letterTiles: [...],
+      imageHint }] }
+    Learner drags letter tiles onto a board to build CVC (or
+    grade-appropriate) words. (Same shape as the earlier Word Builder
+    template — kept, just now grouped under this category.)
+  - "Blend & Slide"
+    content = { passageText, targetWords: [{ word, phonemeSegments:
+      [...] }] }
+    Learner moves a slider across segmented sounds, blending them into
+    the full word as they slide.
+
+CATEGORY: Visual Recognition & Matching
+  - "Letter Match"
+    content = { passageText, pairs: [{ upper, lower }] }
+    Learner pairs uppercase letters with their lowercase match.
+  - "Picture-Word Match"
+    content = { passageText, wordImagePairs: [{ word, imageHint }] }
+    (Same shape as before, kept as-is.)
+
+Plus, always available at any category: "Read Aloud" — the plain
+passage-only template with no pre-game, for when a Teacher just wants
+straight reading practice.
+
+Every template above STILL ends in the same core AI-scored read-aloud
+moment (the `passageText` field, scored via Speech-to-Text), exactly
+as already established — these are richer pre-game warm-ups, not a
+replacement for the core assessment.
+
+------------------------------------------------------------
+PART 3 — NON-REPETITION AND LEVELING (the "still adaptive" requirement)
+------------------------------------------------------------
+
+When generating a new Activity for a specific target Learner:
+
+1. Check that Learner's PersonalWordBank AND their recent Activity
+   history (last ~5 completed Activities) for words/letters already
+   used.
+2. Avoid re-selecting the exact same word set for the exact same
+   Learner twice in a row — vary the vocabulary drawn from the
+   Curriculum Guide's sampleVocabulary (or the AI's own choices) each
+   time, even at the same skill/difficulty tier.
+3. EXCEPTION: words already in PersonalWordBank as "Struggling"
+   SHOULD be deliberately re-included (per the earlier Adaptive
+   Generation addition) — non-repetition applies to already-MASTERED
+   content, not to words the Learner is actively working on.
+4. As a Learner's masteryLevel rises, new Activities generated for
+   them should draw from progressively more advanced
+   sampleVocabulary/topics in the Curriculum Guide (e.g. moving from
+   Grade 1 phonics entries toward Grade 2 entries as they level up) —
+   this is the "level up" behavior: content complexity tracks their
+   actual current level, not a fixed grade assignment.
+
+------------------------------------------------------------
+PART 4 — MOBILE INTERACTIVITY & ANIMATION (honest, grounded recommendation)
+------------------------------------------------------------
+
+- Games involving spatial/drag interaction (Word Builder, Sound
+  Sorting, Trace It Out, Letter Match) should support LANDSCAPE
+  orientation on mobile — more usable width for tiles/tracing than
+  portrait allows. Read Aloud and simpler tap-based games (Sound Pop)
+  can stay portrait.
+- For animation (letter-tracing stroke guidance, tile-drop feedback,
+  badge celebrations): use **Lottie** (JSON-based animations exported
+  from After Effects, has mature libraries for both web and Android —
+  this is the most practical, well-supported cross-platform choice) or
+  **Rive** (interactive, state-driven animations, also has both web
+  and Android runtimes, better suited when an animation needs to react
+  to user input in real time, like a letter trace following a finger).
+  Both are genuinely good choices — Lottie for simpler celebratory/
+  guided animations, Rive when the animation itself needs to respond
+  interactively.
+- **Skip full 3D (Blender-authored assets, 3D engines) for this
+  project.** This is a deliberate, honest recommendation, not a
+  limitation to work around: 3D adds real performance risk on
+  lower-end phones (which many families in this system's target
+  context will be using), adds significant build complexity, and
+  provides no real pedagogical benefit over well-executed 2D for
+  Grade 1-3 literacy games. Polished, well-animated 2D (Lottie/Rive)
+  is the right level of production value here — resist the urge to
+  add 3D just because it's technically possible.
+
+------------------------------------------------------------
+NOTE ON WHAT THIS AFFECTS ELSEWHERE
+------------------------------------------------------------
+
+- Replaces the gameType template list from the earlier Game Templates
+  addition with the richer set above. The registry PATTERN (template
+  config -> one component -> register it, no DB migration needed) is
+  unchanged.
+- No new database fields beyond what Activity.content already
+  supports (a JSON shape that varies per gameType).
+- Adds explicit non-repetition/leveling logic to the Activity
+  Generation flow (Teacher Actor Prompt, Step 7) — this is additive
+  detail, not a contradiction of anything already specified there.

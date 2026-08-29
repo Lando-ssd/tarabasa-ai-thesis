@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaraBasa AI — Class Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-50:#eef6ff; --sky-100:#dcedff;
+    --blue-500:#1c7ed6; --blue-600:#0f5fae; --blue-700:#0a3d73;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --owl-orange-600:#dd7014;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --success:#1f9e83; --success-bg:#e9f7f3;
+    --amber:#c9820b; --amber-bg:#fef6e6;
+    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+    --shadow-card:0 20px 40px -24px rgba(15,60,110,0.18);
+  }
+  [data-theme="dark"]{
+    --sky-50:#0c1620; --sky-100:#0f1d2b;
+    --blue-500:#4d9fe8; --blue-600:#3a86cf; --blue-700:#7fc0ff;
+    --navy-900:#eaf1f7; --slate-600:#a9b8c4; --slate-400:#7c8b98;
+    --owl-orange-600:#e88420;
+    --line:#20303e; --surface:#101c28; --bg-0:#0a131c;
+    --success:#3fc4a4; --success-bg:#0f2620;
+    --amber:#f0b03e; --amber-bg:#2a2110;
+    --shadow-card:0 20px 40px -24px rgba(0,0,0,0.55);
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
+    background: radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%), var(--bg-0);
+    background-attachment:fixed; transition:background-color .35s ease, color .35s ease;
+  }
+  .shell{ max-width:920px; margin:0 auto; padding:22px 24px 64px; }
+
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--slate-600);
+    text-decoration:none; margin-bottom:16px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;
+  }
+  .back-link:hover{ color:var(--blue-600); }
+
+  .head-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px; }
+  h1{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:0; }
+  .new-class-btn{
+    display:flex; align-items:center; gap:7px; background:var(--navy-900); color:var(--bg-0); font:700 13.5px/1 'Inter',sans-serif;
+    padding:11px 18px; border-radius:12px; border:none; cursor:pointer;
+  }
+  [data-theme="dark"] .new-class-btn{ background:var(--blue-600); color:#fff; }
+
+  .filter-row{ display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+  .year-select{
+    font:700 13px/1 'Inter',sans-serif; padding:9px 14px; border:1.5px solid var(--line); border-radius:11px;
+    background:var(--surface); color:var(--navy-900); cursor:pointer; appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%235b6b7a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 12px center; padding-right:34px;
+  }
+  .current-year-badge{
+    font-size:11.5px; font-weight:800; background:var(--success-bg); color:var(--success); padding:5px 11px; border-radius:999px;
+  }
+  .readonly-badge{
+    font-size:11.5px; font-weight:800; background:var(--amber-bg); color:var(--amber); padding:5px 11px; border-radius:999px;
+  }
+
+  .class-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:20px; box-shadow:var(--shadow-sm); margin-bottom:18px;
+  }
+  .class-head{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .class-title-row{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .class-title{ font-family:'Baloo 2',sans-serif; font-size:18px; font-weight:700; }
+  .class-meta{ font-size:12.5px; color:var(--slate-600); font-weight:600; margin-top:2px; }
+  .add-learner-btn{
+    display:flex; align-items:center; gap:6px; background:var(--surface); border:1.5px solid var(--line); color:var(--navy-900);
+    font:700 12.5px/1 'Inter',sans-serif; padding:9px 14px; border-radius:11px; cursor:pointer;
+  }
+  .add-learner-btn:hover{ border-color:var(--blue-500); color:var(--blue-600); }
+  .add-learner-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  .learner-row{
+    background:var(--bg-0); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:10px;
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .learner-row:last-child{ margin-bottom:0; }
+  .learner-av{
+    width:38px;height:38px;border-radius:12px; font-size:18px; flex-shrink:0;
+    background:linear-gradient(155deg,#ffcf6e,var(--owl-orange-600)); display:flex;align-items:center;justify-content:center;
+  }
+  .learner-info{ flex:1; min-width:0; }
+  .learner-name-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .learner-name{ font-size:14px; font-weight:700; }
+  .level-pill{ font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px; background:var(--sky-50); color:var(--blue-600); }
+  .learner-code{ font-size:11.5px; color:var(--slate-400); font-weight:600; }
+
+  .history-line{ font-size:11.5px; color:var(--slate-600); font-weight:500; margin-top:5px; line-height:1.5; display:flex; gap:5px; }
+  .history-line svg{ flex-shrink:0; margin-top:1.5px; color:var(--slate-400); }
+  .history-line.trajectory svg{ color:var(--success); }
+
+  .empty-note{ text-align:center; padding:26px; color:var(--slate-600); font-size:13px; font-weight:500; }
+
+  /* new class inline form */
+  .new-class-form{
+    display:none; background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:20px;
+    box-shadow:var(--shadow-sm); margin-bottom:22px;
+  }
+  .new-class-form.show{ display:block; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+  .form-grid .full{ grid-column:1/-1; }
+  .field label{ font-size:12px; font-weight:700; display:block; margin-bottom:5px; }
+  .field input, .field select{
+    width:100%; font:500 13.5px/1 'Inter',sans-serif; padding:10px 12px; border:1.5px solid var(--line); border-radius:10px;
+    background:var(--bg-0); color:var(--navy-900); outline:none;
+  }
+  .field input:focus, .field select:focus{ border-color:var(--blue-500); }
+  .form-actions{ display:flex; gap:10px; }
+  .btn-primary-sm{ background:var(--blue-600); color:#fff; border:none; padding:10px 18px; border-radius:10px; font:700 13px/1 'Inter',sans-serif; cursor:pointer; }
+  .btn-ghost-sm{ background:none; border:1.5px solid var(--line); color:var(--slate-600); padding:10px 18px; border-radius:10px; font:700 13px/1 'Inter',sans-serif; cursor:pointer; }
+</style>
+</head>
+<body data-theme="light">
+<div class="shell">
+  <button class="back-link" id="backLink">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Dashboard
+  </button>
+
+  <div class="head-row">
+    <h1>Class Management</h1>
+    <button class="new-class-btn" id="newClassToggle">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      New Class
+    </button>
+  </div>
+
+  <div class="filter-row">
+    <select class="year-select" id="yearSelect">
+      <option value="2026-2027">SY 2026-2027</option>
+      <option value="2025-2026">SY 2025-2026</option>
+    </select>
+    <span class="current-year-badge" id="currentBadge">Current Year</span>
+    <span class="readonly-badge" id="readonlyBadge" style="display:none;">📖 Read-only — past school year</span>
+  </div>
+
+  <div class="new-class-form" id="newClassForm">
+    <div class="form-grid">
+      <div class="field"><label>Class Name</label><input type="text" placeholder="e.g. CCS"></div>
+      <div class="field"><label>Section</label><input type="text" placeholder="e.g. Section CCS"></div>
+      <div class="field"><label>Grade Level</label>
+        <select><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option></select>
+      </div>
+      <div class="field"><label>School Year</label>
+        <select><option>2026-2027</option><option>2027-2028</option></select>
+      </div>
+      <div class="field full"><label>Group Tag <span style="font-weight:600;color:var(--slate-400);">optional</span></label><input type="text" placeholder="e.g. needs-phonics-support"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary-sm" id="createClassBtn">Create Class</button>
+      <button class="btn-ghost-sm" id="cancelClassBtn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Current year: editable -->
+  <div id="currentYearClasses">
+    <div class="class-card">
+      <div class="class-head">
+        <div>
+          <div class="class-title-row"><span class="class-title">CCS</span></div>
+          <div class="class-meta">Grade 1 — Section CCS · SY 2026-2027</div>
+        </div>
+        <button class="add-learner-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.8"/><path d="M17 8v4M15 10h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Add Learner
+        </button>
+      </div>
+
+      <div class="learner-row">
+        <div class="learner-av">🦊</div>
+        <div class="learner-info">
+          <div class="learner-name-row">
+            <span class="learner-name">das</span>
+            <span class="level-pill">Beginning</span>
+            <span class="learner-code">TB-56039</span>
+          </div>
+          <div class="history-line">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            New to the system — no prior grade history
+          </div>
+          <div class="history-line trajectory">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 17l5-5 4 4 7-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            No reading sessions recorded yet. Starting level: Beginning
+          </div>
+        </div>
+      </div>
+
+      <div class="learner-row">
+        <div class="learner-av">🦁</div>
+        <div class="learner-info">
+          <div class="learner-name-row">
+            <span class="learner-name">morbos</span>
+            <span class="level-pill">Developing</span>
+            <span class="learner-code">TB-84321</span>
+          </div>
+          <div class="history-line">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M17 2l4 4-4 4M21 6H8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Grade 1 - CCS (SY 2025-2026, Teacher: Jenny Reyes) → Grade 2 - CCS (SY 2026-2027, claimed Jun 2026)
+          </div>
+          <div class="history-line trajectory">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 17l5-5 4 4 7-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Proficiency: started at Beginning → currently Developing
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Past year: read-only -->
+  <div id="pastYearClasses" style="display:none;">
+    <div class="class-card" style="opacity:.85;">
+      <div class="class-head">
+        <div>
+          <div class="class-title-row"><span class="class-title">CCS</span></div>
+          <div class="class-meta">Grade 1 — Section CCS · SY 2025-2026 (archived)</div>
+        </div>
+        <button class="add-learner-btn" disabled>🔒 Read-only</button>
+      </div>
+      <div class="learner-row">
+        <div class="learner-av">🦁</div>
+        <div class="learner-info">
+          <div class="learner-name-row">
+            <span class="learner-name">morbos</span>
+            <span class="level-pill">Beginning</span>
+            <span class="learner-code">TB-84321</span>
+          </div>
+          <div class="history-line">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            New to the system — no prior grade history
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.getElementById('backLink').addEventListener('click', () => alert('→ Would navigate back to /teacher/dashboard'));
+
+  const yearSelect = document.getElementById('yearSelect');
+  const currentBadge = document.getElementById('currentBadge');
+  const readonlyBadge = document.getElementById('readonlyBadge');
+  const currentYearClasses = document.getElementById('currentYearClasses');
+  const pastYearClasses = document.getElementById('pastYearClasses');
+  const newClassBtn = document.getElementById('newClassToggle');
+
+  yearSelect.addEventListener('change', () => {
+    const isCurrent = yearSelect.value === '2026-2027';
+    currentBadge.style.display = isCurrent ? 'inline-flex' : 'none';
+    readonlyBadge.style.display = isCurrent ? 'none' : 'inline-flex';
+    currentYearClasses.style.display = isCurrent ? 'block' : 'none';
+    pastYearClasses.style.display = isCurrent ? 'none' : 'block';
+    newClassBtn.style.visibility = isCurrent ? 'visible' : 'hidden';
+  });
+
+  const newClassForm = document.getElementById('newClassForm');
+  newClassBtn.addEventListener('click', () => newClassForm.classList.toggle('show'));
+  document.getElementById('cancelClassBtn').addEventListener('click', () => newClassForm.classList.remove('show'));
+  document.getElementById('createClassBtn').addEventListener('click', () => {
+    alert('→ Would create the Class for the selected School Year and add it to the list above');
+    newClassForm.classList.remove('show');
+  });
+
+  document.querySelectorAll('.add-learner-btn:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => alert('→ Would open a "Join Learner" modal: enter Learner Code + validate it exists and isn\\'t already in a class'));
+  });
+</script>
+</body>
+</html>

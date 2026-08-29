@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaraBasa AI — Repository Moderation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-50:#eef6ff; --sky-100:#dcedff;
+    --blue-500:#1c7ed6; --blue-600:#0f5fae;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --purple:#7c5cd6; --purple-bg:#f1edfc;
+    --success:#1f9e83; --success-bg:#e9f7f3;
+    --amber:#c9820b; --amber-bg:#fef6e6;
+    --danger:#d64545; --danger-bg:#fdecec;
+    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+  }
+  [data-theme="dark"]{
+    --sky-50:#0c1620; --sky-100:#0f1d2b;
+    --blue-500:#4d9fe8; --blue-600:#3a86cf;
+    --navy-900:#eaf1f7; --slate-600:#a9b8c4; --slate-400:#7c8b98;
+    --line:#20303e; --surface:#101c28; --bg-0:#0a131c;
+    --purple:#a794f0; --purple-bg:#1e1a2e;
+    --success:#3fc4a4; --success-bg:#0f2620;
+    --amber:#f0b03e; --amber-bg:#2a2110;
+    --danger:#ff6b6b; --danger-bg:#2a1414;
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
+    background: radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%), var(--bg-0);
+    background-attachment:fixed; transition:background-color .35s ease, color .35s ease;
+  }
+  .shell{ max-width:900px; margin:0 auto; padding:22px 24px 64px; }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--slate-600);
+    text-decoration:none; margin-bottom:16px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;
+  }
+  .back-link:hover{ color:var(--blue-600); }
+  h1{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:0 0 4px; }
+  .sub{ color:var(--slate-600); font-size:13.5px; font-weight:500; margin:0 0 20px; }
+
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .tab{ padding:9px 16px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface); font:700 13px/1 'Inter',sans-serif; color:var(--slate-600); cursor:pointer; }
+  .tab.active{ background:var(--navy-900); color:var(--bg-0); border-color:var(--navy-900); }
+  [data-theme="dark"] .tab.active{ background:var(--blue-600); border-color:var(--blue-600); color:#fff; }
+
+  .listing-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px; box-shadow:var(--shadow-sm); margin-bottom:12px; }
+  .l-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .tag-row{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .tag{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; background:var(--purple-bg); color:var(--purple); }
+  .tag.free{ background:var(--success-bg); color:var(--success); }
+  .tag.paid{ background:var(--amber-bg); color:var(--amber); }
+  .l-title{ font-size:14.5px; font-weight:700; }
+  .l-meta{ font-size:12px; color:var(--slate-600); font-weight:600; }
+  .l-author{ font-size:11.5px; color:var(--slate-400); font-weight:600; }
+  .l-actions{ display:flex; gap:8px; flex-shrink:0; }
+  .l-actions button{ padding:8px 14px; border-radius:10px; font:700 12px/1 'Inter',sans-serif; cursor:pointer; white-space:nowrap; }
+  .btn-view{ background:var(--bg-0); border:1.5px solid var(--line); color:var(--navy-900); }
+  .btn-remove{ background:var(--danger-bg); color:var(--danger); border:1px solid transparent; }
+
+  .flagged-note{
+    display:flex; gap:8px; background:var(--danger-bg); border:1px solid var(--danger); border-radius:12px; padding:10px 12px;
+    font-size:12px; color:var(--navy-900); font-weight:500; margin-top:10px;
+  }
+
+  .empty-note{ text-align:center; padding:40px 20px; color:var(--slate-600); font-size:13.5px; font-weight:500; }
+</style>
+</head>
+<body data-theme="light">
+<div class="shell">
+  <button class="back-link" id="backLink">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Dashboard
+  </button>
+  <h1>Repository Moderation</h1>
+  <p class="sub">Every listing here is visible platform-wide to Parents and other Teachers.</p>
+
+  <div class="tabs">
+    <button class="tab active" data-t="flagged">Flagged (1)</button>
+    <button class="tab" data-t="all">All Listings</button>
+  </div>
+
+  <div id="flaggedList">
+    <div class="listing-card">
+      <div class="l-top">
+        <div>
+          <div class="tag-row"><span class="tag">Story Sequencer</span><span class="tag paid">₱800</span></div>
+          <div class="l-title">Pronunciation Practice Pack</div>
+          <div class="l-meta">Grade 1 · Pronunciation</div>
+          <div class="l-author">Shared by Juana Reyes</div>
+        </div>
+        <div class="l-actions">
+          <button class="btn-view">View Content</button>
+          <button class="btn-remove">Remove</button>
+        </div>
+      </div>
+      <div class="flagged-note">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>3 parents reported: "content doesn't match the described skill focus"</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="allList" style="display:none;">
+    <div class="listing-card">
+      <div class="l-top">
+        <div>
+          <div class="tag-row"><span class="tag">Syllable Sorter</span><span class="tag free">Free</span></div>
+          <div class="l-title">Phonics — Syllable Practice</div>
+          <div class="l-meta">Grade 1 · Phonics</div>
+          <div class="l-author">Shared by Jenny Reyes</div>
+        </div>
+        <div class="l-actions"><button class="btn-view">View Content</button><button class="btn-remove">Remove</button></div>
+      </div>
+    </div>
+    <div class="listing-card">
+      <div class="l-top">
+        <div>
+          <div class="tag-row"><span class="tag">Word Builder</span><span class="tag paid">₱25</span></div>
+          <div class="l-title">Sight Words — High Frequency</div>
+          <div class="l-meta">Grade 1 · Word Recognition</div>
+          <div class="l-author">Shared by Mrs. Santos</div>
+        </div>
+        <div class="l-actions"><button class="btn-view">View Content</button><button class="btn-remove">Remove</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('backLink').addEventListener('click', () => alert('→ Would navigate back to /admin/dashboard'));
+
+  const tabs = document.querySelectorAll('.tab');
+  const lists = { flagged: document.getElementById('flaggedList'), all: document.getElementById('allList') };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      Object.entries(lists).forEach(([k, el]) => el.style.display = k === tab.dataset.t ? 'block' : 'none');
+    });
+  });
+
+  document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', () => alert('→ Would open a read-only preview of this Activity\\'s full content')));
+  document.querySelectorAll('.btn-remove').forEach(btn => btn.addEventListener('click', () => {
+    if (confirm('Remove this listing from the Open Repository? The Teacher keeps the Activity in their own My Activities, it just stops being publicly shared.')) {
+      alert('→ Would remove this OpenRepositoryListing and notify the Teacher who shared it');
+    }
+  }));
+</script>
+</body>
+</html>

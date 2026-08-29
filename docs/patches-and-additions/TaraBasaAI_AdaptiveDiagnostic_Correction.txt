@@ -1,0 +1,125 @@
+TARABASA AI — CORRECTION + ADDITION
+PATCHES: The Placement Diagnostic addition (Part 3 specifically is
+REPLACED, not just extended, by Part 1 below) AND the AI Integration
+prompt's language configuration (Part 2 below is a correction, not an
+addition — earlier example code used the wrong language).
+
+------------------------------------------------------------
+PART 1 — REPLACING THE DIAGNOSTIC WITH A TRUE ADAPTIVE ALGORITHM
+------------------------------------------------------------
+
+THE PROBLEM WITH WHAT WAS SPECIFIED BEFORE: the earlier version picked
+content based on the Learner's gradeLevel and preliminary estimate,
+then showed 1-3 "increasingly harder" passages. That quietly assumes
+grade level predicts reading ability, which is false — some Grade 2
+learners are already Proficient, some Grade 3 learners are barely
+reading at all. It also does not correct for a wrong Parent estimate —
+if the Parent guessed "Proficient" but the child is actually
+struggling, a fixed escalating sequence starting from "Proficient"
+never finds their real floor.
+
+THE FIX: a real adaptive staircase, where each passage's difficulty is
+chosen based on how the PREVIOUS passage actually went — not based on
+gradeLevel, and not locked to the Parent's original guess past the
+very first passage.
+
+Algorithm:
+
+1. PASSAGE 1 (starting point only): choose difficultyTier "Medium" as
+   a neutral default, UNLESS the Parent's preliminary estimate was
+   clearly "Beginning" or clearly "Proficient" (all 3 placement
+   questions answered the same way), in which case start one tier
+   toward that guess (Easy or Hard) — this is only ever a starting
+   guess, never trusted further than that.
+
+2. AFTER EACH PASSAGE, branch based on the accuracy actually measured
+   by the AI (Google Speech-to-Text, same scoring pipeline as every
+   other reading session):
+
+   - accuracy >= 90% -> the NEXT passage moves UP one difficulty tier
+     (Easy -> Medium -> Hard). If already at Hard and still >=90%,
+     stop here — Hard/Proficient is confirmed as their level, no
+     higher tier exists to test.
+
+   - accuracy < 70% -> the NEXT passage moves DOWN one difficulty tier
+     (Hard -> Medium -> Easy). If already at Easy and still <70%, stop
+     here — Beginning is confirmed, no lower tier exists to test.
+
+   - accuracy 70-89% -> this tier is likely their real level. Stop
+     after this passage (2 passages total is enough in this case), OR
+     optionally run one more passage at the SAME tier to confirm
+     before finalizing, if you want higher confidence at the cost of a
+     slightly longer test.
+
+3. CAP at 3 passages maximum regardless of outcome, so this never
+   turns into a long ordeal for a young child. If still ambiguous
+   after 3, use whichever tier the LAST passage was administered at.
+
+4. FINAL masteryLevel is set from wherever the staircase actually
+   landed (Easy -> Beginning, Medium -> Developing, Hard -> Proficient)
+   — not an average across all passages, since averaging would blur
+   together a genuine ceiling/floor finding with an earlier
+   miscalibrated guess.
+
+5. CONTENT SOURCING — this is the other half of the fix: when
+   selecting each passage, search the Curriculum Guide by
+   difficultyTier/topic match, NOT restricted to entries tagged with
+   this Learner's own gradeLevel. A struggling Grade 3 reader may need
+   genuinely Grade-1-level content to find their real floor; a strong
+   Grade 2 reader may need Grade-3-level content to find their real
+   ceiling. The diagnostic's whole purpose is to find where the CHILD
+   actually is, independent of which grade they're chronologically
+   enrolled in. (Their Learner.gradeLevel field itself does not
+   change because of this — that still just reflects their actual
+   school grade. Only which CONTENT is shown during this specific test
+   is decoupled from it.)
+
+6. Every passage shown, at every tier, still comes from real
+   Curriculum Guide-grounded content (per the earlier Activity Content
+   addition) — being adaptive about DIFFICULTY does not mean abandoning
+   being grounded in the curriculum. Both are true at once: adaptive
+   tier selection, curriculum-sourced content at whichever tier is
+   chosen.
+
+This replaces the simpler "1-3 progressively harder passages, pick one
+consistent rule" version from the earlier Placement Diagnostic
+addition. Everything else in that addition (framing it as "Let's Read
+Together," no visible score during the flow, the completion badge,
+notifying the Parent afterward, using the existing sessionType field
+instead of a new boolean) stays exactly as already specified.
+
+------------------------------------------------------------
+PART 2 — LANGUAGE CORRECTION: ENGLISH, NOT FILIPINO
+------------------------------------------------------------
+
+Earlier example content in this conversation (sample passages like
+"Si Ben ay may pusa," the Speech-to-Text languageCode value "fil-PH")
+assumed Filipino-language content. That assumption was mine, not
+something you specified, and it is incorrect for this project.
+
+CORRECTED:
+- Google Speech-to-Text languageCode should be "en-PH" (English as
+  used/taught in the Philippines), not "fil-PH".
+- All example passages, vocabulary lists, and sample Curriculum Guide
+  content anywhere in this system should be written in English, not
+  Filipino/Tagalog.
+- This applies retroactively to every earlier document in this
+  project that used Filipino example text — the AI Integration prompt,
+  the Game Templates examples, and any seed data — wherever you find
+  a Filipino sentence used as an example, replace it with an
+  equivalent English one when you actually build.
+- The model itself (Google Speech-to-Text v2, chirp_3) still supports
+  English recognition at high accuracy — this correction only changes
+  which language code is requested, not which model/version is used.
+
+------------------------------------------------------------
+NOTE ON WHAT THIS AFFECTS ELSEWHERE
+------------------------------------------------------------
+
+- No data model changes beyond what was already specified in the
+  Placement Diagnostic addition.
+- The diagnostic's passage-selection logic changes from
+  grade-locked to difficulty-tier-adaptive, as described in Part 1.
+- Every place in earlier documents that assumed or showed Filipino
+  example content should be treated as English going forward, per
+  Part 2.

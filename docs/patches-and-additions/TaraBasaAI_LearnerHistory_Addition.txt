@@ -1,0 +1,115 @@
+TARABASA AI — ADDITION TO TEACHER PROMPT
+PATCHES: Teacher Actor Prompt, Step 6 (Class Management)
+PURPOSE: When a Teacher views a Learner inside a Class, show that
+Learner's prior school-year history (were they promoted into this
+class from a previous grade?) and their reading proficiency trajectory
+(not a "good/bad" judgment — the actual three-tier level: Beginning,
+Developing, Proficient).
+
+This does not require any new database table. It is computed entirely
+from two tables that already exist: PromotionRecord and ReadingSession.
+Both already persist a Learner's full history across every grade and
+every teacher they have ever had, by design (this is the same rule
+that makes year-end promotion never lose a Learner's data).
+
+------------------------------------------------------------
+PART 1 — PROMOTION / SCHOOL-YEAR HISTORY
+------------------------------------------------------------
+
+For any Learner shown in Class Management, look up every
+PromotionRecord row where learnerId matches that Learner, sorted
+oldest to newest by releasedAt.
+
+Logic:
+
+1. If zero PromotionRecord rows exist for this Learner:
+   Show: "New to the system — no prior grade history."
+   This is a Learner who has never been promoted; either they are
+   brand new, or this is their first-ever class.
+
+2. If one or more PromotionRecord rows exist with status "Claimed":
+   Show the most recent one as the headline, e.g.:
+   "Promoted from a previous class — now in [nextGrade] since [claimedAt date]"
+
+   If there is more than one completed promotion in their history
+   (a Learner who has been promoted multiple times), show the full
+   chain in order, e.g.:
+   "Grade 1 → Grade 2 (claimed June 2025)"
+   "Grade 2 → Grade 3 (claimed June 2026)"
+   This full chain should be visible on click/expand, not force-shown
+   by default — the headline single line is enough for a quick glance.
+
+3. If a PromotionRecord row exists with status "Pending" and this
+   Learner is the subject of it (meaning they were released by a
+   PREVIOUS teacher and have not yet been claimed into any class):
+   this Learner should not actually be showing inside a Teacher's
+   Class Management view at all yet, since a Pending promotion means
+   classId is currently null. This case does not need special UI here
+   — it is naturally already excluded, since Class Management only
+   lists Learners who currently have a classId set to one of this
+   Teacher's classes.
+
+------------------------------------------------------------
+PART 2 — PROFICIENCY TRAJECTORY (never "good/bad", always the real tier)
+------------------------------------------------------------
+
+For the same Learner, look up every ReadingSession row where
+learnerId matches, sorted oldest to newest by timestamp. This is
+their ENTIRE session history across their whole time in the system —
+not scoped to just this Teacher's class or just this school year.
+Pulling their full lifetime history on purpose is what lets a NEW
+teacher (after a promotion) immediately understand where this child
+actually stands, instead of starting blind.
+
+Logic:
+
+1. If this Learner has zero ReadingSession rows yet:
+   Show: "No reading sessions recorded yet. Starting level: [learner.masteryLevel]"
+   (masteryLevel here is whatever was set during the Parent's initial
+   placement check when the Learner's account was first created.)
+
+2. If this Learner has one or more ReadingSession rows:
+   Take levelBefore from the very FIRST session (their true original
+   starting point) and levelAfter from the most RECENT session (where
+   they stand right now).
+
+   Show: "Proficiency: started at [levelBefore of first session] -> currently [levelAfter of most recent session]"
+
+   Example: "Proficiency: started at Beginning -> currently Developing"
+
+   If the starting and current level are the same, still show both
+   sides exactly as written above — do not shorten it to just one
+   level, since "started and stayed at Beginning" is meaningfully
+   different information from "just started, no data yet."
+
+3. Never collapse this into a single subjective word like "Good",
+   "Weak", "Struggling", etc. Always use the exact three defined tiers
+   (Beginning / Developing / Proficient) exactly as they appear
+   everywhere else in the system, so this stays consistent with every
+   other screen (Analytics, the Learner's own dashboard, Notifications).
+
+------------------------------------------------------------
+PART 3 — WHERE THIS SHOWS ON THE LEARNER CARD
+------------------------------------------------------------
+
+On each Learner row/card inside a Class in Class Management, add two
+small lines beneath the existing name / learnerCode / current-level
+line:
+
+Line 1 (Promotion history) — from Part 1 above.
+Line 2 (Proficiency trajectory) — from Part 2 above.
+
+Keep both lines small, muted/secondary text color, not competing
+visually with the Learner's name or current status. This is
+supporting context for the Teacher, not the primary information on
+the card.
+
+------------------------------------------------------------
+NOTE ON WHAT THIS DOES NOT CHANGE
+------------------------------------------------------------
+
+This does not add any new field to the Learner, PromotionRecord, or
+ReadingSession tables. It is purely a new way of reading and
+displaying data that already exists. No other part of the Teacher
+prompt, the data model, or the business rules is affected by this
+addition.

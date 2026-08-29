@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaraBasa AI — Teacher Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-50:#eef6ff; --sky-100:#dcedff;
+    --blue-500:#1c7ed6; --blue-600:#0f5fae; --blue-700:#0a3d73;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --owl-orange-400:#f5a544; --owl-orange-600:#dd7014;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --success:#1f9e83; --success-bg:#e9f7f3;
+    --amber:#c9820b; --amber-bg:#fef6e6;
+    --purple:#7c5cd6; --purple-bg:#f1edfc;
+    --teal:#1f9e83; --teal-bg:#e9f7f3;
+    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+    --shadow-card:0 20px 40px -24px rgba(15,60,110,0.18);
+  }
+  [data-theme="dark"]{
+    --sky-50:#0c1620; --sky-100:#0f1d2b;
+    --blue-500:#4d9fe8; --blue-600:#3a86cf; --blue-700:#7fc0ff;
+    --navy-900:#eaf1f7; --slate-600:#a9b8c4; --slate-400:#7c8b98;
+    --owl-orange-400:#f5a544; --owl-orange-600:#e88420;
+    --line:#20303e; --surface:#101c28; --bg-0:#0a131c;
+    --success:#3fc4a4; --success-bg:#0f2620;
+    --amber:#f0b03e; --amber-bg:#2a2110;
+    --purple:#a794f0; --purple-bg:#1e1a2e;
+    --teal:#3fc4a4; --teal-bg:#0f2620;
+    --shadow-card:0 20px 40px -24px rgba(0,0,0,0.55);
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
+    background: radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%), var(--bg-0);
+    background-attachment:fixed; transition:background-color .35s ease, color .35s ease;
+  }
+  .shell{ max-width:1080px; margin:0 auto; padding:22px 24px 64px; }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .logo-lockup{ display:flex; align-items:center; gap:10px; }
+  .logo-badge{
+    width:38px;height:38px;border-radius:11px; background:linear-gradient(155deg, var(--blue-500), var(--blue-700));
+    display:flex;align-items:center;justify-content:center; box-shadow:0 6px 14px -5px rgba(15,95,174,0.5);
+  }
+  .wordmark{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; }
+  .wordmark span{ color:var(--owl-orange-600); }
+  .topbar-actions{ display:flex; align-items:center; gap:10px; }
+  .icon-btn{
+    position:relative; width:40px;height:40px; border-radius:12px; background:var(--surface); border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center; cursor:pointer; color:var(--slate-600); box-shadow:var(--shadow-sm);
+  }
+  .icon-btn:hover{ color:var(--blue-600); border-color:var(--blue-500); }
+  .avatar-chip{
+    display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
+    padding:5px 12px 5px 5px; border-radius:999px; box-shadow:var(--shadow-sm); cursor:pointer;
+  }
+  .avatar-chip .av{
+    width:30px;height:30px;border-radius:50%; background:linear-gradient(155deg,var(--blue-500),var(--blue-700));
+    display:flex;align-items:center;justify-content:center; color:#fff; font-weight:700; font-size:13px;
+  }
+  .avatar-chip span{ font-size:13.5px; font-weight:700; }
+
+  /* demo toggle - not part of real UI, just for reviewing both states */
+  .demo-toggle{
+    display:flex; align-items:center; justify-content:center; gap:10px; background:var(--surface); border:1px dashed var(--line);
+    border-radius:14px; padding:10px 16px; margin:14px 0 24px; font-size:12.5px; font-weight:700; color:var(--slate-600);
+  }
+  .demo-toggle button{
+    padding:6px 14px; border-radius:999px; border:1.5px solid var(--line); background:var(--bg-0); cursor:pointer;
+    font:700 12px/1 'Inter',sans-serif; color:var(--slate-600);
+  }
+  .demo-toggle button.active{ background:var(--blue-600); color:#fff; border-color:var(--blue-600); }
+
+  h1{ font-family:'Baloo 2',sans-serif; font-size:25px; font-weight:700; margin:18px 0 6px; }
+
+  /* pending banner */
+  .pending-banner{
+    display:flex; gap:14px; align-items:flex-start; background:var(--amber-bg); border:1px solid var(--amber);
+    border-radius:18px; padding:16px 18px; margin-bottom:22px;
+  }
+  .pending-banner .pb-icon{
+    width:38px;height:38px;border-radius:12px; background:var(--amber); flex-shrink:0;
+    display:flex;align-items:center;justify-content:center; color:#fff;
+  }
+  .pending-banner .pb-title{ font-weight:800; font-size:14px; color:var(--amber); margin-bottom:2px; }
+  .pending-banner .pb-desc{ font-size:13px; color:var(--navy-900); font-weight:500; opacity:.9; line-height:1.5; }
+
+  .stat-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:var(--shadow-sm); }
+  .stat-card .val{ font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:700; }
+  .stat-card .lbl{ font-size:12.5px; color:var(--slate-600); font-weight:700; margin-top:2px; }
+
+  .nav-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+  .nav-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:20px;
+    box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:12px; text-decoration:none; color:inherit;
+    transition:box-shadow .18s ease, transform .18s ease; position:relative;
+  }
+  .nav-card:not(.locked):hover{ box-shadow:var(--shadow-card); transform:translateY(-2px); }
+  .nav-card .icon{ width:42px;height:42px;border-radius:13px; display:flex;align-items:center;justify-content:center; }
+  .nav-card .nt{ font-family:'Baloo 2',sans-serif; font-size:16px; font-weight:700; }
+  .nav-card .nd{ font-size:12.5px; color:var(--slate-600); font-weight:500; }
+  .nav-card.locked{ opacity:.55; cursor:not-allowed; }
+  .lock-pill{
+    position:absolute; top:14px; right:14px; display:flex; align-items:center; gap:4px;
+    background:var(--bg-0); border:1px solid var(--line); padding:3px 9px; border-radius:999px;
+    font-size:10.5px; font-weight:800; color:var(--slate-600);
+  }
+
+  .icon.blue{ background:var(--sky-50); color:var(--blue-600); }
+  .icon.purple{ background:var(--purple-bg); color:var(--purple); }
+  .icon.teal{ background:var(--teal-bg); color:var(--teal); }
+  .icon.amber{ background:var(--amber-bg); color:var(--amber); }
+
+  @media (max-width:760px){
+    .stat-row{ grid-template-columns:1fr 1fr; }
+    .nav-grid{ grid-template-columns:1fr 1fr; }
+  }
+  @media (max-width:480px){
+    .nav-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body data-theme="light">
+<div class="shell">
+
+  <div class="topbar">
+    <div class="logo-lockup">
+      <div class="logo-badge">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M4 4C4 4 7 3 9 5.5C9.6 6.3 10 7.5 10 9V19C10 19 8 17 4 17.5V4Z" fill="white"/>
+          <path d="M20 4C20 4 17 3 15 5.5C14.4 6.3 14 7.5 14 9V19C14 19 16 17 20 17.5V4Z" fill="white" fill-opacity="0.85"/>
+        </svg>
+      </div>
+      <span class="wordmark">TaraBasa<span>AI</span></span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 17a2.5 2.5 0 0 0 5 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <button class="avatar-chip"><span class="av">JR</span><span>Juana Reyes</span></button>
+    </div>
+  </div>
+
+  <div class="demo-toggle">
+    Preview state:
+    <button id="btnPending" class="active">Pending Teacher</button>
+    <button id="btnActive">Active Teacher</button>
+  </div>
+
+  <h1 id="dashTitle">Teacher Dashboard</h1>
+
+  <div class="pending-banner" id="pendingBanner">
+    <div class="pb-icon">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <div>
+      <div class="pb-title">Your account is awaiting Admin approval</div>
+      <div class="pb-desc">You can try AI Lesson Generation now (2 free credits) — nothing you create is visible to any student. Class Management and everything else unlocks automatically once your school verifies you.</div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="val" id="statClasses">0</div><div class="lbl">Classes</div></div>
+    <div class="stat-card"><div class="val" id="statActivities">0</div><div class="lbl">Activities</div></div>
+    <div class="stat-card"><div class="val" id="statApproved">0</div><div class="lbl">Approved</div></div>
+    <div class="stat-card"><div class="val" id="statCredits">2</div><div class="lbl">Credits</div></div>
+  </div>
+
+  <div class="nav-grid">
+    <a href="#" class="nav-card locked" id="cardClass">
+      <span class="lock-pill">🔒 Locked</span>
+      <span class="icon blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="9" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg></span>
+      <span class="nt">Class Management</span>
+      <span class="nd">Manage classes &amp; learners</span>
+    </a>
+    <a href="#" class="nav-card" id="cardGenerate">
+      <span class="icon teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 4.6L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.4L12 3z" fill="currentColor"/></svg></span>
+      <span class="nt">Generate Activity</span>
+      <span class="nd">AI-powered activity creation</span>
+    </a>
+    <a href="#" class="nav-card locked" id="cardMyActivities">
+      <span class="lock-pill">🔒 Locked</span>
+      <span class="icon blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 4C4 4 7 3 9 5.5C9.6 6.3 10 7.5 10 9V19C10 19 8 17 4 17.5V4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M20 4C20 4 17 3 15 5.5C14.4 6.3 14 7.5 14 9V19C14 19 16 17 20 17.5V4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+      <span class="nt">My Activities</span>
+      <span class="nd">Review &amp; manage activities</span>
+    </a>
+    <a href="#" class="nav-card locked" id="cardPromotions">
+      <span class="lock-pill">🔒 Locked</span>
+      <span class="icon purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M17 2l4 4-4 4M21 6H8M7 22l-4-4 4-4M3 18h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="nt">Promotions</span>
+      <span class="nd">Release &amp; claim learners</span>
+    </a>
+    <a href="#" class="nav-card locked" id="cardAnalytics">
+      <span class="lock-pill">🔒 Locked</span>
+      <span class="icon teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+      <span class="nt">Analytics</span>
+      <span class="nd">Learner progress &amp; reports</span>
+    </a>
+    <a href="#" class="nav-card locked" id="cardRepository">
+      <span class="lock-pill">🔒 Locked</span>
+      <span class="icon amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 8l1.5-4h13L20 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="8" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/></svg></span>
+      <span class="nt">Repository</span>
+      <span class="nd">Share to open repository</span>
+    </a>
+  </div>
+
+</div>
+
+<script>
+  const toggle = document.getElementById('themeToggle');
+  const body = document.body;
+  toggle.addEventListener('click', () => body.setAttribute('data-theme', body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+
+  const btnPending = document.getElementById('btnPending');
+  const btnActive = document.getElementById('btnActive');
+  const pendingBanner = document.getElementById('pendingBanner');
+  const lockedCards = ['cardClass','cardMyActivities','cardPromotions','cardAnalytics','cardRepository'].map(id => document.getElementById(id));
+  const statClasses = document.getElementById('statClasses');
+  const statActivities = document.getElementById('statActivities');
+  const statApproved = document.getElementById('statApproved');
+  const statCredits = document.getElementById('statCredits');
+
+  function setState(isActive){
+    btnPending.classList.toggle('active', !isActive);
+    btnActive.classList.toggle('active', isActive);
+    pendingBanner.style.display = isActive ? 'none' : 'flex';
+    lockedCards.forEach(card => {
+      card.classList.toggle('locked', !isActive);
+      const pill = card.querySelector('.lock-pill');
+      if (pill) pill.style.display = isActive ? 'none' : 'flex';
+    });
+    statClasses.textContent = isActive ? '1' : '0';
+    statActivities.textContent = isActive ? '4' : '0';
+    statApproved.textContent = isActive ? '4' : '0';
+    statCredits.textContent = isActive ? '0' : '2';
+  }
+
+  btnPending.addEventListener('click', () => setState(false));
+  btnActive.addEventListener('click', () => setState(true));
+
+  document.querySelectorAll('.nav-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (card.classList.contains('locked')) {
+        alert('→ This is locked until your account is Active. The backend would also reject this route directly with a 403, not just hide it visually.');
+      } else {
+        alert('→ Would navigate to ' + card.querySelector('.nt').textContent);
+      }
+    });
+  });
+
+  setState(false);
+</script>
+</body>
+</html>

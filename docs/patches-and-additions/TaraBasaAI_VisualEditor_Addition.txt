@@ -1,0 +1,63 @@
+TARABASA AI — ADDITION: VISUAL ACTIVITY EDITOR (Canva-style)
+PATCHES: Teacher Actor Prompt, Step 8 (the "Edit" action on a Draft
+Activity). Upgrades the earlier "editable list with Add/Remove
+buttons" version into a real visual editing experience.
+
+------------------------------------------------------------
+WHAT CHANGES
+------------------------------------------------------------
+
+The Edit action still does the same underlying thing (modifies the
+Activity's structured content, then moves status to Approved in one
+step, per the existing rule) — this addition only changes HOW that
+editing feels to the Teacher, not what data gets changed.
+
+Instead of a plain form with text inputs and Add/Remove buttons,
+build a visual canvas-style editor:
+
+1. The generated content (passage text, word tiles, image hints,
+   letter-trace items — whatever the gameType's content shape
+   includes) renders as actual visual elements on a canvas, laid out
+   roughly the way the Learner will actually see them.
+2. Teacher can click any element to edit it in place — change a word,
+   swap which image hint it uses, adjust the passage text — rather
+   than scrolling through a separate form disconnected from what it's
+   editing.
+3. Teacher can add new elements (a new word tile, a new sentence, a
+   new trace item) by dragging from a small palette/toolbar, and
+   remove existing ones by selecting and deleting them — same
+   underlying add/remove capability as before, just interacted with
+   directly on the canvas instead of through list buttons.
+4. Basic styling controls where relevant (e.g. highlight color for a
+   specific word, ordering of items) — enough creative control that a
+   Teacher can genuinely make an Activity feel like their own, without
+   needing design skill.
+5. Saving this still calls the same `decision` endpoint with
+   `editedFields`/structured content payload already specified — the
+   backend contract does not change, only the frontend editing
+   experience.
+
+------------------------------------------------------------
+WHY THIS MATTERS (worth stating for the panel)
+------------------------------------------------------------
+
+This is what actually makes "Teacher can Edit, not just Approve/
+Reject" a meaningful capability rather than a checkbox. A Teacher who
+can only edit via a plain form with disconnected text fields will
+mostly just Approve-as-is, since editing feels like extra friction
+disconnected from what they're actually changing. A visual, in-context
+editor is what makes editing feel like the natural, easy choice —
+directly supporting the system's core principle that AI drafts and the
+Teacher stays in control, not just nominally but practically.
+
+------------------------------------------------------------
+NOTE ON WHAT THIS AFFECTS ELSEWHERE
+------------------------------------------------------------
+
+- No backend/data model changes — the `content` field and the
+  `decision` endpoint's contract are unchanged.
+- This is purely a frontend UX upgrade to how editing is presented.
+- Should be built using whichever frontend the account building it
+  already has (Next.js canvas-style component for web; a native
+  equivalent for the Kotlin app later) — the underlying data contract
+  is identical either way.

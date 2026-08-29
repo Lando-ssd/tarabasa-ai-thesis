@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaraBasa AI — Curriculum Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-50:#eef6ff; --sky-100:#dcedff;
+    --blue-500:#1c7ed6; --blue-600:#0f5fae;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --teal:#1f9e83; --teal-bg:#e9f7f3;
+    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+  }
+  [data-theme="dark"]{
+    --sky-50:#0c1620; --sky-100:#0f1d2b;
+    --blue-500:#4d9fe8; --blue-600:#3a86cf;
+    --navy-900:#eaf1f7; --slate-600:#a9b8c4; --slate-400:#7c8b98;
+    --line:#20303e; --surface:#101c28; --bg-0:#0a131c;
+    --teal:#3fc4a4; --teal-bg:#0f2620;
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
+    background: radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%), var(--bg-0);
+    background-attachment:fixed; transition:background-color .35s ease, color .35s ease;
+  }
+  .shell{ max-width:900px; margin:0 auto; padding:22px 24px 64px; }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--slate-600);
+    text-decoration:none; margin-bottom:16px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;
+  }
+  .back-link:hover{ color:var(--blue-600); }
+  .head-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; flex-wrap:wrap; gap:12px; }
+  h1{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:0; }
+  .new-btn{ display:flex; align-items:center; gap:7px; background:var(--navy-900); color:var(--bg-0); font:700 13.5px/1 'Inter',sans-serif; padding:11px 18px; border-radius:12px; border:none; cursor:pointer; }
+  [data-theme="dark"] .new-btn{ background:var(--blue-600); }
+  .sub{ color:var(--slate-600); font-size:13.5px; font-weight:500; margin:6px 0 20px; }
+
+  .filters{ display:flex; gap:9px; margin-bottom:18px; }
+  .filter-chip{ padding:8px 15px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface); font-size:13px; font-weight:700; color:var(--slate-600); cursor:pointer; }
+  .filter-chip.active{ border-color:var(--blue-500); background:var(--sky-50); color:var(--blue-600); }
+
+  .entry-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px; box-shadow:var(--shadow-sm); margin-bottom:10px; }
+  .entry-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .entry-title{ font-size:14.5px; font-weight:700; }
+  .entry-meta{ font-size:12px; color:var(--slate-600); font-weight:600; margin-top:2px; }
+  .grade-pill{ font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:999px; background:var(--teal-bg); color:var(--teal); white-space:nowrap; }
+  .vocab-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .vocab-chip{ font-size:11px; font-weight:700; background:var(--bg-0); border:1px solid var(--line); padding:3px 9px; border-radius:8px; }
+  .no-vocab{ font-size:11.5px; color:var(--slate-400); font-weight:600; margin-top:8px; }
+  .entry-actions{ display:flex; gap:8px; margin-top:12px; }
+  .entry-actions button{ font-size:12px; font-weight:700; padding:6px 12px; border-radius:9px; cursor:pointer; }
+  .btn-edit{ background:var(--bg-0); border:1.5px solid var(--line); color:var(--navy-900); }
+  .btn-del{ background:none; border:none; color:var(--slate-400); }
+  .btn-del:hover{ color:#d64545; }
+
+  .form-card{ display:none; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:20px; box-shadow:var(--shadow-sm); margin-bottom:20px; }
+  .form-card.show{ display:block; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  .form-grid .full{ grid-column:1/-1; }
+  .field label{ font-size:12px; font-weight:700; display:block; margin-bottom:5px; }
+  .field input, .field select{ width:100%; font:500 13.5px/1 'Inter',sans-serif; padding:10px 12px; border:1.5px solid var(--line); border-radius:10px; background:var(--bg-0); color:var(--navy-900); outline:none; }
+  .field-hint{ font-size:11px; color:var(--slate-400); font-weight:600; margin-top:4px; }
+  .form-actions{ display:flex; gap:10px; }
+  .btn-primary-sm{ background:var(--blue-600); color:#fff; border:none; padding:10px 18px; border-radius:10px; font:700 13px/1 'Inter',sans-serif; cursor:pointer; }
+  .btn-ghost-sm{ background:none; border:1.5px solid var(--line); color:var(--slate-600); padding:10px 18px; border-radius:10px; font:700 13px/1 'Inter',sans-serif; cursor:pointer; }
+</style>
+</head>
+<body data-theme="light">
+<div class="shell">
+  <button class="back-link" id="backLink">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Dashboard
+  </button>
+  <div class="head-row">
+    <h1>Curriculum Guide</h1>
+    <button class="new-btn" id="newEntryBtn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      New Entry
+    </button>
+  </div>
+  <p class="sub">What Teachers' AI-generated activities get matched against. Read-only for Teachers.</p>
+
+  <div class="filters">
+    <button class="filter-chip active" data-g="all">All Grades</button>
+    <button class="filter-chip" data-g="1">Grade 1</button>
+    <button class="filter-chip" data-g="2">Grade 2</button>
+    <button class="filter-chip" data-g="3">Grade 3</button>
+  </div>
+
+  <div class="form-card" id="formCard">
+    <div class="form-grid">
+      <div class="field full"><label>Topic</label><input type="text" placeholder="e.g. Phonics — Letter Blending"></div>
+      <div class="field"><label>Grade Level</label>
+        <select><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option></select>
+      </div>
+      <div class="field"><label>Skill Focus</label><input type="text" placeholder="e.g. Phonemic Awareness"></div>
+      <div class="field full">
+        <label>Sample Vocabulary <span style="font-weight:600;color:var(--slate-400);">optional, comma-separated</span></label>
+        <input type="text" placeholder="e.g. cat, dog, sun, mat">
+        <div class="field-hint">If provided, generated activities build directly from these words instead of the AI guessing.</div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary-sm" id="saveEntryBtn">Save Entry</button>
+      <button class="btn-ghost-sm" id="cancelEntryBtn">Cancel</button>
+    </div>
+  </div>
+
+  <div id="entryList">
+    <div class="entry-card" data-g="1">
+      <div class="entry-top">
+        <div><div class="entry-title">Phonics — Letter Blending</div><div class="entry-meta">Skill Focus: Phonemic Awareness</div></div>
+        <span class="grade-pill">Grade 1</span>
+      </div>
+      <div class="vocab-row">
+        <span class="vocab-chip">cat</span><span class="vocab-chip">dog</span><span class="vocab-chip">sun</span><span class="vocab-chip">mat</span><span class="vocab-chip">hat</span>
+      </div>
+      <div class="entry-actions"><button class="btn-edit">Edit</button><button class="btn-del">Delete</button></div>
+    </div>
+
+    <div class="entry-card" data-g="1">
+      <div class="entry-top">
+        <div><div class="entry-title">Sight Words — High Frequency</div><div class="entry-meta">Skill Focus: Word Recognition</div></div>
+        <span class="grade-pill">Grade 1</span>
+      </div>
+      <div class="no-vocab">No sample vocabulary yet — AI will choose age-appropriate words on-topic.</div>
+      <div class="entry-actions"><button class="btn-edit">Edit</button><button class="btn-del">Delete</button></div>
+    </div>
+
+    <div class="entry-card" data-g="2">
+      <div class="entry-top">
+        <div><div class="entry-title">Reading Comprehension — Short Stories</div><div class="entry-meta">Skill Focus: Main Idea</div></div>
+        <span class="grade-pill">Grade 2</span>
+      </div>
+      <div class="no-vocab">No sample vocabulary yet — AI will choose age-appropriate words on-topic.</div>
+      <div class="entry-actions"><button class="btn-edit">Edit</button><button class="btn-del">Delete</button></div>
+    </div>
+
+    <div class="entry-card" data-g="3">
+      <div class="entry-top">
+        <div><div class="entry-title">Vocabulary in Context</div><div class="entry-meta">Skill Focus: Context Clues</div></div>
+        <span class="grade-pill">Grade 3</span>
+      </div>
+      <div class="vocab-row">
+        <span class="vocab-chip">enormous</span><span class="vocab-chip">curious</span><span class="vocab-chip">gentle</span>
+      </div>
+      <div class="entry-actions"><button class="btn-edit">Edit</button><button class="btn-del">Delete</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('backLink').addEventListener('click', () => alert('→ Would navigate back to /admin/dashboard'));
+
+  const chips = document.querySelectorAll('.filter-chip');
+  const entries = document.querySelectorAll('.entry-card');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const g = chip.dataset.g;
+      entries.forEach(e => e.style.display = (g === 'all' || e.dataset.g === g) ? 'block' : 'none');
+    });
+  });
+
+  const formCard = document.getElementById('formCard');
+  document.getElementById('newEntryBtn').addEventListener('click', () => formCard.classList.toggle('show'));
+  document.getElementById('cancelEntryBtn').addEventListener('click', () => formCard.classList.remove('show'));
+  document.getElementById('saveEntryBtn').addEventListener('click', () => {
+    alert('→ Would create the Curriculum Guide entry, immediately usable for Teacher activity-matching and future Learner diagnostics');
+    formCard.classList.remove('show');
+  });
+  document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => alert('→ Would open this entry in the same form, pre-filled, for editing')));
+  document.querySelectorAll('.btn-del').forEach(btn => btn.addEventListener('click', () => {
+    if (confirm('Delete this Curriculum Guide entry? Activities already generated from it are not affected.')) {
+      alert('→ Would delete this entry');
+    }
+  }));
+</script>
+</body>
+</html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaraBasa AI — Parent Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-50:#eef6ff; --sky-100:#dcedff;
+    --blue-500:#1c7ed6; --blue-600:#0f5fae; --blue-700:#0a3d73;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --owl-orange-400:#f5a544; --owl-orange-500:#ef8d2a; --owl-orange-600:#dd7014;
+    --clay-yellow:#ffcf6e; --parent-teal:#1f9e83; --parent-teal-dark:#157a67;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --danger:#d64545; --danger-bg:#fdecec; --danger-line:#f3c9c9;
+    --purple:#7c5cd6; --purple-bg:#f1edfc; --success-bg:#e9f7f3;
+    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+    --shadow-card:0 20px 40px -24px rgba(15,60,110,0.18);
+  }
+  [data-theme="dark"]{
+    --sky-50:#0c1620; --sky-100:#0f1d2b;
+    --blue-500:#4d9fe8; --blue-600:#3a86cf; --blue-700:#7fc0ff;
+    --navy-900:#eaf1f7; --slate-600:#a9b8c4; --slate-400:#7c8b98;
+    --owl-orange-400:#f5a544; --owl-orange-500:#f0983a; --owl-orange-600:#e88420;
+    --clay-yellow:#e0ad55; --parent-teal:#3fc4a4; --parent-teal-dark:#2c9c81;
+    --line:#20303e; --surface:#101c28; --bg-0:#0a131c;
+    --danger:#ff6b6b; --danger-bg:#2a1414; --danger-line:#4a2323;
+    --purple:#a794f0; --purple-bg:#1e1a2e; --success-bg:#0f2620;
+    --shadow-card:0 20px 40px -24px rgba(0,0,0,0.55);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
+    background:
+      radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%),
+      var(--bg-0);
+    background-attachment:fixed; transition:background-color .35s ease, color .35s ease;
+  }
+  .shell{ max-width:1080px; margin:0 auto; padding:22px 24px 64px; }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; }
+  .logo-lockup{ display:flex; align-items:center; gap:10px; }
+  .logo-badge{
+    width:38px;height:38px;border-radius:11px; background:linear-gradient(155deg, var(--blue-500), var(--blue-700));
+    display:flex;align-items:center;justify-content:center; box-shadow:0 6px 14px -5px rgba(15,95,174,0.5);
+  }
+  .wordmark{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; }
+  .wordmark span{ color:var(--owl-orange-500); }
+
+  .topbar-actions{ display:flex; align-items:center; gap:10px; }
+  .icon-btn{
+    position:relative; width:40px;height:40px; border-radius:12px; background:var(--surface); border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center; cursor:pointer; color:var(--slate-600); box-shadow:var(--shadow-sm);
+  }
+  .icon-btn:hover{ color:var(--blue-600); border-color:var(--blue-500); }
+  .badge-dot{
+    position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 4px; border-radius:999px;
+    background:var(--danger); color:#fff; font-size:10.5px; font-weight:800;
+    display:flex;align-items:center;justify-content:center; border:2px solid var(--bg-0);
+  }
+  .avatar-chip{
+    display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
+    padding:5px 12px 5px 5px; border-radius:999px; box-shadow:var(--shadow-sm); cursor:pointer;
+  }
+  .avatar-chip .av{
+    width:30px;height:30px;border-radius:50%; background:linear-gradient(155deg,var(--parent-teal),var(--parent-teal-dark));
+    display:flex;align-items:center;justify-content:center; color:#fff; font-weight:700; font-size:13px;
+  }
+  .avatar-chip span{ font-size:13.5px; font-weight:700; color:var(--navy-900); }
+
+  .greeting h1{ font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:700; margin:0 0 4px; }
+  .greeting p{ margin:0 0 22px; color:var(--slate-600); font-size:14.5px; font-weight:500; }
+
+  .child-selector{ margin-bottom:22px; }
+  .child-selector .label{ font-size:12.5px; font-weight:700; color:var(--slate-600); margin-bottom:9px; }
+  .chip-row{ display:flex; gap:9px; flex-wrap:wrap; }
+  .child-chip{
+    display:flex; align-items:center; gap:8px; padding:8px 16px 8px 8px; border-radius:999px;
+    border:1.5px solid var(--line); background:var(--surface); cursor:pointer; font-weight:700; font-size:13.5px; color:var(--slate-600);
+    transition:border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .child-chip .mini-av{
+    width:26px;height:26px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-size:14px;
+    background:linear-gradient(155deg, var(--clay-yellow), var(--owl-orange-600));
+  }
+  .child-chip.active{ border-color:var(--parent-teal); background:var(--success-bg); color:var(--parent-teal); }
+  .child-chip .flag-dot{ width:7px;height:7px;border-radius:50%; background:var(--danger); margin-left:-2px; }
+
+  .alert-banner{
+    display:flex; align-items:flex-start; gap:14px; background:var(--danger-bg); border:1px solid var(--danger-line);
+    border-radius:18px; padding:16px 18px; margin-bottom:22px;
+  }
+  .alert-icon{
+    width:38px;height:38px;border-radius:12px; background:var(--danger); flex-shrink:0;
+    display:flex;align-items:center;justify-content:center; color:#fff;
+  }
+  .alert-body{ flex:1; min-width:0; }
+  .alert-body .title{ font-weight:800; font-size:14.5px; color:var(--danger); margin-bottom:2px; }
+  .alert-body .desc{ font-size:13.5px; color:var(--navy-900); font-weight:500; opacity:.9; }
+  .alert-cta{
+    flex-shrink:0; align-self:center; background:var(--danger); color:#fff; font-weight:700; font-size:13px;
+    padding:9px 16px; border-radius:999px; white-space:nowrap; text-decoration:none; border:none; cursor:pointer;
+  }
+  .alert-cta:hover{ opacity:.9; }
+
+  .focus-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:22px;
+    box-shadow:var(--shadow-sm); display:flex; align-items:center; gap:18px; margin-bottom:18px; flex-wrap:wrap;
+  }
+  .focus-card.flagged{ border-color:var(--danger-line); }
+  .focus-avatar{
+    width:64px;height:64px;border-radius:20px; flex-shrink:0; font-size:32px;
+    background:linear-gradient(155deg, var(--clay-yellow), var(--owl-orange-600));
+    display:flex;align-items:center;justify-content:center;
+  }
+  .focus-info{ flex:1; min-width:180px; }
+  .focus-info h2{ font-family:'Baloo 2',sans-serif; font-size:19px; font-weight:700; margin:0 0 3px; display:flex; align-items:center; gap:8px; }
+  .focus-info .meta{ font-size:12.5px; color:var(--slate-600); font-weight:600; margin-bottom:8px; }
+  .flag-pill{
+    display:inline-flex; align-items:center; gap:4px; background:var(--danger); color:#fff;
+    font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:999px;
+  }
+  .focus-stats{ display:flex; gap:18px; flex-wrap:wrap; }
+  .focus-stat{ text-align:center; }
+  .focus-stat b{ display:block; font-size:16px; font-weight:800; }
+  .focus-stat span{ display:block; font-size:10.5px; color:var(--slate-600); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .start-practice-btn{
+    display:flex; align-items:center; gap:8px; background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); color:#fff;
+    font-weight:700; font-size:14px; padding:12px 20px; border-radius:14px; border:none; cursor:pointer;
+    box-shadow:0 12px 22px -10px rgba(15,95,174,0.55); white-space:nowrap;
+  }
+  .start-practice-btn:hover{ transform:translateY(-1px); }
+
+  .stat-cards{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:22px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px 18px; box-shadow:var(--shadow-sm); }
+  .stat-card .label{ font-size:12.5px; font-weight:700; color:var(--slate-600); margin-bottom:4px; }
+  .stat-card .value{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; }
+  .stat-card .avg{ font-size:12px; color:var(--slate-400); font-weight:600; margin-top:2px; }
+
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
+  .section-head h2{ font-family:'Baloo 2',sans-serif; font-size:18px; font-weight:700; margin:0; }
+  .section-head a{ font-size:13px; font-weight:700; color:var(--blue-600); text-decoration:none; }
+
+  .activity-list{ background:var(--surface); border:1px solid var(--line); border-radius:20px; overflow:hidden; box-shadow:var(--shadow-sm); margin-bottom:26px; }
+  .activity-row{ display:flex; align-items:center; gap:13px; padding:14px 18px; border-top:1px solid var(--line); }
+  .activity-row:first-child{ border-top:none; }
+  .activity-icon{ width:38px;height:38px;border-radius:11px; flex-shrink:0; display:flex;align-items:center;justify-content:center; color:#fff; }
+  .activity-icon.ok{ background:linear-gradient(155deg,var(--parent-teal),var(--parent-teal-dark)); }
+  .activity-icon.warn{ background:var(--danger); }
+  .activity-body{ flex:1; min-width:0; }
+  .activity-body .line1{ font-size:13.5px; font-weight:700; }
+  .source-tag{
+    display:inline-block; font-size:10px; font-weight:800; padding:2px 7px; border-radius:999px; margin-left:6px;
+    background:var(--sky-50); color:var(--blue-600); vertical-align:middle;
+  }
+  .activity-body .line2{ font-size:12px; color:var(--slate-600); font-weight:500; margin-top:1px; }
+  .activity-time{ font-size:12px; color:var(--slate-400); font-weight:600; white-space:nowrap; flex-shrink:0; }
+
+  .action-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:14px; }
+  .action-tile{
+    background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px;
+    display:flex; flex-direction:column; gap:10px; text-decoration:none; color:inherit;
+    transition:box-shadow .18s ease, transform .18s ease; box-shadow:var(--shadow-sm);
+  }
+  .action-tile:hover{ box-shadow:var(--shadow-card); transform:translateY(-2px); }
+  .action-tile .tile-icon{ width:38px;height:38px;border-radius:11px; display:flex;align-items:center;justify-content:center; }
+  .action-tile .tile-icon.add{ background:var(--sky-50); color:var(--blue-600); }
+  .action-tile .tile-icon.link{ background:var(--success-bg); color:var(--parent-teal); }
+  .action-tile .tile-icon.repo{ background:var(--purple-bg); color:var(--purple); }
+  .action-tile .tt{ font-size:14px; font-weight:700; }
+  .action-tile .td{ font-size:12px; color:var(--slate-600); font-weight:500; }
+
+  @media (max-width:640px){
+    .topbar-actions .avatar-chip span{ display:none; }
+    .greeting h1{ font-size:22px; }
+    .focus-card{ flex-direction:column; align-items:flex-start; }
+    .start-practice-btn{ width:100%; justify-content:center; }
+  }
+</style>
+</head>
+<body data-theme="light">
+<div class="shell">
+
+  <div class="topbar">
+    <div class="logo-lockup">
+      <div class="logo-badge">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M4 4C4 4 7 3 9 5.5C9.6 6.3 10 7.5 10 9V19C10 19 8 17 4 17.5V4Z" fill="white"/>
+          <path d="M20 4C20 4 17 3 15 5.5C14.4 6.3 14 7.5 14 9V19C14 19 16 17 20 17.5V4Z" fill="white" fill-opacity="0.85"/>
+        </svg>
+      </div>
+      <span class="wordmark">TaraBasa<span>AI</span></span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="icon-btn" id="messageIcon" aria-label="Messages" title="Messages with your child's teacher">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8l-4 4V6a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span class="badge-dot">1</span>
+      </button>
+      <button class="icon-btn" aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 17a2.5 2.5 0 0 0 5 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="badge-dot">2</span>
+      </button>
+      <button class="avatar-chip" aria-label="Account menu">
+        <span class="av">MC</span>
+        <span>Mrs. Cruz</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="greeting">
+    <h1>Good evening, Mrs. Cruz 👋</h1>
+    <p>Here's how your learners are doing today.</p>
+  </div>
+
+  <div class="child-selector">
+    <div class="label">Select child</div>
+    <div class="chip-row">
+      <button class="child-chip active" data-child="miguel">
+        <span class="mini-av">🦁</span> Miguel <span class="flag-dot"></span>
+      </button>
+      <button class="child-chip" data-child="sofia">
+        <span class="mini-av" style="background:linear-gradient(155deg,#8fd6c4,var(--parent-teal-dark));">🐰</span> Sofia
+      </button>
+    </div>
+  </div>
+
+  <div id="view-miguel">
+    <div class="alert-banner">
+      <div class="alert-icon">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="alert-body">
+        <div class="title">Miguel needs attention</div>
+        <div class="desc">Today's session flagged several skipped words and low fluency — a quick look could help.</div>
+      </div>
+      <button class="alert-cta">View session</button>
+    </div>
+
+    <div class="focus-card flagged">
+      <div class="focus-avatar">🦁</div>
+      <div class="focus-info">
+        <h2>Miguel <span class="flag-pill">⚠ Flagged</span></h2>
+        <div class="meta">Grade 2 · Mrs. Santos' Class · Code TB-84321</div>
+        <div class="focus-stats">
+          <div class="focus-stat"><b>🔥 4</b><span>Streak</span></div>
+          <div class="focus-stat"><b>🏅 9</b><span>Badges</span></div>
+          <div class="focus-stat"><b>62</b><span>WCPM</span></div>
+          <div class="focus-stat"><b>Instructional</b><span>Level</span></div>
+        </div>
+      </div>
+      <button class="start-practice-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 4v16l13-8L7 4z" fill="white"/></svg>
+        Start Practice
+      </button>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="label">Teacher-Assigned Sessions</div>
+        <div class="value">4</div>
+        <div class="avg">Avg score: 84%</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Parent-Initiated Sessions</div>
+        <div class="value">0</div>
+        <div class="avg">Avg score: —</div>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>Recent Sessions</h2><a href="#">See all</a></div>
+    <div class="activity-list">
+      <div class="activity-row">
+        <div class="activity-icon warn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="white" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <div class="activity-body">
+          <div class="line1">Ang Alamat ng Pinya <span class="source-tag">Teacher</span></div>
+          <div class="line2">Flagged — fluency below expected range</div>
+        </div>
+        <div class="activity-time">Today, 6:42 PM</div>
+      </div>
+      <div class="activity-row">
+        <div class="activity-icon ok"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="activity-body">
+          <div class="line1">Sentence Scramble: Family <span class="source-tag">Teacher</span></div>
+          <div class="line2">80% accuracy — leveled up to Instructional</div>
+        </div>
+        <div class="activity-time">Yesterday, 7:20 PM</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-sofia" style="display:none;">
+    <div class="focus-card">
+      <div class="focus-avatar" style="background:linear-gradient(155deg,#8fd6c4,var(--parent-teal-dark));">🐰</div>
+      <div class="focus-info">
+        <h2>Sofia</h2>
+        <div class="meta">Grade 1 · Not yet in a class · Code TB-25169</div>
+        <div class="focus-stats">
+          <div class="focus-stat"><b>🔥 11</b><span>Streak</span></div>
+          <div class="focus-stat"><b>🏅 15</b><span>Badges</span></div>
+          <div class="focus-stat"><b>48</b><span>WCPM</span></div>
+          <div class="focus-stat"><b>Independent</b><span>Level</span></div>
+        </div>
+      </div>
+      <button class="start-practice-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 4v16l13-8L7 4z" fill="white"/></svg>
+        Start Practice
+      </button>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="label">Teacher-Assigned Sessions</div>
+        <div class="value">0</div>
+        <div class="avg">Avg score: —</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Parent-Initiated Sessions</div>
+        <div class="value">12</div>
+        <div class="avg">Avg score: 91%</div>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>Recent Sessions</h2><a href="#">See all</a></div>
+    <div class="activity-list">
+      <div class="activity-row">
+        <div class="activity-icon ok"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="activity-body">
+          <div class="line1">Picture-Word Match <span class="source-tag" style="background:var(--purple-bg); color:var(--purple);">Parent</span></div>
+          <div class="line2">Earned the "Word Wizard" badge — 96% accuracy</div>
+        </div>
+        <div class="activity-time">Today, 4:15 PM</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head"><h2>Quick Actions</h2></div>
+  <div class="action-grid">
+    <a href="#" class="action-tile">
+      <span class="tile-icon add">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </span>
+      <span class="tt">Add Another Child</span>
+      <span class="td">Set up a new Learner profile</span>
+    </a>
+    <a href="#" class="action-tile">
+      <span class="tile-icon link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.8"/><path d="M17 8l3 3-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="tt">Link Existing Child</span>
+      <span class="td">Join as a second guardian</span>
+    </a>
+    <a href="#" class="action-tile">
+      <span class="tile-icon repo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 8l1.5-4h13L20 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="8" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/></svg>
+      </span>
+      <span class="tt">Browse Repository</span>
+      <span class="td">Extra activities, free & paid</span>
+    </a>
+  </div>
+
+</div>
+
+<script>
+  const toggle = document.getElementById('themeToggle');
+  const body = document.body;
+  toggle.addEventListener('click', () => {
+    const isDark = body.getAttribute('data-theme') === 'dark';
+    body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  });
+
+  const LINKED_TO_TEACHER = { miguel: true, sofia: false };
+  const messageIcon = document.getElementById('messageIcon');
+
+  function updateMessageIcon(){
+    const anyLinked = Object.values(LINKED_TO_TEACHER).some(Boolean);
+    messageIcon.style.display = anyLinked ? 'flex' : 'none';
+  }
+  updateMessageIcon();
+
+  document.querySelectorAll('.child-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.child-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const child = chip.dataset.child;
+      document.getElementById('view-miguel').style.display = child === 'miguel' ? 'block' : 'none';
+      document.getElementById('view-sofia').style.display = child === 'sofia' ? 'block' : 'none';
+    });
+  });
+
+  document.querySelectorAll('.start-practice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      alert("→ Would open the Learner's reading session directly, no PIN needed (parent already authenticated) — logs as a Parent-Initiated session");
+    });
+  });
+  messageIcon.addEventListener('click', () => {
+    alert("→ Would open Inbox scoped to Miguel's teacher (Mrs. Santos)");
+  });
+</script>
+</body>
+</html>

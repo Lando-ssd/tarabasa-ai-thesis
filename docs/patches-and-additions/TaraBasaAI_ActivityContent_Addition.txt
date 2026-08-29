@@ -1,0 +1,218 @@
+TARABASA AI — ADDITION TO MAIN PROMPT
+PATCHES: Section 3 (Game Templates) of the main build prompt, AND
+Steps 7-8 (Generate Activity / My Activities) of the Teacher Actor
+prompt, AND the Activity + CurriculumGuide data model entities
+(one new optional field each — details below).
+
+PURPOSE: Right now a generated Activity is really just one block of
+passageText. This patch turns it into real structured content that is
+genuinely grounded in the curriculum, genuinely adaptive to the
+specific learner it targets, and genuinely editable piece-by-piece by
+the Teacher — not just editable as one big text field.
+
+------------------------------------------------------------
+PART 1 — CONFIRMING THE CREDIT LOOP IS ALREADY CORRECT
+------------------------------------------------------------
+
+Restating this clearly since it came up: the logic already specified
+elsewhere is exactly right, and should not change:
+
+- Every Teacher starts with 2 free generation credits.
+- Every successful generation uses 1 credit.
+- At 0 credits, the Generate button is disabled (as already shown
+  correctly in the current build) and the Teacher cannot generate
+  again until they earn more.
+- The ONLY way to earn more credits is sharing an Approved Activity to
+  the Open Repository, which grants +2 credits, regardless of whether
+  the share is Free or Paid.
+- This applies identically whether the Teacher is Pending or Active —
+  there is no separate rule for either status.
+
+No changes needed here. This section is just confirmation.
+
+------------------------------------------------------------
+PART 2 — WHY "worth it to play" MATTERS, AND WHAT THAT REQUIRES
+------------------------------------------------------------
+
+An Activity shared to the Open Repository is used by Learners and
+Parents who never met the Teacher who made it. If the content is thin
+or generic, sharing it provides no real value even though the Teacher
+still earns credits for sharing it. To make every shared Activity
+"worth it," generated content must meet a minimum quality bar, not
+just exist:
+
+- The passage/content must be genuinely grounded in the matched
+  Curriculum Guide entry's topic and skill focus — not a generic
+  sentence that happens to mention the topic word once.
+- Vocabulary/word lists must have a real minimum count (at least 5
+  distinct words) so a matching/building game actually has enough
+  content to be a real activity, not a 1-2 item toy example.
+- Wrong-answer options (distractors) in matching-style games must be
+  plausible, not random nonsense — e.g. for a letter-sound match on
+  "B", wrong sound options should be other real consonant sounds
+  ("D", "P"), not made-up sounds. A distractor that's obviously wrong
+  teaches nothing.
+- The passage length should match the grade level (shorter/simpler for
+  Grade 1, longer/more complex for Grade 3) — this should be an
+  explicit instruction inside the AI prompt used for generation, not
+  left to chance.
+
+------------------------------------------------------------
+PART 3 — STRUCTURED CONTENT PER GAME TYPE (replaces flat passageText-only)
+------------------------------------------------------------
+
+Every Activity keeps passageText as a required field (it is always
+needed for the core AI-scored read-aloud moment in Module 3 — every
+game type below still ends in the same read-aloud + AI scoring step;
+the game itself is a practice/warm-up BEFORE that moment, not a
+replacement for it). Beyond passageText, each gameType now also
+carries a structured "content" object shaped specifically for that
+game. Templates below, with real example values:
+
+1. Read Aloud
+   content = {
+     passageText: "Si Ben ay may pusa. Ang pusa ay natutulog."
+   }
+
+2. Letter-Sound Match
+   content = {
+     passageText: "...",
+     letterSoundPairs: [
+       { letter: "B", correctSound: "buh", distractorSounds: ["duh", "puh"] },
+       { letter: "M", correctSound: "muh", distractorSounds: ["nuh", "luh"] }
+     ]
+   }
+
+3. Word Builder
+   content = {
+     passageText: "...",
+     targetWords: [
+       { word: "pusa", scrambledLetters: ["s","a","u","p"], imageHint: "cat" },
+       { word: "bata", scrambledLetters: ["t","a","b","a"], imageHint: "child" }
+     ]
+   }
+
+4. Trace-and-Write
+   content = {
+     passageText: "...",
+     traceWords: ["pusa", "bata", "aso"]
+   }
+
+5. Sentence Scramble
+   content = {
+     passageText: "...",
+     scrambledSentences: [
+       { correct: "Si Ben ay may pusa.", scrambled: ["ay","Ben","may","pusa.","Si"] }
+     ]
+   }
+
+6. Picture-Word Match
+   content = {
+     passageText: "...",
+     wordImagePairs: [
+       { word: "pusa", imageHint: "cat" },
+       { word: "aso", imageHint: "dog" }
+     ]
+   }
+
+Note on imageHint fields: these are text labels describing what image
+should show (e.g. "cat"), not actual uploaded images. Use a simple
+icon/illustration library or a generated image lookup keyed by this
+label. This keeps the system from needing real image upload/storage
+for the prototype while still being visually rich for the Learner.
+
+------------------------------------------------------------
+PART 4 — GROUNDING GENERATION IN THE REAL CURRICULUM (nice idea to add)
+------------------------------------------------------------
+
+Currently CurriculumGuide only has topic, gradeLevel, and skillFocus —
+all just short text labels. To make generated content genuinely
+grounded rather than the AI guessing appropriate vocabulary on its
+own, add ONE new optional field to CurriculumGuide:
+
+  sampleVocabulary: string[] (optional, nullable)
+
+When an Admin creates a Curriculum Guide entry, they can optionally
+attach a short list of key words for that topic (e.g. for "Phonics —
+Letter Blending", sampleVocabulary might be ["pusa","bata","aso","mesa"]).
+
+When generating an Activity:
+- If the matched Curriculum Guide entry has sampleVocabulary, use
+  those words as the primary source for targetWords / traceWords /
+  wordImagePairs / etc., and build passageText around them.
+- If it does not (or no guide matched at all), let the AI choose
+  age-appropriate vocabulary itself, but the prompt sent to the AI
+  must still explicitly state the topic and skillFocus so word choice
+  stays on-topic even without a seeded list.
+
+This is optional data (Admin doesn't have to fill it in for every
+entry), but when present, it meaningfully improves how grounded
+generated content actually is.
+
+------------------------------------------------------------
+PART 5 — MAKING GENERATION ADAPTIVE, NOT JUST DIFFICULTY-TIERED (nice idea to add)
+------------------------------------------------------------
+
+The system already sets difficultyTier from a target Learner's
+masteryLevel. This patch adds a second, more specific layer of
+adaptivity that was not being used yet, even though the data for it
+already exists:
+
+When a Teacher generates an Activity WITH a specific target Learner
+selected:
+1. Look up that Learner's PersonalWordBank entries where
+   masteryStatus = "Struggling".
+2. If any exist, deliberately include 1-3 of those exact words inside
+   the new Activity's word list (targetWords / traceWords /
+   wordImagePairs, depending on gameType) alongside new vocabulary.
+3. This means the new Activity isn't just "the right difficulty" in
+   the abstract — it is actually re-serving words THIS SPECIFIC CHILD
+   already struggled with, giving them a real second chance at the
+   exact thing they got wrong before.
+4. If the Learner has no Struggling words yet (new learner, or a
+   strong reader with an empty word bank), skip this step silently —
+   it is an enhancement when data exists, not a requirement that
+   blocks generation when it doesn't.
+
+This is a small addition (the PersonalWordBank data already exists and
+is already being collected during every reading session) but it turns
+"adaptive" from a marketing word into something the system is actually
+doing.
+
+------------------------------------------------------------
+PART 6 — WHAT "EDIT" ACTUALLY MEANS NOW
+------------------------------------------------------------
+
+The Teacher's Edit action (on a Draft Activity, before Approving) must
+now let them edit the STRUCTURED content, not just the topic/
+skillFocus text fields:
+
+- passageText: edit as free text, as before.
+- Word/pair lists (targetWords, letterSoundPairs, wordImagePairs,
+  traceWords, scrambledSentences — whichever apply to this Activity's
+  gameType): show as an editable list with each item's fields
+  editable inline, an "Add" button to add a new item, and a small
+  remove/delete control on each existing item.
+- Teachers should be able to freely add words the AI didn't generate,
+  remove ones that don't fit, or fix a wrong image hint — this is
+  exactly the "approval with real editing power" behavior being asked
+  for, not just Approve-as-is or Reject-and-regenerate.
+- Saving an edit still moves the Activity to "Approved" status in the
+  same action, exactly as already specified — editing and approving
+  remain one combined step, not two separate ones.
+
+------------------------------------------------------------
+NOTE ON WHAT THIS AFFECTS ELSEWHERE
+------------------------------------------------------------
+
+- Activity gains one new field: content (a structured object shaped
+  per gameType, per Part 3 above). passageText remains a top-level
+  field as before.
+- CurriculumGuide gains one new OPTIONAL field: sampleVocabulary
+  (string array, nullable).
+- No other table changes.
+- The AI generation prompt sent to the LLM (see the AI Integration
+  prompt) should now also include: the matched guide's
+  sampleVocabulary if present, and the target Learner's Struggling
+  words if present, so the model has real material to build from
+  instead of only a topic string.

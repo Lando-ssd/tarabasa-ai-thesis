@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaraBasa AI — Teacher Verification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-50:#eef6ff; --sky-100:#dcedff;
+    --blue-500:#1c7ed6; --blue-600:#0f5fae;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --success:#1f9e83; --success-bg:#e9f7f3;
+    --danger:#d64545; --danger-bg:#fdecec;
+    --amber:#c9820b; --amber-bg:#fef6e6;
+    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+  }
+  [data-theme="dark"]{
+    --sky-50:#0c1620; --sky-100:#0f1d2b;
+    --blue-500:#4d9fe8; --blue-600:#3a86cf;
+    --navy-900:#eaf1f7; --slate-600:#a9b8c4; --slate-400:#7c8b98;
+    --line:#20303e; --surface:#101c28; --bg-0:#0a131c;
+    --success:#3fc4a4; --success-bg:#0f2620;
+    --danger:#ff6b6b; --danger-bg:#2a1414;
+    --amber:#f0b03e; --amber-bg:#2a2110;
+  }
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
+    background: radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%), var(--bg-0);
+    background-attachment:fixed; transition:background-color .35s ease, color .35s ease;
+  }
+  .shell{ max-width:820px; margin:0 auto; padding:22px 24px 64px; }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--slate-600);
+    text-decoration:none; margin-bottom:16px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;
+  }
+  .back-link:hover{ color:var(--blue-600); }
+  h1{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:0 0 4px; }
+  .sub{ color:var(--slate-600); font-size:13.5px; font-weight:500; margin:0 0 20px; }
+
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .tab{ padding:9px 16px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface); font:700 13px/1 'Inter',sans-serif; color:var(--slate-600); cursor:pointer; }
+  .tab.active{ background:var(--navy-900); color:var(--bg-0); border-color:var(--navy-900); }
+  [data-theme="dark"] .tab.active{ background:var(--blue-600); border-color:var(--blue-600); color:#fff; }
+
+  .teacher-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px 20px; box-shadow:var(--shadow-sm); margin-bottom:14px; }
+  .tc-top{ display:flex; align-items:flex-start; gap:14px; margin-bottom:14px; flex-wrap:wrap; }
+  .tc-avatar{ width:44px;height:44px;border-radius:14px; background:linear-gradient(155deg,var(--blue-500),#0a3d73); color:#fff; display:flex;align-items:center;justify-content:center; font-weight:700; font-size:16px; flex-shrink:0; }
+  .tc-info{ flex:1; min-width:180px; }
+  .tc-name{ font-size:15px; font-weight:700; }
+  .tc-email{ font-size:12.5px; color:var(--slate-600); font-weight:500; }
+  .tc-since{ font-size:11.5px; color:var(--slate-400); font-weight:600; }
+  .status-pill{ font-size:11px; font-weight:800; padding:4px 10px; border-radius:999px; }
+  .status-pill.pending{ background:var(--amber-bg); color:var(--amber); }
+  .status-pill.active{ background:var(--success-bg); color:var(--success); }
+  .status-pill.rejected{ background:var(--danger-bg); color:var(--danger); }
+
+  .detail-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; background:var(--bg-0); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:14px; }
+  .detail-item .dl{ font-size:10.5px; font-weight:700; color:var(--slate-600); text-transform:uppercase; letter-spacing:.03em; }
+  .detail-item .dv{ font-size:13.5px; font-weight:700; margin-top:2px; }
+
+  .actions{ display:flex; gap:8px; }
+  .actions button{ flex:1; padding:10px; border-radius:11px; font:700 13px/1 'Inter',sans-serif; cursor:pointer; }
+  .btn-activate{ background:var(--success); color:#fff; border:none; }
+  .btn-reject{ background:var(--danger-bg); color:var(--danger); border:1px solid transparent; }
+
+  .empty-note{ text-align:center; padding:40px 20px; color:var(--slate-600); font-size:13.5px; font-weight:500; }
+
+  .modal-overlay{ display:none; position:fixed; inset:0; background:rgba(19,31,43,0.5); align-items:center; justify-content:center; padding:20px; z-index:10; }
+  .modal-overlay.show{ display:flex; }
+  .modal{ background:var(--surface); border-radius:20px; padding:22px; max-width:380px; width:100%; }
+  .modal h3{ font-family:'Baloo 2',sans-serif; font-size:16px; margin:0 0 8px; }
+  .modal p{ font-size:13px; color:var(--slate-600); margin:0 0 14px; }
+  .modal textarea{ width:100%; min-height:80px; border:1.5px solid var(--line); border-radius:11px; padding:10px; font:500 13px/1.4 'Inter',sans-serif; background:var(--bg-0); color:var(--navy-900); outline:none; resize:vertical; margin-bottom:14px; }
+  .modal-actions{ display:flex; gap:8px; }
+</style>
+</head>
+<body data-theme="light">
+<div class="shell">
+  <button class="back-link" id="backLink">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Dashboard
+  </button>
+  <h1>Teacher Verification</h1>
+  <p class="sub">Confirm Employee ID + School Name before granting access to real class rosters.</p>
+
+  <div class="tabs">
+    <button class="tab active" data-t="pending">Pending (3)</button>
+    <button class="tab" data-t="active">Active</button>
+    <button class="tab" data-t="rejected">Rejected</button>
+  </div>
+
+  <div id="pendingList">
+    <div class="teacher-card">
+      <div class="tc-top">
+        <div class="tc-avatar">JR</div>
+        <div class="tc-info">
+          <div class="tc-name">Juana Reyes</div>
+          <div class="tc-email">juana.reyes@deped.gov.ph</div>
+          <div class="tc-since">Registered 2 days ago</div>
+        </div>
+        <span class="status-pill pending">Pending</span>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="dl">School Name</div><div class="dv">Rizal Elementary School</div></div>
+        <div class="detail-item"><div class="dl">Employee ID</div><div class="dv">EMP-2024-003</div></div>
+        <div class="detail-item"><div class="dl">Contact</div><div class="dv">0917 123 4567</div></div>
+        <div class="detail-item"><div class="dl">Credits used so far</div><div class="dv">1 of 2 (trial generation)</div></div>
+      </div>
+      <div class="actions">
+        <button class="btn-activate" data-name="Juana Reyes">✓ Activate</button>
+        <button class="btn-reject" data-name="Juana Reyes">✕ Reject</button>
+      </div>
+    </div>
+
+    <div class="teacher-card">
+      <div class="tc-top">
+        <div class="tc-avatar">MS</div>
+        <div class="tc-info">
+          <div class="tc-name">Mrs. Santos</div>
+          <div class="tc-email">m.santos@deped.gov.ph</div>
+          <div class="tc-since">Registered 5 hours ago</div>
+        </div>
+        <span class="status-pill pending">Pending</span>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="dl">School Name</div><div class="dv">San Isidro Elementary</div></div>
+        <div class="detail-item"><div class="dl">Employee ID</div><div class="dv">EMP-2024-091</div></div>
+        <div class="detail-item"><div class="dl">Contact</div><div class="dv">—</div></div>
+        <div class="detail-item"><div class="dl">Credits used so far</div><div class="dv">0 of 2</div></div>
+      </div>
+      <div class="actions">
+        <button class="btn-activate" data-name="Mrs. Santos">✓ Activate</button>
+        <button class="btn-reject" data-name="Mrs. Santos">✕ Reject</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="activeList" style="display:none;">
+    <div class="teacher-card">
+      <div class="tc-top">
+        <div class="tc-avatar">JR</div>
+        <div class="tc-info"><div class="tc-name">Jenny Reyes</div><div class="tc-email">j.reyes@deped.gov.ph</div></div>
+        <span class="status-pill active">Active</span>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="dl">School Name</div><div class="dv">Rizal Elementary School</div></div>
+        <div class="detail-item"><div class="dl">Employee ID</div><div class="dv">EMP-2023-014</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rejectedList" style="display:none;">
+    <div class="empty-note">No rejected registrations.</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="rejectModal">
+  <div class="modal">
+    <h3>Reject registration?</h3>
+    <p id="rejectTeacherName">This teacher will see a clear rejection message and won't be able to log in.</p>
+    <textarea placeholder="Optional: reason shown to the teacher (e.g. 'Employee ID doesn't match our records — please contact your school office.')"></textarea>
+    <div class="modal-actions">
+      <button class="btn-reject" id="confirmRejectBtn" style="flex:1;">Confirm Reject</button>
+      <button class="btn-activate" id="cancelRejectBtn" style="flex:1; background:var(--bg-0); color:var(--slate-600); border:1.5px solid var(--line);">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('backLink').addEventListener('click', () => alert('→ Would navigate back to /admin/dashboard'));
+
+  const tabs = document.querySelectorAll('.tab');
+  const lists = { pending: document.getElementById('pendingList'), active: document.getElementById('activeList'), rejected: document.getElementById('rejectedList') };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      Object.entries(lists).forEach(([k, el]) => el.style.display = k === tab.dataset.t ? 'block' : 'none');
+    });
+  });
+
+  document.querySelectorAll('.btn-activate').forEach(btn => {
+    btn.addEventListener('click', () => {
+      alert(`→ Would set ${btn.dataset.name}'s status to Active. If they're logged in right now, their next page load unlocks full access — no re-login needed.`);
+    });
+  });
+
+  const rejectModal = document.getElementById('rejectModal');
+  const rejectTeacherName = document.getElementById('rejectTeacherName');
+  let pendingRejectName = '';
+  document.querySelectorAll('.btn-reject').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pendingRejectName = btn.dataset.name;
+      rejectTeacherName.textContent = `${pendingRejectName} will see a clear rejection message and won't be able to log in.`;
+      rejectModal.classList.add('show');
+    });
+  });
+  document.getElementById('cancelRejectBtn').addEventListener('click', () => rejectModal.classList.remove('show'));
+  document.getElementById('confirmRejectBtn').addEventListener('click', () => {
+    alert(`→ Would set ${pendingRejectName}'s status to Rejected with the given reason.`);
+    rejectModal.classList.remove('show');
+  });
+</script>
+</body>
+</html>

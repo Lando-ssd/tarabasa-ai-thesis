@@ -1,0 +1,78 @@
+TARABASA AI — UPDATED TECHNOLOGY STACK (Table 23, Revised)
+CORRECTS: Admin Actor Prompt (Curriculum Guide is system-built-in
+reference data, not an Admin-managed upload feature — remove the "add
+new entry" form from Admin's screens; Admin only ever VIEWS it, if at
+all, for reference).
+
+This revises the original Table 23 tech stack. The core stack is
+confirmed still valid — this only adds Firebase as a specific
+connective layer, for specific reasons, not as a general addition.
+
+------------------------------------------------------------
+MOBILE APPLICATION
+------------------------------------------------------------
+- Kotlin
+- Android SDK
+- Android Studio
+- Android Material Design
+- RESTful API (talks to the PHP/Laravel backend)
+- Firebase Cloud Messaging SDK (NEW — receives push notifications)
+- Firebase Storage SDK (NEW — uploads recorded reading audio)
+
+------------------------------------------------------------
+WEB DEVELOPMENT
+------------------------------------------------------------
+- HTML
+- CSS
+- JavaScript
+- PHP
+- Bootstrap
+- RESTful API
+
+------------------------------------------------------------
+SERVER
+------------------------------------------------------------
+- Cloud Hosting
+- PHP (Laravel / RESTful API)
+- Cloud SQL Database
+- SMS Gateway API (e.g., Semaphore)
+- Firebase Admin SDK (NEW — server-side, sends push notifications via
+  FCM and manages Firebase Storage files from the PHP backend)
+
+------------------------------------------------------------
+AI MODEL
+------------------------------------------------------------
+- Google Cloud Speech-to-Text API (v2, chirp_3 model)
+- Language: English (en-PH) — see the separate language correction
+  note; not Filipino, despite earlier example content in this
+  project's planning documents using Filipino sample text.
+
+------------------------------------------------------------
+CURRICULUM GUIDE (clarified, not a new tech component)
+------------------------------------------------------------
+Built into the system as seeded reference data from the start — the
+AI reads/matches against this data the same way it reads any other
+reference table. It is NOT something Admin uploads or edits through a
+UI form. If Admin needs to see it at all, that is a read-only
+reference view, not a content-management feature. This keeps Admin's
+actual responsibilities exactly where they were always meant to be:
+account verification and status toggling only.
+
+------------------------------------------------------------
+FUTURE MODEL
+------------------------------------------------------------
+- iOS Platform
+- Bisaya Voice Recognition Support
+
+------------------------------------------------------------
+WHY THIS REVISION IS FINE TO MAKE
+------------------------------------------------------------
+Revising one language, one API, or one supporting service after
+further discussion does not break the rest of the system — the core
+architecture (native mobile client + PHP/Laravel web+server + Cloud
+SQL + Google Speech-to-Text) stays exactly the same, and every
+business rule, data model, and workflow already specified across the
+other prompts in this project is completely unaffected by this
+change. Firebase here is additive infrastructure for notifications and
+audio handling specifically, not a replacement for anything already
+decided.

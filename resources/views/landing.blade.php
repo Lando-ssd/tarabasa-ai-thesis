@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaraBasa AI — Choose your role</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-50:#eef6ff; --sky-100:#dcedff;
+    --blue-500:#1c7ed6; --blue-600:#0f5fae; --blue-700:#0a3d73;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --owl-orange-400:#f5a544; --owl-orange-500:#ef8d2a; --owl-orange-600:#dd7014;
+    --clay-yellow:#ffcf6e; --parent-teal:#1f9e83;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+    --radius-lg:22px; --radius-md:16px; --radius-sm:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
+    background:
+      radial-gradient(1100px 620px at 82% -8%, var(--sky-100), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, var(--sky-100), transparent 55%),
+      var(--bg-0);
+    background-attachment:fixed;
+    display:flex; align-items:center; justify-content:center;
+    padding:32px 20px 48px;
+  }
+  .wrap{ width:100%; max-width:980px; }
+  .hero{ text-align:center; margin-bottom:38px; }
+  .logo-lockup{ display:inline-flex; align-items:center; gap:14px; margin-bottom:18px; }
+  .logo-badge{
+    width:56px; height:56px; border-radius:16px; overflow:hidden; flex-shrink:0;
+    box-shadow:0 8px 20px -6px rgba(15,95,174,0.55);
+  }
+  .logo-badge img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .wordmark{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:34px; letter-spacing:.2px; color:var(--navy-900); line-height:1; }
+  .wordmark span{ color:var(--owl-orange-500); }
+  .tagline{ font-size:16px; color:var(--slate-600); font-weight:500; margin:0; }
+  .tagline .divider{ display:inline-block; width:5px;height:5px;border-radius:50%; background:var(--slate-400); margin:0 10px; vertical-align:middle; }
+  .stage{ display:grid; grid-template-columns:minmax(260px,0.86fr) 1fr; gap:22px; align-items:stretch; }
+  @media (max-width:760px){ .stage{ grid-template-columns:1fr; } }
+  .learner-tile{
+    position:relative; border-radius:28px; padding:30px 26px 28px;
+    display:flex; flex-direction:column; justify-content:flex-end; min-height:340px;
+    background:linear-gradient(160deg, var(--clay-yellow) 0%, var(--owl-orange-500) 62%, var(--owl-orange-600) 100%);
+    box-shadow:0 26px 40px -18px rgba(221,112,20,0.55), inset 0 2px 0 rgba(255,255,255,0.35);
+    cursor:pointer; overflow:hidden; border:none; text-align:left;
+    transition:transform .28s cubic-bezier(.34,1.56,.64,1), box-shadow .28s ease;
+    font-family:inherit; text-decoration:none; color:inherit;
+  }
+  .learner-tile:hover{ transform:translateY(-6px) scale(1.015); }
+  .clay-blob{ position:absolute; border-radius:50%; background:rgba(255,255,255,0.16); }
+  .clay-blob.b1{ width:170px;height:170px; top:-60px; right:-50px; }
+  .clay-blob.b2{ width:110px;height:110px; bottom:20px; right:-30px; background:rgba(255,255,255,0.1); }
+  .clay-icon{
+    width:64px;height:64px;border-radius:20px; background:rgba(255,255,255,0.92);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 18px -8px rgba(90,45,0,0.45); margin-bottom:16px; position:relative; z-index:1;
+  }
+  .learner-tile h3{ font-family:'Baloo 2',sans-serif; font-size:26px; margin:0 0 6px; color:#4a2600; position:relative; z-index:1; }
+  .learner-tile p{ margin:0 0 20px; font-size:14.5px; font-weight:600; color:#6b3900; opacity:.85; position:relative; z-index:1; max-width:220px; }
+  .clay-cta{ display:inline-flex; align-items:center; gap:8px; background:#4a2600; color:#fff8ec; font-weight:700; font-size:14px; padding:11px 20px; border-radius:999px; width:fit-content; position:relative; z-index:1; }
+  .role-list{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); overflow:hidden; display:flex; flex-direction:column; }
+  .role-list-head{ padding:18px 22px 4px; }
+  .role-list-head .eyebrow{ font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--slate-400); }
+  .role-row{
+    display:flex; align-items:center; gap:14px; padding:16px 22px; border-top:1px solid var(--line);
+    background:transparent; width:100%; text-align:left; cursor:pointer; font-family:inherit;
+    transition:background-color .18s ease, padding-left .18s ease; text-decoration:none; color:inherit;
+  }
+  .role-row:hover{ background:var(--sky-50); padding-left:26px; }
+  .role-row:last-child{ border-radius:0 0 var(--radius-lg) var(--radius-lg); }
+  .role-icon{ width:42px;height:42px;border-radius:12px; display:flex;align-items:center;justify-content:center;flex-shrink:0; color:#fff; }
+  .role-icon.admin{ background:linear-gradient(150deg,#4a5b6b,var(--navy-900)); }
+  .role-icon.teacher{ background:linear-gradient(150deg,var(--blue-500),var(--blue-700)); }
+  .role-icon.parent{ background:linear-gradient(150deg,#28b895,var(--parent-teal)); }
+  .role-copy{ flex:1; min-width:0; }
+  .role-copy h4{ margin:0 0 2px; font-size:15px; font-weight:700; color:var(--navy-900); }
+  .role-copy p{ margin:0; font-size:13px; color:var(--slate-600); font-weight:500; }
+  .role-arrow{ color:var(--slate-400); flex-shrink:0; transition:transform .18s ease, color .18s ease; }
+  .role-row:hover .role-arrow{ transform:translateX(3px); color:var(--blue-600); }
+  .footnote{ text-align:center; margin-top:26px; font-size:12.5px; color:var(--slate-400); font-weight:500; }
+  .footnote a{ color:var(--blue-600); text-decoration:none; font-weight:700; }
+  .footnote a:hover{ text-decoration:underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="logo-lockup">
+      <div class="logo-badge"><img src="{{ asset('images/logo.png') }}" alt="TaraBasa AI logo"></div>
+      <div class="wordmark">TaraBasa<span>AI</span></div>
+    </div>
+    <p class="tagline">Adaptive Reading Intervention<span class="divider"></span>Filipino Grade&nbsp;1–3 Learners</p>
+  </div>
+
+  <div class="stage">
+    <!-- Learner PIN login isn't built yet (later slice) — links to a clear placeholder, not a dead 404. -->
+    <a class="learner-tile" href="{{ route('learner.login.placeholder') }}">
+      <div class="clay-blob b1"></div>
+      <div class="clay-blob b2"></div>
+      <div class="clay-icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="6" width="18" height="13" rx="4" fill="#ef8d2a"/>
+          <circle cx="8.5" cy="12.5" r="1.6" fill="white"/>
+          <circle cx="15.5" cy="12.5" r="1.6" fill="white"/>
+          <rect x="9.5" y="3" width="2" height="4" rx="1" fill="#ef8d2a"/>
+          <rect x="12.5" y="3" width="2" height="4" rx="1" fill="#ef8d2a"/>
+        </svg>
+      </div>
+      <h3>I'm a Learner</h3>
+      <p>Read, play &amp; earn badges!</p>
+      <span class="clay-cta">
+        Enter my PIN
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fff8ec" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+    </a>
+
+    <div class="role-list">
+      <div class="role-list-head"><span class="eyebrow">Sign in as</span></div>
+
+      <a class="role-row" href="{{ route('login', ['role' => 'teacher']) }}">
+        <span class="role-icon teacher">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3L2 8l10 5 8-4.2V15h1V8L12 3z" fill="currentColor"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5l-6 3.2-6-3.2z" fill="currentColor" opacity="0.85"/></svg>
+        </span>
+        <span class="role-copy"><h4>Teacher</h4><p>Create activities &amp; track class progress</p></span>
+        <svg class="role-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+
+      <a class="role-row" href="{{ route('login', ['role' => 'parent']) }}">
+        <span class="role-icon parent">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" fill="currentColor"/><circle cx="17" cy="9" r="2.4" fill="currentColor" opacity="0.85"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="currentColor"/><path d="M14 20c.3-2.4 1.8-4.3 3.8-5.1 2 .9 3.2 2.8 3.2 5.1" fill="currentColor" opacity="0.85"/></svg>
+        </span>
+        <span class="role-copy"><h4>Parent</h4><p>Monitor your child's reading progress</p></span>
+        <svg class="role-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+
+      <a class="role-row" href="{{ route('login', ['role' => 'admin']) }}">
+        <span class="role-icon admin">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5l7-3z" fill="currentColor"/></svg>
+        </span>
+        <span class="role-copy"><h4>Admin</h4><p>Manage teacher accounts &amp; approvals</p></span>
+        <svg class="role-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <p class="footnote">New teacher at your school? <a href="{{ route('register.teacher') }}">Request an account</a></p>
+</div>
+</body>
+</html>
