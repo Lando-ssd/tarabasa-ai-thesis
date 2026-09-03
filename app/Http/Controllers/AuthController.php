@@ -38,6 +38,7 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
+            'middle_initial' => ['nullable', 'string', 'max:5'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -49,6 +50,7 @@ class AuthController extends Controller
         $user = DB::transaction(function () use ($validated) {
             $user = User::create([
                 'first_name' => $validated['first_name'],
+                'middle_initial' => $validated['middle_initial'] ?? null,
                 'last_name' => $validated['last_name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
@@ -84,29 +86,31 @@ class AuthController extends Controller
     }
 
     /**
-     * Parent registration — manuscript Figure 11.
+     * Parent registration.
+     *
+     * NOTE: the manuscript's Parent screen (Figure 11) specifies a single
+     * "full name" field, and this endpoint used to split it into
+     * first/last name server-side to match. Per explicit instruction this
+     * now uses separate First/Middle/Last inputs instead, matching the
+     * Teacher registration pattern — a deliberate deviation from Figure 11,
+     * not an oversight.
      * Same non-blocking verification approach as Teacher, for consistency.
      */
     public function storeParent(Request $request)
     {
         $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_initial' => ['nullable', 'string', 'max:5'],
+            'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        // Your schema stores first_name/last_name separately, but the
-        // manuscript's Parent screen (Figure 11) asks for one "full name"
-        // field. We split it here so the form matches the manuscript
-        // exactly while the database still matches the Data Dictionary.
-        $nameParts = explode(' ', trim($validated['full_name']), 2);
-        $firstName = $nameParts[0];
-        $lastName = $nameParts[1] ?? '';
-
-        $user = DB::transaction(function () use ($validated, $firstName, $lastName) {
+        $user = DB::transaction(function () use ($validated) {
             $user = User::create([
-                'first_name' => $firstName,
-                'last_name' => $lastName,
+                'first_name' => $validated['first_name'],
+                'middle_initial' => $validated['middle_initial'] ?? null,
+                'last_name' => $validated['last_name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'user_type' => 'Parent',
@@ -161,6 +165,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'role' => ['nullable', 'string', Rule::in(['teacher', 'parent', 'admin'])],
         ]);
 
         // Rate limiting: 5 attempts per email+IP, then a 60-second cooldown.
@@ -182,6 +187,22 @@ class AuthController extends Controller
 
             throw ValidationException::withMessages([
                 'email' => 'Invalid email or password.',
+            ]);
+        }
+
+        // The role picked on the login form (Teacher/Parent/Admin login
+        // links, or the general "Log in" link with no role at all) must
+        // match the account's real user_type. Correct credentials on the
+        // wrong role's form are rejected with a specific message rather
+        // than silently logging the person in under their real role.
+        $roleMap = ['teacher' => 'Teacher', 'parent' => 'Parent', 'admin' => 'Admin'];
+        $submittedRole = $credentials['role'] ?? null;
+
+        if ($submittedRole && ($roleMap[$submittedRole] ?? null) !== $user->user_type) {
+            RateLimiter::hit($throttleKey, 60);
+
+            throw ValidationException::withMessages([
+                'email' => "This account is registered as a {$user->user_type}. Please use the {$user->user_type} login instead.",
             ]);
         }
 
@@ -209,10 +230,11 @@ class AuthController extends Controller
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
-        // Real dashboards don't exist yet (later slices) — route to a
-        // simple placeholder that at least proves login worked correctly
-        // and shows the right role, rather than a dead end.
-        return redirect()->route('dashboard.placeholder');
+        return match ($user->user_type) {
+            'Admin' => redirect()->route('admin.dashboard'),
+            'Teacher' => redirect()->route('teacher.dashboard'),
+            'Parent' => redirect()->route('parent.dashboard'),
+        };
     }
 
     public function logout(Request $request)
@@ -222,18 +244,5 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
-    }
-
-    /**
-     * Temporary stand-in for the real Teacher/Parent/Admin dashboards,
-     * which are separate, later slices. This just proves login worked
-     * and shows which role/account actually logged in.
-     */
-    public function dashboardPlaceholder(Request $request)
-    {
-        $user = $request->user();
-
-        return "Logged in as {$user->first_name} {$user->last_name} ({$user->user_type}). "
-            ."Real {$user->user_type} dashboard coming in a later slice.";
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Learner;
 use App\Models\User;
 
 return [
@@ -42,6 +43,17 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // A Learner is a completely separate model from User — no password,
+        // no email, never registers. Laravel keys each session guard's login
+        // state under its own session entry, so a Learner can be logged in
+        // on the 'learner' guard at the same time a Parent is logged in on
+        // 'web' on the same browser/device, and logging one out doesn't
+        // touch the other (Learner Actor Prompt Step 8).
+        'learner' => [
+            'driver' => 'session',
+            'provider' => 'learners',
+        ],
     ],
 
     /*
@@ -65,6 +77,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'learners' => [
+            'driver' => 'eloquent',
+            'model' => Learner::class,
         ],
 
         // 'users' => [

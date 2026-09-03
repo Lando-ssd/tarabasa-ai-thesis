@@ -18,12 +18,18 @@
   <form method="POST" action="{{ route('register.teacher.submit') }}" id="regForm">
     @csrf
 
-    <div class="name-row">
+    <div class="name-row three">
       <div class="field">
         <label for="first_name">First Name</label>
         <input type="text" name="first_name" id="first_name" placeholder="Juana"
                value="{{ old('first_name') }}" class="@error('first_name') error @enderror" required>
         @error('first_name') <span class="field-error">{{ $message }}</span> @enderror
+      </div>
+      <div class="field">
+        <label for="middle_initial">M.I. <span class="opt">optional</span></label>
+        <input type="text" name="middle_initial" id="middle_initial" placeholder="S." maxlength="5"
+               value="{{ old('middle_initial') }}" class="@error('middle_initial') error @enderror">
+        @error('middle_initial') <span class="field-error">{{ $message }}</span> @enderror
       </div>
       <div class="field">
         <label for="last_name">Last Name</label>
