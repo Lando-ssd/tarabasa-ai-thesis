@@ -35,4 +35,21 @@ return [
         ],
     ],
 
+    // Teammate's deployed gemini_activity_gen service (Module 2 — Activity
+    // Generation). Env var names match the ones the service's own README
+    // recommends for a PHP/Laravel consumer.
+    'activity_ai' => [
+        'url' => env('ACTIVITY_AI_URL'),
+        'key' => env('ACTIVITY_AI_KEY'),
+    ],
+
+    // Teammate's deployed Reading-api (Vosk-based). No key here on
+    // purpose — the real deployed service has no authentication of any
+    // kind (confirmed by reading its main.py directly), unlike
+    // activity_ai's X-App-Key. The user is handling this gap with the
+    // teammate outside of this codebase.
+    'reading_ai' => [
+        'url' => env('READING_AI_URL'),
+    ],
+
 ];

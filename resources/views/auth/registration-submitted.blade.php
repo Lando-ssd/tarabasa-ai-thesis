@@ -15,7 +15,7 @@
   </div>
 
   @if ($role === 'teacher')
-    <div class="verify-note" style="background:#fff8ec;">
+    <div class="verify-note amber">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       <span>Your school details are being reviewed by an Admin. Until then, you can try AI activity generation with 2 free credits — real class rosters unlock once you're verified.</span>
     </div>

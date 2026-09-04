@@ -20,6 +20,9 @@
 /public/storage
 /storage/*.key
 /storage/pail
+# Uploaded Learner avatar photos — real photos of children must never land
+# in this public repo, even accidentally via a broad `git add`.
+/storage/app/public/avatars
 /vendor
 _ide_helper.php
 Homestead.json

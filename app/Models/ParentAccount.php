@@ -23,4 +23,10 @@ class ParentAccount extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function learners(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Learner::class, 'parent_learners', 'parent_id', 'learner_id')
+            ->withPivot(['relationship', 'is_creator', 'linked_at']);
+    }
 }

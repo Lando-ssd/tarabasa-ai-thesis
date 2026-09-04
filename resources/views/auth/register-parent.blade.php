@@ -18,11 +18,25 @@
   <form method="POST" action="{{ route('register.parent.submit') }}" id="regForm">
     @csrf
 
-    <div class="field">
-      <label for="full_name">Your full name</label>
-      <input type="text" name="full_name" id="full_name" placeholder="e.g. Maria Cruz"
-             value="{{ old('full_name') }}" class="@error('full_name') error @enderror" required>
-      @error('full_name') <span class="field-error">{{ $message }}</span> @enderror
+    <div class="name-row three">
+      <div class="field">
+        <label for="first_name">First Name</label>
+        <input type="text" name="first_name" id="first_name" placeholder="Maria"
+               value="{{ old('first_name') }}" class="@error('first_name') error @enderror" required>
+        @error('first_name') <span class="field-error">{{ $message }}</span> @enderror
+      </div>
+      <div class="field">
+        <label for="middle_initial">M.I. <span class="opt">optional</span></label>
+        <input type="text" name="middle_initial" id="middle_initial" placeholder="D." maxlength="5"
+               value="{{ old('middle_initial') }}" class="@error('middle_initial') error @enderror">
+        @error('middle_initial') <span class="field-error">{{ $message }}</span> @enderror
+      </div>
+      <div class="field">
+        <label for="last_name">Last Name</label>
+        <input type="text" name="last_name" id="last_name" placeholder="Cruz"
+               value="{{ old('last_name') }}" class="@error('last_name') error @enderror" required>
+        @error('last_name') <span class="field-error">{{ $message }}</span> @enderror
+      </div>
     </div>
 
     <div class="field">

@@ -34,6 +34,12 @@ for specific features (school year handling, activity content rules,
 learner history, repository ratings, diagnostic corrections, etc.).
 They take precedence over the base manuscript wherever they overlap.
 
+Note: `TaraBasaAI_Master_Plan_Consolidated.txt` was originally filed
+here by mistake — it describes an abandoned Firebase/Firestore
+architecture that directly conflicts with the confirmed Laravel +
+MySQL/SQLite stack, so it was never actually a valid patch. It has
+been moved to `STALE-DO-NOT-USE/` below.
+
 ## database-reference/ — CURRENT, matches the Data Dictionary
 
 `schema.sql` is the full 20-table relational design. The actual Laravel
@@ -67,3 +73,7 @@ earlier working implementation of the same actor-prompt rules.
 Firebase-based drafts from before the architecture was finalized as
 Laravel + MySQL/Cloud SQL. Do not build toward anything in this folder.
 It's kept only so nobody accidentally resurrects it by mistake.
+Includes `TaraBasaAI_Master_Plan_Consolidated.txt` (moved here from
+`patches-and-additions/` — see the note there), which describes a
+Firebase Auth + Cloud Firestore + Cloud Functions architecture that was
+considered and abandoned before this project settled on Laravel.
