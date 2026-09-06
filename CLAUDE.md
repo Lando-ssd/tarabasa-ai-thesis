@@ -1432,6 +1432,113 @@ Don't rebuild activity-generation, adaptive-recommendation, or
 reading-assessment/scoring logic from scratch in PHP — wire up HTTP
 integrations to these three services instead.
 
+## Deployment (Railway) and a real production bug found + fixed
+
+The app is deployed on Railway (`grateful-love` project), not Render —
+switched after initial Render setup because the user already had a
+Railway account with trial credit and didn't want to add a card
+anywhere. Both the MySQL database and the web app service live in the
+same Railway project so they can be managed together. `railway.json`
+(Dockerfile builder, explicit so Railway's Nixpacks auto-detection
+doesn't get picked instead just because `composer.json` exists) and
+`Dockerfile`/`docker/entrypoint.sh` are the real deployment config —
+`render.yaml` was deleted once Render was ruled out, to avoid a future
+session following stale platform instructions.
+
+**A real Dockerfile bug found and fixed on the very first deploy
+attempt:** the build failed at `composer install` —
+`composer.lock` (generated locally on this machine's real PHP 8.5.9)
+had resolved several Symfony packages (`symfony/uid`,
+`symfony/var-dumper`, `symfony/http-foundation`) that require PHP
+`>=8.4.1`, but the Dockerfile was built on `php:8.3-cli`.
+`composer.json`'s `"php": "^8.3"` constraint was too loose to catch
+this mismatch itself. Fixed by bumping the Dockerfile to `php:8.4-cli`
+and correcting `composer.json`'s constraint to `^8.4` to match what's
+actually locked (a documentation-accuracy fix, not a functional one —
+`composer install` doesn't re-resolve versions).
+
+**A real, more serious bug found during a full live production test
+pass, after the app was successfully deployed and reachable:**
+Generate Activity (Teacher) and the Learner's reading/diagnostic
+submission (both real, slow, external API calls — Gemini and
+Reading-api/Vosk respectively) reproducibly failed in production with
+no error message at all — the user was just silently logged out
+mid-request, no credit consumed, no `Activity`/`ReadingSession` row
+created. A short, fast Gemini call (diagnostic passage generation)
+succeeded, which was the key clue.
+
+**Root cause: `php artisan serve` (what the Dockerfile ran) is
+single-threaded — it can only handle one request at a time.** Railway
+was also configured (`railway.json`) to health-check `/up`. While the
+single worker was blocked on a slow real external API call, it
+couldn't also answer that health check; enough missed checks in a row
+very likely caused Railway to restart the container mid-request,
+killing the in-flight request and wiping the file-based session (the
+container restart theory was not independently confirmed against
+Railway's own crash logs — this diagnosis is inferred from the
+symptom pattern: instant "not configured" failures look completely
+different from these several-seconds-then-silently-logged-out
+failures, and only the genuinely slow requests ever failed this way).
+
+**Real, disclosed consequence while this bug was live:** any newly
+created Learner was permanently stuck at the first-login diagnostic
+screen, since it could never complete — this affects the two features
+most central to the thesis (AI activity generation and reading
+assessment), not a peripheral one.
+
+**Fix:** PHP's built-in server has a genuine multi-worker mode via the
+`PHP_CLI_SERVER_WORKERS` environment variable (a real PHP 7.4+
+feature — note this project's own `.env.example` already had this
+variable commented out, unused, from the original Laravel scaffold).
+Set to 4 directly inside `docker/entrypoint.sh` (`export
+PHP_CLI_SERVER_WORKERS=4` before the `exec php artisan serve` line)
+rather than as a Railway dashboard variable — deliberately, since a
+dashboard-only variable already proved easy to lose by accident once
+during this same deployment (see below). This lets the health check
+and a slow AI request run concurrently on separate workers instead of
+blocking each other. **Not yet re-verified live against the real
+Gemini/Reading-api calls after this fix** — the fix is deployed but a
+fresh Generate Activity / real reading submission test against
+production hasn't been re-run since.
+
+**A separate, real "vanishing config" incident, resolved but worth
+recording:** partway through team testing, `ACTIVITY_AI_URL`/
+`ACTIVITY_AI_KEY`/`READING_AI_URL` appeared to stop working in
+production (the app showed its own honest "isn't configured yet"
+messages, which only fire when these are genuinely empty at runtime).
+Investigated by having the user screenshot Railway's real Variables
+tab directly: all three were actually present and correctly valued,
+alongside `APP_KEY`/`DB_*`. The Deployments tab showed the active
+deployment running for a full day with no pending-changes banner,
+meaning nothing was sitting unapplied. Conclusion: the team's
+screenshots were almost certainly taken before these variables were
+originally added, not a fresh regression — not chased further than
+that once the live dashboard state was confirmed correct.
+
+**A real security-conscious catch made during the deployment
+walkthrough itself, worth remembering for future GitHub App
+installations:** when installing Railway's GitHub App, the default
+selection was "All repositories" (current AND future repos, org-wide)
+— caught before confirming and switched to "Only select repositories"
+scoped to just this one repo.
+
+**Genuinely tested live in production, not just claimed:** a full,
+systematic pass through every area of the app (homepage, both
+registration flows, all three login roles + the role-mismatch check,
+Admin approve/reject/deactivate — deactivation confirmed to actually
+block login with the right message, not just cosmetic — Teacher
+Dashboard/Class Management/My Activities/Analytics/Promotions/Profile,
+Parent Dashboard/My Children (a real child created via the full 5-step
+wizard)/Progress/Repository/Profile, Learner PIN login, and both
+Notifications views) using clearly-named test accounts
+(`zztest.*@example.com`, `TEST`/`TESTCHILD`/`TESTREJECT` prefixes) —
+everything passed except the one bug above. Confirmed via direct
+production-database inspection (temporarily pointing this worktree's
+own `.env` at the real Railway MySQL, always reverted to SQLite
+afterward) that both failed attempts left zero partial data — no
+stray consumed credits, no orphaned rows — not just that the page
+looked like it failed.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
