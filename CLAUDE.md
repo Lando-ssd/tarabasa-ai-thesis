@@ -1663,7 +1663,39 @@ browser** — that requires a real device and remains something only
 the user/team can verify, same category of limitation as every other
 mic-dependent feature in this project.
 
-## Deployment (Railway) and a real production bug found + fixed
+**A real deployment-chain gap caught by the user, not by me — flagged
+here so it isn't repeated.** After reporting the pacing fix as "done,"
+it turned out the whole Phase 6 fix had only ever existed locally —
+never committed or pushed — so the live production site the user
+actually tested was still running the old flat-interval code, not what
+was described. The user explicitly asked for direct proof of the full
+chain (committed → pushed → merged → deployed → active) before
+re-testing, which surfaced this. Confirmed via Railway's own Settings/
+Deployments tabs (screenshotted by the user) that Railway deploys from
+`claude/admin-dashboard-approvals-62dcd0` directly, not `main` — `main`
+was also found to be 6 commits behind (still PHP 8.3, still had
+`render.yaml`, no `railway.json`) and was merged up to date as part of
+resolving this. **Standing lesson: after any fix described as "tested,"
+directly confirm the commit is pushed AND merged AND actually the
+active Railway deployment before trusting a live re-test — don't
+assume a local pass means production has it.**
+
+**Get-ready delay, added after direct user feedback on the live site.**
+The user reported the live-tracking highlight seemed to start moving
+before they'd even begun reading aloud. Investigated first — found no
+bug (exactly one correctly-gated `tarabasa:recording-started` dispatch,
+firing only after real mic capture begins) — so this is a real, disclosed
+design limitation: the loop starts the instant the mic starts
+*listening*, not the instant the child starts *talking*, since there's
+no way to detect "has speech begun" without real transcription (already
+rejected above for privacy). Mitigated with a simple 1-second pause
+(`GET_READY_DELAY_MS`) before the live loop actually starts moving,
+cancelled cleanly if recording stops during that pause. **Tested for
+real on live production**, not just locally: instrumented the same
+`localStorage`-timeline technique used throughout this pass, confirmed
+the highlight index stays blank (`-1`) immediately after
+`recording-started` fires, only beginning to advance after the pause —
+confirmed present, not instant, on the real deployed page.
 
 The app is deployed on Railway (`grateful-love` project), not Render —
 switched after initial Render setup because the user already had a
@@ -1727,10 +1759,36 @@ rather than as a Railway dashboard variable — deliberately, since a
 dashboard-only variable already proved easy to lose by accident once
 during this same deployment (see below). This lets the health check
 and a slow AI request run concurrently on separate workers instead of
-blocking each other. **Not yet re-verified live against the real
-Gemini/Reading-api calls after this fix** — the fix is deployed but a
-fresh Generate Activity / real reading submission test against
-production hasn't been re-run since.
+blocking each other.
+
+**Re-verified live against both real slow external calls, for real,
+on 2026-09-07 — no longer an open caveat.** Prompted by the user
+explicitly asking for direct confirmation rather than assuming the fix
+held, since this was the most severe finding from the original test
+pass. Two dedicated real tests against live production, both starting
+from fresh disposable test accounts (`zztest.genactivity@example.com`,
+`zztest.pacingcheck@example.com` / Learner "ZZKid") created through the
+app's own real registration/wizard flows — no DB access needed:
+- **Generate Activity (Teacher):** submitted a real Generate Activity
+  request (Grade 1, Foundational Reading, Word Reading, 3 variants ×
+  3 tiers) — a genuine, slow real Gemini call, the exact scenario that
+  used to silently kill the session. Result: landed correctly on My
+  Activities with all 9 real generated drafts, `free_generation_
+  credits_remaining` cleanly decremented 2 → 1 (exactly once, no
+  double-charge, no orphaned partial state), teacher session fully
+  intact throughout (never bounced to `/login`).
+- **Diagnostic submission (Learner):** submitted a real recorded clip
+  (genuinely captured via `MediaRecorder` from a synthetic Web Audio
+  tone, not a pre-made file) through the live diagnostic passage
+  endpoint — another genuine slow real external call (Reading-api).
+  Result: landed correctly on the "Didn't quite catch that" retry
+  screen (the tone isn't recognizable speech, which is expected and
+  irrelevant to what's being tested) — the Learner session survived
+  the full real round trip and rendered a proper page, not a silent
+  logout.
+
+Both are the exact two request types that used to fail silently before
+this fix. Both now complete cleanly on live production.
 
 **A separate, real "vanishing config" incident, resolved but worth
 recording:** partway through team testing, `ACTIVITY_AI_URL`/
