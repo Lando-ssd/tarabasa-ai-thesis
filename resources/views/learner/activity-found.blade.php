@@ -158,6 +158,11 @@
     const liveDurations = weights.map(w => Math.max(w * LIVE_MS_PER_CHAR, LIVE_MIN_MS));
 
     let seqTimer = null;
+    let startDelayTimer = null;
+    // A brief pause before the live loop starts moving, so a child who
+    // taps the mic and needs a beat before actually reading doesn't see
+    // the highlight already racing ahead of them the instant they tap.
+    const GET_READY_DELAY_MS = 1000;
 
     function clearHighlight() {
       words.forEach(w => w.classList.remove('tracking'));
@@ -182,10 +187,18 @@
     }
 
     function startTracking() {
-      runSequence(liveDurations, true);
+      clearTimeout(startDelayTimer);
+      startDelayTimer = setTimeout(() => {
+        runSequence(liveDurations, true);
+      }, GET_READY_DELAY_MS);
     }
 
     function stopTracking(event) {
+      // If recording stopped during the get-ready pause (a very fast
+      // stop), cancel it — the loop never actually started, and the
+      // replay logic below still runs correctly regardless.
+      clearTimeout(startDelayTimer);
+
       const realSeconds = event?.detail?.durationSeconds;
 
       if (typeof realSeconds === 'number' && realSeconds > 0) {
