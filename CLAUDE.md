@@ -1432,6 +1432,344 @@ Don't rebuild activity-generation, adaptive-recommendation, or
 reading-assessment/scoring logic from scratch in PHP — wire up HTTP
 integrations to these three services instead.
 
+## Enhanced reading UI — real color-coded word breakdown + live tracking
+
+Built from a design-reference HTML prototype the user provided directly
+(not a `/docs/design-reference-html/` file), per the standing
+reference+enhance policy. Two real, separate pieces:
+
+**Live word-tracking during recording** (`activity-found.blade.php` and
+`diagnostic-passage.blade.php`, both now wrap `passage_text` into
+per-word `<span class="lw">` elements): a paced, looping highlight that
+walks through the passage while the mic is recording. **This is
+explicitly NOT real live transcription** — Reading-api only scores a
+recording after the full file is POSTed to `/analyze`, there is no
+real-time per-word signal available at all, and the code/comments say
+so directly. It loops continuously (never stops and sits idle while
+still recording, since real reading pace varies a lot per child and
+there's nothing real to sync against) and clears cleanly the instant
+recording stops. Driven by two new custom events dispatched from the
+shared `_recording-widget.blade.php` partial —
+`tarabasa:recording-started` / `tarabasa:recording-stopped` — so the
+neutral shared partial doesn't need to know or care whether a given
+including page wants this animation.
+
+**Real color-coded word breakdown after reading** (`reading-results.
+blade.php` only — see the diagnostic decision below) — built from
+Reading-api's real `word_feedback` array (`{reference, spoken,
+status}`, status ∈ `correct|substitution|deletion|insertion`), which
+was already being computed and returned on every scored reading but
+previously only used to pluck up to 2 struggling words for
+`PersonalWordBank`, then thrown away entirely. A new migration adds a
+`word_feedback` JSON column to `reading_sessions` so this data is kept
+instead of discarded (both `LearnerReadingController` and
+`LearnerDiagnosticController` now persist it).
+
+**Three real decisions made while building this, since the source
+prototype's categories didn't all map onto real data:**
+- **Dropped "Mispronounced" and "Repeated" as categories, did not
+  attempt a derived version.** Confirmed directly from Reading-api's
+  real `main.py`: `word_feedback` entries carry no confidence score at
+  all — confidence only exists on a completely separate
+  `word_timestamps` array with no key linking it back to a specific
+  `word_feedback` entry. A positional-alignment heuristic (zipping
+  non-deletion `word_feedback` entries against `word_timestamps` in
+  order, since both are ultimately derived from the same spoken
+  sequence) is theoretically possible but wasn't built — an arbitrary
+  confidence threshold for "possibly mispronounced" is exactly the
+  kind of fabricated-signal risk this project avoids elsewhere (same
+  principle as leaving `mispronunciation_count`/`repetition_count`
+  NULL). Only 3 real categories are shown: Correct (no highlight),
+  Skipped (`deletion`), Said a different word (`substitution`, with a
+  tooltip showing the real `spoken` value — e.g. "Heard 'frog'").
+- **Insertions get a separate note below the passage, not an inline
+  highlight.** An insertion (a word the child said that isn't in the
+  passage at all) has no reference-text position to attach a highlight
+  to, so forcing it inline isn't possible without fabricating a
+  location for it. Shown instead as "You also said: '{word}' — that's
+  not in this passage, but great effort reading out loud!", only when
+  at least one real insertion exists.
+- **The diagnostic keeps the live-tracking animation but never gets the
+  breakdown.** `LearnerDiagnosticController` now persists
+  `word_feedback` too (for consistency/future use, e.g. a possible
+  future Teacher/Parent detail view) but deliberately never passes it
+  to `diagnostic-results.blade.php`. A word-by-word right/wrong list is
+  a real, fairly precise performance signal even without a percentage
+  number attached — showing it would work against the diagnostic's
+  already-established "no visible score or pass/fail framing, ever"
+  rule (Part 4.2), which this project has held to consistently since
+  Sprint 4.
+
+**Tested for real, end to end, not just reviewed** — genuine TTS-
+generated audio (this project's established technique) submitted
+through the real `LearnerReadingController`/`LearnerDiagnosticController`
+endpoints against a real Learner (Miguel):
+- A real substitution: said "frog" in place of "dog" — the results
+  screen correctly showed "dog" highlighted with a real "Heard 'frog'"
+  tooltip on hover (confirmed both in the DOM and visually via
+  screenshot), and the database's stored `word_feedback` JSON matched
+  exactly.
+- A real deletion: dropped "hen" from the reading entirely — correctly
+  shown struck through, no tooltip (nothing was "heard" for a skipped
+  word).
+- A genuinely surprising real ASR result, not anything scripted: Vosk
+  misheard "cow" as "out" — the tooltip correctly showed the real
+  "Heard 'out'" value, proof this is live ASR output flowing through,
+  not a canned example.
+- A real insertion: said "banana" after the passage ended (Vosk heard
+  it as "hand") — correctly appeared only in the separate "You also
+  said" note, not forced into the per-word passage list.
+- The live-tracking animation itself: dispatched the real custom
+  events directly and confirmed via the DOM that the highlight
+  advances roughly on pace and clears completely on stop — a real
+  microphone recording still can't be exercised in this sandboxed
+  browser (the same standing environment limit noted throughout this
+  project), but the event-driven mechanism itself was proven, and a
+  real recording fires the identical two events through the unmodified
+  `_recording-widget.blade.php` regardless.
+- A full real diagnostic run (fresh Learner, genuine TTS reading of a
+  real Gemini-generated passage) confirmed the word-span/live-tracking
+  markup renders correctly on `diagnostic-passage.blade.php`, and — the
+  specific thing this decision needed proving — confirmed
+  `diagnostic-results.blade.php` shows zero word-level detail, zero raw
+  score, exactly the same friendly level-pill as before this whole
+  feature was built.
+
+## Live word-tracking follow-up: Web Speech API rejected, a real pacing
+## bug fixed, and on-device mic/silence detection added
+
+**Web Speech API (real live voice-based word tracking) — investigated,
+found technically feasible, deliberately rejected.** The user asked
+whether the decorative word-tracking animation could instead be driven
+by the child's actual live voice, using the browser's built-in
+`SpeechRecognition`/`webkitSpeechRecognition` API running alongside the
+existing `MediaRecorder` capture (which would keep working completely
+unchanged — same file, same Reading-api scoring). Investigated for
+real before writing any code, per this project's own "scope first"
+policy: technically workable (Chrome/Edge support it, a simple
+advance-only word-matching pointer against live partial transcripts
+is a reasonable design, and it's fully isolable from real scoring by
+keeping the live transcript in its own closure with no path into the
+form submission). **Rejected anyway, explicitly, not casually
+revisitable:** Chrome's implementation streams the raw microphone
+audio to Google's own servers to produce the transcript — a second,
+real third-party destination for a child's live voice, on top of the
+one (Reading-api) already reviewed and genuinely necessary for the
+platform's core scoring function. For a purely cosmetic, decorative
+feature (a nicer highlight animation, nothing about correctness or
+scoring), that privacy cost isn't justified — unlike Reading-api,
+which is a required destination because it IS the actual assessment.
+This is a considered decision, recorded here so it isn't casually
+tried again without re-litigating the actual tradeoff. (Also confirmed
+while investigating: all real stored passage content — diagnostic and
+regular Teacher-generated alike — is genuinely English-only, checked
+directly against real database rows, not assumed from one example.)
+
+**A real bug found and fixed in the existing decorative animation
+instead.** The user reported that, in real production use, the
+word-tracking highlight "jumps straight to the end of the sentence"
+instead of pacing naturally — meaning the earlier word-length-
+weighting + real-duration-rescaling fix wasn't actually working as
+intended in practice, despite the underlying arithmetic having been
+verified correct at the time (durations summing exactly to requested
+totals). **Root cause, found by testing the full real flow this time —
+not just the event-dispatch math in isolation:** the original fix
+replayed the highlight ONCE (non-looping), rescaled to match the
+RECORDING's own real duration — but that replay is shown during the
+"Checking..." step, whose real length is however long the actual
+Reading-api/Vosk network round trip takes (documented elsewhere in
+this file at ~5 real seconds for ASR alone, sometimes more), which has
+NO relationship to how long the recording was. For a short recording
+(very common — many of this app's passages are just a handful of
+words), the rescaled total is small enough that the whole pass
+finishes in a near-instant blur, then the non-looping replay leaves
+nothing highlighted for the remainder of what's often a much longer
+real wait — which reads exactly like "it jumps to the end (and just
+sits there)" to someone watching it. **Fix:** added the same per-word
+minimum floor already used for the live-recording loop (`LIVE_MIN_MS`,
+so a fast reading still visibly paces instead of flashing by) and
+changed the replay from a single pass to a continuous loop at that
+same real-pace-derived cadence, so it never goes idle/blank while the
+child is still actually waiting — it just keeps gently repeating until
+the real results page replaces it.
+
+**Tested for real, end to end, including the actual page navigation —
+the specific thing the original Phase 6 testing had NOT covered.**
+Earlier testing had only verified the animation math via direct event
+dispatch, never through an actual `<form>` submission and page
+navigation together — this bug only shows up in that full real
+integration, not in the isolated math. Verified this time by injecting
+real TTS-generated audio (`cat dog pig hen cow`, and a real ~27-second
+multi-sentence passage) through the actual recording widget's real
+code path, dispatching the real stop event with the file genuinely
+attached, and instrumenting the passage's tracking script to log its
+own live state to `localStorage` every 50-100ms (survives the real
+page navigation, unlike an in-memory log) so the full timeline could
+be inspected after landing on the real results page. Confirmed: a
+simulated 1-second-real-recording case, which under the old code would
+have finished in ~1 second and then sat blank, now cycles continuously
+with zero blank frames for the entire ~17 real seconds until the page
+actually navigated; a simulated 27-second long-passage case paced
+forward through the passage smoothly with no jumps or blanks either.
+(Test data side effects — extra `ReadingSession` rows and a temporary
+`ActivityAssignment` created to get a long passage assigned for
+testing — were cleaned up afterward: Miguel's `mastery_level`/
+`points`/`streak` were restored to their prior values, the temporary
+assignment was deleted, and the temporary TTS `.wav` files removed
+from `public/`.)
+
+**New: on-device mic/no-signal detection, added to
+`_recording-widget.blade.php`.** Separately, the user asked for a
+friendly warning if the microphone isn't picking up any real sound at
+all (muted, blocked, broken) instead of silently uploading a dead
+recording and only finding out via Reading-api's own slower,
+round-trip-based "audio is silent" check. Built with the Web Audio
+API's `AnalyserNode`, tapping the SAME `MediaStream` already granted
+for recording (no new permission, no data ever leaves the browser, no
+third-party service at all — explicitly the deliberately-simple,
+zero-privacy-cost alternative to Web Speech API considered and
+rejected above). Computes a real RMS level from `getByteTimeDomainData`
+every 200ms during recording; if the mic never once exceeds a small
+noise-floor threshold (`SILENCE_RMS_THRESHOLD = 0.02`) for the whole
+recording (and the recording lasted at least 1 real second, so an
+accidental instant tap isn't misjudged), a new `stepSilent` UI shows
+("We didn't hear anything that time!... ") with a "Try Again" button
+that returns to the ready state — instead of submitting. Reading-api's
+own real silence check (the existing `422`/capped-retry flow) is
+untouched and still applies for its own domain (audio that has some
+signal but isn't recognizable speech) — this is a faster, earlier,
+purely local pre-check for the specific "nothing at all is coming
+through" case, not a replacement for it.
+
+**Tested for real, not assumed from reading the code** — genuine
+microphone permission still can't be exercised in this sandboxed
+browser tool (the same standing limitation noted throughout this
+project), but the `AnalyserNode` logic itself was exercised against
+REAL Web Audio graphs standing in for the mic stream (a legitimate
+on-device technique, not a mock of the detection code being tested):
+a `MediaStreamAudioDestinationNode` fed by a gain node at `0` (genuine
+zero-amplitude real audio data) correctly triggered the "We didn't
+hear anything" step and did NOT submit the form; the same setup with
+the gain at `0.8` (genuine nonzero real audio data, a plain 440Hz
+tone) correctly passed the client-side check and proceeded to a real
+submission — which Reading-api then correctly rejected on its own
+terms (a pure tone isn't recognizable speech), landing on the existing
+"Didn't quite catch that" retry screen exactly as designed, confirming
+the two checks stay properly separated rather than one masking the
+other. "Try Again" from the silent-mic step was confirmed to return
+cleanly to the ready state for another attempt. **Not yet tested
+against a genuinely muted/blocked real hardware microphone in a real
+browser** — that requires a real device and remains something only
+the user/team can verify, same category of limitation as every other
+mic-dependent feature in this project.
+
+## Deployment (Railway) and a real production bug found + fixed
+
+The app is deployed on Railway (`grateful-love` project), not Render —
+switched after initial Render setup because the user already had a
+Railway account with trial credit and didn't want to add a card
+anywhere. Both the MySQL database and the web app service live in the
+same Railway project so they can be managed together. `railway.json`
+(Dockerfile builder, explicit so Railway's Nixpacks auto-detection
+doesn't get picked instead just because `composer.json` exists) and
+`Dockerfile`/`docker/entrypoint.sh` are the real deployment config —
+`render.yaml` was deleted once Render was ruled out, to avoid a future
+session following stale platform instructions.
+
+**A real Dockerfile bug found and fixed on the very first deploy
+attempt:** the build failed at `composer install` —
+`composer.lock` (generated locally on this machine's real PHP 8.5.9)
+had resolved several Symfony packages (`symfony/uid`,
+`symfony/var-dumper`, `symfony/http-foundation`) that require PHP
+`>=8.4.1`, but the Dockerfile was built on `php:8.3-cli`.
+`composer.json`'s `"php": "^8.3"` constraint was too loose to catch
+this mismatch itself. Fixed by bumping the Dockerfile to `php:8.4-cli`
+and correcting `composer.json`'s constraint to `^8.4` to match what's
+actually locked (a documentation-accuracy fix, not a functional one —
+`composer install` doesn't re-resolve versions).
+
+**A real, more serious bug found during a full live production test
+pass, after the app was successfully deployed and reachable:**
+Generate Activity (Teacher) and the Learner's reading/diagnostic
+submission (both real, slow, external API calls — Gemini and
+Reading-api/Vosk respectively) reproducibly failed in production with
+no error message at all — the user was just silently logged out
+mid-request, no credit consumed, no `Activity`/`ReadingSession` row
+created. A short, fast Gemini call (diagnostic passage generation)
+succeeded, which was the key clue.
+
+**Root cause: `php artisan serve` (what the Dockerfile ran) is
+single-threaded — it can only handle one request at a time.** Railway
+was also configured (`railway.json`) to health-check `/up`. While the
+single worker was blocked on a slow real external API call, it
+couldn't also answer that health check; enough missed checks in a row
+very likely caused Railway to restart the container mid-request,
+killing the in-flight request and wiping the file-based session (the
+container restart theory was not independently confirmed against
+Railway's own crash logs — this diagnosis is inferred from the
+symptom pattern: instant "not configured" failures look completely
+different from these several-seconds-then-silently-logged-out
+failures, and only the genuinely slow requests ever failed this way).
+
+**Real, disclosed consequence while this bug was live:** any newly
+created Learner was permanently stuck at the first-login diagnostic
+screen, since it could never complete — this affects the two features
+most central to the thesis (AI activity generation and reading
+assessment), not a peripheral one.
+
+**Fix:** PHP's built-in server has a genuine multi-worker mode via the
+`PHP_CLI_SERVER_WORKERS` environment variable (a real PHP 7.4+
+feature — note this project's own `.env.example` already had this
+variable commented out, unused, from the original Laravel scaffold).
+Set to 4 directly inside `docker/entrypoint.sh` (`export
+PHP_CLI_SERVER_WORKERS=4` before the `exec php artisan serve` line)
+rather than as a Railway dashboard variable — deliberately, since a
+dashboard-only variable already proved easy to lose by accident once
+during this same deployment (see below). This lets the health check
+and a slow AI request run concurrently on separate workers instead of
+blocking each other. **Not yet re-verified live against the real
+Gemini/Reading-api calls after this fix** — the fix is deployed but a
+fresh Generate Activity / real reading submission test against
+production hasn't been re-run since.
+
+**A separate, real "vanishing config" incident, resolved but worth
+recording:** partway through team testing, `ACTIVITY_AI_URL`/
+`ACTIVITY_AI_KEY`/`READING_AI_URL` appeared to stop working in
+production (the app showed its own honest "isn't configured yet"
+messages, which only fire when these are genuinely empty at runtime).
+Investigated by having the user screenshot Railway's real Variables
+tab directly: all three were actually present and correctly valued,
+alongside `APP_KEY`/`DB_*`. The Deployments tab showed the active
+deployment running for a full day with no pending-changes banner,
+meaning nothing was sitting unapplied. Conclusion: the team's
+screenshots were almost certainly taken before these variables were
+originally added, not a fresh regression — not chased further than
+that once the live dashboard state was confirmed correct.
+
+**A real security-conscious catch made during the deployment
+walkthrough itself, worth remembering for future GitHub App
+installations:** when installing Railway's GitHub App, the default
+selection was "All repositories" (current AND future repos, org-wide)
+— caught before confirming and switched to "Only select repositories"
+scoped to just this one repo.
+
+**Genuinely tested live in production, not just claimed:** a full,
+systematic pass through every area of the app (homepage, both
+registration flows, all three login roles + the role-mismatch check,
+Admin approve/reject/deactivate — deactivation confirmed to actually
+block login with the right message, not just cosmetic — Teacher
+Dashboard/Class Management/My Activities/Analytics/Promotions/Profile,
+Parent Dashboard/My Children (a real child created via the full 5-step
+wizard)/Progress/Repository/Profile, Learner PIN login, and both
+Notifications views) using clearly-named test accounts
+(`zztest.*@example.com`, `TEST`/`TESTCHILD`/`TESTREJECT` prefixes) —
+everything passed except the one bug above. Confirmed via direct
+production-database inspection (temporarily pointing this worktree's
+own `.env` at the real Railway MySQL, always reverted to SQLite
+afterward) that both failed attempts left zero partial data — no
+stray consumed credits, no orphaned rows — not just that the page
+looked like it failed.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
