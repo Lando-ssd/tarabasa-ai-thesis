@@ -214,6 +214,12 @@ class LearnerDiagnosticController extends Controller
             'substitution_count' => $result['accuracy']['substitutions'] ?? null,
             'repetition_count' => null,
             'insertion_count' => $result['accuracy']['insertions'] ?? null,
+            // Stored for consistency/future use (e.g. a Teacher/Parent
+            // detail view) but deliberately never rendered on this
+            // diagnostic's own results screen — Part 4.2's "no visible
+            // score or pass/fail framing, ever" rule extends to a
+            // word-by-word right/wrong breakdown too, not just a number.
+            'word_feedback' => $result['accuracy']['word_feedback'] ?? null,
             'level_before' => $state['level_before'],
             'level_after' => self::TIER_TO_MASTERY[$tier],
             'flagged_needs_attention' => $accuracy < 70,

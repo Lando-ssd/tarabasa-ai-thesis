@@ -15,6 +15,15 @@
   .note-banner.amber, .big-btn. See activity-found.blade.php for the
   reference definitions.
 
+  Dispatches two window-level custom events an including page can
+  optionally listen for to drive its own passage word-tracking
+  animation in sync with the real recording state: 'tarabasa:recording-
+  started' (right after the mic actually starts) and 'tarabasa:
+  recording-stopped' (right before the "Checking..." step and the real
+  form submit). Kept as events rather than calling a hardcoded function
+  name so this partial stays the same neutral, reusable piece regardless
+  of whether a given including page wants that animation at all.
+
   Expects: $recordAction (string) — the form's target URL.
 --}}
 <style>
@@ -111,6 +120,7 @@
       mediaRecorder.start();
 
       showStep('recording');
+      window.dispatchEvent(new Event('tarabasa:recording-started'));
       seconds = 0;
       updateTimer();
       timerInterval = setInterval(() => {
@@ -151,6 +161,7 @@
       dataTransfer.items.add(file);
       document.getElementById('audioInput').files = dataTransfer.files;
 
+      window.dispatchEvent(new Event('tarabasa:recording-stopped'));
       showStep('checking');
       document.getElementById('recordForm').submit();
     }

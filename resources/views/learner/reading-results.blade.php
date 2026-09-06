@@ -50,6 +50,31 @@
   .stat-tile .v{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:800; color:var(--success); }
   .stat-tile .l{ font-size:13px; font-weight:700; color:var(--slate-600); text-transform:uppercase; letter-spacing:.03em; margin-top:4px; }
 
+  /* Word-by-word breakdown — only the 3 categories Reading-api's real
+     word_feedback data actually supports (correct/skip/said-a-different-
+     word). No "mispronounced"/"repeated" — that data doesn't exist. */
+  .breakdown-title{ font-family:'Baloo 2',sans-serif; font-size:15px; font-weight:700; margin:0 0 10px; text-align:left; }
+  .passage-review{
+    background:var(--bg-0); border:2px solid var(--line); border-radius:20px; padding:18px; margin-bottom:14px;
+    font-family:'Baloo 2',sans-serif; font-size:18px; font-weight:600; line-height:1.9; color:var(--navy-900); text-align:left;
+  }
+  .rw{ position:relative; padding:2px 4px; border-radius:6px; }
+  .rw.st-skip{ background:#fff3d6; color:#9a6a00; text-decoration:line-through; text-decoration-thickness:2px; }
+  .rw.st-sub{ background:#efe8fb; color:#6b4bc7; border-bottom:2.5px dotted #6b4bc7; cursor:default; }
+  .rw .tip{
+    display:none; position:absolute; bottom:130%; left:50%; transform:translateX(-50%);
+    background:var(--navy-900); color:#fff; font-family:'Inter',sans-serif; font-weight:600; font-size:11.5px;
+    padding:6px 10px; border-radius:9px; white-space:nowrap; z-index:5;
+  }
+  .rw .tip::after{ content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--navy-900); }
+  .rw.st-sub:hover .tip, .rw.st-sub:focus .tip{ display:block; }
+  .legend{ display:flex; flex-wrap:wrap; gap:12px; margin-bottom:22px; justify-content:center; }
+  .legend .chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; color:var(--slate-600); }
+  .legend .dot{ width:11px;height:11px;border-radius:4px; }
+  .legend .dot.skip{ background:#fff3d6; border:1.5px solid #9a6a00; }
+  .legend .dot.sub{ background:#efe8fb; border:1.5px solid #6b4bc7; }
+  .extra-words{ font-size:13px; color:var(--slate-600); font-weight:600; margin:0 0 22px; text-align:left; }
+
   .big-btn{
     display:block; width:100%; padding:17px; border:none; border-radius:20px; font:800 16px/1 'Baloo 2',sans-serif;
     cursor:pointer; background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); color:#fff;
@@ -75,6 +100,28 @@
       <div class="level-callout">
         {{ $levelWentUp ? '⬆️' : '' }} {{ $levelBefore ?? 'New' }} → {{ $levelAfter }}
       </div>
+    @endif
+
+    @if (! empty($wordBreakdown))
+      <p class="breakdown-title">Here's how you read each word:</p>
+      <div class="passage-review">
+        @foreach ($wordBreakdown as $word)
+          @if ($word['status'] === 'correct')
+            <span class="rw">{{ $word['text'] }}</span>
+          @elseif ($word['status'] === 'skip')
+            <span class="rw st-skip">{{ $word['text'] }}</span>
+          @else
+            <span class="rw st-sub" tabindex="0">{{ $word['text'] }}<span class="tip">Heard "{{ $word['heard'] }}"</span></span>
+          @endif
+        @endforeach
+      </div>
+      <div class="legend">
+        <span class="chip"><span class="dot skip"></span> Skipped</span>
+        <span class="chip"><span class="dot sub"></span> Said a different word</span>
+      </div>
+      @if (! empty($extraWordsSaid))
+        <p class="extra-words">You also said: "{{ implode('", "', $extraWordsSaid) }}" — that's not in this passage, but great effort reading out loud!</p>
+      @endif
     @endif
 
     <div class="stat-row">

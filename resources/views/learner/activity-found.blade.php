@@ -49,8 +49,16 @@
   .passage-card{
     background:var(--bg-0); border:2px solid var(--line); border-radius:22px; padding:22px; margin-bottom:22px;
     font-family:'Baloo 2',sans-serif; font-size:23px; font-weight:600; line-height:1.7; color:var(--navy-900);
-    text-align:left; white-space:pre-wrap;
+    text-align:left;
   }
+  /* Live word-tracking, shown only while actually recording — a paced,
+     decorative highlight that walks through the passage at a steady
+     guessed pace. This is NOT real transcription: Reading-api only
+     scores the recording after it's fully submitted, there is no
+     real-time word-by-word signal at all. It exists purely to keep a
+     young reader visually engaged while the mic is listening. */
+  .lw{ padding:1px 3px; border-radius:6px; transition:background-color .2s ease, color .2s ease; }
+  .lw.tracking{ background:var(--sky-100); box-shadow:0 0 0 2px rgba(28,126,214,0.25) inset; }
 
   .step{ display:none; }
   .step.active{ display:block; }
@@ -105,7 +113,7 @@
     <h1>{{ $activity->title }}</h1>
     <p class="sub">Read the words below out loud, then tap the mic!</p>
 
-    <div class="passage-card">{{ $activity->passage_text }}</div>
+    <div class="passage-card" id="passageCard">@foreach (preg_split('/\s+/', trim($activity->passage_text)) as $word)<span class="lw">{{ $word }}</span> @endforeach</div>
 
     @if (session('error') || $errors->any())
       <div class="note-banner danger">{{ $errors->first() ?: session('error') }}</div>
@@ -116,5 +124,42 @@
     <a href="{{ route('learner.dashboard') }}" class="big-btn" style="margin-top:14px; background:var(--surface); color:var(--slate-600); box-shadow:none; border:1.5px solid var(--line);">Back to My Dashboard</a>
   </div>
 </div>
+<script>
+  // Paced, decorative word-tracking during recording only — see the
+  // .lw/.lw.tracking comment above for why this is not real
+  // transcription. Loops continuously (never "finishes" and sits idle)
+  // for as long as recording actually continues, since real reading
+  // pace varies per child and there's no real signal to sync against.
+  (function () {
+    const words = [...document.querySelectorAll('#passageCard .lw')];
+    if (!words.length) return;
+
+    const PACE_MS = 450; // rough per-word guess, not measured
+    let trackIndex = 0;
+    let trackTimer = null;
+
+    function clearHighlight() {
+      words.forEach(w => w.classList.remove('tracking'));
+    }
+
+    function startTracking() {
+      trackIndex = 0;
+      clearHighlight();
+      trackTimer = setInterval(() => {
+        clearHighlight();
+        words[trackIndex].classList.add('tracking');
+        trackIndex = (trackIndex + 1) % words.length;
+      }, PACE_MS);
+    }
+
+    function stopTracking() {
+      clearInterval(trackTimer);
+      clearHighlight();
+    }
+
+    window.addEventListener('tarabasa:recording-started', startTracking);
+    window.addEventListener('tarabasa:recording-stopped', stopTracking);
+  })();
+</script>
 </body>
 </html>

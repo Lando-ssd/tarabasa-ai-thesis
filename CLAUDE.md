@@ -1432,6 +1432,109 @@ Don't rebuild activity-generation, adaptive-recommendation, or
 reading-assessment/scoring logic from scratch in PHP — wire up HTTP
 integrations to these three services instead.
 
+## Enhanced reading UI — real color-coded word breakdown + live tracking
+
+Built from a design-reference HTML prototype the user provided directly
+(not a `/docs/design-reference-html/` file), per the standing
+reference+enhance policy. Two real, separate pieces:
+
+**Live word-tracking during recording** (`activity-found.blade.php` and
+`diagnostic-passage.blade.php`, both now wrap `passage_text` into
+per-word `<span class="lw">` elements): a paced, looping highlight that
+walks through the passage while the mic is recording. **This is
+explicitly NOT real live transcription** — Reading-api only scores a
+recording after the full file is POSTed to `/analyze`, there is no
+real-time per-word signal available at all, and the code/comments say
+so directly. It loops continuously (never stops and sits idle while
+still recording, since real reading pace varies a lot per child and
+there's nothing real to sync against) and clears cleanly the instant
+recording stops. Driven by two new custom events dispatched from the
+shared `_recording-widget.blade.php` partial —
+`tarabasa:recording-started` / `tarabasa:recording-stopped` — so the
+neutral shared partial doesn't need to know or care whether a given
+including page wants this animation.
+
+**Real color-coded word breakdown after reading** (`reading-results.
+blade.php` only — see the diagnostic decision below) — built from
+Reading-api's real `word_feedback` array (`{reference, spoken,
+status}`, status ∈ `correct|substitution|deletion|insertion`), which
+was already being computed and returned on every scored reading but
+previously only used to pluck up to 2 struggling words for
+`PersonalWordBank`, then thrown away entirely. A new migration adds a
+`word_feedback` JSON column to `reading_sessions` so this data is kept
+instead of discarded (both `LearnerReadingController` and
+`LearnerDiagnosticController` now persist it).
+
+**Three real decisions made while building this, since the source
+prototype's categories didn't all map onto real data:**
+- **Dropped "Mispronounced" and "Repeated" as categories, did not
+  attempt a derived version.** Confirmed directly from Reading-api's
+  real `main.py`: `word_feedback` entries carry no confidence score at
+  all — confidence only exists on a completely separate
+  `word_timestamps` array with no key linking it back to a specific
+  `word_feedback` entry. A positional-alignment heuristic (zipping
+  non-deletion `word_feedback` entries against `word_timestamps` in
+  order, since both are ultimately derived from the same spoken
+  sequence) is theoretically possible but wasn't built — an arbitrary
+  confidence threshold for "possibly mispronounced" is exactly the
+  kind of fabricated-signal risk this project avoids elsewhere (same
+  principle as leaving `mispronunciation_count`/`repetition_count`
+  NULL). Only 3 real categories are shown: Correct (no highlight),
+  Skipped (`deletion`), Said a different word (`substitution`, with a
+  tooltip showing the real `spoken` value — e.g. "Heard 'frog'").
+- **Insertions get a separate note below the passage, not an inline
+  highlight.** An insertion (a word the child said that isn't in the
+  passage at all) has no reference-text position to attach a highlight
+  to, so forcing it inline isn't possible without fabricating a
+  location for it. Shown instead as "You also said: '{word}' — that's
+  not in this passage, but great effort reading out loud!", only when
+  at least one real insertion exists.
+- **The diagnostic keeps the live-tracking animation but never gets the
+  breakdown.** `LearnerDiagnosticController` now persists
+  `word_feedback` too (for consistency/future use, e.g. a possible
+  future Teacher/Parent detail view) but deliberately never passes it
+  to `diagnostic-results.blade.php`. A word-by-word right/wrong list is
+  a real, fairly precise performance signal even without a percentage
+  number attached — showing it would work against the diagnostic's
+  already-established "no visible score or pass/fail framing, ever"
+  rule (Part 4.2), which this project has held to consistently since
+  Sprint 4.
+
+**Tested for real, end to end, not just reviewed** — genuine TTS-
+generated audio (this project's established technique) submitted
+through the real `LearnerReadingController`/`LearnerDiagnosticController`
+endpoints against a real Learner (Miguel):
+- A real substitution: said "frog" in place of "dog" — the results
+  screen correctly showed "dog" highlighted with a real "Heard 'frog'"
+  tooltip on hover (confirmed both in the DOM and visually via
+  screenshot), and the database's stored `word_feedback` JSON matched
+  exactly.
+- A real deletion: dropped "hen" from the reading entirely — correctly
+  shown struck through, no tooltip (nothing was "heard" for a skipped
+  word).
+- A genuinely surprising real ASR result, not anything scripted: Vosk
+  misheard "cow" as "out" — the tooltip correctly showed the real
+  "Heard 'out'" value, proof this is live ASR output flowing through,
+  not a canned example.
+- A real insertion: said "banana" after the passage ended (Vosk heard
+  it as "hand") — correctly appeared only in the separate "You also
+  said" note, not forced into the per-word passage list.
+- The live-tracking animation itself: dispatched the real custom
+  events directly and confirmed via the DOM that the highlight
+  advances roughly on pace and clears completely on stop — a real
+  microphone recording still can't be exercised in this sandboxed
+  browser (the same standing environment limit noted throughout this
+  project), but the event-driven mechanism itself was proven, and a
+  real recording fires the identical two events through the unmodified
+  `_recording-widget.blade.php` regardless.
+- A full real diagnostic run (fresh Learner, genuine TTS reading of a
+  real Gemini-generated passage) confirmed the word-span/live-tracking
+  markup renders correctly on `diagnostic-passage.blade.php`, and — the
+  specific thing this decision needed proving — confirmed
+  `diagnostic-results.blade.php` shows zero word-level detail, zero raw
+  score, exactly the same friendly level-pill as before this whole
+  feature was built.
+
 ## Deployment (Railway) and a real production bug found + fixed
 
 The app is deployed on Railway (`grateful-love` project), not Render —

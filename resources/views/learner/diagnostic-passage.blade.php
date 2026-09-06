@@ -52,8 +52,14 @@
   .passage-card{
     background:var(--bg-0); border:2px solid var(--line); border-radius:22px; padding:22px; margin-bottom:22px;
     font-family:'Baloo 2',sans-serif; font-size:23px; font-weight:600; line-height:1.7; color:var(--navy-900);
-    text-align:left; white-space:pre-wrap;
+    text-align:left;
   }
+  /* Same paced, decorative word-tracking as the regular reading screen —
+     not real transcription, see activity-found.blade.php's comment for
+     the full explanation. Kept here too since a young reader shouldn't
+     get a visually plainer diagnostic than a regular activity. */
+  .lw{ padding:1px 3px; border-radius:6px; transition:background-color .2s ease, color .2s ease; }
+  .lw.tracking{ background:var(--sky-100); box-shadow:0 0 0 2px rgba(28,126,214,0.25) inset; }
 
   .step{ display:none; }
   .step.active{ display:block; }
@@ -112,10 +118,44 @@
     <div class="clay-blob b2"></div>
     <div class="mascot">🦉</div>
 
-    <div class="passage-card">{{ $activity->passage_text }}</div>
+    <div class="passage-card" id="passageCard">@foreach (preg_split('/\s+/', trim($activity->passage_text)) as $word)<span class="lw">{{ $word }}</span> @endforeach</div>
 
     @include('learner._recording-widget', ['recordAction' => route('learner.diagnostic.record')])
   </div>
 </div>
+<script>
+  // Same decorative pacing animation as activity-found.blade.php — not
+  // real transcription, see that file's comment for the full rationale.
+  (function () {
+    const words = [...document.querySelectorAll('#passageCard .lw')];
+    if (!words.length) return;
+
+    const PACE_MS = 450;
+    let trackIndex = 0;
+    let trackTimer = null;
+
+    function clearHighlight() {
+      words.forEach(w => w.classList.remove('tracking'));
+    }
+
+    function startTracking() {
+      trackIndex = 0;
+      clearHighlight();
+      trackTimer = setInterval(() => {
+        clearHighlight();
+        words[trackIndex].classList.add('tracking');
+        trackIndex = (trackIndex + 1) % words.length;
+      }, PACE_MS);
+    }
+
+    function stopTracking() {
+      clearInterval(trackTimer);
+      clearHighlight();
+    }
+
+    window.addEventListener('tarabasa:recording-started', startTracking);
+    window.addEventListener('tarabasa:recording-stopped', stopTracking);
+  })();
+</script>
 </body>
 </html>

@@ -20,6 +20,7 @@ class ReadingSession extends Model
         'substitution_count',
         'repetition_count',
         'insertion_count',
+        'word_feedback',
         'level_before',
         'level_after',
         'flagged_needs_attention',
@@ -32,6 +33,7 @@ class ReadingSession extends Model
         return [
             'flagged_needs_attention' => 'boolean',
             'timestamp' => 'datetime',
+            'word_feedback' => 'array',
         ];
     }
 

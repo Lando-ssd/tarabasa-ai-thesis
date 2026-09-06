@@ -113,6 +113,7 @@ class LearnerReadingController extends Controller
             'substitution_count' => $result['accuracy']['substitutions'] ?? null,
             'repetition_count' => null,
             'insertion_count' => $result['accuracy']['insertions'] ?? null,
+            'word_feedback' => $result['accuracy']['word_feedback'] ?? null,
             'level_before' => $levelBefore,
             'level_after' => $levelAfter,
             'flagged_needs_attention' => $accuracy < 70,
@@ -132,6 +133,8 @@ class LearnerReadingController extends Controller
 
         $this->notifyForSession($learner, $activity, $session);
 
+        $breakdown = $this->buildWordBreakdown($result['accuracy']['word_feedback'] ?? []);
+
         return view('learner.reading-results', [
             'activity' => $activity,
             'learner' => $learner->fresh(),
@@ -142,7 +145,52 @@ class LearnerReadingController extends Controller
             'levelChanged' => $levelBefore !== $levelAfter,
             'levelWentUp' => $accuracy >= 90,
             'pointsEarned' => $pointsEarned,
+            'wordBreakdown' => $breakdown['words'],
+            'extraWordsSaid' => $breakdown['extraWordsSaid'],
         ]);
+    }
+
+    /**
+     * Maps Reading-api's real word_feedback statuses onto the three the
+     * results screen actually shows — correct/skip/sub. Reading-api has
+     * no "mispronounced" or "repeated" signal at all (word_feedback items
+     * carry no confidence, and there's no key linking a word_feedback
+     * entry back to a word_timestamps entry to derive one), so those two
+     * categories from the design reference are deliberately not built —
+     * showing them would mean fabricating a distinction the real data
+     * doesn't support. "insertion" (an extra word the child said that
+     * isn't in the passage at all) has no passage word to attach an
+     * inline highlight to, so those are collected separately instead of
+     * forced into the word-by-word list.
+     */
+    private function buildWordBreakdown(array $wordFeedback): array
+    {
+        $words = [];
+        $extraWordsSaid = [];
+
+        foreach ($wordFeedback as $entry) {
+            $status = $entry['status'] ?? 'correct';
+
+            if ($status === 'insertion') {
+                if (! empty($entry['spoken'])) {
+                    $extraWordsSaid[] = $entry['spoken'];
+                }
+
+                continue;
+            }
+
+            $words[] = [
+                'text' => $entry['reference'] ?? '',
+                'status' => match ($status) {
+                    'substitution' => 'sub',
+                    'deletion' => 'skip',
+                    default => 'correct',
+                },
+                'heard' => $entry['spoken'] ?? null,
+            ];
+        }
+
+        return ['words' => $words, 'extraWordsSaid' => $extraWordsSaid];
     }
 
     /**
