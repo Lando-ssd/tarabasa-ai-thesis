@@ -125,36 +125,93 @@
   </div>
 </div>
 <script>
-  // Paced, decorative word-tracking during recording only — see the
-  // .lw/.lw.tracking comment above for why this is not real
-  // transcription. Loops continuously (never "finishes" and sits idle)
-  // for as long as recording actually continues, since real reading
-  // pace varies per child and there's no real signal to sync against.
+  // Paced, decorative word-tracking — see the .lw/.lw.tracking comment
+  // above for why this is not real transcription (Reading-api has no
+  // real-time per-word signal at all, only a score after the full
+  // recording is submitted). Two real signals are used to make the
+  // pacing feel less robotic than a flat per-word tick, even though
+  // neither is true speech timing:
+  //   1. Word length — longer words hold the highlight proportionally
+  //      longer than short ones ("a"/"the" flash by, "wooden"/
+  //      "together" hold), used while recording is still in progress
+  //      and the real total duration isn't known yet.
+  //   2. Real elapsed recording time — once the child taps "I'm done
+  //      reading!", the widget's own timer tells us exactly how long
+  //      they actually took. The animation then REPLAYS once, start to
+  //      finish, rescaled so the whole sequence takes exactly that real
+  //      duration (still weighted by word length, not split evenly).
+  //      This plays out during the real "Checking..." wait for
+  //      Reading-api's response, so it's not wasted screen time either.
+  //   We still never know WHICH word they were actually on at any real
+  //   moment — only their total real reading time — so this remains an
+  //   approximation, just one tied to their actual pace instead of an
+  //   arbitrary fixed one.
   (function () {
     const words = [...document.querySelectorAll('#passageCard .lw')];
     if (!words.length) return;
 
-    const PACE_MS = 450; // rough per-word guess, not measured
-    let trackIndex = 0;
-    let trackTimer = null;
+    const weights = words.map(w => Math.max(w.textContent.trim().length, 1));
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+
+    const LIVE_MS_PER_CHAR = 90;
+    const LIVE_MIN_MS = 220;
+    const liveDurations = weights.map(w => Math.max(w * LIVE_MS_PER_CHAR, LIVE_MIN_MS));
+
+    let seqTimer = null;
 
     function clearHighlight() {
       words.forEach(w => w.classList.remove('tracking'));
     }
 
-    function startTracking() {
-      trackIndex = 0;
-      clearHighlight();
-      trackTimer = setInterval(() => {
+    // Walks the passage once per call, dwelling on word i for
+    // durations[i] ms; loop=true wraps back to the start indefinitely
+    // (used while recording, since we don't yet know a real end time).
+    function runSequence(durations, loop) {
+      clearTimeout(seqTimer);
+      let i = 0;
+      (function step() {
         clearHighlight();
-        words[trackIndex].classList.add('tracking');
-        trackIndex = (trackIndex + 1) % words.length;
-      }, PACE_MS);
+        if (i >= words.length) {
+          if (!loop) return;
+          i = 0;
+        }
+        words[i].classList.add('tracking');
+        seqTimer = setTimeout(step, durations[i]);
+        i++;
+      })();
     }
 
-    function stopTracking() {
-      clearInterval(trackTimer);
-      clearHighlight();
+    function startTracking() {
+      runSequence(liveDurations, true);
+    }
+
+    function stopTracking(event) {
+      const realSeconds = event?.detail?.durationSeconds;
+
+      if (typeof realSeconds === 'number' && realSeconds > 0) {
+        // Real bug found here: the "Checking..." wait this replay plays
+        // during has NO relationship to how long the recording itself
+        // was — it's however long the real Reading-api/Vosk round trip
+        // takes (often several real seconds, sometimes more). A short
+        // recording (very common — many passages are just a handful of
+        // words) rescales into a tiny total, so a single non-looping
+        // pass (the original version of this fix) finished in a blur
+        // and then sat blank for the rest of the wait — which is
+        // exactly the "jumps straight to the end" bug reported. Fixed
+        // two ways: (1) a floor on each word's share, same as the live
+        // loop's LIVE_MIN_MS, so a fast reading still visibly paces
+        // instead of flashing by; (2) loop the replay indefinitely at
+        // that same real-pace-derived cadence instead of stopping after
+        // one pass, so it never goes idle/blank while the child is
+        // still actually waiting — it just keeps gently repeating until
+        // the real results page replaces this one.
+        const totalMs = realSeconds * 1000;
+        const replayDurations = weights.map(w => Math.max((w / totalWeight) * totalMs, LIVE_MIN_MS));
+        runSequence(replayDurations, true);
+      } else {
+        clearTimeout(seqTimer);
+        clearHighlight();
+      }
     }
 
     window.addEventListener('tarabasa:recording-started', startTracking);

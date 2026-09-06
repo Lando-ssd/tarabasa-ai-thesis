@@ -1535,6 +1535,134 @@ endpoints against a real Learner (Miguel):
   score, exactly the same friendly level-pill as before this whole
   feature was built.
 
+## Live word-tracking follow-up: Web Speech API rejected, a real pacing
+## bug fixed, and on-device mic/silence detection added
+
+**Web Speech API (real live voice-based word tracking) — investigated,
+found technically feasible, deliberately rejected.** The user asked
+whether the decorative word-tracking animation could instead be driven
+by the child's actual live voice, using the browser's built-in
+`SpeechRecognition`/`webkitSpeechRecognition` API running alongside the
+existing `MediaRecorder` capture (which would keep working completely
+unchanged — same file, same Reading-api scoring). Investigated for
+real before writing any code, per this project's own "scope first"
+policy: technically workable (Chrome/Edge support it, a simple
+advance-only word-matching pointer against live partial transcripts
+is a reasonable design, and it's fully isolable from real scoring by
+keeping the live transcript in its own closure with no path into the
+form submission). **Rejected anyway, explicitly, not casually
+revisitable:** Chrome's implementation streams the raw microphone
+audio to Google's own servers to produce the transcript — a second,
+real third-party destination for a child's live voice, on top of the
+one (Reading-api) already reviewed and genuinely necessary for the
+platform's core scoring function. For a purely cosmetic, decorative
+feature (a nicer highlight animation, nothing about correctness or
+scoring), that privacy cost isn't justified — unlike Reading-api,
+which is a required destination because it IS the actual assessment.
+This is a considered decision, recorded here so it isn't casually
+tried again without re-litigating the actual tradeoff. (Also confirmed
+while investigating: all real stored passage content — diagnostic and
+regular Teacher-generated alike — is genuinely English-only, checked
+directly against real database rows, not assumed from one example.)
+
+**A real bug found and fixed in the existing decorative animation
+instead.** The user reported that, in real production use, the
+word-tracking highlight "jumps straight to the end of the sentence"
+instead of pacing naturally — meaning the earlier word-length-
+weighting + real-duration-rescaling fix wasn't actually working as
+intended in practice, despite the underlying arithmetic having been
+verified correct at the time (durations summing exactly to requested
+totals). **Root cause, found by testing the full real flow this time —
+not just the event-dispatch math in isolation:** the original fix
+replayed the highlight ONCE (non-looping), rescaled to match the
+RECORDING's own real duration — but that replay is shown during the
+"Checking..." step, whose real length is however long the actual
+Reading-api/Vosk network round trip takes (documented elsewhere in
+this file at ~5 real seconds for ASR alone, sometimes more), which has
+NO relationship to how long the recording was. For a short recording
+(very common — many of this app's passages are just a handful of
+words), the rescaled total is small enough that the whole pass
+finishes in a near-instant blur, then the non-looping replay leaves
+nothing highlighted for the remainder of what's often a much longer
+real wait — which reads exactly like "it jumps to the end (and just
+sits there)" to someone watching it. **Fix:** added the same per-word
+minimum floor already used for the live-recording loop (`LIVE_MIN_MS`,
+so a fast reading still visibly paces instead of flashing by) and
+changed the replay from a single pass to a continuous loop at that
+same real-pace-derived cadence, so it never goes idle/blank while the
+child is still actually waiting — it just keeps gently repeating until
+the real results page replaces it.
+
+**Tested for real, end to end, including the actual page navigation —
+the specific thing the original Phase 6 testing had NOT covered.**
+Earlier testing had only verified the animation math via direct event
+dispatch, never through an actual `<form>` submission and page
+navigation together — this bug only shows up in that full real
+integration, not in the isolated math. Verified this time by injecting
+real TTS-generated audio (`cat dog pig hen cow`, and a real ~27-second
+multi-sentence passage) through the actual recording widget's real
+code path, dispatching the real stop event with the file genuinely
+attached, and instrumenting the passage's tracking script to log its
+own live state to `localStorage` every 50-100ms (survives the real
+page navigation, unlike an in-memory log) so the full timeline could
+be inspected after landing on the real results page. Confirmed: a
+simulated 1-second-real-recording case, which under the old code would
+have finished in ~1 second and then sat blank, now cycles continuously
+with zero blank frames for the entire ~17 real seconds until the page
+actually navigated; a simulated 27-second long-passage case paced
+forward through the passage smoothly with no jumps or blanks either.
+(Test data side effects — extra `ReadingSession` rows and a temporary
+`ActivityAssignment` created to get a long passage assigned for
+testing — were cleaned up afterward: Miguel's `mastery_level`/
+`points`/`streak` were restored to their prior values, the temporary
+assignment was deleted, and the temporary TTS `.wav` files removed
+from `public/`.)
+
+**New: on-device mic/no-signal detection, added to
+`_recording-widget.blade.php`.** Separately, the user asked for a
+friendly warning if the microphone isn't picking up any real sound at
+all (muted, blocked, broken) instead of silently uploading a dead
+recording and only finding out via Reading-api's own slower,
+round-trip-based "audio is silent" check. Built with the Web Audio
+API's `AnalyserNode`, tapping the SAME `MediaStream` already granted
+for recording (no new permission, no data ever leaves the browser, no
+third-party service at all — explicitly the deliberately-simple,
+zero-privacy-cost alternative to Web Speech API considered and
+rejected above). Computes a real RMS level from `getByteTimeDomainData`
+every 200ms during recording; if the mic never once exceeds a small
+noise-floor threshold (`SILENCE_RMS_THRESHOLD = 0.02`) for the whole
+recording (and the recording lasted at least 1 real second, so an
+accidental instant tap isn't misjudged), a new `stepSilent` UI shows
+("We didn't hear anything that time!... ") with a "Try Again" button
+that returns to the ready state — instead of submitting. Reading-api's
+own real silence check (the existing `422`/capped-retry flow) is
+untouched and still applies for its own domain (audio that has some
+signal but isn't recognizable speech) — this is a faster, earlier,
+purely local pre-check for the specific "nothing at all is coming
+through" case, not a replacement for it.
+
+**Tested for real, not assumed from reading the code** — genuine
+microphone permission still can't be exercised in this sandboxed
+browser tool (the same standing limitation noted throughout this
+project), but the `AnalyserNode` logic itself was exercised against
+REAL Web Audio graphs standing in for the mic stream (a legitimate
+on-device technique, not a mock of the detection code being tested):
+a `MediaStreamAudioDestinationNode` fed by a gain node at `0` (genuine
+zero-amplitude real audio data) correctly triggered the "We didn't
+hear anything" step and did NOT submit the form; the same setup with
+the gain at `0.8` (genuine nonzero real audio data, a plain 440Hz
+tone) correctly passed the client-side check and proceeded to a real
+submission — which Reading-api then correctly rejected on its own
+terms (a pure tone isn't recognizable speech), landing on the existing
+"Didn't quite catch that" retry screen exactly as designed, confirming
+the two checks stay properly separated rather than one masking the
+other. "Try Again" from the silent-mic step was confirmed to return
+cleanly to the ready state for another attempt. **Not yet tested
+against a genuinely muted/blocked real hardware microphone in a real
+browser** — that requires a real device and remains something only
+the user/team can verify, same category of limitation as every other
+mic-dependent feature in this project.
+
 ## Deployment (Railway) and a real production bug found + fixed
 
 The app is deployed on Railway (`grateful-love` project), not Render —
