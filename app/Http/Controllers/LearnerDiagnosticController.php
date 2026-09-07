@@ -7,8 +7,10 @@ use App\Models\Learner;
 use App\Models\Notification;
 use App\Models\ReadingSession;
 use App\Services\ActivityAiClient;
+use App\Services\AdaptiveRecommendatorClient;
 use App\Services\ReadingAiClient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -207,6 +209,13 @@ class LearnerDiagnosticController extends Controller
             'activity_id' => $activity->id,
             'accuracy_percent' => $accuracy,
             'wcpm' => $result['speed']['wcpm'] ?? null,
+            // Same real Reading-api fields now captured on the regular
+            // reading flow too (LearnerReadingController) — stored here
+            // for consistency even though the diagnostic never calls
+            // Adaptive_Recommendator's /recommend itself (only /initialize,
+            // once, at the very end of the whole staircase).
+            'speed_score' => $result['speed']['speed_score'] ?? null,
+            'prosody_score' => $result['prosody']['prosody_score'] ?? null,
             'pronunciation_score' => null,
             'fluency_score' => null,
             'mispronunciation_count' => null,
@@ -244,7 +253,7 @@ class LearnerDiagnosticController extends Controller
         $reachedCap = $state['passages_done'] >= self::MAX_PASSAGES;
 
         if ($nextTier === null || $reachedCap) {
-            return $this->finishDiagnostic($request, $learner, $tier);
+            return $this->finishDiagnostic($request, $learner, $tier, $accuracy);
         }
 
         // Moving to a tier — if it's already been used once (a genuine
@@ -274,7 +283,7 @@ class LearnerDiagnosticController extends Controller
      * that, whether the staircase stopped early (70-89%, or hit a
      * confirmed floor/ceiling) or was cut off by the 3-passage cap.
      */
-    private function finishDiagnostic(Request $request, Learner $learner, string $landedTier): View
+    private function finishDiagnostic(Request $request, Learner $learner, string $landedTier, float $lastAccuracy): View
     {
         $finalLevel = self::TIER_TO_MASTERY[$landedTier];
 
@@ -289,12 +298,52 @@ class LearnerDiagnosticController extends Controller
             includeTeacher: false
         );
 
+        $this->initializeAdaptiveRecommendation($learner, $lastAccuracy);
+
         $request->session()->forget($this->stateSessionKey($learner));
 
         return view('learner.diagnostic-results', [
             'learner' => $learner->fresh(),
             'finalLevel' => $finalLevel,
             'resultLabel' => self::MASTERY_TO_RESULT_LABEL[$finalLevel],
+        ]);
+    }
+
+    /**
+     * Adaptive_Recommendator's /initialize — called exactly once, right
+     * as the diagnostic concludes, per its own README ("use after the
+     * first-login assessment"). Only ever has a real reading_fluency
+     * score to send (the diagnostic hardcodes that one competency —
+     * see ensureBundleGenerated's own comment); foundational_reading and
+     * reading_comprehension are honestly left unassessed, exactly how
+     * the service's own engine expects an unassessed competency to be
+     * represented (excluded from rotation until a real score exists for
+     * it, not zero/fabricated). Same swallow-and-continue failure
+     * handling as the Practice-reading integration point — a Learner
+     * must never be blocked from reaching their real results screen over
+     * this.
+     */
+    private function initializeAdaptiveRecommendation(Learner $learner, float $lastAccuracy): void
+    {
+        try {
+            $response = app(AdaptiveRecommendatorClient::class)->initialize([
+                'student_id' => $learner->id,
+                'grade' => (int) substr($learner->grade_level, 6),
+                'assessment_scores' => [
+                    'reading_fluency' => $lastAccuracy,
+                ],
+                'last_competency' => 'reading_fluency',
+            ]);
+        } catch (\RuntimeException $e) {
+            Log::warning('Adaptive Recommendator initialize() failed, continuing without a recommendation', ['error' => $e->getMessage()]);
+
+            return;
+        }
+
+        $learner->update([
+            'competency_states' => $response['competency_states'],
+            'next_recommended_competency' => $response['next_recommendation']['competency'] ?? null,
+            'next_recommended_difficulty' => $response['next_recommendation']['difficulty'] ?? null,
         ]);
     }
 

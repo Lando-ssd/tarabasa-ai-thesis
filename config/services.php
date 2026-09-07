@@ -52,4 +52,12 @@ return [
         'url' => env('READING_AI_URL'),
     ],
 
+    // Teammate's deployed Adaptive_Recommendator (deterministic, stateless
+    // next-competency/difficulty decision service). Requires X-App-Key,
+    // same pattern as activity_ai.
+    'adaptive_recommender' => [
+        'url' => env('ADAPTIVE_RECOMMENDER_URL'),
+        'key' => env('ADAPTIVE_RECOMMENDER_KEY'),
+    ],
+
 ];

@@ -151,13 +151,62 @@ class LearnerAuthController extends Controller
             ->get();
 
         $options = $assignedActivities->map(fn ($activity) => ['activity' => $activity, 'source' => 'Assigned by your Teacher'])
-            ->concat($unlockedActivities->map(fn ($activity) => ['activity' => $activity, 'source' => 'Extra Practice']));
+            ->concat($unlockedActivities->map(fn ($activity) => ['activity' => $activity, 'source' => 'Extra Practice']))
+            ->values();
+
+        $options = $this->applyAdaptiveRecommendation($learner, $options);
 
         if ($options->count() === 1) {
             return view('learner.activity-found', ['activity' => $options->first()['activity']]);
         }
 
         return view('learner.activity-picker', ['options' => $options]);
+    }
+
+    /**
+     * Adaptive_Recommendator step (Learner Actor Prompt Step 3's "Adaptive
+     * Recommend" stage) — labels and prioritizes one already-available
+     * option (from a Teacher assignment or a Parent's repository unlock)
+     * to the front of the list, rather than ever generating new content
+     * on the Learner's behalf. Deliberate decision, confirmed with the
+     * user: Learner-triggered generation has no credit-payer concept
+     * (generation credits belong to a Teacher), and a real 30-150s live
+     * Gemini call shouldn't block a child mid-session waiting on it. If
+     * nothing available matches the recommendation, the options are
+     * returned completely unchanged — never a misleading label on a
+     * near-match.
+     */
+    private function applyAdaptiveRecommendation(Learner $learner, \Illuminate\Support\Collection $options): \Illuminate\Support\Collection
+    {
+        if (! $learner->next_recommended_competency) {
+            return $options;
+        }
+
+        $matchIndex = $options->search(function (array $option) use ($learner) {
+            $activity = $option['activity'];
+
+            if ($activity->competency !== $learner->next_recommended_competency) {
+                return false;
+            }
+
+            // A null recommended difficulty means that competency hasn't
+            // been assessed enough yet to have one — match on competency
+            // alone rather than silently downgrading to a difficulty
+            // guess. Otherwise require an exact match: a "Medium" activity
+            // is never labeled as if it perfectly matches an "Easy" call.
+            return $learner->next_recommended_difficulty === null
+                || strtolower($activity->difficulty_tier) === $learner->next_recommended_difficulty;
+        });
+
+        if ($matchIndex === false) {
+            return $options;
+        }
+
+        $recommended = $options->get($matchIndex);
+        $recommended['source'] = 'Picked just for you! 🎯';
+
+        return collect([$recommended])
+            ->concat($options->reject(fn ($option, int $i) => $i === $matchIndex)->values());
     }
 
     /**

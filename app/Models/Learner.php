@@ -32,6 +32,9 @@ class Learner extends Model implements AuthenticatableContract
         'avatar_id',
         'avatar_photo_path',
         'mastery_level',
+        'competency_states',
+        'next_recommended_competency',
+        'next_recommended_difficulty',
         'learning_style',
         'points',
         'streak',
@@ -49,6 +52,10 @@ class Learner extends Model implements AuthenticatableContract
             // Step 1) even though it's only 4 digits — hashed exactly like
             // a User's password, never stored or compared in plain text.
             'pin' => 'hashed',
+            // Adaptive_Recommendator's own CurrentState shape, stored
+            // verbatim — see the migration comment for why this repo owns
+            // this state at all.
+            'competency_states' => 'array',
         ];
     }
 

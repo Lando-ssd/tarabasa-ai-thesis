@@ -7,8 +7,10 @@ use App\Models\Learner;
 use App\Models\Notification;
 use App\Models\PersonalWordBank;
 use App\Models\ReadingSession;
+use App\Services\AdaptiveRecommendatorClient;
 use App\Services\ReadingAiClient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class LearnerReadingController extends Controller
@@ -91,6 +93,12 @@ class LearnerReadingController extends Controller
     {
         $accuracy = (float) ($result['accuracy']['accuracy_score'] ?? 0);
         $wcpm = $result['speed']['wcpm'] ?? null;
+        // Both real, already computed by Reading-api on every call
+        // (confirmed by reading its real main.py directly) but never
+        // persisted before now — needed as real inputs to
+        // Adaptive_Recommendator's per-competency scoring below.
+        $speedScore = $result['speed']['speed_score'] ?? null;
+        $prosodyScore = $result['prosody']['prosody_score'] ?? null;
 
         $levelBefore = $learner->mastery_level;
         $levelAfter = $this->adjustMasteryLevel($levelBefore, $accuracy);
@@ -106,6 +114,8 @@ class LearnerReadingController extends Controller
             'activity_id' => $activity->id,
             'accuracy_percent' => $accuracy,
             'wcpm' => $wcpm,
+            'speed_score' => $speedScore,
+            'prosody_score' => $prosodyScore,
             'pronunciation_score' => null,
             'fluency_score' => null,
             'mispronunciation_count' => null,
@@ -130,6 +140,8 @@ class LearnerReadingController extends Controller
             'points' => $learner->points + $pointsEarned,
             'streak' => $learner->streak + 1,
         ]);
+
+        $this->updateAdaptiveRecommendation($learner, $activity, $session, $accuracy, $speedScore, $prosodyScore);
 
         $this->notifyForSession($learner, $activity, $session);
 
@@ -191,6 +203,93 @@ class LearnerReadingController extends Controller
         }
 
         return ['words' => $words, 'extraWordsSaid' => $extraWordsSaid];
+    }
+
+    /**
+     * Adaptive_Recommendator integration — a real enhancement, never a
+     * hard dependency. Only attempted when the Learner actually has a
+     * competency_states baseline (set by LearnerDiagnosticController's
+     * initialize() call after their diagnostic — a Learner who completed
+     * their diagnostic before this feature existed simply has none, and
+     * that's left honestly null rather than fabricated here) and the
+     * activity carries real competency/difficulty_tier values. ANY
+     * failure — not configured, unreachable, a bad response — is caught
+     * and swallowed: the Learner already has their real results, and
+     * losing the "what's next" recommendation is never worth blocking on.
+     */
+    private function updateAdaptiveRecommendation(Learner $learner, Activity $activity, ReadingSession $session, float $accuracy, ?float $speedScore, ?float $prosodyScore): void
+    {
+        if ($learner->competency_states === null || ! $activity->competency || ! $activity->difficulty_tier) {
+            return;
+        }
+
+        try {
+            $response = app(AdaptiveRecommendatorClient::class)->recommend([
+                'student_id' => $learner->id,
+                'grade' => (int) substr($learner->grade_level, 6),
+                'completed_activity' => [
+                    'activity_id' => $activity->id,
+                    'bundle_id' => $activity->generation_id,
+                    'competency' => $activity->competency,
+                    'difficulty' => strtolower($activity->difficulty_tier),
+                ],
+                'performance' => [
+                    'accuracy_score' => $accuracy,
+                    'speed_score' => $speedScore,
+                    'prosody_score' => $prosodyScore,
+                    // No comprehension-quiz feature exists anywhere in
+                    // this app yet — honestly null, never fabricated.
+                    'comprehension_score' => null,
+                ],
+                'current_state' => $learner->competency_states,
+                'recent_history' => $this->buildAdaptiveRecentHistory($learner),
+            ]);
+        } catch (\RuntimeException $e) {
+            Log::warning('Adaptive Recommendator call failed, continuing without a recommendation', ['error' => $e->getMessage()]);
+
+            return;
+        }
+
+        $session->update(['adaptive_attempt_score' => $response['completed_competency_update']['attempt_score'] ?? null]);
+
+        $learner->update([
+            'competency_states' => $response['updated_state'],
+            'next_recommended_competency' => $response['next_recommendation']['competency'] ?? null,
+            'next_recommended_difficulty' => $response['next_recommendation']['difficulty'] ?? null,
+        ]);
+    }
+
+    /**
+     * Adaptive_Recommendator is stateless and expects the caller to
+     * supply real recent history on every call — rebuilt here from real
+     * past ReadingSession rows, scoped to ones that already went through
+     * this same integration (adaptive_attempt_score not null), since
+     * those are the only scores actually comparable to the service's own
+     * weighted formula. A pre-integration session's plain accuracy_percent
+     * isn't the same scale as a competency-specific weighted score, so
+     * mixing it in would misrepresent the Learner's history to the engine
+     * rather than honestly omitting what it can't meaningfully use.
+     * Capped at 10 — the engine's own evidence checks only ever look at
+     * the last couple of same-competency entries anyway.
+     */
+    private function buildAdaptiveRecentHistory(Learner $learner): array
+    {
+        return ReadingSession::where('learner_id', $learner->id)
+            ->whereNotNull('adaptive_attempt_score')
+            ->with('activity')
+            ->orderBy('timestamp')
+            ->get()
+            ->filter(fn (ReadingSession $s) => $s->activity?->competency && $s->activity?->difficulty_tier)
+            ->map(fn (ReadingSession $s) => [
+                'competency' => $s->activity->competency,
+                'difficulty' => strtolower($s->activity->difficulty_tier),
+                'score' => $s->adaptive_attempt_score,
+                'activity_id' => $s->activity_id,
+            ])
+            ->values()
+            ->take(-10)
+            ->values()
+            ->all();
     }
 
     /**

@@ -48,6 +48,12 @@
     padding:2px 9px; border-radius:999px;
   }
   .option-label.extra-practice{ color:#5c3fb0; background:#efe9fc; }
+  /* Adaptive_Recommendator's pick — a warmer, distinct treatment so a
+     Learner (or the Parent/Teacher glancing at their screen) can tell
+     this one is different from a plain assignment or extra practice,
+     not just quietly reordered to the top. */
+  .option-card.recommended{ border-color:var(--owl-orange-500); background:#fff8ef; }
+  .option-label.recommended{ color:var(--owl-orange-600); background:#fff0da; }
 
   .big-btn{
     display:block; width:100%; padding:16px; border:none; border-radius:18px; font:800 15px/1 'Baloo 2',sans-serif;
@@ -73,9 +79,13 @@
       <p class="sub">Pick one to get started.</p>
       <div class="option-list">
         @foreach ($options as $option)
-          <a href="{{ route('learner.activity.show', $option['activity']) }}" class="option-card">
+          @php
+            $isRecommended = str_contains($option['source'], 'Picked just for you');
+            $labelClass = $isRecommended ? 'recommended' : ($option['source'] === 'Extra Practice' ? 'extra-practice' : '');
+          @endphp
+          <a href="{{ route('learner.activity.show', $option['activity']) }}" class="option-card {{ $isRecommended ? 'recommended' : '' }}">
             <div class="option-title">{{ $option['activity']->title }}</div>
-            <span class="option-label {{ $option['source'] === 'Extra Practice' ? 'extra-practice' : '' }}">{{ $option['source'] }}</span>
+            <span class="option-label {{ $labelClass }}">{{ $option['source'] }}</span>
           </a>
         @endforeach
       </div>
