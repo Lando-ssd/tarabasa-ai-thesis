@@ -1828,6 +1828,148 @@ afterward) that both failed attempts left zero partial data — no
 stray consumed credits, no orphaned rows — not just that the page
 looked like it failed.
 
+## Adaptive_Recommendator integration — the third and final teammate
+## service, real "what to read next" recommendations
+
+Learner Actor Prompt Step 3's "Adaptive Recommend" stage — the last of
+the three teammate services (`gemini_activity_gen`, `Reading-api`,
+`Adaptive_Recommendator`) to actually get wired up. Read the real
+deployed source directly first (`main.py`, `models.py`, `engine.py`,
+`config.py` from github.com/BldZeuz/Adaptive_Recommendator), not just
+its README, per this project's standing rule for third-party
+integrations.
+
+**The real contract, confirmed from source, not assumed:**
+`Adaptive_Recommendator` is completely stateless — no DB, no
+persistence of its own (its own README says so explicitly: "Your main
+backend stores assessment results, attempts, competency state, used
+activity IDs, and bundle history"). Every `/recommend` call must carry
+the Learner's full current per-competency state
+(`{proficiency, difficulty, confidence, attempt_count}` for each of
+`foundational_reading`/`reading_fluency`/`reading_comprehension`) and
+recent history; the response's updated state must be persisted back.
+`/initialize` (called once, after the diagnostic) and `/recommend`
+(called after every real Practice reading) both require the same
+`X-App-Key` header pattern as `gemini_activity_gen`.
+
+**A real data-availability gap, confirmed and left honest rather than
+worked around:** `reading_comprehension` requires a `comprehension_score`
+input the app has never had any way to produce (no comprehension-quiz
+feature exists anywhere) — traced through `engine.py`'s
+`choose_next_competency()` and confirmed it already handles an
+unassessed competency gracefully (excluded from rotation entirely when
+`proficiency` is `null`, never defaulted to zero), so `reading_comprehension`
+is simply never sent a score and never recommended, by design — not a
+crash, not a fabricated value, matching this project's existing NULL-
+over-fabrication principle. Similarly, the diagnostic itself only ever
+assesses `reading_fluency` (hardcoded in `ensureBundleGenerated()`), so
+`foundational_reading`/`reading_comprehension` start every Learner's
+`competency_states` honestly unassessed.
+
+**New data this repo now owns**, since the service stores none of it:
+`learners.competency_states` (JSON, the service's own `CurrentState`
+shape verbatim), `learners.next_recommended_competency`/
+`next_recommended_difficulty` (the most recent `next_recommendation`,
+kept as plain columns so `findActivity()` can match against them
+directly), and `reading_sessions.speed_score`/`prosody_score`/
+`adaptive_attempt_score`. The first two of those three were a genuinely
+free find while reading Reading-api's own real source again for this
+work: it already returns a real 0-100 `speed_score` (grade-appropriate-
+WCPM-derived, distinct from the raw `wcpm` already stored) and a real
+0-100 `prosody_score` (an acoustic heuristic) on every `/analyze` call
+— both had been silently discarded since Slice 2/3, never persisted.
+Now captured in both `LearnerReadingController` and
+`LearnerDiagnosticController`.
+
+**The one design decision flagged rather than guessed on, confirmed
+with the user before building:** when no already-available activity
+(Teacher-assigned or repository-unlocked) matches the current
+recommendation, the picker shows the existing options completely
+unchanged — never triggers a fresh Activity Generation call on the
+Learner's behalf. Reasoning: generation credits belong to a Teacher
+(`free_generation_credits_remaining`) and there's no honest answer to
+"who pays" for a Learner-triggered generation; it's also a genuine
+30-150s live Gemini call that shouldn't block a child mid-session
+waiting on it.
+
+**New `AdaptiveRecommendatorClient`** (`app/Services/`), same shape as
+`ActivityAiClient`/`ReadingAiClient` — `X-App-Key` header,
+`set_time_limit()`/`Http::timeout()` guard (90s; a real cold health-
+check start measured at ~55s during testing), friendly
+`\RuntimeException` on any real failure. **Every call site swallows
+that exception and continues without a recommendation** — a Learner
+must never be blocked from reading, from completing the diagnostic, or
+from picking an activity because this one enhancement is down.
+`LearnerDiagnosticController::finishDiagnostic()` calls `initialize()`
+once, at the very end of the staircase; `LearnerReadingController::
+scoreAndPersist()` calls `recommend()` after every real Practice
+reading, rebuilding `recent_history` from real past sessions that
+already went through this same integration (`adaptive_attempt_score`
+not null — a pre-integration session's plain `accuracy_percent` isn't
+the same scale as the service's own weighted score, so it's honestly
+excluded rather than mixed in). `LearnerAuthController::findActivity()`
+prioritizes and labels a matching option "Picked just for you! 🎯"
+(orange-accented, distinct from the existing "Assigned by your
+Teacher"/"Extra Practice" labels), sorted to the front — an exact
+competency+difficulty match is required when a difficulty is present,
+competency-only when it isn't (a newly-assessed competency has no
+difficulty yet), never a downgraded/misleading match.
+
+**A real key mix-up caught before it caused a false negative:** the
+user initially wondered whether `ACTIVITY_AI_KEY`'s value could also
+be `Adaptive_Recommendator`'s real key, since it looked suspiciously
+identical — confirmed this for real via a live `GET /config` request
+with that exact key (not assumed): `200`, real config body returned
+matching the source exactly. The teammate genuinely reuses one shared
+key across both services; this wasn't a resent-by-mistake value.
+
+**Tested for real against the live deployed service, with airtight
+proof it's genuinely live, not a coincidence** — verified locally
+end-to-end with a fresh Learner ("AdaptiveLive Test") through the real
+diagnostic (genuine TTS audio, real Gemini-generated passages):
+- `/initialize` returned real `competency_states` — `reading_fluency:
+  {proficiency: 97.4, difficulty: "hard", confidence: 0.6,
+  attempt_count: 0}` for a genuine 97.4% diagnostic landing, with
+  `foundational_reading`/`reading_comprehension` correctly left fully
+  unassessed (`proficiency: null`), exactly as predicted from reading
+  `engine.py` beforehand.
+- The picker correctly matched and labeled a real Hard `reading_fluency`
+  activity "Picked just for you! 🎯", sorted first, while a
+  non-matching Easy `foundational_reading` activity correctly kept its
+  plain "Assigned by your Teacher" label — confirmed both in the
+  matching case and (separately, via a simulated non-matching
+  recommendation) the no-match case, where options render completely
+  unchanged.
+- A real 87.5%-accuracy TTS reading of that recommended activity
+  triggered `/recommend`, which returned `adaptive_attempt_score:
+  83.75` — verified this is a genuine live computation, not
+  coincidence, by checking it against the service's own documented
+  `reading_fluency` weights (accuracy 0.40 / speed 0.35 / prosody
+  0.25) pulled from its real `/config` response: `87.5×0.40 +
+  100×0.35 + 55×0.25 = 83.75`, an exact match. The updated proficiency
+  (97.4 → 93.3) was then checked against its documented EMA formula
+  (`alpha=0.30`): `97.4×0.70 + 83.75×0.30 = 93.305 ≈ 93.3`, also exact.
+  Neither formula is implemented anywhere in this app's own code — an
+  exact match on both is only possible if the real service computed
+  them, not a bug that happens to look right.
+- `confidence` correctly stepped `0.60 → 0.68` (matching the service's
+  own `CONFIDENCE_STEP=0.08` default exactly) and `attempt_count`
+  correctly incremented `0 → 1`.
+- Graceful fallback confirmed separately, before the real key was
+  added: both integration points logged a clean warning and continued
+  normally (correct results screen, correct diagnostic completion, no
+  crash) while `ADAPTIVE_RECOMMENDER_KEY` was still an empty
+  placeholder — confirmed a Learner who completed their diagnostic
+  under the old code (e.g. `competency_states` still `null`) is never
+  blocked or crashed on by the new `recommend()` call either, since it
+  short-circuits before attempting the request at all.
+
+**Not yet done:** `ADAPTIVE_RECOMMENDER_URL`/`ADAPTIVE_RECOMMENDER_KEY`
+still need to be added to Railway's real environment variables — this
+integration will honestly report itself as "not configured" (gracefully,
+never blocking a Learner) on live production until that's done, the
+same rollout pattern the other two services went through originally.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
