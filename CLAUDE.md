@@ -2492,6 +2492,110 @@ color language for all 3 real categories. Test data (2 real
 `ReadingSession` rows, 6 real `Notification` rows, Miguel's `mastery_
 level`/`points`/`streak`) cleaned up and restored afterward.
 
+## Persistent passage-text size control (A−/A+, 5 fixed steps) + Lexend
+
+Before building, checked the actual codebase (not memory) for whether
+Fix 1 (responsive layout) or this feature already existed — confirmed
+via `git log` and direct grep: Fix 1 was already done and committed
+(`18389e4`, `resources/views/learner/activity-found.blade.php` already
+had 14 real `min-width` media-query rules), but literally nothing for
+the font-size control existed anywhere — zero matches for "Lexend,"
+"font_step," or any size-step naming across the whole codebase. Built
+fresh, no reference file was ever supplied (asked for it twice; not
+provided) — the visual chrome below is this session's own design using
+the app's established tokens, not a reproduction of a reference.
+
+**New nullable `learners.reading_font_step`** (tinyint, 1-5). Not
+defaulted in the schema — the effective default depends on
+`grade_level`, which the schema layer shouldn't hardcode. New
+`Learner::effectiveReadingFontStep()` is the one place that resolves
+"what size right now": the Learner's own explicit choice if they've
+ever made one, otherwise a grade-based starting point (Grade 1→4/
+"Large", Grade 2→3/"Medium", Grade 3→2/"Medium−" — confirmed via real
+Learner records: Miguel is actually Grade 3, not Grade 1 as initially
+assumed from memory, and a real Grade 1 Learner, "Kim," confirmed
+step 4).
+
+**The 5 steps compose with the existing responsive layout instead of
+fighting it**: Fix 1 already gave `.passage-card` three different base
+sizes across breakpoints (23/26/28px). Refactored those into a
+`--passage-font-base` custom property set at `:root` per breakpoint,
+and the 5 step classes (`.passage-card[data-font-step="1..5"]`)
+multiply it via `calc()` (0.82×/0.91×/1×/1.15×/1.32×) — so "Large" is
+proportionally the same bump on a phone or a laptop, rather than
+needing a separate step table per breakpoint. Confirmed live: at
+1280px (base 28px) with step 2 selected, the real computed font-size
+was exactly 25.48px = 28 × 0.91.
+
+**New shared `_reading-font-control.blade.php`** (used by both
+`activity-found.blade.php` and `diagnostic-passage.blade.php`,
+avoiding a second copy of the apply/persist/disable-at-ends logic) —
+a pill with A−/A+ buttons and a step-name label (Small/Medium−/Medium/
+Large/Extra Large). Applies the new size to `.passage-card` instantly
+via a data attribute; separately fires a background `fetch()` POST to
+`LearnerAuthController::updateReadingFontStep()` to persist it — a
+deliberate, disclosed departure from this app's usual plain-form-
+submit convention, since a full page reload on every tap would fight
+the point of the control feeling instant. A failed save never blocks
+the interaction, it just means the choice won't outlive the visit.
+Both real buttons use a genuine `disabled` attribute at their end of
+the scale (not just a dimmed style), confirmed via real
+`document.getElementById(...).disabled` checks at both ends.
+
+**A real bug found and fixed during testing, not assumed correct from
+the diff**: the control's own `<script>` runs before `.passage-card`
+in the page's source order (the control is placed visually above the
+passage), so the original inline IIFE threw `Cannot read properties of
+null (reading 'setAttribute')` — `.passage-card` didn't exist in the
+DOM yet when the script executed synchronously. Fixed by wrapping the
+whole thing in a `DOMContentLoaded` listener; re-tested and confirmed
+the error is gone and the control initializes correctly.
+
+**Font**: Lexend added to the existing Google Fonts `<link>` on both
+reading screens; `.passage-card` switched to `'Lexend', sans-serif`.
+Nothing else changed fonts — confirmed live that h1/buttons/labels/the
+size-control pill itself all stayed Baloo 2/Inter.
+
+**Overflow safety**: `.passage-card` already had `overflow-wrap`/
+`word-break` from Fix 1. Confirmed live at the worst-case combination
+(375px phone width, step 5/Extra Large, real font-size 30.36px): zero
+overflow — `passage-card.scrollWidth === clientWidth` (268px both) and
+`document.documentElement.scrollWidth === window.innerWidth` (375px
+both), confirmed via direct measurement, not assumption.
+
+**Tested for real, both grade levels, multiple steps, persistence
+across an actual fresh login — not assumed from the diff:**
+- Real Grade 1 Learner ("Kim," mid-diagnostic): confirmed default
+  step 4/"Large" on `diagnostic-passage.blade.php` (a real Gemini-
+  generated passage, not a stub), Lexend font, correct 26.45px = 23 ×
+  1.15. Clicked A+ to step 5/"Extra Large" — confirmed A+ correctly
+  disabled, confirmed the real database value (`reading_font_step: 5`)
+  via direct query. Clicked A− five times from there — correctly
+  floored at step 1/"Small" (never below), A− correctly disabled.
+- **Persistence confirmed across an actual fresh login**: logged Kim
+  out for real (a real POST to `/learner/logout`) and back in — the
+  diagnostic-passage screen (a fresh page load, not a cached one)
+  showed step 1/"Small" again, her real explicit choice, not the
+  Grade 1 default of 4 — genuine proof this survives a session
+  boundary, not just an in-page state.
+- Real Grade 3 Learner (Miguel, `activity-found.blade.php`, a real
+  assigned Activity): confirmed default step 2/"Medium−" — different
+  from Kim's Grade 1 default, confirming the grade-based branch
+  actually branches, not a coincidence.
+- **A real tool artifact hit and correctly diagnosed, not confused for
+  a code bug**: after using `resize_window` to test at 1280px then
+  375px, `getComputedStyle` briefly reported a stale cached font-size
+  from the previous viewport — the same class of stale-computed-value
+  quirk this project has already documented for screenshots
+  (`background-attachment:fixed` interacting with this browser
+  automation tool). Confirmed genuinely stale, not a real bug, by
+  forcing a reflow (`display:none` toggle + `offsetHeight` read),
+  which produced the mathematically correct value (30.36px = 23 ×
+  1.32) immediately.
+- Zero new entries in the Laravel log across the whole test pass; no
+  `ReadingSession`/`Notification` side effects this time (no audio was
+  actually submitted, only the size control was exercised).
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

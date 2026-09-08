@@ -39,6 +39,7 @@ class Learner extends Model implements AuthenticatableContract
         'points',
         'streak',
         'status',
+        'reading_font_step',
     ];
 
     protected $hidden = [
@@ -182,6 +183,29 @@ class Learner extends Model implements AuthenticatableContract
                 'isUpNext' => $key === $this->next_recommended_competency,
             ];
         })->values()->all();
+    }
+
+    /**
+     * The passage-text size step (1=Small ... 5=Extra Large) actually
+     * used for this Learner — their own explicit choice if they've ever
+     * made one, otherwise a sensible grade-based starting point (younger
+     * grades default larger). The +/- control on the reading screens
+     * only ever writes an explicit value into reading_font_step; this
+     * method is the one place that resolves "what size right now,"
+     * shared by both reading screens instead of duplicating the
+     * grade-to-default mapping in two places.
+     */
+    public function effectiveReadingFontStep(): int
+    {
+        if ($this->reading_font_step !== null) {
+            return $this->reading_font_step;
+        }
+
+        return match ((int) substr($this->grade_level, 6)) {
+            1 => 4,
+            3 => 2,
+            default => 3,
+        };
     }
 
     /**

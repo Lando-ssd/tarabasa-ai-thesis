@@ -79,6 +79,7 @@ class LearnerDiagnosticController extends Controller
 
         return view('learner.diagnostic-passage', [
             'activity' => $activity,
+            'learner' => $learner,
             'passageNumber' => $state['passages_done'] + 1,
             'maxPassages' => self::MAX_PASSAGES,
         ]);

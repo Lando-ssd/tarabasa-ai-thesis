@@ -66,6 +66,12 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
     Route::get('/diagnostic/passage', [LearnerDiagnosticController::class, 'passage'])->name('diagnostic.passage');
     Route::post('/diagnostic/record', [LearnerDiagnosticController::class, 'submitRecording'])->name('diagnostic.record');
 
+    // The passage-text size control lives on both reading screens
+    // (diagnostic-passage, before the diagnostic is complete, and
+    // activity-found, after) — not gated by 'learner.diagnostic' so it
+    // works on both.
+    Route::post('/reading-preferences/font-step', [LearnerAuthController::class, 'updateReadingFontStep'])->name('reading-preferences.font-step');
+
     Route::middleware('learner.diagnostic')->group(function () {
         Route::get('/dashboard', [LearnerAuthController::class, 'dashboard'])->name('dashboard');
         // Step 3 "Finding what to read" — resolves real Teacher assignments

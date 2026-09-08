@@ -7,6 +7,7 @@ use App\Models\ActivityAssignment;
 use App\Models\Learner;
 use App\Models\OpenRepositoryListing;
 use App\Models\ReadingSession;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -222,7 +223,28 @@ class LearnerAuthController extends Controller
 
         abort_unless($activity->isAccessibleByLearner($learner), 403);
 
-        return view('learner.activity-found', ['activity' => $activity]);
+        return view('learner.activity-found', ['activity' => $activity, 'learner' => $learner]);
+    }
+
+    /**
+     * The +/- text-size control's own save call — a real preference, not
+     * a scoring/assessment concern, so a lightweight JSON endpoint is
+     * used here instead of this app's usual plain-form-submit convention:
+     * a full page reload on every tap of a size button would fight the
+     * whole point of the control feeling instant. The client applies the
+     * new size immediately regardless of whether this call succeeds; a
+     * failed save just means the choice doesn't persist past this visit,
+     * never a blocked interaction.
+     */
+    public function updateReadingFontStep(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'step' => ['required', 'integer', 'min:1', 'max:5'],
+        ]);
+
+        $request->user('learner')->update(['reading_font_step' => $validated['step']]);
+
+        return response()->json(['ok' => true]);
     }
 
     /**

@@ -3,10 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>{{ $activity->title }} — TaraBasa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{{-- Lexend is used ONLY for the passage text a child actually reads
+     aloud (studied for reading fluency) — every other UI element on
+     this screen (buttons, headers, the size control) stays Baloo 2/
+     Inter, so branding is unaffected. --}}
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --sky-100:#dcedff;
@@ -16,7 +21,14 @@
     --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
     --amber:#c9820b; --amber-bg:#fef6e6;
     --danger:#d64545; --danger-bg:#fdecec;
+    /* The passage text's own base size per breakpoint — the +/- control
+       (see _reading-font-control.blade.php) multiplies THIS value via
+       calc(), so its 5 steps stay proportional at every viewport tier
+       instead of needing a separate step table per breakpoint. */
+    --passage-font-base:23px;
   }
+  @media (min-width:700px){ :root{ --passage-font-base:26px; } }
+  @media (min-width:1024px){ :root{ --passage-font-base:28px; } }
   *{box-sizing:border-box;} html,body{margin:0;padding:0;}
   body{
     min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
@@ -61,11 +73,10 @@
   @media (min-width:700px){ .sub{ font-size:20px; } }
   .passage-card{
     background:var(--bg-0); border:2px solid var(--line); border-radius:22px; padding:22px; margin-bottom:22px;
-    font-family:'Baloo 2',sans-serif; font-size:23px; font-weight:600; line-height:1.7; color:var(--navy-900);
-    text-align:left; overflow-wrap:break-word; word-break:break-word;
+    font-family:'Lexend',sans-serif; font-size:var(--passage-font-base); font-weight:500; line-height:1.7; color:var(--navy-900);
+    text-align:left; overflow-wrap:break-word; word-break:break-word; transition:font-size .15s ease;
   }
-  @media (min-width:700px){ .passage-card{ font-size:26px; padding:28px 32px; border-radius:26px; } }
-  @media (min-width:1024px){ .passage-card{ font-size:28px; } }
+  @media (min-width:700px){ .passage-card{ padding:28px 32px; border-radius:26px; } }
 
   .step{ display:none; }
   .step.active{ display:block; }
@@ -150,6 +161,7 @@
     <h1>{{ $activity->title }}</h1>
     <p class="sub">Read the words below out loud, then tap the mic!</p>
 
+    @include('learner._reading-font-control', ['initialStep' => $learner->effectiveReadingFontStep()])
     <div class="passage-card">{{ $activity->passage_text }}</div>
 
     @if (session('error') || $errors->any())
