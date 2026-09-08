@@ -2439,6 +2439,59 @@ Activity (`activity-found.blade.php`, logged in as Miguel) — not just
   pattern as the independently-verified `activity-found.blade.php`.
 - Zero new entries in the Laravel log across the whole test pass.
 
+## Results screen word-breakdown — checked against the actual design
+## reference image, real "Words to Practice" stat added, 2 categories
+## confirmed still not honestly buildable
+
+The user shared the design reference mockup directly (the same one
+`LearnerReadingController::buildWordBreakdown()`'s own comment already
+referenced) showing 5 word-status categories and asked whether
+`reading-results.blade.php` matched it. **It doesn't, and shouldn't
+fully** — investigated again to be sure this wasn't stale reasoning:
+confirmed the same real constraint as before still holds. Reading-api's
+`word_feedback` has no confidence score and no field linking an entry
+back to `word_timestamps`, so "Mispronounced" can't be derived without
+an arbitrary invented threshold, and "Repeated" has no real signal in
+this data shape at all. Building either would mean fabricating a
+distinction the real service doesn't provide — the same principle this
+project has held to consistently elsewhere (NULL over fabrication).
+**Only 3 of the 5 categories in the reference are real: Correct,
+Skipped, Said a different word** — and checking the existing CSS
+against the reference image confirmed those 3 already use nearly the
+identical color language (amber strikethrough for skipped, purple
+dotted-underline chip for substitution) — this had already been done
+correctly, just without a "Correct" entry in the legend itself.
+
+**What was genuinely new and honestly buildable from the reference**:
+a "Words to Practice" stat, which needs no new data at all — it's
+just a real count of the same skip+substitution words already in
+`$wordBreakdown`, tallied in `LearnerReadingController::
+buildWordBreakdown()` and returned as `practiceCount` (`null`, not 0,
+when there was no real `word_feedback` to count at all, so an
+untested edge case can't misread as "confirmed zero to practice").
+Added as a genuine addition alongside the existing Accuracy/WCPM/
+Points/Streak tiles — a new 2-row stat grid (Accuracy/WCPM/Words to
+Practice, then Points/Streak) — rather than replacing Points/Streak as
+the reference's own 3-tile layout does, since dropping visible
+points/streak feedback from this screen would be a real product
+regression, not something to do silently just to match a mockup pixel-
+for-pixel. Legend also gained a "Correct" swatch, matching the
+reference's inclusion of it, and swatch size/weight nudged up slightly
+to match the reference's bolder look.
+
+**Tested for real, not assumed from the diff**: a real TTS reading of
+Miguel's real assigned Activity, submitted twice (once via the
+established PowerShell multipart technique, once via a real
+authenticated in-browser `fetch()` rendered live into the DOM for
+visual confirmation) — the database and both renders agreed exactly:
+`practiceCount = 6` (matching the same reading's real 6 substitution
+spans already on record from earlier testing), stat grid rendered
+correctly in the new 2-row layout, and the legend/word-highlight
+styling visually confirmed via screenshot to match the reference's
+color language for all 3 real categories. Test data (2 real
+`ReadingSession` rows, 6 real `Notification` rows, Miguel's `mastery_
+level`/`points`/`streak`) cleaned up and restored afterward.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

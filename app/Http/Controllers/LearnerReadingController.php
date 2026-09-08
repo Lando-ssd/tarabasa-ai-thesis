@@ -211,6 +211,7 @@ class LearnerReadingController extends Controller
             'pointsEarned' => $pointsEarned,
             'wordBreakdown' => $breakdown['words'],
             'extraWordsSaid' => $breakdown['extraWordsSaid'],
+            'wordsToPractice' => $breakdown['practiceCount'],
             'comprehension' => $comprehension,
         ]);
     }
@@ -255,7 +256,14 @@ class LearnerReadingController extends Controller
             ];
         }
 
-        return ['words' => $words, 'extraWordsSaid' => $extraWordsSaid];
+        // A real count, not a new signal — just the words already shown
+        // as skip/sub in the breakdown above, tallied for the stat tile.
+        // Null (not 0) when there was no real word_feedback at all, so an
+        // untested edge case reads as "not measured" rather than a false
+        // "confirmed zero to practice."
+        $practiceCount = empty($wordFeedback) ? null : count(array_filter($words, fn (array $w) => $w['status'] !== 'correct'));
+
+        return ['words' => $words, 'extraWordsSaid' => $extraWordsSaid, 'practiceCount' => $practiceCount];
     }
 
     /**

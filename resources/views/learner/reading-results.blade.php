@@ -45,10 +45,12 @@
     color:#08352c; font:800 14.5px/1 'Baloo 2',sans-serif; padding:10px 18px; border-radius:999px; margin-bottom:18px;
   }
 
-  .stat-row{ display:flex; gap:10px; margin-bottom:22px; }
+  .stat-row{ display:flex; gap:10px; margin-bottom:10px; }
+  .stat-row:last-of-type{ margin-bottom:22px; }
   .stat-tile{ flex:1; background:var(--bg-0); border:2px solid var(--line); border-radius:18px; padding:16px 8px; }
   .stat-tile .v{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:800; color:var(--success); }
   .stat-tile .l{ font-size:13px; font-weight:700; color:var(--slate-600); text-transform:uppercase; letter-spacing:.03em; margin-top:4px; }
+  .stat-tile.practice .v{ color:var(--owl-orange-600); }
 
   /* Word-by-word breakdown — only the 3 categories Reading-api's real
      word_feedback data actually supports (correct/skip/said-a-different-
@@ -68,9 +70,10 @@
   }
   .rw .tip::after{ content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--navy-900); }
   .rw.st-sub:hover .tip, .rw.st-sub:focus .tip{ display:block; }
-  .legend{ display:flex; flex-wrap:wrap; gap:12px; margin-bottom:22px; justify-content:center; }
-  .legend .chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; color:var(--slate-600); }
-  .legend .dot{ width:11px;height:11px;border-radius:4px; }
+  .legend{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:22px; justify-content:center; }
+  .legend .chip{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; color:var(--slate-600); }
+  .legend .dot{ width:14px;height:14px;border-radius:5px; }
+  .legend .dot.correct{ background:var(--success-bg); border:1.5px solid var(--success); }
   .legend .dot.skip{ background:#fff3d6; border:1.5px solid #9a6a00; }
   .legend .dot.sub{ background:#efe8fb; border:1.5px solid #6b4bc7; }
   .extra-words{ font-size:13px; color:var(--slate-600); font-weight:600; margin:0 0 22px; text-align:left; }
@@ -129,6 +132,7 @@
         @endforeach
       </div>
       <div class="legend">
+        <span class="chip"><span class="dot correct"></span> Correct</span>
         <span class="chip"><span class="dot skip"></span> Skipped</span>
         <span class="chip"><span class="dot sub"></span> Said a different word</span>
       </div>
@@ -162,6 +166,12 @@
         <div class="v">{{ $wcpm !== null ? round($wcpm) : '—' }}</div>
         <div class="l">WCPM</div>
       </div>
+      <div class="stat-tile practice">
+        <div class="v">{{ $wordsToPractice ?? '—' }}</div>
+        <div class="l">Words to Practice</div>
+      </div>
+    </div>
+    <div class="stat-row">
       <div class="stat-tile">
         <div class="v">+{{ $pointsEarned }}</div>
         <div class="l">Points</div>
