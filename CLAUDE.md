@@ -2118,9 +2118,8 @@ branches (populated and unassessed) — not just code review:**
 - `php -l` clean on all five touched/new files; zero server errors in
   the dev server's logs across the whole test pass.
 
-## ⚠️ Real, already-occurred bug found — `reading_comprehension`
-## activities silently fail their adaptive update every time (scoped,
-## not yet built)
+## Real comprehension-quiz feature — fixes the `reading_comprehension`
+## adaptive-update bug for good, not just scoped anymore
 
 While investigating a PM question ("should every activity produce
 Accuracy/Speed/Prosody/Comprehension together?"), re-read
@@ -2164,30 +2163,113 @@ Reading-api's own `/analyze` endpoint accepts an optional
 which has stayed `"waiting_for_comprehension"` for every session since
 Sprint 4, for the same underlying reason.
 
-**Scoped, not yet built** (explicitly held back, higher priority than
-the games below but confirmed lower priority than nothing — this is
-the next real feature in line): a Learner-facing comprehension-quiz
-step, specifically for `reading_comprehension`-competency activities
-only, inserted between "finished recording" and the actual form submit
-(Reading-api requires `comprehension_score` in the *same* `/analyze`
-call as the audio, so the quiz has to happen before submission, not
-after). Needs one new nullable `reading_sessions.comprehension_score`
-migration, an optional param on `ReadingAiClient::analyze()`, a small
-backward-compatible hook added to `_recording-widget.blade.php` (an
-optional `window.tarabasaBeforeSubmit` the including page can define
-to insert a step before the widget's existing auto-submit — a no-op
-everywhere it isn't defined, including the diagnostic, which never
-touches `reading_comprehension` activities at all), and a small warm
-recap section on `reading-results.blade.php` (a plain "X out of Y
-correct" count, never a percentage/grade, reusing the same
+**Built exactly as scoped, then verified end-to-end against the real
+live services, not just code review.** A Learner-facing comprehension-
+quiz step, specifically for `reading_comprehension`-competency
+activities only, inserted between "finished recording" and the actual
+form submit (Reading-api requires `comprehension_score` in the *same*
+`/analyze` call as the audio, so the quiz has to happen before
+submission, not after). New nullable `reading_sessions.comprehension_
+score` migration; `ReadingAiClient::analyze()` gained an optional
+`?float $comprehensionScore` param, included in the multipart fields
+only when non-null; `LearnerReadingController::scoreComprehensionQuiz()`
+computes the real score server-side (never trusts a client-submitted
+score — compares each picked choice's text against the Activity's own
+stored `follow_up_questions[].answer`); a small backward-compatible
+hook added to `_recording-widget.blade.php` (`window.
+tarabasaBeforeSubmit`, called right after the recorded file is
+attached — if an including page defines it, that page controls when
+the real submit actually fires via the also-exposed `window.
+tarabasaSubmitRecording()`; if undefined, submission proceeds
+immediately exactly as before — a no-op everywhere except this one
+feature, confirmed the diagnostic is completely unaffected since it
+never generates `reading_comprehension` activities). `activity-found.
+blade.php` renders the quiz step (real questions, radio choices with
+`form="recordForm"` so they submit alongside the audio without being
+DOM-nested inside the widget's own `<form>`) only when the Activity
+actually has real `follow_up_questions`; client-side JS blocks
+submission until every question is answered, with a gentle inline
+note, not a browser alert. `reading-results.blade.php` shows the
+warm recap: a plain "X out of Y correct" count (never a percentage or
+grade) plus a per-question review reusing the same warm,
 color-coded-not-punitive tone as the existing word-breakdown feature —
-this is Practice-session feedback, not the diagnostic's stricter
-"never show a score" rule, so showing a real count is consistent with
-what this screen already does for accuracy/WCPM). Mastery-level and
-points math stay accuracy-only, an existing separate decision,
-untouched by this. `LearnerDiagnosticController` is completely
-unaffected — the diagnostic never generates `reading_comprehension`
-activities.
+✅ for correct, a gentle "💡 The answer was: ___" for a miss, never
+"wrong." Mastery-level and points math stay accuracy-only, an existing
+separate decision, untouched by this.
+
+**Tested for real, end to end, against the actual live Reading-api and
+Adaptive_Recommendator services — not mocked, not just code review:**
+- Real TTS audio (Windows `System.Speech`, this project's established
+  technique) reading the real passage of a real `reading_comprehension`
+  Activity ("A Day at the Coral Reef"), submitted via a real multipart
+  POST (consolidated single-script login→CSRF→submit, this project's
+  established fix for PowerShell's per-call session-loss problem) with
+  2 correct + 1 deliberately wrong answer: the real database confirmed
+  `comprehension_score = 66.67` (exactly 2/3), and the results page
+  correctly rendered "You got 2 out of 3 correct! 🙂" with the missed
+  question showing "💡 The answer was: A tiny green turtle" — a real,
+  computed, non-fabricated result.
+- A second real run with all 3 answers correct confirmed the other
+  branch: "You got 3 out of 3 correct! 🌟", all three questions shown
+  with ✅.
+- **The actual bug, confirmed fixed, not just "should work now":**
+  using a Learner with real pre-existing `competency_states`
+  (`reading_fluency` already assessed from earlier Adaptive_
+  Recommendator testing), the same real submission flow produced a
+  genuinely successful `/recommend` call — `reading_comprehension` in
+  her `competency_states` went from permanently `null` (this
+  competency had NEVER once been successfully assessed for any Learner
+  before this fix) to a real `{proficiency: 100, difficulty: "hard",
+  confidence: 0.68, attempt_count: 1}`. `adaptive_attempt_score` in the
+  database exactly equals the submitted `comprehension_score` (both
+  100.0) — an exact match to the real service's own documented
+  `comprehension_weights = {comprehension_score: 1.00}`, and
+  `confidence` correctly stepped `0.60 → 0.68` (the same real
+  `CONFIDENCE_STEP=0.08` already confirmed for `reading_fluency`
+  earlier) — proof this is a genuine live computation, not a bug that
+  happens to look right. Zero new errors appeared in the Laravel log
+  for either real submission (both fully succeeded).
+- **Reading-api's own composite score confirmed fixed too, directly**:
+  a real direct call to `/analyze` with a real `comprehension_score`
+  returned `"status":"complete"` (no longer `"waiting_for_comprehension"`)
+  with `"components":{...,"comprehension":83.3}` matching exactly what
+  was sent — the second, older disclosed gap from Sprint 4 is closed by
+  the same fix, not just the Adaptive_Recommendator one.
+- **The client-side quiz mechanics verified directly in a real browser**
+  (real mic capture still can't be exercised in this sandboxed
+  environment, the same standing limitation noted throughout this
+  project): invoked the real `window.tarabasaBeforeSubmit()` hook
+  directly (the same legitimate on-device technique already used for
+  this project's mic-silence-detection testing) and confirmed the quiz
+  step correctly replaces the recording step; confirmed clicking
+  "Submit My Answers" with unanswered questions is blocked with the
+  gentle inline note and no submission; confirmed answering all three
+  and clicking submit correctly fires the real form submission (proven
+  by the server correctly rejecting the deliberately-audio-less request
+  with "The audio field is required." — exactly the expected outcome
+  for a test that skips the real recording step on purpose).
+- **One real, unrelated cold-start hiccup hit and correctly diagnosed
+  during testing, not confused for a code bug**: the first live attempt
+  hit a genuine "Maximum execution time of 120 seconds exceeded" from
+  Reading-api's Render free-tier cold start (a known, previously-
+  documented risk for this service) — confirmed via `/health` the
+  service was still warming up, retried once it was confirmed live, and
+  the retry succeeded cleanly. Not a defect in this feature.
+- **Test data side effects identified and cleaned up afterward**, per
+  established practice: the real `ReadingSession` rows created by both
+  test submissions were deleted, the temporary direct `ActivityAssignment`
+  created purely for test setup (bypassing the real Teacher UI, since
+  the test Learner wasn't in a class) was removed, the 4 real
+  `Notification` rows these submissions triggered (session-summary
+  notices to Miguel's real Teacher and Parents) were deleted, and
+  Miguel's `mastery_level`/`points`/`streak` were restored to their
+  prior real values — he's the flagship reference Learner used
+  throughout this whole project's documented testing, not a disposable
+  account. The test Learner's own points/streak/mastery were similarly
+  restored, but her `competency_states` was deliberately left showing
+  the new real `reading_comprehension` assessment as live proof the fix
+  works — consistent with this project's established practice of
+  leaving disposable test accounts' real generated state in place.
 
 ## The user's working style
 

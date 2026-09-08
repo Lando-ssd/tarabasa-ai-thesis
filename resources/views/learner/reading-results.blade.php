@@ -75,6 +75,19 @@
   .legend .dot.sub{ background:#efe8fb; border:1.5px solid #6b4bc7; }
   .extra-words{ font-size:13px; color:var(--slate-600); font-weight:600; margin:0 0 22px; text-align:left; }
 
+  /* Comprehension recap — a plain "X out of Y correct" count, never a
+     percentage or grade, following this screen's OWN existing precedent
+     of showing real numbers (Accuracy%/WCPM below already do) — this is
+     Practice-session feedback, not the diagnostic's stricter "never show
+     a score" rule. Per-question review reuses the same warm,
+     color-coded-not-punitive tone as the word breakdown above. */
+  .comprehension-count{ font-size:15px; font-weight:700; color:var(--navy-900); margin:0 0 12px; text-align:left; }
+  .comp-q{ border-radius:16px; padding:12px 14px; margin-bottom:8px; text-align:left; }
+  .comp-q.correct{ background:var(--success-bg); }
+  .comp-q.miss{ background:#fff3d6; }
+  .comp-question{ font-size:14px; font-weight:700; color:var(--navy-900); margin:0; }
+  .comp-answer{ font-size:12.5px; font-weight:600; color:#9a6a00; margin:6px 0 0; }
+
   .big-btn{
     display:block; width:100%; padding:17px; border:none; border-radius:20px; font:800 16px/1 'Baloo 2',sans-serif;
     cursor:pointer; background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); color:#fff;
@@ -122,6 +135,22 @@
       @if (! empty($extraWordsSaid))
         <p class="extra-words">You also said: "{{ implode('", "', $extraWordsSaid) }}" — that's not in this passage, but great effort reading out loud!</p>
       @endif
+    @endif
+
+    @if ($comprehension)
+      <p class="breakdown-title">How well did you understand it?</p>
+      <p class="comprehension-count">
+        You got {{ $comprehension['correctCount'] }} out of {{ $comprehension['totalCount'] }} correct!
+        {{ $comprehension['correctCount'] === $comprehension['totalCount'] ? '🌟' : '🙂' }}
+      </p>
+      @foreach ($comprehension['breakdown'] as $q)
+        <div class="comp-q {{ $q['isCorrect'] ? 'correct' : 'miss' }}">
+          <p class="comp-question">{{ $q['isCorrect'] ? '✅' : '💡' }} {{ $q['question'] }}</p>
+          @unless ($q['isCorrect'])
+            <p class="comp-answer">The answer was: {{ $q['correctAnswer'] }}</p>
+          @endunless
+        </div>
+      @endforeach
     @endif
 
     <div class="stat-row">

@@ -28,7 +28,7 @@ class ReadingAiClient
      * other real error) — those are not "unclear," they're real failures
      * a retry won't fix.
      */
-    public function analyze(UploadedFile $audio, string $referenceText): array
+    public function analyze(UploadedFile $audio, string $referenceText, ?float $comprehensionScore = null): array
     {
         $url = config('services.reading_ai.url');
 
@@ -46,12 +46,22 @@ class ReadingAiClient
         // Vosk itself is normally fast. Scoped to this action only.
         set_time_limit(120);
 
+        // comprehension_score is Reading-api's own optional form field
+        // (confirmed from its real main.py) — it MUST arrive in this same
+        // /analyze call, not a follow-up request, since the composite
+        // reading_proficiency it feeds is computed synchronously here.
+        // Omitted entirely (not sent as an empty value) when the caller
+        // has no real score to report, so Reading-api's own "waits for
+        // the comprehension activity" fallback still applies correctly.
+        $fields = ['reference_text' => $referenceText];
+        if ($comprehensionScore !== null) {
+            $fields['comprehension_score'] = $comprehensionScore;
+        }
+
         try {
             $response = Http::timeout(120)
                 ->attach('file', fopen($audio->getRealPath(), 'r'), $filename)
-                ->post(rtrim($url, '/').'/analyze', [
-                    'reference_text' => $referenceText,
-                ]);
+                ->post(rtrim($url, '/').'/analyze', $fields);
         } catch (ConnectionException $e) {
             Log::error('Reading AI connection failed', ['error' => $e->getMessage()]);
 

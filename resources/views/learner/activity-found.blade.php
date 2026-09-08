@@ -102,6 +102,24 @@
   .big-btn:hover{ transform:translateY(-2px) scale(1.02); }
   .big-btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
+
+  /* Comprehension quiz — only shown for reading_comprehension-competency
+     Activities that actually carry real follow_up_questions. Inserted
+     between "done reading" and the real form submit (Reading-api needs
+     comprehension_score in the SAME /analyze call as the audio, so this
+     can't happen after results). Reuses .step/.step.active from above. */
+  .quiz-title{ font-size:18px; font-weight:700; color:var(--slate-600); margin:0 0 16px; text-align:center; }
+  .quiz-question{ text-align:left; margin-bottom:18px; }
+  .quiz-question p{ font-family:'Baloo 2',sans-serif; font-size:16px; font-weight:700; margin:0 0 10px; }
+  .quiz-choice{
+    display:flex; align-items:center; gap:10px; padding:12px 14px; border:1.5px solid var(--line); border-radius:14px;
+    margin-bottom:8px; cursor:pointer; transition:border-color .15s ease, background-color .15s ease;
+  }
+  .quiz-choice:hover{ border-color:var(--owl-orange-500); }
+  .quiz-choice input{ width:18px; height:18px; flex-shrink:0; accent-color:var(--owl-orange-600); }
+  .quiz-choice span{ font-size:15px; font-weight:600; color:var(--navy-900); }
+  .quiz-note{ font-size:13px; color:var(--slate-600); font-weight:600; text-align:center; margin:0 0 12px; display:none; }
+  .quiz-note.show{ display:block; }
 </style>
 </head>
 <body>
@@ -120,6 +138,28 @@
     @endif
 
     @include('learner._recording-widget', ['recordAction' => route('learner.activity.record', $activity)])
+
+    @php
+      $comprehensionQuestions = ($activity->competency === 'reading_comprehension') ? ($activity->follow_up_questions ?: []) : [];
+    @endphp
+    @if (! empty($comprehensionQuestions))
+      <div class="step" id="stepComprehensionQuiz">
+        <p class="quiz-title">Now let's see what you remember!</p>
+        @foreach ($comprehensionQuestions as $i => $q)
+          <div class="quiz-question">
+            <p>{{ $q['question'] }}</p>
+            @foreach ($q['choices'] as $c => $choice)
+              <label class="quiz-choice">
+                <input type="radio" name="answers[{{ $i }}]" value="{{ $choice }}" form="recordForm" data-question-index="{{ $i }}">
+                <span>{{ $choice }}</span>
+              </label>
+            @endforeach
+          </div>
+        @endforeach
+        <p class="quiz-note" id="quizNote">Please answer every question first!</p>
+        <button type="button" class="big-btn" id="quizSubmitBtn">Submit My Answers</button>
+      </div>
+    @endif
 
     <a href="{{ route('learner.dashboard') }}" class="big-btn" style="margin-top:14px; background:var(--surface); color:var(--slate-600); box-shadow:none; border:1.5px solid var(--line);">Back to My Dashboard</a>
   </div>
@@ -231,5 +271,41 @@
     window.addEventListener('tarabasa:recording-stopped', stopTracking);
   })();
 </script>
+@if (! empty($comprehensionQuestions))
+<script>
+  // Inserted between "done reading" and the real form submit — Reading-api
+  // needs comprehension_score in the SAME /analyze call as the audio, so
+  // this can't wait until after results. The recording widget calls this
+  // (see its own comment) right after the recorded file is attached to
+  // the form; answers submit alongside it via each radio's form="recordForm".
+  window.tarabasaBeforeSubmit = function () {
+    document.querySelectorAll('.step').forEach(function (el) {
+      if (el.id !== 'stepComprehensionQuiz') {
+        el.classList.remove('active');
+        el.style.display = 'none';
+      }
+    });
+    const quizStep = document.getElementById('stepComprehensionQuiz');
+    quizStep.style.display = 'block';
+    quizStep.classList.add('active');
+  };
+
+  document.getElementById('quizSubmitBtn').addEventListener('click', function () {
+    const answered = {};
+    document.querySelectorAll('#stepComprehensionQuiz input[type="radio"]').forEach(function (radio) {
+      if (radio.checked) answered[radio.name] = true;
+    });
+    const totalQuestions = new Set([...document.querySelectorAll('#stepComprehensionQuiz input[type="radio"]')].map(r => r.name)).size;
+
+    if (Object.keys(answered).length < totalQuestions) {
+      document.getElementById('quizNote').classList.add('show');
+      return;
+    }
+
+    document.getElementById('quizNote').classList.remove('show');
+    window.tarabasaSubmitRecording();
+  });
+</script>
+@endif
 </body>
 </html>

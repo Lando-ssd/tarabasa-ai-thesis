@@ -40,7 +40,10 @@ class LearnerReadingController extends Controller
         // MAX_UPLOAD_MB exactly (confirmed by reading its real source).
         $validated = $request->validate([
             'audio' => ['required', 'file', 'max:15360'],
+            'answers' => ['nullable', 'array'],
         ]);
+
+        $comprehension = $this->scoreComprehensionQuiz($activity, $validated['answers'] ?? null);
 
         $outcome = $readingAi->analyze(
             $validated['audio'],
@@ -50,6 +53,7 @@ class LearnerReadingController extends Controller
             // is the field this project designates for AI-scoring
             // alignment specifically.
             $activity->reference_text ?? $activity->passage_text,
+            $comprehension['score'] ?? null,
         );
 
         if ($outcome['unclear']) {
@@ -60,7 +64,53 @@ class LearnerReadingController extends Controller
         // for this Learner+Activity so a future fresh attempt starts clean.
         $request->session()->forget($this->unclearSessionKey($learner, $activity));
 
-        return $this->scoreAndPersist($learner, $activity, $outcome['result']);
+        return $this->scoreAndPersist($learner, $activity, $outcome['result'], $comprehension);
+    }
+
+    /**
+     * Only meaningful for reading_comprehension-competency Activities —
+     * confirmed via gemini_activity_gen's own real source that
+     * follow_up_questions ONLY exist for that competency, enforced by its
+     * own server-side validation, so every other Activity type simply has
+     * none and this returns null immediately. Never trusts a client-
+     * submitted score directly: the submitted $answers are raw picked
+     * choice text per question index, checked here against the
+     * Activity's own real stored `answer` field.
+     */
+    private function scoreComprehensionQuiz(Activity $activity, ?array $answers): ?array
+    {
+        $questions = ($activity->competency === 'reading_comprehension') ? ($activity->follow_up_questions ?: []) : [];
+
+        if (empty($questions) || $answers === null) {
+            return null;
+        }
+
+        $breakdown = [];
+        $correctCount = 0;
+
+        foreach ($questions as $i => $question) {
+            $picked = $answers[$i] ?? null;
+            $isCorrect = $picked !== null && $picked === $question['answer'];
+            if ($isCorrect) {
+                $correctCount++;
+            }
+
+            $breakdown[] = [
+                'question' => $question['question'],
+                'picked' => $picked,
+                'correctAnswer' => $question['answer'],
+                'isCorrect' => $isCorrect,
+            ];
+        }
+
+        $total = count($questions);
+
+        return [
+            'score' => $total > 0 ? round(($correctCount / $total) * 100, 2) : null,
+            'correctCount' => $correctCount,
+            'totalCount' => $total,
+            'breakdown' => $breakdown,
+        ];
     }
 
     private function handleUnclear(Request $request, Learner $learner, Activity $activity): View
@@ -89,7 +139,7 @@ class LearnerReadingController extends Controller
         return "unclear_attempts.{$learner->id}.{$activity->id}";
     }
 
-    private function scoreAndPersist(Learner $learner, Activity $activity, array $result): View
+    private function scoreAndPersist(Learner $learner, Activity $activity, array $result, ?array $comprehension = null): View
     {
         $accuracy = (float) ($result['accuracy']['accuracy_score'] ?? 0);
         $wcpm = $result['speed']['wcpm'] ?? null;
@@ -99,6 +149,7 @@ class LearnerReadingController extends Controller
         // Adaptive_Recommendator's per-competency scoring below.
         $speedScore = $result['speed']['speed_score'] ?? null;
         $prosodyScore = $result['prosody']['prosody_score'] ?? null;
+        $comprehensionScore = $comprehension['score'] ?? null;
 
         $levelBefore = $learner->mastery_level;
         $levelAfter = $this->adjustMasteryLevel($levelBefore, $accuracy);
@@ -116,6 +167,7 @@ class LearnerReadingController extends Controller
             'wcpm' => $wcpm,
             'speed_score' => $speedScore,
             'prosody_score' => $prosodyScore,
+            'comprehension_score' => $comprehensionScore,
             'pronunciation_score' => null,
             'fluency_score' => null,
             'mispronunciation_count' => null,
@@ -141,7 +193,7 @@ class LearnerReadingController extends Controller
             'streak' => $learner->streak + 1,
         ]);
 
-        $this->updateAdaptiveRecommendation($learner, $activity, $session, $accuracy, $speedScore, $prosodyScore);
+        $this->updateAdaptiveRecommendation($learner, $activity, $session, $accuracy, $speedScore, $prosodyScore, $comprehensionScore);
 
         $this->notifyForSession($learner, $activity, $session);
 
@@ -159,6 +211,7 @@ class LearnerReadingController extends Controller
             'pointsEarned' => $pointsEarned,
             'wordBreakdown' => $breakdown['words'],
             'extraWordsSaid' => $breakdown['extraWordsSaid'],
+            'comprehension' => $comprehension,
         ]);
     }
 
@@ -217,7 +270,7 @@ class LearnerReadingController extends Controller
      * and swallowed: the Learner already has their real results, and
      * losing the "what's next" recommendation is never worth blocking on.
      */
-    private function updateAdaptiveRecommendation(Learner $learner, Activity $activity, ReadingSession $session, float $accuracy, ?float $speedScore, ?float $prosodyScore): void
+    private function updateAdaptiveRecommendation(Learner $learner, Activity $activity, ReadingSession $session, float $accuracy, ?float $speedScore, ?float $prosodyScore, ?float $comprehensionScore = null): void
     {
         if ($learner->competency_states === null || ! $activity->competency || ! $activity->difficulty_tier) {
             return;
@@ -237,9 +290,12 @@ class LearnerReadingController extends Controller
                     'accuracy_score' => $accuracy,
                     'speed_score' => $speedScore,
                     'prosody_score' => $prosodyScore,
-                    // No comprehension-quiz feature exists anywhere in
-                    // this app yet — honestly null, never fabricated.
-                    'comprehension_score' => null,
+                    // Real for reading_comprehension activities now (from
+                    // the Learner's own quiz answers, scored server-side
+                    // in scoreComprehensionQuiz()) — still honestly null
+                    // for the other two competencies, which never carry
+                    // a comprehension quiz at all.
+                    'comprehension_score' => $comprehensionScore,
                 ],
                 'current_state' => $learner->competency_states,
                 'recent_history' => $this->buildAdaptiveRecentHistory($learner),

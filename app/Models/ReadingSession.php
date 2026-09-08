@@ -15,6 +15,7 @@ class ReadingSession extends Model
         'wcpm',
         'speed_score',
         'prosody_score',
+        'comprehension_score',
         'pronunciation_score',
         'fluency_score',
         'mispronunciation_count',

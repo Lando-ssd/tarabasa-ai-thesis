@@ -30,6 +30,16 @@
   client-side-only heads-up for the most common real cause, not a
   replacement for it.
 
+  Once the audio is ready to submit, calls `window.tarabasaBeforeSubmit()`
+  if an including page has defined it — giving that page a chance to
+  insert its own step (e.g. a comprehension quiz) before the real form
+  submission fires. That function is responsible for eventually calling
+  the also-exposed `window.tarabasaSubmitRecording()` when it's actually
+  ready. If no including page defines the hook (true for every page
+  today except activity-found.blade.php's comprehension-quiz addition),
+  submission proceeds immediately exactly as before — this is a
+  backward-compatible, opt-in extension point, not a behavior change.
+
   Dispatches two window-level custom events an including page can
   optionally listen for to drive its own passage word-tracking
   animation in sync with the real recording state: 'tarabasa:recording-
@@ -265,8 +275,16 @@
       dataTransfer.items.add(file);
       document.getElementById('audioInput').files = dataTransfer.files;
 
+      if (typeof window.tarabasaBeforeSubmit === 'function') {
+        window.tarabasaBeforeSubmit();
+      } else {
+        window.tarabasaSubmitRecording();
+      }
+    }
+
+    window.tarabasaSubmitRecording = function () {
       showStep('checking');
       document.getElementById('recordForm').submit();
-    }
+    };
   })();
 </script>
