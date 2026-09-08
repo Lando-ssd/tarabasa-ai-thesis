@@ -25,12 +25,22 @@
     background-attachment:fixed;
     display:flex; align-items:safe center; justify-content:center; padding:24px;
   }
+  /* Responsive layout — three tiers, mobile-first. Below, this is the
+     phone-width baseline (unchanged from before). ≥700px (tablet) and
+     ≥1024px (laptop/desktop) widen the card and scale up touch targets
+     and reading text so a larger screen isn't just a mobile layout
+     floating in unused space — matches this app's own Teacher/Parent
+     shells, which already cap around 820px on desktop. */
   .wrap{ width:100%; max-width:460px; }
+  @media (min-width:700px){ .wrap{ max-width:640px; } }
+  @media (min-width:1024px){ .wrap{ max-width:780px; } }
   .card{
     position:relative; overflow:hidden;
     background:var(--surface); border-radius:30px; padding:32px 28px; text-align:center;
     box-shadow:0 30px 60px -28px rgba(15,60,110,0.25);
   }
+  @media (min-width:700px){ .card{ padding:44px 48px; border-radius:34px; } }
+  @media (min-width:1024px){ .card{ padding:56px 64px; border-radius:38px; } }
   /* Claymorphism accents, matching the Learner tile on the homepage —
      soft, playful, never a bare white card for a young reader. */
   .clay-blob{ position:absolute; border-radius:50%; pointer-events:none; z-index:0; }
@@ -43,14 +53,19 @@
     display:flex;align-items:center;justify-content:center; box-shadow:0 16px 28px -12px rgba(221,112,20,0.5);
     animation:bob 2.4s ease-in-out infinite;
   }
+  @media (min-width:700px){ .mascot{ width:108px; height:108px; font-size:54px; border-radius:32px; } }
   @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
   h1{ font-family:'Baloo 2',sans-serif; font-size:25px; font-weight:700; margin:0 0 6px; }
+  @media (min-width:700px){ h1{ font-size:30px; } }
   .sub{ font-size:18px; color:var(--slate-600); font-weight:600; margin:0 0 22px; line-height:1.55; }
+  @media (min-width:700px){ .sub{ font-size:20px; } }
   .passage-card{
     background:var(--bg-0); border:2px solid var(--line); border-radius:22px; padding:22px; margin-bottom:22px;
     font-family:'Baloo 2',sans-serif; font-size:23px; font-weight:600; line-height:1.7; color:var(--navy-900);
-    text-align:left;
+    text-align:left; overflow-wrap:break-word; word-break:break-word;
   }
+  @media (min-width:700px){ .passage-card{ font-size:26px; padding:28px 32px; border-radius:26px; } }
+  @media (min-width:1024px){ .passage-card{ font-size:28px; } }
 
   .step{ display:none; }
   .step.active{ display:block; }
@@ -62,6 +77,7 @@
     box-shadow:0 16px 28px -12px rgba(221,112,20,0.55), 0 0 0 14px rgba(239,141,42,0.12);
     display:flex;align-items:center;justify-content:center; transition:transform .2s cubic-bezier(.34,1.56,.64,1);
   }
+  @media (min-width:700px){ .mic-btn{ width:112px; height:112px; } .mic-btn svg{ width:38px; height:38px; } }
   .mic-btn:hover{ transform:scale(1.05); }
   .mic-btn.listening{
     animation:pulse 1.1s ease-in-out infinite; background:linear-gradient(155deg, #ff6b6b, var(--danger));
@@ -69,7 +85,9 @@
   }
   @keyframes pulse{ 0%,100%{ box-shadow:0 16px 28px -12px rgba(214,69,69,0.55), 0 0 0 14px rgba(214,69,69,0.12);} 50%{ box-shadow:0 16px 28px -12px rgba(214,69,69,0.55), 0 0 0 22px rgba(214,69,69,0);} }
   .mic-label{ font-size:17px; font-weight:700; color:var(--slate-600); }
+  @media (min-width:700px){ .mic-label{ font-size:19px; } }
   .timer-label{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; color:var(--navy-900); }
+  @media (min-width:700px){ .timer-label{ font-size:28px; } }
   .timer-label.warn{ color:var(--danger); }
 
   .loading-spin{
@@ -91,6 +109,7 @@
     text-decoration:none; box-sizing:border-box; box-shadow:0 16px 26px -12px rgba(15,95,174,0.5);
     transition:transform .2s cubic-bezier(.34,1.56,.64,1);
   }
+  @media (min-width:700px){ .big-btn{ padding:20px; font-size:18px; border-radius:22px; } }
   .big-btn:hover{ transform:translateY(-2px) scale(1.02); }
   .big-btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
@@ -112,6 +131,14 @@
   .quiz-choice span{ font-size:15px; font-weight:600; color:var(--navy-900); }
   .quiz-note{ font-size:13px; color:var(--slate-600); font-weight:600; text-align:center; margin:0 0 12px; display:none; }
   .quiz-note.show{ display:block; }
+  @media (min-width:700px){
+    .quiz-title{ font-size:20px; }
+    .quiz-question p{ font-size:18px; }
+    .quiz-choice{ padding:14px 16px; }
+    .quiz-choice input{ width:20px; height:20px; }
+    .quiz-choice span{ font-size:17px; }
+    .quiz-note{ font-size:14px; }
+  }
 </style>
 </head>
 <body>

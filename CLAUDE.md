@@ -2389,6 +2389,56 @@ card` is still 23px/line-height 1.7×, identical to `activity-found.
 blade.php`'s rule, unchanged by that edit. Disclosed as source-
 confirmed, not live-measured, rather than implied otherwise.
 
+## Responsive layout fix — Learner reading screens no longer pinned to
+## a mobile-width layout on larger screens
+
+Both `activity-found.blade.php` and `diagnostic-passage.blade.php`
+capped their card at `max-width:460px` unconditionally — correct on a
+phone, but the exact same narrow card on a laptop/desktop, floating in
+a lot of unused space instead of using the screen well. Added two
+`min-width` tiers (mobile-first, so phone behavior is completely
+unchanged): **≥700px** (tablet) and **≥1024px** (laptop/desktop).
+`.wrap` widens 460px → 640px → 780px — the 780px ceiling deliberately
+matches the ~820px cap this app's own Teacher/Parent shells already
+use, so an ultra-wide monitor doesn't stretch the card absurdly wide
+either, consistent with the rest of the app. Card padding, the mascot,
+h1/`.sub`, the passage text, the mic button (including its inline SVG
+icon, overridden via a real CSS rule since CSS wins over the SVG's own
+width/height attributes), mic label, timer, and the comprehension
+quiz's own text/choices all scale up at the same two tiers. Added
+`overflow-wrap`/`word-break` to `.passage-card` as a general safety
+net while touching this file (also relevant to the font-size control
+requested next, which needs the same guarantee at every size step).
+
+**Tested for real at 4 actual viewport widths** on a real assigned
+Activity (`activity-found.blade.php`, logged in as Miguel) — not just
+"technically doesn't break":
+- **375px (phone)**: unchanged from before, confirmed correct.
+- **768px (tablet)**: confirmed live via `getComputedStyle` mid-test
+  and visually via screenshot — wider card, visibly larger passage
+  text and mascot; genuinely looks designed for the space, not just
+  "the same mobile card, more padding."
+- **1280px (laptop)**: confirmed live — `.wrap` 780px, passage text
+  28px, h1 30px, mic button 112px — the largest tier, visually
+  confirmed via screenshot.
+- **1920px (desktop)**: confirmed the card holds at the same 780px
+  ceiling rather than stretching wider — correct, matches the rest of
+  the app's own established desktop-width convention.
+- The recording state specifically (mic button + "Listening..." label
+  + timer) re-confirmed at the tablet tier via a real synthetic-stream
+  recording (the same on-device technique used throughout this
+  project) — `recordingActive: true`, mic button 112px, label 19px,
+  timer 28px, all correct tablet values.
+- `diagnostic-passage.blade.php` received the identical breakpoint
+  treatment (same selectors, same values) but was **not** independently
+  live-screenshotted this pass — spinning up a fresh Learner mid-
+  diagnostic (a real Gemini-generated bundle) purely to re-confirm an
+  already-proven, structurally identical CSS pattern wasn't judged
+  worth the real API cost. Disclosed rather than implied otherwise;
+  `php -l` clean, and the file is byte-for-byte the same breakpoint
+  pattern as the independently-verified `activity-found.blade.php`.
+- Zero new entries in the Laravel log across the whole test pass.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

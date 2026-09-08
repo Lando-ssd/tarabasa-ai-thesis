@@ -26,12 +26,20 @@
     background-attachment:fixed;
     display:flex; align-items:safe center; justify-content:center; padding:24px;
   }
+  /* Responsive layout — same three-tier treatment as activity-found.
+     blade.php (the other Learner reading screen), so the diagnostic
+     doesn't feel like a lesser, mobile-only experience on a bigger
+     screen either. */
   .wrap{ width:100%; max-width:460px; }
+  @media (min-width:700px){ .wrap{ max-width:640px; } }
+  @media (min-width:1024px){ .wrap{ max-width:780px; } }
 
   .progress-wrap{ margin-bottom:16px; }
   .progress-label{ text-align:center; font:800 12.5px/1 'Baloo 2',sans-serif; color:var(--slate-600); margin-bottom:8px; letter-spacing:.02em; }
+  @media (min-width:700px){ .progress-label{ font-size:14px; } }
   .progress-dots{ display:flex; gap:8px; justify-content:center; }
   .pdot{ width:10px;height:10px;border-radius:50%; background:var(--line); }
+  @media (min-width:700px){ .pdot{ width:12px; height:12px; } }
   .pdot.done{ background:var(--teal); }
   .pdot.current{ background:var(--owl-orange-500); transform:scale(1.3); }
 
@@ -40,6 +48,8 @@
     background:var(--surface); border-radius:30px; padding:32px 28px; text-align:center;
     box-shadow:0 30px 60px -28px rgba(15,60,110,0.25);
   }
+  @media (min-width:700px){ .card{ padding:44px 48px; border-radius:34px; } }
+  @media (min-width:1024px){ .card{ padding:56px 64px; border-radius:38px; } }
   .clay-blob{ position:absolute; border-radius:50%; pointer-events:none; z-index:0; }
   .clay-blob.b1{ width:150px;height:150px; top:-60px; right:-50px; background:radial-gradient(circle, rgba(255,207,110,0.35), transparent 70%); }
   .clay-blob.b2{ width:120px;height:120px; bottom:-40px; left:-40px; background:radial-gradient(circle, rgba(28,126,214,0.12), transparent 70%); }
@@ -49,11 +59,14 @@
     background:linear-gradient(155deg, var(--clay-yellow), var(--owl-orange-600));
     display:flex;align-items:center;justify-content:center; box-shadow:0 16px 28px -12px rgba(221,112,20,0.5);
   }
+  @media (min-width:700px){ .mascot{ width:92px; height:92px; font-size:46px; border-radius:28px; } }
   .passage-card{
     background:var(--bg-0); border:2px solid var(--line); border-radius:22px; padding:22px; margin-bottom:22px;
     font-family:'Baloo 2',sans-serif; font-size:23px; font-weight:600; line-height:1.7; color:var(--navy-900);
-    text-align:left;
+    text-align:left; overflow-wrap:break-word; word-break:break-word;
   }
+  @media (min-width:700px){ .passage-card{ font-size:26px; padding:28px 32px; border-radius:26px; } }
+  @media (min-width:1024px){ .passage-card{ font-size:28px; } }
 
   .step{ display:none; }
   .step.active{ display:block; }
@@ -64,11 +77,14 @@
     background:linear-gradient(155deg, #ff8a65, var(--owl-orange-600)); box-shadow:0 16px 28px -12px rgba(221,112,20,0.55);
     display:flex;align-items:center;justify-content:center; transition:transform .2s cubic-bezier(.34,1.56,.64,1);
   }
+  @media (min-width:700px){ .mic-btn{ width:108px; height:108px; } .mic-btn svg{ width:38px; height:38px; } }
   .mic-btn:hover{ transform:scale(1.05); }
   .mic-btn.listening{ animation:pulse 1s ease-in-out infinite; background:linear-gradient(155deg, #ff6b6b, var(--danger)); }
   @keyframes pulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(214,69,69,0.4);} 50%{ box-shadow:0 0 0 16px rgba(214,69,69,0);} }
   .mic-label{ font-size:17px; font-weight:700; color:var(--slate-600); }
+  @media (min-width:700px){ .mic-label{ font-size:19px; } }
   .timer-label{ font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:700; color:var(--navy-900); }
+  @media (min-width:700px){ .timer-label{ font-size:26px; } }
   .timer-label.warn{ color:var(--danger); }
 
   .loading-spin{
@@ -89,6 +105,7 @@
     text-decoration:none; box-sizing:border-box; box-shadow:0 16px 26px -12px rgba(15,95,174,0.5);
     transition:transform .2s cubic-bezier(.34,1.56,.64,1);
   }
+  @media (min-width:700px){ .big-btn{ padding:19px; font-size:17px; border-radius:20px; } }
   .big-btn:hover{ transform:translateY(-2px) scale(1.02); }
 </style>
 </head>
