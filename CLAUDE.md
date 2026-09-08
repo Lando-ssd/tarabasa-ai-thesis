@@ -2656,6 +2656,154 @@ functional regression — not assumed from "the diff looks safe":**
   markup in place.
 - Zero new Laravel log entries across the whole re-verification pass.
 
+## Results screen word-breakdown — "Mispronounced" and "Repeated" added
+## for real, reversing the earlier "not honestly buildable" call
+
+The section above ("Results screen word-breakdown — checked against the
+actual design reference image...") documented a considered decision to
+leave "Mispronounced" and "Repeated" out entirely, since Reading-api's
+real `word_feedback` has no confidence score and no field linking it to
+`word_timestamps`. The user asked directly for both to be added anyway,
+**explicitly requiring they be genuinely accurate, not just a visual
+match** — not "add two more colors," but "don't fabricate a
+distinction the data doesn't support." Re-investigated Reading-api's
+real deployed source (`main.py` on github.com/BldZeuz/Reading-api)
+again before writing any code, specifically to check whether a real,
+non-arbitrary derivation existed that the earlier pass hadn't found.
+**One did, for one of the two; the other required a disclosed, honestly-
+labeled heuristic — this section exists so both are easy to find and
+explain, including at a thesis defense, not just mentioned in passing.**
+
+### "Repeated" — a hard fact from real data, not a heuristic
+
+Confirmed directly from Reading-api's source that its response carries
+a **second, independent array** beyond `word_feedback`:
+`word_timestamps` (top-level in the `/analyze` response, `{word, start,
+end, confidence}` per entry) — the raw Vosk transcript in true
+chronological (spoken) order. Also confirmed from source that
+`spoken_words` (what `word_feedback`'s alignment is built from) is
+`normalize_text(spoken_text).split()`, and `spoken_text` is a plain,
+nothing-added-or-removed join of that same transcript — so
+`word_timestamps[k]` and the k-th spoken word `word_feedback` consumed
+are the same word, in the same order, with no filtering or merging in
+between. That means **two identical, immediately-consecutive entries in
+`word_timestamps` are a verified fact about the actual audio** — the
+child really did say that word twice in a row. Nothing invented here;
+it's a real signal Reading-api already returns but the app had never
+looked at.
+
+Implementation (`LearnerReadingController::detectRepeatedSpokenIndexes()`):
+walks `word_timestamps` once, flagging both indexes of any
+case-insensitive immediate duplicate. `buildWordBreakdown()` then walks
+`word_feedback` in parallel, maintaining a pointer into that same
+spoken-word sequence (advanced by exactly the number of spoken words
+each operation type consumes — zero for a `deletion`, one for
+`correct`/`substitution`/`insertion`) so a `correct` operation gets
+reclassified to "repeated" exactly when the spoken word it consumed was
+part of a real detected duplicate. This positional correlation (not a
+text-only match) is what keeps a passage with the same common word
+appearing twice from misfiring — each occurrence is checked against its
+own actual position in the spoken sequence, not just "does this word
+text appear as a duplicate somewhere."
+
+### "Mispronounced" vs. "Said a different word" — TaraBasa's own
+### interpretive layer, explicitly NOT Reading-api's judgment
+
+**This one really is a heuristic, and is documented as exactly that —
+not dressed up as something Reading-api itself determined.** Confirmed
+directly from Reading-api's `align_words()` source that a
+`substitution` operation carries nothing beyond the two plain word
+strings (`reference`, `spoken`) — no edit distance, no phonetic score,
+no confidence value anywhere in that function. Reading-api treats every
+non-matching word identically; it has no concept of "close attempt" vs.
+"totally different word" at all. The distinction the design reference
+mockup wants doesn't exist upstream, so TaraBasa computes it itself,
+from the two real strings Reading-api already hands back:
+
+- Implementation: `LearnerReadingController::looksLikeMispronunciation()`.
+- **Exact method**: for a `substitution` entry with reference word `R`
+  and spoken word `S` (both lowercased/trimmed), classify as
+  **"Mispronounced" if EITHER**:
+  1. `metaphone(R) === metaphone(S)` (PHP's built-in phonetic-key
+     function — the two words sound alike even if spelled differently:
+     e.g. "cool" heard as "kool"), **OR**
+  2. normalized Levenshtein similarity `1 - (levenshtein(R, S) /
+     max(strlen(R), strlen(S))) >= 0.5` (at least half the characters
+     match — a plain, explainable bar, not a number tuned to make one
+     specific example work).
+  Otherwise classified **"Said a different word."**
+- **If asked at defense "how do you distinguish mispronunciation from a
+  substitution?"**: the honest answer is that Reading-api/Vosk does
+  NOT distinguish them — it only reports "the spoken word didn't match
+  the reference word." TaraBasa adds a deterministic post-processing
+  step on top of that real substitution data (phonetic + edit-distance
+  similarity) to make an explainable guess at which kind of miss it
+  was. It is disclosed in-code as a heuristic (see the doc comments on
+  both methods above `buildWordBreakdown()` in
+  `LearnerReadingController.php`), not represented anywhere as an
+  AI-verified judgment.
+
+### Tested for real, on genuine unscripted Vosk output — not assumed
+### correct from reading the formula
+
+Two real TTS submissions through the actual `/learner/activity/{id}/record`
+endpoint (a disposable test Learner, Activity #1's "cat dog pig hen
+cow" passage — reused from this project's own established test
+phrase), both via a real authenticated multipart POST, not mocked:
+
+- Speech "cat dog **dog** hank cow" (reference: "cat dog pig hen cow" —
+  a deliberate duplicate of "dog," dropped "pig," and "hen" reworded):
+  Vosk's real, unscripted transcription came back as `cat`(correct),
+  `dog`(correct), `pig→dog`(substitution), `hen→hank`(substitution),
+  `cow→hill`(substitution) — genuinely NOT what was said verbatim
+  (Vosk's own ASR variance), which is exactly the kind of real,
+  unpredictable input this needed to be tested against, not a
+  synthetic word_feedback array crafted to match the formula. Result:
+  the duplicated "dog" was correctly flagged **Repeated**; "hen→hank"
+  (phonetically close) was correctly classified **Mispronounced**;
+  "cow→hill" (genuinely different) correctly stayed **Said a different
+  word**. `practiceCount` correctly came back as 4 (pig-sub + hen-mispro
+  + cow-sub + dog-repeated all count — "repeated" was read correctly
+  but still needs the pacing practice, matching the reference mockup's
+  own count of 5 highlighted-but-not-plain-correct words in its
+  example).
+- A second real submission ("cat pig hen cow" — cleanly dropping "dog"
+  with no competing insertion this time) confirmed the untouched
+  `deletion → "skip"` path still renders correctly alongside the two
+  new categories, and produced a second genuine mispronunciation case
+  ("hen→hand," phonetically close, correctly "Mispronounced") plus
+  another genuine different-word case ("cow→kill," correctly "Said a
+  different word").
+- Visually confirmed via a real authenticated in-browser `fetch()` +
+  DOM injection (this project's established technique for viewing a
+  real server-rendered result without a full page navigation) —
+  screenshot matches the reference mockup's color language (green/
+  amber/red/purple/blue) and bolder passage typography.
+- All test data (2 disposable Learners, their `ReadingSession`/
+  `ActivityAssignment`/`Notification` rows, temp audio files, and a
+  temporary base64 file placed in `public/` to get real audio bytes
+  into the sandboxed browser's `fetch()`) cleaned up afterward.
+
+**Follow-up, same feature: the "heard X" info was hover-only — invisible
+on a touchscreen and in a screenshot, so the user (rightly) saw it as
+"not labeled."** The mispronounced/substitution/repeated words originally
+showed what was heard via a `.tip` tooltip that only appeared on `:hover`/
+`:focus` — meaningless on the tablet a Grade 1-3 child actually uses this
+screen on, since there's no mouse-hover concept there, and it also meant
+a screenshot of the page (used to review this exact feature) showed the
+colored word with no visible explanation at all. **Fixed by replacing the
+hover tooltip entirely with a small always-visible caption stacked
+directly under each annotated word** (`.rw-annotated` — a column flex
+chip: the word on top, a small "heard '...'" or "said twice" line
+directly beneath it, in the passage's own natural flow) — no interaction
+required to see it, works identically on touch, mouse, or a static
+screenshot. Plain "correct"/"skipped" words are untouched (still simple
+inline text, no chip). Re-tested live the same way as above (same
+disposable-Learner + real-TTS-audio technique) — confirmed all 3
+annotated categories now show their label unconditionally, properly
+aligned in the passage's wrapped flow, no overlap or clipping; test data
+cleaned up afterward the same way.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

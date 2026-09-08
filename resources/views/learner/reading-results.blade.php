@@ -16,6 +16,8 @@
     --teal:#2bb89c;
     --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
     --success:#1f9e83; --success-bg:#e9f7f3;
+    --danger:#d64545; --danger-bg:#fdecec;
+    --repeat-blue:#1c7ed6; --repeat-blue-bg:#e6f2fd;
   }
   *{box-sizing:border-box;} html,body{margin:0;padding:0;}
   body{
@@ -52,30 +54,48 @@
   .stat-tile .l{ font-size:13px; font-weight:700; color:var(--slate-600); text-transform:uppercase; letter-spacing:.03em; margin-top:4px; }
   .stat-tile.practice .v{ color:var(--owl-orange-600); }
 
-  /* Word-by-word breakdown — only the 3 categories Reading-api's real
-     word_feedback data actually supports (correct/skip/said-a-different-
-     word). No "mispronounced"/"repeated" — that data doesn't exist. */
+  /* Word-by-word breakdown — 5 categories: correct, skipped, mispronounced,
+     said-a-different-word, repeated. Reading-api's real word_feedback only
+     ever hands us correct/deletion/substitution/insertion directly —
+     "mispronounced" and "repeated" are computed here from real data
+     (LearnerReadingController::looksLikeMispronunciation() /
+     detectRepeatedSpokenIndexes()), not fields the AI service reports. */
   .breakdown-title{ font-family:'Baloo 2',sans-serif; font-size:15px; font-weight:700; margin:0 0 10px; text-align:left; }
   .passage-review{
-    background:var(--bg-0); border:2px solid var(--line); border-radius:20px; padding:18px; margin-bottom:14px;
-    font-family:'Baloo 2',sans-serif; font-size:18px; font-weight:600; line-height:1.9; color:var(--navy-900); text-align:left;
+    background:var(--surface); border:2px solid var(--line); border-radius:20px; padding:22px 20px; margin-bottom:16px;
+    font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:800; line-height:2.5; color:var(--navy-900); text-align:left;
   }
-  .rw{ position:relative; padding:2px 4px; border-radius:6px; }
+  /* Plain words (correct/skipped) stay simple inline text. Words that need
+     to show what was actually heard (mispronounced/said-a-different-word)
+     or that the child repeated get a small always-visible caption stacked
+     under the word instead of a hover-only tooltip — a tooltip is
+     invisible on a touchscreen (this app has no mouse-hover concept for a
+     child on a tablet) and doesn't show up in a screenshot either, so the
+     information it carried was effectively hidden. */
+  .rw{ position:relative; padding:2px 5px; border-radius:7px; }
   .rw.st-skip{ background:#fff3d6; color:#9a6a00; text-decoration:line-through; text-decoration-thickness:2px; }
-  .rw.st-sub{ background:#efe8fb; color:#6b4bc7; border-bottom:2.5px dotted #6b4bc7; cursor:default; }
-  .rw .tip{
-    display:none; position:absolute; bottom:130%; left:50%; transform:translateX(-50%);
-    background:var(--navy-900); color:#fff; font-family:'Inter',sans-serif; font-weight:600; font-size:11.5px;
-    padding:6px 10px; border-radius:9px; white-space:nowrap; z-index:5;
+  .rw-annotated{
+    display:inline-flex; flex-direction:column; align-items:center; vertical-align:top;
+    padding:5px 9px 4px; margin:2px 3px; border-radius:12px; line-height:1.25;
   }
-  .rw .tip::after{ content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--navy-900); }
-  .rw.st-sub:hover .tip, .rw.st-sub:focus .tip{ display:block; }
+  .rw-annotated .rw-word{ font-family:'Baloo 2',sans-serif; }
+  .rw-annotated .heard{
+    font-family:'Inter',sans-serif; font-size:11px; font-weight:700; letter-spacing:.01em;
+    margin-top:3px; white-space:nowrap;
+  }
+  .rw-annotated.st-sub{ background:#efe8fb; color:#6b4bc7; }
+  .rw-annotated.st-sub .rw-word{ border-bottom:2.5px dotted #6b4bc7; }
+  .rw-annotated.st-mispronounced{ background:var(--danger-bg); color:var(--danger); }
+  .rw-annotated.st-mispronounced .rw-word{ border-bottom:2.5px dotted var(--danger); }
+  .rw-annotated.st-repeated{ background:var(--repeat-blue-bg); color:var(--repeat-blue); }
   .legend{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:22px; justify-content:center; }
   .legend .chip{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; color:var(--slate-600); }
   .legend .dot{ width:14px;height:14px;border-radius:5px; }
   .legend .dot.correct{ background:var(--success-bg); border:1.5px solid var(--success); }
   .legend .dot.skip{ background:#fff3d6; border:1.5px solid #9a6a00; }
+  .legend .dot.mispronounced{ background:var(--danger-bg); border:1.5px solid var(--danger); }
   .legend .dot.sub{ background:#efe8fb; border:1.5px solid #6b4bc7; }
+  .legend .dot.repeated{ background:var(--repeat-blue-bg); border:1.5px solid var(--repeat-blue); }
   .extra-words{ font-size:13px; color:var(--slate-600); font-weight:600; margin:0 0 22px; text-align:left; }
 
   /* Comprehension recap — a plain "X out of Y correct" count, never a
@@ -126,15 +146,30 @@
             <span class="rw">{{ $word['text'] }}</span>
           @elseif ($word['status'] === 'skip')
             <span class="rw st-skip">{{ $word['text'] }}</span>
+          @elseif ($word['status'] === 'repeated')
+            <span class="rw rw-annotated st-repeated">
+              <span class="rw-word">{{ $word['text'] }}</span>
+              <span class="heard">said twice</span>
+            </span>
+          @elseif ($word['status'] === 'mispronounced')
+            <span class="rw rw-annotated st-mispronounced">
+              <span class="rw-word">{{ $word['text'] }}</span>
+              <span class="heard">heard "{{ $word['heard'] }}"</span>
+            </span>
           @else
-            <span class="rw st-sub" tabindex="0">{{ $word['text'] }}<span class="tip">Heard "{{ $word['heard'] }}"</span></span>
+            <span class="rw rw-annotated st-sub">
+              <span class="rw-word">{{ $word['text'] }}</span>
+              <span class="heard">heard "{{ $word['heard'] }}"</span>
+            </span>
           @endif
         @endforeach
       </div>
       <div class="legend">
         <span class="chip"><span class="dot correct"></span> Correct</span>
         <span class="chip"><span class="dot skip"></span> Skipped</span>
+        <span class="chip"><span class="dot mispronounced"></span> Mispronounced</span>
         <span class="chip"><span class="dot sub"></span> Said a different word</span>
+        <span class="chip"><span class="dot repeated"></span> Repeated</span>
       </div>
       @if (! empty($extraWordsSaid))
         <p class="extra-words">You also said: "{{ implode('", "', $extraWordsSaid) }}" — that's not in this passage, but great effort reading out loud!</p>

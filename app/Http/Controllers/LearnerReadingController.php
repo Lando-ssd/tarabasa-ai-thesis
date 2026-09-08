@@ -197,7 +197,10 @@ class LearnerReadingController extends Controller
 
         $this->notifyForSession($learner, $activity, $session);
 
-        $breakdown = $this->buildWordBreakdown($result['accuracy']['word_feedback'] ?? []);
+        $breakdown = $this->buildWordBreakdown(
+            $result['accuracy']['word_feedback'] ?? [],
+            $result['word_timestamps'] ?? []
+        );
 
         return view('learner.reading-results', [
             'activity' => $activity,
@@ -217,53 +220,146 @@ class LearnerReadingController extends Controller
     }
 
     /**
-     * Maps Reading-api's real word_feedback statuses onto the three the
-     * results screen actually shows — correct/skip/sub. Reading-api has
-     * no "mispronounced" or "repeated" signal at all (word_feedback items
-     * carry no confidence, and there's no key linking a word_feedback
-     * entry back to a word_timestamps entry to derive one), so those two
-     * categories from the design reference are deliberately not built —
-     * showing them would mean fabricating a distinction the real data
-     * doesn't support. "insertion" (an extra word the child said that
-     * isn't in the passage at all) has no passage word to attach an
-     * inline highlight to, so those are collected separately instead of
-     * forced into the word-by-word list.
+     * Maps Reading-api's real word_feedback statuses onto the five the
+     * results screen shows — correct/skip/mispronounced/sub/repeated.
+     * "Insertion" (an extra word the child said that isn't in the passage
+     * at all) has no passage word to attach an inline highlight to, so
+     * those are collected separately instead of forced into the
+     * word-by-word list.
+     *
+     * "Mispronounced" and "repeated" are NOT fields Reading-api reports —
+     * confirmed directly from its real align_words() source: a
+     * "substitution" carries no edit-distance/phonetic/confidence score
+     * at all, and word_feedback entries carry no index linking them back
+     * to word_timestamps. Both are computed here instead, from two
+     * already-real, already-trusted pieces of Reading-api's own response,
+     * not invented:
+     *   - Repeated: word_timestamps is the raw, chronologically-ordered
+     *     transcript (confirmed from source: spoken_words, what
+     *     word_feedback is built from, is a normalized 1:1 split of the
+     *     exact same transcript string — same order, same count, nothing
+     *     added/removed/merged). Two identical consecutive entries in
+     *     word_timestamps mean the child genuinely said that word twice
+     *     in a row — a real, verified fact from the actual audio, not a
+     *     guess. See detectRepeatedSpokenIndexes().
+     *   - Mispronounced vs. "said a different word": a real, deterministic
+     *     similarity check (Levenshtein ratio + metaphone) between the
+     *     two real strings Reading-api already returned for a
+     *     substitution (reference vs. spoken) — see
+     *     looksLikeMispronunciation(). This is a disclosed heuristic we
+     *     compute, not a distinction the AI service itself makes.
      */
-    private function buildWordBreakdown(array $wordFeedback): array
+    private function buildWordBreakdown(array $wordFeedback, array $wordTimestamps): array
     {
         $words = [];
         $extraWordsSaid = [];
+        $repeatedSpokenIndexes = $this->detectRepeatedSpokenIndexes($wordTimestamps);
+        $spokenIndex = 0;
 
         foreach ($wordFeedback as $entry) {
             $status = $entry['status'] ?? 'correct';
+
+            if ($status === 'deletion') {
+                // Consumes zero spoken words — nothing to advance.
+                $words[] = ['text' => $entry['reference'] ?? '', 'status' => 'skip', 'heard' => null];
+
+                continue;
+            }
 
             if ($status === 'insertion') {
                 if (! empty($entry['spoken'])) {
                     $extraWordsSaid[] = $entry['spoken'];
                 }
 
+                $spokenIndex++;
+
+                continue;
+            }
+
+            // 'correct' and 'substitution' both consume exactly one
+            // spoken word, in the same order word_timestamps lists them.
+            $isRepeat = isset($repeatedSpokenIndexes[$spokenIndex]);
+            $spokenIndex++;
+
+            if ($status === 'correct') {
+                $words[] = [
+                    'text' => $entry['reference'] ?? '',
+                    'status' => $isRepeat ? 'repeated' : 'correct',
+                    'heard' => null,
+                ];
+
                 continue;
             }
 
             $words[] = [
                 'text' => $entry['reference'] ?? '',
-                'status' => match ($status) {
-                    'substitution' => 'sub',
-                    'deletion' => 'skip',
-                    default => 'correct',
-                },
+                'status' => $this->looksLikeMispronunciation($entry['reference'] ?? '', $entry['spoken'] ?? '')
+                    ? 'mispronounced'
+                    : 'sub',
                 'heard' => $entry['spoken'] ?? null,
             ];
         }
 
-        // A real count, not a new signal — just the words already shown
-        // as skip/sub in the breakdown above, tallied for the stat tile.
-        // Null (not 0) when there was no real word_feedback at all, so an
-        // untested edge case reads as "not measured" rather than a false
-        // "confirmed zero to practice."
+        // A real count — every word shown as anything other than plain
+        // "correct" above, tallied for the stat tile. "Repeated" counts
+        // too (it was read correctly, but the child needs the pacing
+        // practice). Null (not 0) when there was no real word_feedback at
+        // all, so an untested edge case reads as "not measured" rather
+        // than a false "confirmed zero to practice."
         $practiceCount = empty($wordFeedback) ? null : count(array_filter($words, fn (array $w) => $w['status'] !== 'correct'));
 
         return ['words' => $words, 'extraWordsSaid' => $extraWordsSaid, 'practiceCount' => $practiceCount];
+    }
+
+    /**
+     * Returns the set of word_timestamps array indexes that are part of
+     * an immediate, literal repeat (the same word spoken twice in a row —
+     * both the first and second occurrence are flagged, since either one
+     * could end up being the one word_feedback's alignment kept as
+     * "correct" against the reference, with the other becoming an
+     * "insertion"). Case-insensitive, trimmed — matches how Reading-api's
+     * own normalize_text() compares words.
+     */
+    private function detectRepeatedSpokenIndexes(array $wordTimestamps): array
+    {
+        $repeated = [];
+
+        for ($i = 1; $i < count($wordTimestamps); $i++) {
+            $prev = strtolower(trim($wordTimestamps[$i - 1]['word'] ?? ''));
+            $curr = strtolower(trim($wordTimestamps[$i]['word'] ?? ''));
+
+            if ($prev !== '' && $prev === $curr) {
+                $repeated[$i - 1] = true;
+                $repeated[$i] = true;
+            }
+        }
+
+        return $repeated;
+    }
+
+    /**
+     * A plain, explainable bar — not a number tuned to make one example
+     * work: metaphone() catches same-sounds-different-spelling cases
+     * (e.g. "cool" heard as "kool"), and 0.5 Levenshtein similarity means
+     * "at least half the letters match," a genuine attempt at the real
+     * word rather than a wholly different one.
+     */
+    private function looksLikeMispronunciation(string $reference, string $spoken): bool
+    {
+        $reference = strtolower(trim($reference));
+        $spoken = strtolower(trim($spoken));
+
+        if ($reference === '' || $spoken === '') {
+            return false;
+        }
+
+        if (metaphone($reference) === metaphone($spoken)) {
+            return true;
+        }
+
+        $maxLen = max(strlen($reference), strlen($spoken));
+
+        return $maxLen > 0 && (1 - (levenshtein($reference, $spoken) / $maxLen)) >= 0.5;
     }
 
     /**
