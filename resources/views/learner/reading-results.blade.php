@@ -72,7 +72,13 @@
      invisible on a touchscreen (this app has no mouse-hover concept for a
      child on a tablet) and doesn't show up in a screenshot either, so the
      information it carried was effectively hidden. */
-  .rw{ position:relative; padding:2px 5px; border-radius:7px; }
+  /* Plain words were left uncolored black — technically "not flagged,"
+     but that reads as a mismatch against the legend's own green "Correct"
+     dot, since green never actually appears anywhere in the passage.
+     Given green text to actually match what the legend promises,
+     consistent with this same screen's own stat-tile values already
+     using --success for a correct/good result. */
+  .rw{ position:relative; padding:2px 5px; border-radius:7px; color:var(--success); }
   .rw.st-skip{ background:#fff3d6; color:#9a6a00; text-decoration:line-through; text-decoration-thickness:2px; }
   .rw-annotated{
     display:inline-flex; flex-direction:column; align-items:center; vertical-align:top;
@@ -96,13 +102,23 @@
      item that visibly loses the fight for space. flex-shrink:0 on both
      the dot and the chip fixes this for good, not just for today's exact
      label set. */
-  .legend{ display:flex; flex-wrap:wrap; gap:9px 18px; margin-bottom:22px; justify-content:center; }
-  .legend .chip{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; color:var(--slate-600); flex:0 0 auto; }
-  .legend .dot{ width:13px; height:13px; min-width:13px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 1px rgba(19,31,43,0.04); }
+  /* Deliberately NOT flex for the dot+label pairing inside a chip — a
+     nested flex row here (dot + label as flex siblings) produced a
+     real, reproducible misalignment specifically on the longest label
+     ("Said a different word"), confirmed via both computed-style
+     measurement AND an actual screenshot, that persisted across several
+     different flex-based fix attempts. Plain inline-block +
+     vertical-align:middle is the older, more predictable pattern for an
+     icon+text pair and sidesteps whatever the flex cross-axis
+     computation was doing wrong here. */
+  .legend{ display:flex; flex-wrap:wrap; align-items:center; gap:9px 18px; margin-bottom:22px; justify-content:center; }
+  .legend .chip{ font-size:12.5px; font-weight:700; line-height:13px; color:var(--slate-600); white-space:nowrap; }
+  .legend .chip .label{ display:inline-block; vertical-align:middle; }
+  .legend .dot{ display:inline-block; width:13px; height:13px; margin-right:7px; border-radius:50%; vertical-align:middle; box-shadow:0 0 0 1px rgba(19,31,43,0.04); }
   .legend .dot.correct{ background:var(--success-bg); border:1.5px solid var(--success); }
   .legend .dot.skip{ background:#fff3d6; border:1.5px solid #9a6a00; }
   .legend .dot.mispronounced{ background:var(--danger-bg); border:1.5px solid var(--danger); }
-  .legend .dot.sub{ background:#efe8fb; border:1.5px solid #6b4bc7; }
+  .legend .dot.st-sub{ background:#efe8fb; border:1.5px solid #6b4bc7; }
   .legend .dot.repeated{ background:var(--repeat-blue-bg); border:1.5px solid var(--repeat-blue); }
   .extra-words{ font-size:13px; color:var(--slate-600); font-weight:600; margin:0 0 22px; text-align:left; }
 
@@ -173,11 +189,11 @@
         @endforeach
       </div>
       <div class="legend">
-        <span class="chip"><span class="dot correct"></span> Correct</span>
-        <span class="chip"><span class="dot skip"></span> Skipped</span>
-        <span class="chip"><span class="dot mispronounced"></span> Mispronounced</span>
-        <span class="chip"><span class="dot sub"></span> Said a different word</span>
-        <span class="chip"><span class="dot repeated"></span> Repeated</span>
+        <span class="chip"><span class="dot correct"></span><span class="label">Correct</span></span>
+        <span class="chip"><span class="dot skip"></span><span class="label">Skipped</span></span>
+        <span class="chip"><span class="dot mispronounced"></span><span class="label">Mispronounced</span></span>
+        <span class="chip"><span class="dot st-sub"></span><span class="label">Said a different word</span></span>
+        <span class="chip"><span class="dot repeated"></span><span class="label">Repeated</span></span>
       </div>
       @if (! empty($extraWordsSaid))
         <p class="extra-words">You also said: "{{ implode('", "', $extraWordsSaid) }}" — that's not in this passage, but great effort reading out loud!</p>

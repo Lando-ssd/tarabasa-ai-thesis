@@ -2804,6 +2804,57 @@ annotated categories now show their label unconditionally, properly
 aligned in the passage's wrapped flow, no overlap or clipping; test data
 cleaned up afterward the same way.
 
+**Two more follow-up fixes on this same screen, one cosmetic and one a
+genuinely tricky real bug:**
+
+- **"Correct" words were plain black, but the legend's "Correct" dot is
+  green** — a real inconsistency (the legend implies green=correct, but
+  green never actually appeared anywhere in the passage). Fixed by
+  giving plain `.rw` (the correct-word case) `color:var(--success)` —
+  the same green already used for this screen's own stat-tile values,
+  so it's consistent with an existing convention, not a new one.
+- **A real, non-obvious class-name collision, not a layout bug** — the
+  legend's "Said a different word" dot/label kept rendering visibly
+  misaligned (roughly 20px too tall, dot pinned to the top instead of
+  centered) no matter what was tried: `flex-shrink:0` fixes, rewriting
+  the dot+label pairing away from nested flex entirely into plain
+  `inline-block` + `vertical-align:middle`, explicit `line-height`,
+  wrapping the label text in its own span — every fix produced
+  identical computed-style AND identical screenshot evidence of the
+  same exact misalignment, which is what eventually gave it away: a
+  bug that survives switching between two completely different CSS
+  layout algorithms (flexbox and inline-block/vertical-align) is not a
+  layout bug at all. **Root cause, found by checking computed
+  `margin-bottom` directly on the dot element**: the legend markup used
+  `<span class="dot sub">` — and this exact page ALREADY has an
+  unrelated `.sub{ font-size:18px; ...; margin:0 0 20px; }` rule (the
+  "You read..." subtitle paragraph, `<p class="sub">`, line ~43 of this
+  file). Since CSS classes are just a space-separated list, that
+  `<span>` matched BOTH the intended `.legend .dot.sub` rule AND the
+  totally unrelated bare `.sub` rule — and since nothing in `.dot.sub`
+  ever set `margin`, the stray `margin:0 0 20px` silently leaked
+  through untouched (13px dot + 20px inherited margin = 33px, an exact
+  match to the bug's measured height). **Fixed by renaming the legend's
+  class to `st-sub`**, matching the naming convention the passage's own
+  word chips already used (`st-sub`/`st-skip`/`st-mispronounced`/
+  `st-repeated`) specifically *because* that prefixed convention never
+  collided with anything else on the page — `sub` alone, without a
+  prefix, was the actual mistake. **Lesson for future work on this
+  file**: always prefix new status/category class names (`st-`) rather
+  than reusing a short, generic word — a real, already-used class
+  elsewhere in the same file/page is exactly this kind of silent trap,
+  and it will not show up as a CSS error, only as an inexplicable-
+  looking layout bug that resists every layout-logic fix.
+
+Verified fixed with a real end-to-end TTS submission (the same
+disposable-Learner technique used throughout this feature's testing):
+`cat`/correct rendered green, `dog`/repeated, `pig`→`dog` and
+`cow`→`hill`/said-a-different-word, `hen`→`hank`/mispronounced all
+rendered with correct colors and captions, and all 5 legend dots
+measured at an identical 13.49px height — confirmed via direct
+`getBoundingClientRect()` comparison across all five, not just visual
+inspection. Test data cleaned up afterward.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
