@@ -143,6 +143,48 @@ class Learner extends Model implements AuthenticatableContract
     }
 
     /**
+     * Makes the Adaptive_Recommendator engine's per-competency state
+     * (proficiency/difficulty/confidence — real 0-100/easy-medium-hard
+     * values, see AdaptiveRecommendatorClient) presentable to a young
+     * reader (the Learner dashboard) and to a Teacher/Parent (Analytics/
+     * Progress) without either place needing its own copy of the
+     * competency-slug-to-friendly-label mapping. Returns [] when the
+     * Learner has no competency_states yet (pre-diagnostic) — callers
+     * render an honest "not started" state rather than fabricating one.
+     */
+    public function competencyProgressSummary(): array
+    {
+        if ($this->competency_states === null) {
+            return [];
+        }
+
+        $labels = [
+            'foundational_reading' => 'Sounding Out Words',
+            'reading_fluency' => 'Reading Smoothly',
+            'reading_comprehension' => 'Understanding Stories',
+        ];
+
+        $difficultyWords = [
+            'easy' => 'Just Right',
+            'medium' => 'Getting Stronger',
+            'hard' => 'Challenging You',
+        ];
+
+        return collect($labels)->map(function (string $label, string $key) use ($difficultyWords) {
+            $state = $this->competency_states[$key] ?? [];
+            $difficulty = $state['difficulty'] ?? null;
+
+            return [
+                'key' => $key,
+                'label' => $label,
+                'proficiency' => $state['proficiency'] ?? null,
+                'difficultyWord' => $difficulty ? ($difficultyWords[$difficulty] ?? null) : null,
+                'isUpNext' => $key === $this->next_recommended_competency,
+            ];
+        })->values()->all();
+    }
+
+    /**
      * "TB-48213" style — generated once at creation, retried on the rare
      * collision (learner_code is UNIQUE in the schema).
      */

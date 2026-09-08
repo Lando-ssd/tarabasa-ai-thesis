@@ -12,7 +12,7 @@
     --sky-50:#eef6ff; --sky-100:#dcedff;
     --blue-600:#0f5fae;
     --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
-    --clay-yellow:#ffcf6e; --owl-orange-600:#dd7014; --parent-teal:#1f9e83;
+    --clay-yellow:#ffcf6e; --owl-orange-500:#ef8d2a; --owl-orange-600:#dd7014; --parent-teal:#1f9e83;
     --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
     --success:#1f9e83; --amber:#c9820b;
     --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
@@ -75,6 +75,14 @@
   .stat-card .lbl{ font-size:12.5px; color:var(--slate-600); font-weight:700; }
   .stat-card .val{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:2px 0; }
   .stat-card .sub{ font-size:12px; color:var(--slate-400); font-weight:600; }
+
+  .adaptive-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px 18px; box-shadow:var(--shadow-sm); margin-bottom:20px; }
+  .adaptive-card-title{ font-family:'Baloo 2',sans-serif; font-size:14.5px; font-weight:700; margin-bottom:8px; }
+  .adaptive-headline{ font-size:13px; color:var(--navy-900); font-weight:500; margin:0 0 10px; }
+  .adaptive-empty{ font-size:13px; color:var(--slate-600); font-weight:500; margin:0; }
+  .adaptive-chips{ display:flex; gap:7px; flex-wrap:wrap; }
+  .adaptive-chip{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--bg-0); border:1px solid var(--line); color:var(--slate-600); }
+  .adaptive-chip.active{ background:#fff3e2; border-color:var(--owl-orange-500); color:var(--owl-orange-600); }
 
   .chart-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:20px; box-shadow:var(--shadow-sm); margin-bottom:20px; }
   .chart-title{ font-family:'Baloo 2',sans-serif; font-size:15px; font-weight:700; margin-bottom:14px; }
@@ -171,6 +179,8 @@
         <div class="sub">Avg accuracy: {{ $learnerStats['source_summary']['Parent']['avg_accuracy'] !== null ? $learnerStats['source_summary']['Parent']['avg_accuracy'] . '%' : '—' }}</div>
       </div>
     </div>
+
+    @include('partials.adaptive-focus-card', ['learner' => $selectedLearner])
 
     @if ($learnerStats['chart_points']->isEmpty())
       <div class="empty-note">No reading sessions yet for {{ $selectedLearner->first_name }} — once they read something, it'll show up here.</div>

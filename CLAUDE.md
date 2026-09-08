@@ -2048,6 +2048,147 @@ Confirmed via real browser interaction, not just code review:
   the Share-to-Repository toggle opens with working Free/Paid radio
   (confirmed selecting "Paid" correctly enables the price field).
 
+## Adaptive visibility — "How I'm Growing" (Learner) + "Adaptive Focus"
+## (Teacher/Parent)
+
+Before this, the Adaptive_Recommendator engine's per-competency state
+only ever surfaced as one small "Picked just for you! 🎯" label in the
+Learner's activity picker — genuinely invisible backend logic for a
+feature literally named in this app's identity. Investigating a PM
+question about comprehension scoring (see the section below) surfaced
+a real, separate, already-occurred bug; this section is the unrelated,
+lower-stakes "make it visible" work that was explicitly authorized to
+proceed in parallel while that bug gets properly scoped.
+
+New `Learner::competencyProgressSummary()` — the one shared source for
+turning `competency_states`' real 0-100 proficiency / easy-medium-hard
+difficulty into something presentable, used by all three new UI
+surfaces below so the competency-slug-to-friendly-label mapping isn't
+duplicated three times. No raw numbers shown anywhere — proficiency
+only ever drives a bar's fill percentage, difficulty becomes a friendly
+word ("Just Right"/"Getting Stronger"/"Challenging You") — same
+"no raw score" spirit already established for the diagnostic. Returns
+`[]` when `competency_states` is still `null` (pre-diagnostic), so
+every caller renders an honest "hasn't started yet" state instead of a
+fabricated one.
+
+**Learner Dashboard** (`learner/dashboard.blade.php`): a new "How I'm
+Growing 🌱" card below the existing Level/Points/Streak row, one row
+per competency (Sounding Out Words / Reading Smoothly / Understanding
+Stories), each a bar-fill + friendly difficulty word, or an honest
+dashed "Not started yet" bar when unassessed. The competency matching
+`next_recommended_competency` gets a small "⭐ Up Next" badge — the
+same signal already driving the picker's label, now visible somewhere
+a child actually looks at every login, not just buried in an option
+list. The whole section is omitted entirely (not shown empty) for a
+Learner who hasn't completed their diagnostic yet.
+
+**Teacher Analytics (By Learner) + Parent Progress**: a new shared
+`partials/adaptive-focus-card.blade.php` (markup only — each including
+page defines the `.adaptive-card`/`.adaptive-chip` styles in its own
+`<style>` block, consistent with this app's standalone-per-view
+convention) — a headline naming the Learner's current adaptive focus
+in friendly terms, plus three small status chips for all three
+competencies (the active one highlighted). Sits directly below the
+existing Teacher-Assigned/Parent-Initiated stat cards on both screens,
+no new page, no controller changes needed (`$selectedLearner` was
+already the full `Learner` model on both). An honest, distinct message
+("hasn't completed their first-login reading check yet") when
+`competency_states` is still null, rather than an empty/broken card.
+
+**Tested for real against real data, all three surfaces, both
+branches (populated and unassessed) — not just code review:**
+- Logged in as a real Learner with a genuine live `competency_states`
+  row (`reading_fluency: {proficiency: 93.3, difficulty: "hard"}` from
+  earlier Adaptive_Recommendator production testing, `foundational_
+  reading`/`reading_comprehension` still honestly null) — the Learner
+  Dashboard correctly showed a near-full teal bar with "⭐ Up Next" on
+  Reading Smoothly, and genuine dashed/"Not started yet" bars on the
+  other two, confirmed via both `get_page_text` and a screenshot.
+- The same real Learner's data, viewed from a real Parent's Progress
+  screen (`elena.cruz@example.com`): the Adaptive Focus card correctly
+  showed "Currently practicing: Reading Smoothly (Challenging You)"
+  with the matching chip highlighted orange and the other two marked
+  "Not assessed" — confirmed via screenshot.
+- The honest empty-state branch, on a real class-linked Learner with
+  no `competency_states` yet (Teacher Analytics, By Learner mode):
+  correctly showed "FreshHistory hasn't completed their first-login
+  reading check yet — this fills in once they do," not a blank or
+  broken card — confirmed via screenshot.
+- `php -l` clean on all five touched/new files; zero server errors in
+  the dev server's logs across the whole test pass.
+
+## ⚠️ Real, already-occurred bug found — `reading_comprehension`
+## activities silently fail their adaptive update every time (scoped,
+## not yet built)
+
+While investigating a PM question ("should every activity produce
+Accuracy/Speed/Prosody/Comprehension together?"), re-read
+Adaptive_Recommendator's real `engine.py`/`models.py`/`config.py`
+directly. **The literal question's premise is false** — confirmed both
+from source and a live test call: `/recommend` only requires the
+score(s) tied to whichever competency the completed activity is
+tagged with (`foundational_reading` → accuracy+speed;
+`reading_fluency` → +prosody; `reading_comprehension` → comprehension
+only), never all four regardless of type. This already matched what
+was implemented.
+
+**But investigating it surfaced a real, currently-live bug, not a
+hypothetical.** Teachers really do generate and assign
+`reading_comprehension`-competency Activities (3 real ones exist in
+this app's database, generated via the real Generate Activity flow —
+this is a real, exercised path, not a theoretical one). `Learner
+ReadingController::updateAdaptiveRecommendation()` sends
+`comprehension_score: null` unconditionally (no comprehension-quiz
+feature exists anywhere in the app), which is exactly the one field
+`reading_comprehension` requires — so every real attempt at this
+competency gets rejected by the live service with a 422 ("Missing
+required performance metric(s): comprehension_score"), caught and
+silently logged as a warning, never surfacing to anyone. **Confirmed
+this already happened on real data**, not just a live-tested
+reproduction: a real Learner (Miguel) already read a real
+`reading_comprehension` Activity ("Blue Crab at the Beach") for real —
+that session's `adaptive_attempt_score` is `NULL` in the database
+right now.
+
+**The untapped resource that makes this closable**: `gemini_activity_
+gen`'s real source strictly enforces (server-side validation, not
+convention) that `follow_up_questions` — 2-3 real Gemini-generated
+multiple-choice questions with answer + explanation — exist *only* for
+`reading_comprehension`-type activities, and must be empty for every
+other type. The 3 real `reading_comprehension` Activities in this
+app's database already have this real quiz content sitting completely
+unused. This also connects to a second, pre-existing disclosed gap:
+Reading-api's own `/analyze` endpoint accepts an optional
+`comprehension_score` to compute a composite `reading_proficiency`,
+which has stayed `"waiting_for_comprehension"` for every session since
+Sprint 4, for the same underlying reason.
+
+**Scoped, not yet built** (explicitly held back, higher priority than
+the games below but confirmed lower priority than nothing — this is
+the next real feature in line): a Learner-facing comprehension-quiz
+step, specifically for `reading_comprehension`-competency activities
+only, inserted between "finished recording" and the actual form submit
+(Reading-api requires `comprehension_score` in the *same* `/analyze`
+call as the audio, so the quiz has to happen before submission, not
+after). Needs one new nullable `reading_sessions.comprehension_score`
+migration, an optional param on `ReadingAiClient::analyze()`, a small
+backward-compatible hook added to `_recording-widget.blade.php` (an
+optional `window.tarabasaBeforeSubmit` the including page can define
+to insert a step before the widget's existing auto-submit — a no-op
+everywhere it isn't defined, including the diagnostic, which never
+touches `reading_comprehension` activities at all), and a small warm
+recap section on `reading-results.blade.php` (a plain "X out of Y
+correct" count, never a percentage/grade, reusing the same
+color-coded-not-punitive tone as the existing word-breakdown feature —
+this is Practice-session feedback, not the diagnostic's stricter
+"never show a score" rule, so showing a real count is consistent with
+what this screen already does for accuracy/WCPM). Mastery-level and
+points math stay accuracy-only, an existing separate decision,
+untouched by this. `LearnerDiagnosticController` is completely
+unaffected — the diagnostic never generates `reading_comprehension`
+activities.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
