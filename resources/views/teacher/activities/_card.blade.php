@@ -4,41 +4,64 @@
   $canAct = $teacher->status === 'Active';
   $editFormId = 'edit-'.$activity->id;
 @endphp
-<div class="activity-card" data-search="{{ strtolower($activity->title.' '.$activity->grade_level.' '.$activity->competency_label.' '.$typeLabel.' '.$activity->topic) }}">
-  <div class="tag-row">
-    <span class="tag {{ $statusClass }}">{{ $activity->status }}</span>
-    <span class="tag type">{{ $typeLabel }}</span>
-    <span class="tag diff">{{ $activity->difficulty_tier }}</span>
-    @if ($activity->variant_label)
-      <span class="tag diff">Variant {{ $activity->variant_label }}</span>
+<div class="activity-card" data-status="{{ strtolower($activity->status) }}" data-search="{{ strtolower($activity->title.' '.$activity->grade_level.' '.$activity->competency_label.' '.$typeLabel.' '.$activity->topic) }}">
+  <div class="card-head">
+    <div class="card-head-main">
+      <div class="tag-row">
+        <span class="tag {{ $statusClass }}">{{ $activity->status }}</span>
+        <span class="tag type">{{ $typeLabel }}</span>
+        <span class="tag diff">{{ $activity->difficulty_tier }}</span>
+        @if ($activity->variant_label)
+          <span class="tag diff">Variant {{ $activity->variant_label }}</span>
+        @endif
+      </div>
+
+      <p class="act-title">{{ $activity->title }}</p>
+      <p class="act-meta">
+        {{ $activity->grade_level }} &middot; {{ $activity->competency_label }}
+        @if ($activity->topic) &middot; Topic: {{ $activity->topic }} @endif
+      </p>
+    </div>
+
+    @if ($activity->status === 'Draft')
+      <div class="actions">
+        @if ($canAct)
+          <form method="POST" action="{{ route('teacher.activities.approve', $activity) }}">
+            @csrf
+            <button type="submit" class="btn-approve">&#10003; Approve</button>
+          </form>
+          <button type="button" class="btn-edit" data-toggle-edit="{{ $editFormId }}">&#9998; Edit</button>
+          <form method="POST" action="{{ route('teacher.activities.reject', $activity) }}">
+            @csrf
+            <button type="submit" class="btn-reject">&#10005; Reject</button>
+          </form>
+        @else
+          <span class="muted-note">Locked until your account is Active.</span>
+        @endif
+      </div>
+    @elseif ($activity->status === 'Approved')
+      <div class="actions">
+        @if ($canAct)
+          @php $assignFormId = 'assign-'.$activity->id; @endphp
+          <button type="button" class="btn-assign" data-toggle-edit="{{ $assignFormId }}">Assign</button>
+          @if (! $activity->shared_to_repository)
+            @php $shareFormId = 'share-'.$activity->id; @endphp
+            <button type="button" class="btn-edit" data-toggle-edit="{{ $shareFormId }}">Share to Repository</button>
+          @endif
+        @else
+          <span class="muted-note">Locked until your account is Active.</span>
+        @endif
+      </div>
+    @else
+      <div class="actions">
+        <span class="muted-note">No further action available.</span>
+      </div>
     @endif
   </div>
-
-  <p class="act-title">{{ $activity->title }}</p>
-  <p class="act-meta">
-    {{ $activity->grade_level }} &middot; {{ $activity->competency_label }}
-    @if ($activity->topic) &middot; Topic: {{ $activity->topic }} @endif
-  </p>
 
   <div class="act-passage">{{ $activity->passage_text }}</div>
 
   @if ($activity->status === 'Draft')
-    <div class="actions">
-      @if ($canAct)
-        <form method="POST" action="{{ route('teacher.activities.approve', $activity) }}">
-          @csrf
-          <button type="submit" class="btn-approve">&#10003; Approve</button>
-        </form>
-        <button type="button" class="btn-edit" data-toggle-edit="{{ $editFormId }}">&#9998; Edit</button>
-        <form method="POST" action="{{ route('teacher.activities.reject', $activity) }}">
-          @csrf
-          <button type="submit" class="btn-reject">&#10005; Reject</button>
-        </form>
-      @else
-        <span class="muted-note">Locked until your account is Active.</span>
-      @endif
-    </div>
-
     @if ($canAct)
       <div class="edit-form" id="{{ $editFormId }}">
         <form method="POST" action="{{ route('teacher.activities.update', $activity) }}">
@@ -83,19 +106,6 @@
         @endif
       </p>
     @endif
-
-    <div class="actions">
-      @if ($canAct)
-        @php $assignFormId = 'assign-'.$activity->id; @endphp
-        <button type="button" class="btn-assign" data-toggle-edit="{{ $assignFormId }}">Assign</button>
-        @if (! $activity->shared_to_repository)
-          @php $shareFormId = 'share-'.$activity->id; @endphp
-          <button type="button" class="btn-edit" data-toggle-edit="{{ $shareFormId }}">Share to Repository</button>
-        @endif
-      @else
-        <span class="muted-note">Locked until your account is Active.</span>
-      @endif
-    </div>
 
     @if ($canAct && ! $activity->shared_to_repository)
       <div class="edit-form" id="{{ $shareFormId }}">
@@ -161,9 +171,5 @@
         </form>
       </div>
     @endif
-  @else
-    <div class="actions">
-      <span class="muted-note">No further action available.</span>
-    </div>
   @endif
 </div>

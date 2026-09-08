@@ -1964,11 +1964,89 @@ diagnostic (genuine TTS audio, real Gemini-generated passages):
   blocked or crashed on by the new `recommend()` call either, since it
   short-circuits before attempting the request at all.
 
-**Not yet done:** `ADAPTIVE_RECOMMENDER_URL`/`ADAPTIVE_RECOMMENDER_KEY`
-still need to be added to Railway's real environment variables — this
-integration will honestly report itself as "not configured" (gracefully,
-never blocking a Learner) on live production until that's done, the
-same rollout pattern the other two services went through originally.
+**`ADAPTIVE_RECOMMENDER_URL`/`ADAPTIVE_RECOMMENDER_KEY` are now live on
+Railway** — the user added both directly via Railway's Variables tab;
+confirmed correct by direct comparison against this codebase's own
+`config/services.php`/`.env` values before the user deployed. This
+integration is no longer honestly reporting "not configured" on
+production — it's active, same rollout pattern the other two services
+went through.
+
+## My Activities — scrolling/density fix (status filter tabs, compact
+## rows, sticky toolbar)
+
+The real, live "My Activities" page had become a genuine usability
+problem for a Teacher with real accumulated history — all Drafts and
+Approved activities stacked in one long column, forcing a deep scroll
+past everything already resolved just to reach what's actionable.
+Fixed with three changes, all reusing this app's own established
+patterns rather than inventing new ones:
+
+- **Status filter tabs**, the exact `.filters`/`.filter-chip`/
+  `.filter-chip.active` CSS already used byte-for-byte in
+  `teacher/notifications.blade.php` and `parent/repository.blade.php`
+  — reused verbatim, not reinvented. One deliberate wiring difference
+  from those two pages: driven by `<button data-filter="...">` +
+  client-side JS instead of `<a href="?filter=...">` server links, so
+  the new filter composes instantly with this page's pre-existing
+  client-side search box (added in the earlier design-audit pass)
+  without a server round trip resetting it — matching this specific
+  page's own prior convention, not the other two pages' convention.
+  Defaults to "Awaiting Review," the one actionable state. Three
+  `<div data-status-section="draft|approved|rejected">` wrappers hold
+  the existing, unchanged `@forelse`/`@include`/`@empty` blocks; the
+  two non-default sections carry a server-rendered `hidden` attribute
+  so there's no flash of the full unfiltered list on first paint.
+- **Compact rows**: `_card.blade.php` restructured into a `.card-head`
+  flex row — tags/title/meta on the left (`.card-head-main`), the
+  Approve/Edit/Reject (Draft) or Assign/Share to Repository (Approved)
+  buttons inline on the right, instead of stacked below the passage
+  box. A `data-status` attribute was added to the outer card for
+  potential future use. Same information and actions, denser layout —
+  the passage box, edit-form, assign-form, and share-form all kept
+  their original content/order below the new header row.
+- **Sticky toolbar**: `.controls-sticky` (`position:sticky; top:0`,
+  solid `--bg-0` background, bottom border) wraps the search box and
+  the new filter chips, since this page's scroll container is the
+  plain document body with no `overflow` ancestor — `top:0` pins
+  correctly to the viewport.
+
+**Tested for real against a real Teacher's real accumulated data, not
+synthetic/mocked** — logged in as `teacher.mi.20260829192315@example.com`
+(25 real activities: 18 Draft, 4 Approved, 3 Rejected — the same real
+account used for Sprint 5 Analytics testing; its test password was
+already unknown from that prior reset, so a new one was set via
+`tinker` the same way, consistent with that established precedent).
+Confirmed via real browser interaction, not just code review:
+- All three filter chips render the correct real counts ("Awaiting
+  Review (18)", "Approved (4)", "Rejected (3)"), default to Awaiting
+  Review, and clicking each correctly swaps which section is visible
+  — confirmed Approved shows exactly its 4 real cards with
+  Assign/Share buttons, Rejected shows exactly its 3 real cards with
+  "No further action available."
+- The existing client-side search composes correctly with the active
+  filter: searching "animal" while on Awaiting Review narrowed 18 real
+  Draft cards down to the 15 real ones actually matching, entirely
+  within that section; a deliberate no-match query ("zzznomatch")
+  correctly showed the existing "No activities match" note.
+- **Sticky positioning confirmed genuinely functional, not just
+  computed-style-correct**: scrolled 400px down, then clicked the
+  "Approved" filter chip at its on-screen position — the click only
+  lands correctly if the toolbar is truly pinned to the viewport top,
+  and it worked, correctly swapping the active filter while scrolled.
+  (A visual gap appeared above the toolbar in screenshots taken at
+  this scroll position — cross-checked against live DOM geometry
+  [`getBoundingClientRect()` reporting `top: 0`, `position: sticky`]
+  and confirmed this is the same pre-existing stale-screenshot/
+  `background-attachment:fixed` capture artifact already documented
+  above from the earlier UI/UX audit pass, not a real layout bug.)
+- All pre-existing interactive behavior on the restructured card
+  still works post-move: the Draft Edit-toggle opens the pre-populated
+  edit form correctly; the Approved card's Assign-toggle opens with
+  working Learner/Class/Group radio-to-select sync (confirmed
+  switching to "Class" correctly swapped the visible/enabled dropdown);
+  the Share-to-Repository toggle opens with working Free/Paid radio
+  (confirmed selecting "Paid" correctly enables the price field).
 
 ## The user's working style
 

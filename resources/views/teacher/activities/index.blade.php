@@ -75,7 +75,16 @@
 
   .section-title{ font-family:'Baloo 2',sans-serif; font-size:15.5px; font-weight:700; margin:26px 0 12px; }
   .section-title:first-of-type{ margin-top:0; }
-  .search-row{ position:relative; margin-bottom:6px; }
+
+  /* Sticky search + filter toolbar — pinned to the viewport top so a
+     Teacher scanning a long list never loses access to either while
+     scrolling. Solid background (not the page's radial-gradient) so
+     content scrolling underneath doesn't show through. */
+  .controls-sticky{
+    position:sticky; top:0; z-index:20; background:var(--bg-0);
+    padding:14px 0 12px; margin-bottom:4px; border-bottom:1px solid var(--line);
+  }
+  .search-row{ position:relative; margin-bottom:12px; }
   .search-row svg{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--slate-400); pointer-events:none; }
   #activity-search{
     width:100%; font:500 14px/1 'Inter',sans-serif; padding:12px 14px 12px 40px; border:1.5px solid var(--line);
@@ -84,10 +93,24 @@
   }
   #activity-search::placeholder{ color:var(--slate-400); font-weight:500; }
   #activity-search:focus{ border-color:var(--blue-500); box-shadow:0 0 0 4px rgba(15,95,174,0.12); }
-  .no-match-note{ display:none; color:var(--slate-600); font-size:13.5px; font-weight:500; padding:14px 2px; }
+  .no-match-note{ display:none; color:var(--slate-600); font-size:13.5px; font-weight:500; padding:10px 2px 0; }
 
-  .activity-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:var(--shadow-sm); margin-bottom:14px; }
-  .tag-row{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:9px; }
+  /* Same filter-chip pattern already established in Notifications and
+     Repository — reused verbatim, not reinvented, driven client-side
+     here (button, not <a>) so it composes instantly with the search
+     box above instead of a server round trip. */
+  .filters{ display:flex; gap:9px; flex-wrap:wrap; }
+  .filter-chip{
+    padding:8px 15px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface);
+    font-size:13px; font-weight:700; color:var(--slate-600); cursor:pointer; text-decoration:none;
+    transition:border-color .15s ease, color .15s ease, background .15s ease; font-family:inherit;
+  }
+  .filter-chip.active{ border-color:var(--blue-500); background:var(--sky-50); color:var(--blue-600); }
+
+  .activity-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow-sm); margin-bottom:10px; }
+  .card-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
+  .card-head-main{ flex:1; min-width:220px; }
+  .tag-row{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
   .tag{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; }
   .tag.status-draft{ background:var(--sky-50); color:var(--blue-600); }
   .tag.status-approved{ background:var(--success-bg); color:var(--success); }
@@ -96,16 +119,18 @@
   .tag.diff{ background:var(--bg-0); color:var(--slate-600); border:1px solid var(--line); }
 
   .act-title{ font-family:'Baloo 2',sans-serif; font-size:16px; font-weight:700; margin:0 0 2px; }
-  .act-meta{ font-size:12.5px; color:var(--slate-600); font-weight:600; margin-bottom:10px; }
+  .act-meta{ font-size:12.5px; color:var(--slate-600); font-weight:600; margin:0; }
   .act-passage{
-    font-size:13px; color:var(--navy-900); font-weight:500; line-height:1.6; background:var(--bg-0);
-    border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; white-space:pre-wrap;
+    font-size:13px; color:var(--navy-900); font-weight:500; line-height:1.55; background:var(--bg-0);
+    border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:10px; white-space:pre-wrap;
   }
 
-  .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .actions{ display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0; }
+  .card-head .actions{ padding-top:1px; }
   .actions button, .actions a{
-    padding:9px 15px; border-radius:10px; font:700 12.5px/1 'Inter',sans-serif; cursor:pointer; text-decoration:none;
+    padding:8px 14px; border-radius:10px; font:700 12.5px/1 'Inter',sans-serif; cursor:pointer; text-decoration:none;
     transition:transform .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease;
+    white-space:nowrap;
   }
   .actions button:hover, .actions a:hover{ transform:translateY(-1px); }
   .actions button:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
@@ -180,41 +205,56 @@
     </div>
   @endif
 
-  @if ($drafts->count() + $approved->count() + $rejected->count() > 5)
-    <div class="search-row">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input type="search" id="activity-search" placeholder="Search by title, grade, competency, or topic&hellip;" autocomplete="off">
+  <div class="controls-sticky">
+    @if ($drafts->count() + $approved->count() + $rejected->count() > 5)
+      <div class="search-row">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="search" id="activity-search" placeholder="Search by title, grade, competency, or topic&hellip;" autocomplete="off">
+      </div>
+    @endif
+
+    {{-- Same filter-chip look already used in Notifications/Repository.
+         Defaults to Drafts — the one actionable state — so a Teacher
+         with a long history isn't scrolling past everything they've
+         already resolved just to reach what needs attention. --}}
+    <div class="filters">
+      <button type="button" class="filter-chip active" data-filter="draft">Awaiting Review ({{ $drafts->count() }})</button>
+      <button type="button" class="filter-chip" data-filter="approved">Approved ({{ $approved->count() }})</button>
+      <button type="button" class="filter-chip" data-filter="rejected">Rejected ({{ $rejected->count() }})</button>
     </div>
     <p class="no-match-note" id="activity-no-match">No activities match "<span></span>".</p>
-  @endif
+  </div>
 
-  <div class="section-title" data-section-title>Drafts Awaiting Review ({{ $drafts->count() }})</div>
-  @forelse ($drafts as $activity)
-    @include('teacher.activities._card', ['activity' => $activity, 'activityTypeLabels' => $activityTypeLabels, 'teacher' => $teacher])
-  @empty
-    <div class="empty-note">No drafts waiting — generate a new activity to see it here.</div>
-  @endforelse
+  <div data-status-section="draft">
+    @forelse ($drafts as $activity)
+      @include('teacher.activities._card', ['activity' => $activity, 'activityTypeLabels' => $activityTypeLabels, 'teacher' => $teacher])
+    @empty
+      <div class="empty-note">No drafts waiting — generate a new activity to see it here.</div>
+    @endforelse
+  </div>
 
-  <div class="section-title" data-section-title>Approved ({{ $approved->count() }})</div>
-  @forelse ($approved as $activity)
-    @include('teacher.activities._card', [
-      'activity' => $activity,
-      'activityTypeLabels' => $activityTypeLabels,
-      'teacher' => $teacher,
-      'assignLearners' => $assignLearners,
-      'assignClasses' => $assignClasses,
-      'assignGroupTags' => $assignGroupTags,
-    ])
-  @empty
-    <div class="empty-note">Nothing approved yet.</div>
-  @endforelse
+  <div data-status-section="approved" hidden>
+    @forelse ($approved as $activity)
+      @include('teacher.activities._card', [
+        'activity' => $activity,
+        'activityTypeLabels' => $activityTypeLabels,
+        'teacher' => $teacher,
+        'assignLearners' => $assignLearners,
+        'assignClasses' => $assignClasses,
+        'assignGroupTags' => $assignGroupTags,
+      ])
+    @empty
+      <div class="empty-note">Nothing approved yet.</div>
+    @endforelse
+  </div>
 
-  <div class="section-title" data-section-title>Rejected ({{ $rejected->count() }})</div>
-  @forelse ($rejected as $activity)
-    @include('teacher.activities._card', ['activity' => $activity, 'activityTypeLabels' => $activityTypeLabels, 'teacher' => $teacher])
-  @empty
-    <div class="empty-note">Nothing rejected.</div>
-  @endforelse
+  <div data-status-section="rejected" hidden>
+    @forelse ($rejected as $activity)
+      @include('teacher.activities._card', ['activity' => $activity, 'activityTypeLabels' => $activityTypeLabels, 'teacher' => $teacher])
+    @empty
+      <div class="empty-note">Nothing rejected.</div>
+    @endforelse
+  </div>
 </div>
 
 <script>
@@ -270,37 +310,56 @@
     });
   });
 
-  // Client-side search only shown once the list is long enough to need
-  // it (see the conditional above in the markup) — no server round trip,
-  // no AJAX, consistent with this app's own convention of favoring plain
-  // page interactions over JS-heavy ones except where it clearly helps.
+  // Status filter tabs + client-side search, composed together: only
+  // one status section is ever in the DOM's visible flow at a time (the
+  // active filter), and search narrows further within it — no server
+  // round trip for either, consistent with this app's convention of
+  // favoring plain page interactions over JS/AJAX except where it
+  // clearly helps a long real list stay scannable.
+  const statusSections = Array.from(document.querySelectorAll('[data-status-section]'));
+  const filterChips = Array.from(document.querySelectorAll('.filter-chip[data-filter]'));
   const activitySearch = document.getElementById('activity-search');
-  if (activitySearch) {
-    const cards = Array.from(document.querySelectorAll('.activity-card'));
-    const sectionTitles = Array.from(document.querySelectorAll('[data-section-title]'));
-    const noMatchNote = document.getElementById('activity-no-match');
-    activitySearch.addEventListener('input', function () {
-      const q = activitySearch.value.trim().toLowerCase();
-      let anyVisible = false;
+  const noMatchNote = document.getElementById('activity-no-match');
+  let activeFilter = 'draft';
+
+  function applyVisibility() {
+    const q = activitySearch ? activitySearch.value.trim().toLowerCase() : '';
+    let anyVisibleInActiveSection = false;
+    let activeSectionHasCards = false;
+
+    statusSections.forEach(function (section) {
+      const isActive = section.dataset.statusSection === activeFilter;
+      section.hidden = !isActive;
+      if (!isActive) return;
+
+      const cards = Array.from(section.querySelectorAll('.activity-card'));
+      activeSectionHasCards = cards.length > 0;
       cards.forEach(function (card) {
         const match = !q || card.dataset.search.includes(q);
         card.style.display = match ? '' : 'none';
-        if (match) anyVisible = true;
+        if (match) anyVisibleInActiveSection = true;
       });
-      sectionTitles.forEach(function (title) {
-        const section = [];
-        let node = title.nextElementSibling;
-        while (node && !node.hasAttribute('data-section-title')) {
-          if (node.classList.contains('activity-card')) section.push(node);
-          node = node.nextElementSibling;
-        }
-        const sectionHasVisible = !q || section.length === 0 || section.some(function (c) { return c.style.display !== 'none'; });
-        title.style.display = sectionHasVisible ? '' : 'none';
-      });
-      noMatchNote.style.display = (q && !anyVisible) ? 'block' : 'none';
-      noMatchNote.querySelector('span').textContent = q;
     });
+
+    if (noMatchNote) {
+      noMatchNote.style.display = (q && activeSectionHasCards && !anyVisibleInActiveSection) ? 'block' : 'none';
+      noMatchNote.querySelector('span').textContent = q;
+    }
   }
+
+  filterChips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      activeFilter = chip.dataset.filter;
+      filterChips.forEach(function (c) { c.classList.toggle('active', c === chip); });
+      applyVisibility();
+    });
+  });
+
+  if (activitySearch) {
+    activitySearch.addEventListener('input', applyVisibility);
+  }
+
+  applyVisibility();
 </script>
 </body>
 </html>
