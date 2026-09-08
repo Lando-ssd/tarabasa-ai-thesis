@@ -88,9 +88,17 @@
   .rw-annotated.st-mispronounced{ background:var(--danger-bg); color:var(--danger); }
   .rw-annotated.st-mispronounced .rw-word{ border-bottom:2.5px dotted var(--danger); }
   .rw-annotated.st-repeated{ background:var(--repeat-blue-bg); color:var(--repeat-blue); }
-  .legend{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:22px; justify-content:center; }
-  .legend .chip{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; color:var(--slate-600); }
-  .legend .dot{ width:14px;height:14px;border-radius:5px; }
+  /* flex-wrap on .legend, combined with .chip also being display:flex,
+     meant a tight wrapped row (5 chips now instead of the original 3,
+     "Said a different word" being by far the longest label) let the flex
+     algorithm shrink the .dot itself well below its own 14px — a fixed-
+     size box has no min-content floor the way text does, so it's the
+     item that visibly loses the fight for space. flex-shrink:0 on both
+     the dot and the chip fixes this for good, not just for today's exact
+     label set. */
+  .legend{ display:flex; flex-wrap:wrap; gap:9px 18px; margin-bottom:22px; justify-content:center; }
+  .legend .chip{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; color:var(--slate-600); flex:0 0 auto; }
+  .legend .dot{ width:13px; height:13px; min-width:13px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 1px rgba(19,31,43,0.04); }
   .legend .dot.correct{ background:var(--success-bg); border:1.5px solid var(--success); }
   .legend .dot.skip{ background:#fff3d6; border:1.5px solid #9a6a00; }
   .legend .dot.mispronounced{ background:var(--danger-bg); border:1.5px solid var(--danger); }
