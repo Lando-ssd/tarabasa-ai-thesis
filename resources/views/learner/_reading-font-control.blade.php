@@ -26,17 +26,17 @@
 --}}
 <style>
   .font-control{
-    display:inline-flex; align-items:center; gap:2px; background:var(--surface); border:2px solid var(--line);
-    border-radius:999px; padding:4px; margin:0 auto 16px; box-shadow:0 1px 2px rgba(19,31,43,0.06);
+    display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:2px solid var(--line);
+    border-radius:999px; padding:6px 8px; margin:0 auto 16px; box-shadow:0 1px 2px rgba(19,31,43,0.06);
   }
   .font-btn{
-    width:38px; height:38px; border-radius:50%; border:none; background:var(--bg-0); color:var(--navy-900);
-    font:800 16px/1 'Baloo 2',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    transition:background-color .15s ease, color .15s ease, transform .15s ease;
+    width:38px; height:38px; border-radius:50%; border:1.5px solid var(--line); background:var(--bg-0); color:var(--navy-900);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:border-color .15s ease, color .15s ease, transform .15s ease;
   }
-  .font-btn:hover:not(:disabled){ background:var(--owl-orange-500); color:#fff; transform:scale(1.06); }
+  .font-btn:hover:not(:disabled){ border-color:var(--owl-orange-500); color:var(--owl-orange-600); transform:scale(1.08); }
   .font-btn:disabled{ opacity:.35; cursor:not-allowed; }
-  .font-step-label{ font:700 13px/1 'Inter',sans-serif; color:var(--slate-600); padding:0 12px; min-width:82px; text-align:center; }
+  .font-step-label{ font:700 13px/1 'Inter',sans-serif; color:var(--slate-600); padding:0 6px; min-width:150px; text-align:center; }
 
   .passage-card[data-font-step="1"]{ font-size:calc(var(--passage-font-base) * 0.82); }
   .passage-card[data-font-step="2"]{ font-size:calc(var(--passage-font-base) * 0.91); }
@@ -44,10 +44,18 @@
   .passage-card[data-font-step="4"]{ font-size:calc(var(--passage-font-base) * 1.15); }
   .passage-card[data-font-step="5"]{ font-size:calc(var(--passage-font-base) * 1.32); }
 </style>
+{{-- Icon buttons, not "A−"/"A+" glyphs — matches this app's own
+     established icon-in-circle button language (e.g. the mic button)
+     more closely than text glyphs would, per the visual reference
+     shared for this control. --}}
 <div class="font-control" role="group" aria-label="Reading text size">
-  <button type="button" class="font-btn" id="fontStepMinus" aria-label="Smaller text">A−</button>
+  <button type="button" class="font-btn" id="fontStepMinus" aria-label="Smaller text">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+  </button>
   <span class="font-step-label" id="fontStepLabel"></span>
-  <button type="button" class="font-btn" id="fontStepPlus" aria-label="Larger text">A+</button>
+  <button type="button" class="font-btn" id="fontStepPlus" aria-label="Larger text">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+  </button>
 </div>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
@@ -66,7 +74,7 @@
 
     function render() {
       passageCard.setAttribute('data-font-step', step);
-      label.textContent = STEP_NAMES[step - 1];
+      label.textContent = 'Text size: ' + STEP_NAMES[step - 1];
       minusBtn.disabled = step <= 1;
       plusBtn.disabled = step >= 5;
     }

@@ -2596,6 +2596,66 @@ across an actual fresh login — not assumed from the diff:**
   `ReadingSession`/`Notification` side effects this time (no audio was
   actually submitted, only the size control was exercised).
 
+## Font-size control — visual-only polish pass against the real
+## reference file, zero logic touched
+
+The user's earlier "make the ui/ux good the same on the pic" request
+turned out to be a screenshot of the exact reference file
+(`tarabasa-learner-word-tracking-v3.html`) this control was always
+meant to be built from — supplied in full this time. Explicitly scoped
+as visual-only: confirmed via `git diff` after the edit that the ONLY
+lines touched were CSS values, the two buttons' inner markup (icons
+instead of text), and one label-text string — every logic line
+(`step` variable, `save()`, the `if (step <= 1)`/`if (step >= 5)`
+guards, the `calc()` multipliers, the `DOMContentLoaded` wrapper) is
+byte-for-byte unchanged.
+
+**What changed, and why**: the reference uses plain minus/plus SVG
+icons instead of "A−"/"A+" text glyphs, with a lighter hover treatment
+(border-color change, not a solid-fill flash) — adopted both, since
+icon buttons match this app's own established icon-in-circle language
+(the mic button) more closely than text glyphs did, and read as a
+genuine refinement, not just a copy. Also adopted the reference's
+"Text size: {name}" label format (previously just the bare name) for
+clarity. **Deliberately NOT adopted**: the reference's plain-square,
+no-emoji mascot and its white/heavy-shadow passage-card background —
+both read as a wireframe/mockup stand-in rather than an intentional
+redesign instruction, and swapping the passage-card's established
+`--bg-0` tint for plain white would break consistency with every
+other Learner screen's passage-card, which wasn't asked for.
+
+**A real, unrelated leftover caught and fixed during re-testing, not a
+new bug**: Miguel's `reading_font_step` was still `5` in the database
+from this session's OWN earlier overflow-safety test (three real A+
+taps that got saved), which briefly made the re-verification wrongly
+show "Extra Large" instead of the expected Grade 3 default. Confirmed
+via direct query this was old test data, not new-code fallout; reset
+to `null` before re-testing, consistent with treating Miguel as the
+flagship reference Learner (not disposable test data) throughout this
+whole project.
+
+**Re-tested everything already verified last session, confirming zero
+functional regression — not assumed from "the diff looks safe":**
+- Grade-based defaults, post-visual-change: Miguel (Grade 3, freshly
+  reset) correctly showed step 2/"Medium−"; both real database query
+  and live page agreed.
+- Disable-at-ends, post-visual-change: 3 real clicks past the ceiling
+  clamped correctly at step 5/"Extra Large" with the new plus-icon
+  button genuinely `disabled` (confirmed via `.disabled` property, not
+  just visual dimming).
+- **Persistence across an actual fresh login, re-confirmed with the
+  new pill**: real Grade 1 Learner Kim, already sitting at her own
+  real step 1/"Small" from last session (confirmed still loaded
+  correctly with the new UI first), bumped to step 3/"Medium", real
+  database query confirmed the save, then a genuine `/learner/logout`
+  POST + fresh login + fresh page load showed step 3/"Medium" again —
+  the same persistence guarantee, re-proven, not just assumed to still
+  hold because the JS wasn't touched.
+- Zero horizontal overflow re-confirmed at the same worst case (375px
+  phone width, step 5, real 30.36px font-size) with the new button
+  markup in place.
+- Zero new Laravel log entries across the whole re-verification pass.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
