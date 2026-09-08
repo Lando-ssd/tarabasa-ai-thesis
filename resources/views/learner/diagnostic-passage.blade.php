@@ -54,12 +54,6 @@
     font-family:'Baloo 2',sans-serif; font-size:23px; font-weight:600; line-height:1.7; color:var(--navy-900);
     text-align:left;
   }
-  /* Same paced, decorative word-tracking as the regular reading screen —
-     not real transcription, see activity-found.blade.php's comment for
-     the full explanation. Kept here too since a young reader shouldn't
-     get a visually plainer diagnostic than a regular activity. */
-  .lw{ padding:1px 3px; border-radius:6px; transition:background-color .2s ease, color .2s ease; }
-  .lw.tracking{ background:var(--sky-100); box-shadow:0 0 0 2px rgba(28,126,214,0.25) inset; }
 
   .step{ display:none; }
   .step.active{ display:block; }
@@ -118,86 +112,10 @@
     <div class="clay-blob b2"></div>
     <div class="mascot">🦉</div>
 
-    <div class="passage-card" id="passageCard">@foreach (preg_split('/\s+/', trim($activity->passage_text)) as $word)<span class="lw">{{ $word }}</span> @endforeach</div>
+    <div class="passage-card">{{ $activity->passage_text }}</div>
 
     @include('learner._recording-widget', ['recordAction' => route('learner.diagnostic.record')])
   </div>
 </div>
-<script>
-  // Same word-length-weighted, then real-duration-rescaled pacing
-  // animation as activity-found.blade.php — see that file's comment for
-  // the full rationale (still not real transcription).
-  (function () {
-    const words = [...document.querySelectorAll('#passageCard .lw')];
-    if (!words.length) return;
-
-    const weights = words.map(w => Math.max(w.textContent.trim().length, 1));
-    const totalWeight = weights.reduce((a, b) => a + b, 0);
-
-    const LIVE_MS_PER_CHAR = 90;
-    const LIVE_MIN_MS = 220;
-    const liveDurations = weights.map(w => Math.max(w * LIVE_MS_PER_CHAR, LIVE_MIN_MS));
-
-    let seqTimer = null;
-    let startDelayTimer = null;
-    // See activity-found.blade.php's identical comment: a brief pause
-    // before the live loop starts moving, so a child who taps the mic
-    // and needs a beat before actually reading doesn't see the
-    // highlight already racing ahead of them.
-    const GET_READY_DELAY_MS = 1000;
-
-    function clearHighlight() {
-      words.forEach(w => w.classList.remove('tracking'));
-    }
-
-    function runSequence(durations, loop) {
-      clearTimeout(seqTimer);
-      let i = 0;
-      (function step() {
-        clearHighlight();
-        if (i >= words.length) {
-          if (!loop) return;
-          i = 0;
-        }
-        words[i].classList.add('tracking');
-        seqTimer = setTimeout(step, durations[i]);
-        i++;
-      })();
-    }
-
-    function startTracking() {
-      clearTimeout(startDelayTimer);
-      startDelayTimer = setTimeout(() => {
-        runSequence(liveDurations, true);
-      }, GET_READY_DELAY_MS);
-    }
-
-    function stopTracking(event) {
-      clearTimeout(startDelayTimer);
-
-      const realSeconds = event?.detail?.durationSeconds;
-
-      if (typeof realSeconds === 'number' && realSeconds > 0) {
-        // See activity-found.blade.php's comment on this exact block for
-        // the full explanation of the real bug fixed here: a short
-        // recording rescaled with no floor and played once (loop=false)
-        // finished in a near-instant blur, then sat blank for the rest
-        // of the real (and unrelated-length) Reading-api wait — read by
-        // a real user as "it jumps straight to the end." Fixed with a
-        // per-word floor (LIVE_MIN_MS) plus looping instead of a single
-        // pass.
-        const totalMs = realSeconds * 1000;
-        const replayDurations = weights.map(w => Math.max((w / totalWeight) * totalMs, LIVE_MIN_MS));
-        runSequence(replayDurations, true);
-      } else {
-        clearTimeout(seqTimer);
-        clearHighlight();
-      }
-    }
-
-    window.addEventListener('tarabasa:recording-started', startTracking);
-    window.addEventListener('tarabasa:recording-stopped', stopTracking);
-  })();
-</script>
 </body>
 </html>

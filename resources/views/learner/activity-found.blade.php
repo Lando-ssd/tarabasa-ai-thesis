@@ -51,14 +51,6 @@
     font-family:'Baloo 2',sans-serif; font-size:23px; font-weight:600; line-height:1.7; color:var(--navy-900);
     text-align:left;
   }
-  /* Live word-tracking, shown only while actually recording — a paced,
-     decorative highlight that walks through the passage at a steady
-     guessed pace. This is NOT real transcription: Reading-api only
-     scores the recording after it's fully submitted, there is no
-     real-time word-by-word signal at all. It exists purely to keep a
-     young reader visually engaged while the mic is listening. */
-  .lw{ padding:1px 3px; border-radius:6px; transition:background-color .2s ease, color .2s ease; }
-  .lw.tracking{ background:var(--sky-100); box-shadow:0 0 0 2px rgba(28,126,214,0.25) inset; }
 
   .step{ display:none; }
   .step.active{ display:block; }
@@ -131,7 +123,7 @@
     <h1>{{ $activity->title }}</h1>
     <p class="sub">Read the words below out loud, then tap the mic!</p>
 
-    <div class="passage-card" id="passageCard">@foreach (preg_split('/\s+/', trim($activity->passage_text)) as $word)<span class="lw">{{ $word }}</span> @endforeach</div>
+    <div class="passage-card">{{ $activity->passage_text }}</div>
 
     @if (session('error') || $errors->any())
       <div class="note-banner danger">{{ $errors->first() ?: session('error') }}</div>
@@ -164,113 +156,6 @@
     <a href="{{ route('learner.dashboard') }}" class="big-btn" style="margin-top:14px; background:var(--surface); color:var(--slate-600); box-shadow:none; border:1.5px solid var(--line);">Back to My Dashboard</a>
   </div>
 </div>
-<script>
-  // Paced, decorative word-tracking — see the .lw/.lw.tracking comment
-  // above for why this is not real transcription (Reading-api has no
-  // real-time per-word signal at all, only a score after the full
-  // recording is submitted). Two real signals are used to make the
-  // pacing feel less robotic than a flat per-word tick, even though
-  // neither is true speech timing:
-  //   1. Word length — longer words hold the highlight proportionally
-  //      longer than short ones ("a"/"the" flash by, "wooden"/
-  //      "together" hold), used while recording is still in progress
-  //      and the real total duration isn't known yet.
-  //   2. Real elapsed recording time — once the child taps "I'm done
-  //      reading!", the widget's own timer tells us exactly how long
-  //      they actually took. The animation then REPLAYS once, start to
-  //      finish, rescaled so the whole sequence takes exactly that real
-  //      duration (still weighted by word length, not split evenly).
-  //      This plays out during the real "Checking..." wait for
-  //      Reading-api's response, so it's not wasted screen time either.
-  //   We still never know WHICH word they were actually on at any real
-  //   moment — only their total real reading time — so this remains an
-  //   approximation, just one tied to their actual pace instead of an
-  //   arbitrary fixed one.
-  (function () {
-    const words = [...document.querySelectorAll('#passageCard .lw')];
-    if (!words.length) return;
-
-    const weights = words.map(w => Math.max(w.textContent.trim().length, 1));
-    const totalWeight = weights.reduce((a, b) => a + b, 0);
-
-    const LIVE_MS_PER_CHAR = 90;
-    const LIVE_MIN_MS = 220;
-    const liveDurations = weights.map(w => Math.max(w * LIVE_MS_PER_CHAR, LIVE_MIN_MS));
-
-    let seqTimer = null;
-    let startDelayTimer = null;
-    // A brief pause before the live loop starts moving, so a child who
-    // taps the mic and needs a beat before actually reading doesn't see
-    // the highlight already racing ahead of them the instant they tap.
-    const GET_READY_DELAY_MS = 1000;
-
-    function clearHighlight() {
-      words.forEach(w => w.classList.remove('tracking'));
-    }
-
-    // Walks the passage once per call, dwelling on word i for
-    // durations[i] ms; loop=true wraps back to the start indefinitely
-    // (used while recording, since we don't yet know a real end time).
-    function runSequence(durations, loop) {
-      clearTimeout(seqTimer);
-      let i = 0;
-      (function step() {
-        clearHighlight();
-        if (i >= words.length) {
-          if (!loop) return;
-          i = 0;
-        }
-        words[i].classList.add('tracking');
-        seqTimer = setTimeout(step, durations[i]);
-        i++;
-      })();
-    }
-
-    function startTracking() {
-      clearTimeout(startDelayTimer);
-      startDelayTimer = setTimeout(() => {
-        runSequence(liveDurations, true);
-      }, GET_READY_DELAY_MS);
-    }
-
-    function stopTracking(event) {
-      // If recording stopped during the get-ready pause (a very fast
-      // stop), cancel it — the loop never actually started, and the
-      // replay logic below still runs correctly regardless.
-      clearTimeout(startDelayTimer);
-
-      const realSeconds = event?.detail?.durationSeconds;
-
-      if (typeof realSeconds === 'number' && realSeconds > 0) {
-        // Real bug found here: the "Checking..." wait this replay plays
-        // during has NO relationship to how long the recording itself
-        // was — it's however long the real Reading-api/Vosk round trip
-        // takes (often several real seconds, sometimes more). A short
-        // recording (very common — many passages are just a handful of
-        // words) rescales into a tiny total, so a single non-looping
-        // pass (the original version of this fix) finished in a blur
-        // and then sat blank for the rest of the wait — which is
-        // exactly the "jumps straight to the end" bug reported. Fixed
-        // two ways: (1) a floor on each word's share, same as the live
-        // loop's LIVE_MIN_MS, so a fast reading still visibly paces
-        // instead of flashing by; (2) loop the replay indefinitely at
-        // that same real-pace-derived cadence instead of stopping after
-        // one pass, so it never goes idle/blank while the child is
-        // still actually waiting — it just keeps gently repeating until
-        // the real results page replaces this one.
-        const totalMs = realSeconds * 1000;
-        const replayDurations = weights.map(w => Math.max((w / totalWeight) * totalMs, LIVE_MIN_MS));
-        runSequence(replayDurations, true);
-      } else {
-        clearTimeout(seqTimer);
-        clearHighlight();
-      }
-    }
-
-    window.addEventListener('tarabasa:recording-started', startTracking);
-    window.addEventListener('tarabasa:recording-stopped', stopTracking);
-  })();
-</script>
 @if (! empty($comprehensionQuestions))
 <script>
   // Inserted between "done reading" and the real form submit — Reading-api

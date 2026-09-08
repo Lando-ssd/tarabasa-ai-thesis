@@ -40,23 +40,6 @@
   submission proceeds immediately exactly as before — this is a
   backward-compatible, opt-in extension point, not a behavior change.
 
-  Dispatches two window-level custom events an including page can
-  optionally listen for to drive its own passage word-tracking
-  animation in sync with the real recording state: 'tarabasa:recording-
-  started' (right after the mic actually starts) and 'tarabasa:
-  recording-stopped' (right before the "Checking..." step and the real
-  form submit) — the stopped event's `detail.durationSeconds` carries
-  the REAL elapsed recording time (from this widget's own timer), so an
-  including page can rescale a replay of its tracking animation to
-  actually match how long the child took, not a guessed pace. On the
-  silent-mic path below, 'tarabasa:recording-stopped' still fires (so
-  any live tracking loop stops cleanly) but with no `durationSeconds` —
-  this take is discarded, not submitted, so there's nothing real to
-  rescale a replay to. Kept as events rather than calling a hardcoded
-  function name so this partial stays the same neutral, reusable piece
-  regardless of whether a given including page wants that animation at
-  all.
-
   Expects: $recordAction (string) — the form's target URL.
 --}}
 <style>
@@ -95,6 +78,7 @@
     <div class="mic-btn listening">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="white"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg>
     </div>
+    <span class="mic-label">Listening...</span>
     <span class="timer-label" id="timerLabel">0:00</span>
   </div>
   <button type="button" class="big-btn" id="doneBtn">I'm done reading!</button>
@@ -172,7 +156,6 @@
       startLevelMonitoring();
 
       showStep('recording');
-      window.dispatchEvent(new Event('tarabasa:recording-started'));
       seconds = 0;
       updateTimer();
       timerInterval = setInterval(() => {
@@ -250,17 +233,11 @@
       // top comment): if the mic never picked up anything above the
       // noise floor for the whole recording, don't waste an upload and
       // a real Reading-api round trip on what's almost certainly a
-      // muted/blocked mic — tell the child right away instead. Dispatch
-      // the stop event with no real duration so the including page's
-      // tracking animation just clears cleanly rather than starting a
-      // "checking" replay for a take we're not actually submitting.
+      // muted/blocked mic — tell the child right away instead.
       if (!hasDetectedSound && seconds >= MIN_SECONDS_FOR_SILENCE_CHECK) {
-        window.dispatchEvent(new CustomEvent('tarabasa:recording-stopped', { detail: {} }));
         showStep('silent');
         return;
       }
-
-      window.dispatchEvent(new CustomEvent('tarabasa:recording-stopped', { detail: { durationSeconds: seconds } }));
 
       const mimeType = mediaRecorder.mimeType || 'audio/webm';
       let ext = 'webm';

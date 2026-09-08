@@ -2271,6 +2271,124 @@ Adaptive_Recommendator services — not mocked, not just code review:**
   works — consistent with this project's established practice of
   leaving disposable test accounts' real generated state in place.
 
+## Live word-tracking removed entirely — repeated real complaints, and
+## the only genuinely accurate fix (Web Speech API) was already rejected
+
+The decorative word-tracking highlight (built, then patched twice for
+real pacing bugs — see the two sections above this one in this file's
+history) kept generating real accuracy/pacing complaints even after
+those fixes, because the fundamental problem was never fixable within
+its own constraints: Reading-api has no real-time per-word signal at
+all, so the highlight was always a *guess* dressed up to look precise,
+and a guess that looks precise reads as broken the moment it's visibly
+wrong. The one way to make it genuinely accurate (Web Speech API,
+driven by the child's real live voice) was already investigated and
+explicitly rejected on privacy grounds. Given that, simplifying to "no
+highlighting at all" is more honest than continuing to patch an
+inherently-approximate animation — removed entirely rather than
+patched a third time.
+
+**Removed from both `activity-found.blade.php` and `diagnostic-
+passage.blade.php`**: the `.lw`/`.lw.tracking` CSS, the per-word
+`<span class="lw">` wrapping of `passage_text` (both now render the
+passage as plain text again), and the entire word-length-weighted +
+real-duration-rescaled pacing `<script>` (including the `GET_READY_
+DELAY_MS` pre-recording pause, no longer needed with nothing to
+pace). **Removed from the shared `_recording-widget.blade.php`**: the
+`tarabasa:recording-started`/`tarabasa:recording-stopped` custom-event
+dispatches (grepped the codebase first to confirm these two files were
+the only consumers before removing — they were) and the doc comment
+describing them. In their place: a plain "Listening..." `.mic-label`
+added to the widget's existing `stepRecording` UI, alongside the
+already-existing pulsing mic icon and elapsed-time timer — genuinely
+simpler, not a placeholder for something more elaborate later.
+
+**Explicitly NOT touched, per instruction**: the real results screen
+(`reading-results.blade.php`) — the color-coded word-by-word breakdown,
+legend, "you also said" extra-speech note, and the 4 stat tiles all
+already work well and were left completely alone.
+
+**Tested for real, not assumed from the diff:**
+- Live in a real browser, logged in as a real Learner (Miguel) on a
+  real assigned Activity: confirmed zero `.lw`/`.tracking` elements
+  exist anywhere on the page (`document.querySelectorAll` returned 0
+  for both), the passage renders as plain text, and starting a real
+  recording (via a real synthetic `MediaStream` substituted for
+  `getUserMedia` — the same legitimate on-device technique already
+  established in this project for exercising `MediaRecorder` without
+  real hardware access) correctly shows "Listening..." with the
+  existing pulsing icon and a live-counting timer, with nothing
+  highlighting anywhere in the passage.
+- Confirmed the recording → comprehension-quiz → real-submit chain
+  still works correctly post-removal: clicking "I'm done reading!" on
+  a real (non-silent) synthetic stream correctly triggered the quiz
+  step, and submitting a genuinely mismatched tone correctly landed on
+  the real "Didn't quite catch that" retry screen — proving the
+  surrounding mechanics (silence detection, the quiz hook, real form
+  submission) are all unaffected by removing the tracking system that
+  used to sit alongside them.
+- **A full real scored submission, end to end**: genuine TTS audio
+  (this project's established technique) submitted via a real
+  multipart POST produced a real 92% accuracy / 153 WCPM / +46 points
+  / streak 14 result, with the real color-coded word breakdown (70
+  correct spans, 6 substitution spans), the legend, and the
+  comprehension recap ("You got 3 out of 3 correct! 🌟") all rendering
+  exactly as before — confirming the explicitly-untouched results
+  screen is genuinely untouched, not accidentally broken by the
+  surrounding removal.
+- Zero new entries in the Laravel log across the whole test pass.
+- Test data side effects (a real `ReadingSession` row, 3 real
+  `Notification` rows, and Miguel's `mastery_level`/`points`/`streak`)
+  identified and cleaned up afterward, same as every other real test
+  pass in this project.
+
+## Learner typography — re-confirmed with live measurements, not
+## re-assumed from the earlier fix
+
+The user asked for the actual current pixel values, not a reference
+back to the earlier typography-floor fix (see "Learner typography
+follow-up" above in this file) — so every value below was re-measured
+live via `getComputedStyle()` on real rendered pages this session, not
+read from CSS source and assumed still accurate.
+
+**Learner Dashboard** (`learner/dashboard.blade.php`, real Learner
+Miguel): `h1` 26px, `.grade-line` 18px, stat-tile values 24px (Points/
+Streak — the Level tile is deliberately smaller, 18px, since it holds
+a word like "Beginning" not a number), stat-tile captions 13px.
+
+**"How I'm Growing" card** (added this session, not part of the
+original typography-floor pass — measured live on a real Learner with
+real `competency_states`): `.growth-title` 16px, `.growth-label`
+(competency names) 14.5px, `.growth-word` (difficulty words) 12px, the
+"⭐ Up Next" badge 11px. **Flagged honestly, not silently**: the
+label/word/badge sizes sit below the established ≥16-18px body-copy
+floor — same treatment as the existing stat-tile captions and the
+"Switch learner" link, which were deliberately kept smaller as
+supporting metadata rather than primary reading content. Worth a
+second look if the user wants every visible word at floor size, but
+not assumed to be a defect.
+
+**Recording screen** (`activity-found.blade.php`, real assigned
+Activity): `h1` 25px, `.sub` 18px (line-height 27.9px, the designed
+1.55×), `.passage-card` 23px (line-height 39.1px, exactly the designed
+1.7×), `.mic-label` 17px — all unchanged by the tracking removal above,
+confirmed on the same live page.
+
+**Results screen** (`reading-results.blade.php`, a real scored
+submission rendered live via an authenticated in-browser `fetch()` to
+the real endpoint, not a static file): `h1` 25px, `.sub` 18px,
+`.breakdown-title` 15px, `.passage-review` (the word-by-word review
+text) 18px/line-height 34.2px, `.comprehension-count` 15px,
+`.comp-question` 14px, stat-tile values 24px, stat-tile captions 13px.
+
+**Diagnostic flow** (`diagnostic-passage.blade.php`): not re-measured
+live this pass (would have needed a fresh Learner mid-diagnostic) —
+confirmed by direct source inspection instead, since this file was
+directly edited this session for the tracking removal above: `.passage-
+card` is still 23px/line-height 1.7×, identical to `activity-found.
+blade.php`'s rule, unchanged by that edit. Disclosed as source-
+confirmed, not live-measured, rather than implied otherwise.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
