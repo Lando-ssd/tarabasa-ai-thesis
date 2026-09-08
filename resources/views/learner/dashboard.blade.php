@@ -68,16 +68,16 @@
   .growth-row{ margin-bottom:14px; }
   .growth-row:last-child{ margin-bottom:0; }
   .growth-row-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:8px; }
-  .growth-label{ font-size:14.5px; font-weight:700; color:var(--navy-900); }
+  .growth-label{ font-size:16px; font-weight:700; color:var(--navy-900); }
   .growth-up-next{
     display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:800; color:var(--owl-orange-600);
     background:#fff3e2; border:1px solid var(--owl-orange-500); border-radius:999px; padding:2px 9px; flex-shrink:0;
   }
-  .growth-word{ font-size:12px; font-weight:700; color:var(--slate-600); }
+  .growth-word{ font-size:14px; font-weight:700; color:var(--slate-600); }
   .growth-bar-track{ height:12px; border-radius:999px; background:var(--surface); border:1.5px solid var(--line); overflow:hidden; }
   .growth-bar-fill{ height:100%; border-radius:999px; background:linear-gradient(90deg, var(--teal), #58cfb4); transition:width .4s ease; }
   .growth-bar-track.unassessed{ background-image:repeating-linear-gradient(45deg, var(--line), var(--line) 6px, transparent 6px, transparent 12px); }
-  .growth-not-started{ font-size:12px; font-weight:600; color:var(--slate-600); }
+  .growth-not-started{ font-size:14px; font-weight:600; color:var(--slate-600); }
 </style>
 </head>
 <body>
