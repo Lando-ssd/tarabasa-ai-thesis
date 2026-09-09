@@ -106,7 +106,11 @@ class GameController extends Controller
             ];
         }
 
-        return view('learner.games.word-builder', ['levels' => $levels, 'startLevel' => $startLevel]);
+        return view('learner.games.word-builder', [
+            'levels' => $levels,
+            'startLevel' => $startLevel,
+            'learnerCode' => $learner->learner_code,
+        ]);
     }
 
     private function wordLengthMatchesLevel(int $length, int $level): bool
@@ -137,6 +141,7 @@ class GameController extends Controller
         return view('learner.games.letter-match', [
             'levelDefs' => self::LETTER_LEVELS,
             'startLevel' => $startLevel,
+            'learnerCode' => $learner->learner_code,
         ]);
     }
 }

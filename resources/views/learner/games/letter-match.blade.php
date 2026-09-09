@@ -72,14 +72,20 @@
   @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
   h1{ font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:700; margin:0 0 16px; }
 
+  /* Column count is set inline via JS (see pickColumns()), not auto-fit —
+     auto-fit greedily packs as many columns as fit per row, which for an
+     odd card count (e.g. 12) produced a genuinely bad-looking uneven
+     split (7 cards in row one, 5 in row two). pickColumns() instead
+     always chooses a column count the current card count divides evenly,
+     so every row is the same length. */
   .grid{
-    display:grid; grid-template-columns:repeat(auto-fit, minmax(68px, 1fr)); gap:10px; margin-bottom:8px;
+    display:grid; gap:12px; margin-bottom:8px; justify-items:stretch;
   }
   .mcard{
     aspect-ratio:1; border-radius:16px; border:none; cursor:pointer; position:relative;
     background:linear-gradient(155deg, var(--blue-500), var(--blue-700));
     box-shadow:0 8px 16px -10px rgba(15,95,174,0.5), inset 0 -3px 0 rgba(10,61,115,0.4), inset 0 2px 0 rgba(255,255,255,0.25);
-    font-family:'Baloo 2',sans-serif; font-size:28px; font-weight:800; color:#fff;
+    font-family:'Baloo 2',sans-serif; font-size:32px; font-weight:800; color:#fff;
     display:flex; align-items:center; justify-content:center;
     transition:transform .18s ease;
   }
@@ -202,6 +208,61 @@
 
   const LEVEL_EMOJI = { 1: '🧩', 2: '🧩', 3: '🏆' };
 
+  // Resume-in-progress support — same technique and same reasoning as
+  // Word Builder's (see that file's own comment): localStorage, not a new
+  // DB column, keyed by the Learner's real learner_code so a shared
+  // family device can't leak one child's progress into a sibling's.
+  const STORAGE_KEY = 'tarabasa_lm_progress_{{ $learnerCode }}';
+
+  function saveProgress() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        currentLevel, attemptCount, leveledUpDuringSession,
+        subRoundIndex, cards, wrongAttemptsThisAttempt,
+      }));
+    } catch (e) { /* resume is a convenience, never allowed to break play */ }
+  }
+
+  function clearProgress() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  }
+
+  function loadProgress() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !Array.isArray(data.cards) || typeof data.subRoundIndex !== 'number') return null;
+      if (!LEVEL_DEFS[data.currentLevel]) return null;
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function resumeOrStart() {
+    const saved = loadProgress();
+    if (!saved) {
+      startAttempt();
+      return;
+    }
+    currentLevel = saved.currentLevel;
+    attemptCount = saved.attemptCount;
+    leveledUpDuringSession = saved.leveledUpDuringSession;
+    levelRounds = LEVEL_DEFS[currentLevel];
+    subRoundIndex = saved.subRoundIndex;
+    wrongAttemptsThisAttempt = saved.wrongAttemptsThisAttempt;
+    cards = saved.cards;
+    flipped = [];
+    matchedCount = cards.filter((c) => c.matched).length;
+    locked = false;
+
+    updateTopBar();
+    progressLabel.textContent = 'Set ' + (subRoundIndex + 1) + ' of ' + levelRounds.length;
+    renderDots();
+    renderGrid();
+  }
+
   function shuffle(arr) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -251,9 +312,23 @@
     progressLabel.textContent = 'Set ' + (subRoundIndex + 1) + ' of ' + levelRounds.length;
     renderDots();
     renderGrid();
+    saveProgress();
+  }
+
+  // Always picks a column count the current card count divides evenly by,
+  // so every row has the same number of cards — never a ragged last row.
+  // Checked in an order that favors a wider, shorter grid (nicer on a
+  // phone than a tall, narrow one) before falling back to narrower ones.
+  function pickColumns(cardCount) {
+    const candidates = [4, 3, 5, 6, 2];
+    for (const c of candidates) {
+      if (cardCount % c === 0) return c;
+    }
+    return 4;
   }
 
   function renderGrid() {
+    grid.style.gridTemplateColumns = 'repeat(' + pickColumns(cards.length) + ', 1fr)';
     grid.innerHTML = '';
     cards.forEach((c, i) => {
       const btn = document.createElement('button');
@@ -292,7 +367,11 @@
         renderGrid();
 
         if (matchedCount === levelRounds[subRoundIndex].length) {
+          // Not saved here — transient, about to celebrate and move on
+          // (same reasoning as Word Builder's completed-word case).
           setTimeout(subRoundDone, 400);
+        } else {
+          saveProgress();
         }
       } else {
         window.tarabasaPlaySfx('wrong', 0.3);
@@ -309,6 +388,7 @@
           flipped = [];
           locked = false;
           renderGrid();
+          saveProgress();
         }, 700);
       }
     }
@@ -381,6 +461,7 @@
   }
 
   function finishSession(justLeveledUp) {
+    clearProgress();
     levelBadge.textContent = (LEVEL_EMOJI[currentLevel] || '🧩') + ' Level ' + currentLevel;
     attemptLabel.textContent = 'Complete!';
     playArea.style.display = 'none';
@@ -391,7 +472,7 @@
     backLink.style.display = 'none';
   }
 
-  startAttempt();
+  resumeOrStart();
 </script>
 </body>
 </html>

@@ -207,6 +207,71 @@
 
   const LEVEL_EMOJI = { 1: '🌱', 2: '🌿', 3: '🌳' };
 
+  // Resume-in-progress support — this game's entire state already lives
+  // only in these JS variables (the server sends the word pools once, up
+  // front, and never hears back), so localStorage is the natural, lowest-
+  // friction place to keep it, not a new DB column: no migration, no save
+  // endpoint, and it keeps the deliberate "Practice Games persist nothing
+  // server-side" separation intact. Keyed by the Learner's own real
+  // learner_code (safe to expose client-side — it's the public login code,
+  // not the PIN) so a shared family device can't leak one child's
+  // in-progress game into a sibling's session. Wrapped in try/catch
+  // throughout — localStorage can legitimately throw (private browsing,
+  // storage disabled, quota) and a resume convenience must never be able
+  // to break the game itself.
+  const STORAGE_KEY = 'tarabasa_wb_progress_{{ $learnerCode }}';
+
+  function saveProgress() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        currentLevel, attemptCount, leveledUpDuringSession,
+        roundWords, wordIndex, letters, used, spelled, wrongTapsThisAttempt,
+      }));
+    } catch (e) { /* resume is a convenience, never allowed to break play */ }
+  }
+
+  function clearProgress() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  }
+
+  function loadProgress() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      // A basic shape check — never trust stored data blindly, especially
+      // across a future code change to the level/word structure.
+      if (!data || !Array.isArray(data.roundWords) || typeof data.wordIndex !== 'number') return null;
+      if (data.wordIndex < 0 || data.wordIndex >= data.roundWords.length) return null;
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function resumeOrStart() {
+    const saved = loadProgress();
+    if (!saved) {
+      startAttempt();
+      return;
+    }
+    currentLevel = saved.currentLevel;
+    attemptCount = saved.attemptCount;
+    leveledUpDuringSession = saved.leveledUpDuringSession;
+    roundWords = saved.roundWords;
+    wordIndex = saved.wordIndex;
+    letters = saved.letters;
+    used = saved.used;
+    spelled = saved.spelled;
+    wrongTapsThisAttempt = saved.wrongTapsThisAttempt;
+
+    updateTopBar();
+    progressLabel.textContent = 'Word ' + (wordIndex + 1) + ' of ' + roundWords.length;
+    renderDots();
+    renderSlots();
+    renderTiles();
+  }
+
   function shuffle(arr) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -265,6 +330,7 @@
     renderDots();
     renderSlots();
     renderTiles();
+    saveProgress();
   }
 
   function renderSlots() {
@@ -305,7 +371,16 @@
       window.tarabasaPlaySfx('correct', 0.55);
 
       if (spelled.length === word.length) {
+        // Deliberately NOT saved here — this is a brief, transient
+        // "just completed, about to celebrate and advance" moment. If a
+        // Learner navigates away in the ~0.3-2.9s before the next word/
+        // attempt actually starts, resuming replays the last tap instead
+        // of risking a frozen "fully spelled, nothing left to do" state
+        // that the game has no code path to advance out of on a fresh
+        // page load.
         setTimeout(wordComplete, 350);
+      } else {
+        saveProgress();
       }
     } else {
       btn.classList.remove('wrong-tap');
@@ -314,6 +389,7 @@
       wrongTapsThisAttempt++;
       window.tarabasaPlaySfx('wrong', 0.3);
       nudgeOwl();
+      saveProgress();
     }
   }
 
@@ -388,6 +464,7 @@
   }
 
   function finishSession(justLeveledUp) {
+    clearProgress();
     levelBadge.textContent = (LEVEL_EMOJI[currentLevel] || '🌱') + ' Level ' + currentLevel;
     attemptLabel.textContent = 'Complete!';
     playArea.style.display = 'none';
@@ -398,7 +475,7 @@
     backLink.style.display = 'none';
   }
 
-  startAttempt();
+  resumeOrStart();
 </script>
 </body>
 </html>

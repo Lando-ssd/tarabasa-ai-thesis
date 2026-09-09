@@ -3329,6 +3329,101 @@ correct-tap/match bounce animations were made slightly more energetic
 - All disposable test Learners (4 total this pass) and their
   `ReadingSession`/`Notification` rows cleaned up afterward.
 
+## Practice Games — real resume-in-progress bug fix + a real grid
+## alignment bug fix
+
+Two real, user-reported bugs on the games shipped above, both fixed and
+re-verified live, not assumed correct from the diff.
+
+**Bug 1 — mid-round progress was lost on navigating away and back.**
+Both games' entire state has only ever lived in JS variables (the
+server sends the word/letter pools once, up front, and never hears
+back again) — navigating to the Dashboard and returning was a full
+page reload, silently discarding whatever word/level/match progress
+existed. **Decision, reported before building**: fixed with
+`localStorage`, not a new `learners` DB column. Reasoning: this game's
+whole architecture already keeps 100% of its state client-side by
+design (a deliberate choice from the original build, to keep Practice
+Games structurally separate from the real, server-persisted reading-
+achievement system) — adding a DB field here would mean a new save
+endpoint and would start blurring that same separation for what is,
+functionally, transient mid-session UI state, not a real account
+preference like `reading_font_step`. `localStorage` needs no schema
+change and matches the actual scope of the bug report (resume on this
+device, this sitting) exactly.
+
+Keyed by the Learner's own real `learner_code` (`tarabasa_wb_progress_
+{code}` / `tarabasa_lm_progress_{code}`, both now passed into their
+view from `GameController`) specifically so a shared family device
+can't leak one child's in-progress game into a sibling's session. Every
+read/write wrapped in try/catch — `localStorage` can legitimately throw
+(private browsing, storage disabled, quota) and a resume convenience
+must never be able to break the game itself, confirmed by design, not
+just hoped.
+
+**A real design rule applied consistently in both games, not just
+"save constantly"**: state is only ever saved at a genuinely stable
+"waiting for the next input" moment — after a fresh word/sub-round
+renders, after a wrong tap/pair (so an in-progress mistake count
+survives too), and after a *non-completing* correct tap/match.
+Deliberately **not** saved the instant a word/sub-round is actually
+completed, since that's a brief transient state moving toward a
+celebration and the next word/level — resuming into it would either
+show a frozen "fully done, nothing left to click" screen with no code
+path to advance, or (the simpler, chosen behavior) just quietly replay
+the last correct tap on return, which is harmless. Storage is cleared
+the moment a session genuinely finishes (`finishSession()` calls
+`clearProgress()`) — this is also what correctly answers the "what if
+a completed round tries to resume" edge case: there's nothing left to
+resume by the time a session is over, and "Play Again" or a later
+visit both correctly start a genuinely fresh session, not a phantom
+resume of a finished one.
+
+**Tested for real, the exact reported scenario, on both games**: got a
+Learner partway into a word (Word Builder: tapped one correct letter
+of "red," scrambled tiles `[e, r, d]`) and partway into a round (Letter
+Match: matched exactly one real pair), navigated to `/learner/
+dashboard`, then back into the game — confirmed via live DOM state
+*and* a screenshot that both resumed at the exact right spot: the same
+scrambled tile arrangement with the correct letter already filled and
+its tile disabled (Word Builder), and the same board arrangement with
+the same pair still shown matched (Letter Match) — not a fresh reshuffle
+of either. Separately played a full Word Builder session through to
+genuine completion, confirmed `localStorage` was empty immediately
+after, then reloaded the same route fresh and confirmed it correctly
+started a brand-new session (`attemptCount: 0`, Level 1) rather than
+resuming the finished one.
+
+**Bug 2 — Letter Match's grid looked broken at odd card counts** (the
+user's own screenshot: 7 cards in row one, 5 in row two, for a 12-card
+Level 1 round). Root cause: `grid-template-columns:repeat(auto-fit,
+minmax(68px, 1fr))` greedily packs as many columns as fit the
+available width, which for a card count that doesn't evenly divide the
+resulting column count produces exactly this kind of ragged last row.
+**Fixed with `pickColumns(cardCount)`** — tries column counts `[4, 3,
+5, 6, 2]` in that order (favoring a wider, shorter grid over a tall
+narrow one on a phone) and picks the first one the current card count
+divides evenly by, applied as an explicit inline `grid-template-
+columns` on every render rather than left to `auto-fit`. This isn't a
+hardcoded per-level table — it's computed from whatever the actual
+card count is, so it stays correct even if a level's letter count ever
+changes later. Confirmed the real math for every card count that
+actually occurs in this app: Level 1 (12) → 4 columns/3 rows, Level 2
+(20) → 4 columns/5 rows, Level 3's two 9-pair sub-rounds (18 each) → 3
+columns/6 rows, Level 3's 8-pair sub-round (16) → 4 columns/4 rows —
+every real case lands on a perfectly even grid, never a ragged row.
+Also bumped `.mcard` font-size 28px→32px and the grid gap 10px→12px
+while fixing this, since the same complaint also asked for bigger
+letters in the boxes.
+
+**Tested for real, not assumed from the arithmetic**: confirmed via
+direct `getBoundingClientRect()` measurement on every real card in a
+live Level 1 round that all 12 cards resolve to exactly 3 distinct row
+positions with exactly 4 cards per row (not just that the CSS rule
+looks right) — the same live-DOM-geometry verification technique
+already established elsewhere in this project for exactly this kind
+of "does it just look right or does the code prove it" question.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
