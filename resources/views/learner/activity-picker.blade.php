@@ -62,6 +62,11 @@
     transition:transform .2s cubic-bezier(.34,1.56,.64,1); margin-top:14px;
   }
   .big-btn:hover{ transform:translateY(-2px) scale(1.02); }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; font-size:14.5px; font-weight:700; color:var(--slate-600);
+    text-decoration:none; margin-top:18px;
+  }
+  .back-link:hover{ color:var(--blue-600); }
   a:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 </style>
 </head>
@@ -89,6 +94,10 @@
           </a>
         @endforeach
       </div>
+      <a href="{{ route('learner.dashboard') }}" class="back-link">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back to My Dashboard
+      </a>
     @endif
   </div>
 </div>

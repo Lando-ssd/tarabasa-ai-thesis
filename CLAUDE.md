@@ -3424,6 +3424,45 @@ looks right) — the same live-DOM-geometry verification technique
 already established elsewhere in this project for exactly this kind
 of "does it just look right or does the code prove it" question.
 
+## Activity picker — missing exit link fixed (real UX gap, not the
+## empty-state screen)
+
+The user reported the "What should I read?" screen
+(`activity-picker.blade.php`) had no way to back out to the Dashboard
+when real options ARE showing — only the empty-state branch (`@if
+($options->isEmpty())`) had a "Back to My Dashboard" button; the
+populated `@else` branch (the actual screen shown whenever a Learner
+has real assigned/unlocked activities, e.g. the reported case of two
+real Teacher-assigned options) had no exit affordance at all. A real
+gap: a Learner who taps "Start Reading" without meaning to had no way
+back except the browser's own back button.
+
+Cross-checked `activity-found.blade.php` (the other Learner screen that
+can show up in this same flow, when exactly one activity resolves and
+the picker is skipped entirely) first, to check whether this was
+systemic — it already has a working "Back to My Dashboard" `.big-btn`,
+so the picker's populated branch was the one real, isolated gap, not a
+pattern repeated elsewhere.
+
+**Fix**: added the same `.back-link` (chevron SVG + text, `color:
+var(--slate-600)`, hover `var(--blue-600)`) already used consistently
+across every other Learner screen (Games hub, both games,
+`activity-found.blade.php`) into the `@else` branch, directly below the
+option list — matching the established exit-affordance pattern instead
+of inventing a new one.
+
+**Tested for real**: created a disposable test Learner
+(`ZZPickerTest`, Grade 1, code `TB-243CB`) with 2 real
+`ActivityAssignment` rows against 2 real Approved Activities
+("Easy Animal Words," "Medium Animal Words (edited)") — reproducing the
+exact two-option scenario from the report. Logged in via the real
+browser flow, confirmed via screenshot both real options render
+correctly alongside the new "Back to My Dashboard" link, then clicked
+it and confirmed via a second screenshot it correctly navigates to
+`/learner/dashboard`, landing on the real dashboard shell (Level/
+Points/Streak tiles, both game buttons). Test Learner and its
+`ActivityAssignment` rows cleaned up afterward.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
