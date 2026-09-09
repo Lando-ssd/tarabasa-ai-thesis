@@ -14,38 +14,45 @@ use Illuminate\View\View;
  * JSON concept to build that model against). No points, no scoring, no
  * ReadingSession row — a clean separation from the real reading-achievement
  * system, confirmed with the user before building.
+ *
+ * Both games now have 3 internal difficulty levels, deliberately built from
+ * data this app already owns (grade_level, PersonalWordBank) rather than a
+ * Curriculum Guide integration — confirmed with the user as the simpler,
+ * in-scope approach. `grade_level` only picks the STARTING level; real
+ * in-session performance (see each game's own wrong-tap/wrong-pair
+ * threshold) can move a Learner up from there within one sitting, but never
+ * back down — a Learner who's struggling just holds at their current level
+ * instead of being pushed backward.
  */
 class GameController extends Controller
 {
     /**
-     * Small, hardcoded per-grade CVC-ish word lists — the fallback source
-     * when a Learner has no real PersonalWordBank "Struggling" words yet
-     * (a brand-new Learner, or one who has never scored below 80% on a
-     * real reading). Real words, grade-appropriate, not fabricated data —
-     * same category as the Learner avatar preset list: static reference
-     * content, not something read/scored from a live source.
+     * Word Builder's 3 levels are length-based, and reuse the exact word
+     * lists this feature already shipped with (grade 1/2/3's lists were
+     * already, coincidentally, uniform 3/4/5-6-letter sets) — no new
+     * content needed, just re-framed as levels instead of grades so a
+     * Learner isn't locked to their grade's word length if their real
+     * performance says otherwise.
      */
-    private const WORD_LISTS = [
+    private const WORD_LEVEL_LISTS = [
         1 => ['cat', 'dog', 'sun', 'hat', 'pig', 'bed', 'cup', 'run', 'big', 'red', 'hen', 'bus', 'box', 'fox', 'mud', 'six', 'wet', 'fan', 'jam', 'log'],
         2 => ['frog', 'star', 'milk', 'nest', 'lamp', 'swim', 'gift', 'sock', 'drum', 'fish', 'wind', 'hand', 'jump', 'camp', 'desk', 'flag', 'spin', 'tent', 'stop', 'pond'],
         3 => ['apple', 'table', 'happy', 'forest', 'purple', 'animal', 'garden', 'yellow', 'wonder', 'basket', 'monkey', 'sudden', 'castle', 'jungle', 'pencil', 'rocket', 'magnet', 'dragon', 'planet', 'silver'],
     ];
 
     /**
-     * Grade 1 gets a smaller subset (the first 10 letters) — Grade 2/3 get
-     * the full alphabet, but split into rounds of ~8-9 pairs each rather
-     * than one 52-card grid, which would be unplayably small/tedious on a
-     * real phone screen. This round-chunking is an implementation detail
-     * the original scope didn't spell out; disclosed here rather than
-     * silently decided.
+     * Letter Match's 3 levels are pair-count/grid-size based. Level 3 is
+     * exactly the pre-leveling full-alphabet/3-round behavior, byte-for-byte
+     * unchanged (still split into 3 rounds of ~8-9 pairs — one 52-card grid
+     * is unplayable on a real phone screen, a decision already made and
+     * tested in the original build). Levels 1-2 are new, genuinely easier
+     * tiers below what Grade 1 used to get by default — a real answer to
+     * "a weak Grade 1 reader still needs this to be adaptive," not just a
+     * relabeling of the old grade defaults.
      */
-    private const LETTER_ROUNDS = [
-        1 => [['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']],
-        2 => [
-            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
-            ['J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R'],
-            ['S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
-        ],
+    private const LETTER_LEVELS = [
+        1 => [['A', 'B', 'C', 'D', 'E', 'F']],
+        2 => [['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']],
         3 => [
             ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
             ['J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R'],
@@ -64,17 +71,22 @@ class GameController extends Controller
     }
 
     /**
-     * Real PersonalWordBank "Struggling" words first, topped up with the
-     * static per-grade list when there are fewer than 5 (rather than an
-     * all-or-nothing swap) — uses every real personalized word available
-     * before falling back, instead of discarding 1-4 real struggling
-     * words just because there weren't a full 5.
+     * All 3 levels' word data is sent up front (real Struggling words for
+     * that level's length, plus that level's full static list) so leveling
+     * up or retrying mid-session is an instant client-side pick, never a
+     * server round-trip. The client re-runs the same "real struggling
+     * words first, top up from the static list" logic fresh for every
+     * round it plays (see word-builder.blade.php's buildRoundWords()),
+     * not just once — so a Learner who replays the same level again (held
+     * there after too many mistakes) gets a freshly-shuffled 5, not an
+     * identical repeat, and real struggling words get a real chance to
+     * reappear across attempts instead of being used up after one try.
      */
     public function wordBuilder(Request $request): View
     {
         $learner = $request->user('learner');
         $grade = (int) substr($learner->grade_level, 6);
-        $fallback = self::WORD_LISTS[$grade] ?? self::WORD_LISTS[1];
+        $startLevel = max(1, min(3, $grade));
 
         $strugglingWords = PersonalWordBank::where('learner_id', $learner->id)
             ->where('mastery_status', 'Struggling')
@@ -83,29 +95,48 @@ class GameController extends Controller
             ->unique()
             ->values();
 
-        $picked = $strugglingWords->shuffle()->take(5)->all();
-
-        if (count($picked) < 5) {
-            $filler = collect($fallback)
-                ->reject(fn ($word) => in_array($word, $picked, true))
-                ->shuffle()
-                ->take(5 - count($picked))
-                ->all();
-
-            $picked = array_merge($picked, $filler);
+        $levels = [];
+        foreach ([1, 2, 3] as $level) {
+            $levels[$level] = [
+                'struggling' => $strugglingWords
+                    ->filter(fn ($word) => $this->wordLengthMatchesLevel(strlen($word), $level))
+                    ->values()
+                    ->all(),
+                'fallback' => self::WORD_LEVEL_LISTS[$level],
+            ];
         }
 
-        shuffle($picked);
-
-        return view('learner.games.word-builder', ['words' => $picked]);
+        return view('learner.games.word-builder', ['levels' => $levels, 'startLevel' => $startLevel]);
     }
 
+    private function wordLengthMatchesLevel(int $length, int $level): bool
+    {
+        return match ($level) {
+            1 => $length === 3,
+            2 => $length === 4,
+            default => $length >= 5,
+        };
+    }
+
+    /**
+     * Each level is an array of one-or-more rounds — levels 1 and 2 are a
+     * single round each, level 3 is the existing 3-round full-alphabet
+     * sequence played straight through as one "attempt" at that level.
+     * No PersonalWordBank equivalent exists for individual letters (that
+     * table stores whole words, never single characters), so unlike Word
+     * Builder, Letter Match's adaptivity is honestly grade-plus-in-session-
+     * performance only — not pretending to know which specific letters a
+     * Learner struggles with.
+     */
     public function letterMatch(Request $request): View
     {
         $learner = $request->user('learner');
         $grade = (int) substr($learner->grade_level, 6);
-        $rounds = self::LETTER_ROUNDS[$grade] ?? self::LETTER_ROUNDS[1];
+        $startLevel = max(1, min(3, $grade));
 
-        return view('learner.games.letter-match', ['rounds' => $rounds]);
+        return view('learner.games.letter-match', [
+            'levelDefs' => self::LETTER_LEVELS,
+            'startLevel' => $startLevel,
+        ]);
     }
 }

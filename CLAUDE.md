@@ -3154,6 +3154,181 @@ run can't reliably reach), each verified live in the browser:**
 - All 4 disposable test Learners and their `ReadingSession`/
   `PersonalWordBank`/`Notification` rows cleaned up afterward.
 
+## Practice Games — in-game difficulty levels, real sound effects, richer
+## per-game visual identity
+
+A second follow-up pass, explicitly scoped to enhancing the same two
+existing games (not adding more game types — that stays a separate,
+much bigger undertaking per the manuscript's other 6+ `gameType`s, out
+of scope here). Reported a concrete plan for both the leveling design
+and the sound source before writing any code, per the user's own
+request; built exactly what was approved.
+
+### Part 1 — real in-game levels, using only data this app already owns
+
+No `curriculum_guides` involvement, confirmed with the user as the
+simpler, in-scope choice — both games' 3 levels are built from
+`grade_level` (start level only) plus real in-session performance
+(can climb, never regresses). Same unified rule in both games: a
+level-up requires **≤3 total mistakes** in that attempt — one
+memorable, explainable threshold instead of two different ones.
+
+**Word Builder** — length-based levels, reusing the exact 3 word lists
+already shipped (they were already, coincidentally, uniform 3/4/5-6-
+letter sets): Level 1 = 3-letter words, Level 2 = 4-letter, Level 3 =
+5-6-letter. `GameController::wordBuilder()` now pre-fetches **all 3
+levels'** data in one response — real `PersonalWordBank` "Struggling"
+words bucketed by length, plus that level's static list — so leveling
+up or retrying a held level is an instant client-side pick, never a
+server round-trip. `buildRoundWords()` re-runs the real-words-first/
+static-fallback logic fresh every attempt (not just once), so a
+Learner held at a level for a 2nd/3rd try gets a freshly-shuffled 5,
+not an identical repeat.
+
+**Letter Match** — pair-count levels: Level 1 = 6 pairs (A-F, genuinely
+easier than the old Grade 1 default of 10 — a real answer to "a weak
+Grade 1 reader still needs this to be adaptive"), Level 2 = 10 pairs
+(the old Grade 1 default), Level 3 = the pre-existing full-alphabet/
+3-round sequence, untouched internally. No PersonalWordBank equivalent
+exists for individual letters (that table stores whole words, never
+single characters) — disclosed honestly rather than inventing a fake
+"weak letters" signal; Letter Match's adaptivity is grade-plus-in-
+session-performance only.
+
+**Session model, the same real design question resolved identically in
+both games**: a session is capped at 3 "attempts" (1 attempt = 1 round
+in Word Builder; 1 attempt = however many internal rounds that level
+has in Letter Match — 1 for levels 1-2, the existing 3 for level 3),
+but ends immediately once an attempt completes while already at the
+Level 3 ceiling, *regardless* of the attempt count. This was a real
+design fix mid-build, not the original naive plan: without it, a
+Learner who already starts at Level 3 (an older grade) would have
+replayed the full alphabet 3 separate times in one sitting — a real
+regression from the pre-leveling session length for exactly the
+learners who need it least. With the fix, a Level-3 starter gets
+exactly the same single pass through the alphabet as before leveling
+existed; a Learner who climbs all the way there from Level 1 gets a
+natural growth arc (6→10→26 letters, or 3→4→5-6-letter words) ending
+at the same finale.
+
+**A real bug caught during testing, not assumed correct from the
+diff**: the end-of-session message ("— great climbing!" vs. plain
+"Nice work!") was originally driven by whether the *last* attempt
+specifically leveled up — but reaching the Level 3 ceiling always sets
+that flag `false` for the final attempt (nowhere higher to climb to),
+so a Learner who climbed the *entire* way from Level 1 to Level 3
+would never see "great climbing!," only the plain message. Confirmed
+this exact failure live (a full clean climb correctly reached Level 3
+but showed "Nice work!" instead of crediting the climb). Fixed by
+tracking a session-wide `leveledUpDuringSession` flag instead of just
+the final attempt's own result — re-tested the identical climb and
+confirmed "— great climbing!" now shows correctly. A second, smaller
+cosmetic bug from the same root cause (the top-bar's attempt label
+still said "Round 2 of 3" after the session had already ended) was
+fixed alongside it — the label now reads "Complete!" once the session
+is actually over, instead of implying another round is coming.
+
+### Part 2 — real sound effects, the first audio playback in this app
+
+**Source: Mixkit (mixkit.co) Sound Effects Free License** — fetched
+the actual license text directly before using anything (not assumed):
+explicitly permits "Video games," "Educational Purposes," and
+"Commercial projects," lets you "download, copy, modify, distribute
+and publicly perform" the files, no attribution required. **Google's
+Actions/Assistant sound library was checked first and explicitly
+rejected** — its real terms forbid use "on non-Google platforms"
+entirely, confirmed by reading them directly rather than assuming a
+big-name source would obviously be fine.
+
+Three real files, downloaded once and self-hosted in `public/sounds/`
+(not hotlinked from Mixkit's CDN at runtime):
+- `correct.mp3` — Mixkit's "Correct answer tone" (1s)
+- `wrong.mp3` — Mixkit's "Wrong answer fail notification" (1s),
+  deliberately sourced from Mixkit's "Notification" category rather
+  than "Game" (which is mostly harsh arcade buzzers) — this plays for
+  young children, a wrong answer should never sound scary or punitive.
+  Also played at a noticeably lower volume (0.3) than the other two
+  (0.5-0.6) as an extra precaution, since the exact tone couldn't be
+  pre-listened to before choosing it (this sandboxed environment has
+  no audio playback) — worth a live listen-and-reconsider once someone
+  can actually hear it.
+- `level-complete.mp3` — Mixkit's "Game level completed" (3s)
+
+New shared `games/_game-sounds.blade.php` partial (one `<audio>` set +
+one `window.tarabasaPlaySfx(name, volume)` entry point, included by
+both games) instead of duplicating the same playback logic twice.
+Every call site is wrapped in try/catch **and** a `.catch()` on the
+returned Promise — browsers can legally block `audio.play()` when it
+isn't triggered by a real user gesture (a genuine, common autoplay
+restriction, not a bug); every real call site here fires from inside
+an actual click handler, so this should normally play, but the game
+must never break if a browser blocks it anyway.
+
+**Tested for real, not assumed**: confirmed real playback via direct
+element inspection (`paused: false`, `currentTime` genuinely advancing,
+`readyState: 4`) after calling `tarabasaPlaySfx` live in the browser —
+not just "no console error," actual audio decoding and playing.
+Separately simulated a real autoplay-block by overriding one audio
+element's `play()` to reject with the exact real `NotAllowedError`
+browsers throw for this case, confirmed the call site doesn't throw
+synchronously and the game's own functions stay fully callable
+afterward — the graceful-failure path is proven, not just assumed from
+the try/catch being present in the source.
+
+### Part 3 — visual/interaction polish
+
+Larger touch targets throughout: Word Builder tiles 52×56→62×66,
+slots 44×52→52×60; Letter Match cards' grid minimum cell size
+58px→68px. Both games' mascot chip and card padding sized up slightly
+to match. **Thematic per-game backgrounds**, built the same
+claymorphism way as everything else in this app (no new image assets):
+Word Builder gets small hand-coded SVG leaf/flower "garden" accents
+positioned like the existing decorative blob circles; Letter Match
+gets small scattered claymorphism "confetti" dot shapes in the app's
+existing accent colors. More interaction feedback: tile hover now
+lifts and scales together (was scale-only), Letter Match cards get the
+same lift-on-hover treatment they didn't have before, both games'
+correct-tap/match bounce animations were made slightly more energetic
+(added a subtle rotation to Word Builder's tile bounce).
+
+### Tested for real across multiple levels, grades, and both directions
+### (climb and hold) — not assumed from the diff
+
+- **Ceiling-start (ends after exactly 1 attempt, not 3)**: Miguel
+  (id 1, real Grade 3, real struggling words `hen`/`cow`/`cat`/`dog` —
+  confirmed these correctly bucket into the Level 1 length-3 pool even
+  though he never plays it, since he starts and stays at Level 3)
+  completed one real 5-word attempt at Level 3 and the session
+  correctly ended immediately — confirmed via live DOM state and a
+  screenshot, not just trusting the code path.
+- **Full climb, Word Builder**: a fresh Grade 1 Learner playing
+  perfectly (0 wrong taps every attempt) climbed Level 1→2→3 across
+  exactly 3 real attempts (15 real words total), each level's word
+  lengths verified live (3, then 4, then 5-6 letters) — confirmed the
+  "great climbing!" bug fix landed correctly on re-test.
+- **Full hold, Word Builder**: a second fresh Grade 1 Learner,
+  deliberately tapping 4 wrong tiles before completing each word
+  (exceeding the ≤3 threshold every attempt), correctly held at Level
+  1 across all 3 real attempts and ended with the honest plain
+  message, never a false "great climbing!" claim.
+- **Full climb, Letter Match**: a fresh Grade 1 Learner playing
+  perfectly climbed Level 1 (6 pairs) → Level 2 (10 pairs) → Level 3
+  (the existing full 3-round alphabet sequence, played completely as
+  one attempt) across exactly 3 real attempts, confirmed card counts
+  live at each level (12, 20, then the existing 9/9/8 split) and the
+  "great climbing!" credit at the end.
+- **Hold-then-climb, Letter Match**: a fresh Grade 1 Learner held at
+  Level 1 after a genuinely bad first attempt (4 deliberate wrong
+  pairs), then correctly climbed to Level 2 on a clean second attempt
+  — direct proof the hold and climb branches are independently correct
+  for Letter Match's own wrong-pair counter, not just assumed identical
+  from Word Builder's already-proven wrong-tap counter since the two
+  use genuinely different underlying mechanics.
+- Confirmed zero console errors and all 3 real sound files loading
+  (`200 OK`) across every test session above.
+- All disposable test Learners (4 total this pass) and their
+  `ReadingSession`/`Notification` rows cleaned up afterward.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
