@@ -168,6 +168,18 @@ class LearnerReadingService
 
         $this->notifyForSession($learner, $activity, $session);
 
+        $levelChanged = $levelBefore !== $levelAfter;
+        $levelWentUp = $accuracy >= 90;
+
+        // Checked after the streak/mastery_level update above, so the
+        // service sees the Learner's real new values (a fresh streak of
+        // exactly 3, not the pre-increment 2) — and only "genuinely
+        // leveled up" (changed AND upward, not a downward move or a
+        // same-tier no-op at the Proficient ceiling) earns the badge,
+        // the same distinction the results screen itself already draws
+        // between levelChanged and levelWentUp.
+        $newBadges = app(BadgeService::class)->checkAfterPracticeReading($learner->fresh(), $levelChanged && $levelWentUp);
+
         $breakdown = $this->buildWordBreakdown(
             $result['accuracy']['word_feedback'] ?? [],
             $result['word_timestamps'] ?? []
@@ -180,13 +192,14 @@ class LearnerReadingService
             'wcpm' => $wcpm,
             'levelBefore' => $levelBefore,
             'levelAfter' => $levelAfter,
-            'levelChanged' => $levelBefore !== $levelAfter,
-            'levelWentUp' => $accuracy >= 90,
+            'levelChanged' => $levelChanged,
+            'levelWentUp' => $levelWentUp,
             'pointsEarned' => $pointsEarned,
             'wordBreakdown' => $breakdown['words'],
             'extraWordsSaid' => $breakdown['extraWordsSaid'],
             'wordsToPractice' => $breakdown['practiceCount'],
             'comprehension' => $comprehension,
+            'newBadges' => $newBadges,
         ];
     }
 

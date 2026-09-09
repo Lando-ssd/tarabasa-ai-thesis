@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\LearnerAuthController;
@@ -93,6 +94,9 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         Route::get('/games', [GameController::class, 'index'])->name('games.index');
         Route::get('/games/word-builder', [GameController::class, 'wordBuilder'])->name('games.word-builder');
         Route::get('/games/letter-match', [GameController::class, 'letterMatch'])->name('games.letter-match');
+
+        // "My Badges" — real earned/unearned state, see BadgeController.
+        Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');
     });
 
     Route::post('/logout', [LearnerAuthController::class, 'logout'])->name('logout');

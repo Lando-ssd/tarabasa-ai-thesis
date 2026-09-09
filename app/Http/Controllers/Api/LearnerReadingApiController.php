@@ -55,6 +55,7 @@ class LearnerReadingApiController extends Controller
             'extraWordsSaid' => $outcome['extraWordsSaid'],
             'wordsToPractice' => $outcome['wordsToPractice'],
             'comprehension' => $outcome['comprehension'],
+            'newBadges' => $outcome['newBadges'],
         ]);
     }
 }

@@ -47,6 +47,20 @@
     color:#08352c; font:800 14.5px/1 'Baloo 2',sans-serif; padding:10px 18px; border-radius:999px; margin-bottom:18px;
   }
 
+  /* Real Badges — see BadgeService. Shown only when this exact session
+     genuinely earned one, never unconditionally. */
+  .badge-celebration{ display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+  .badge-pop{
+    display:flex; align-items:center; gap:12px; text-align:left;
+    background:linear-gradient(155deg,#fff3c4,#f0b03e); border-radius:18px; padding:12px 16px;
+    box-shadow:0 14px 24px -12px rgba(240,176,62,0.5);
+    animation:badgePop .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes badgePop{ 0%{ transform:scale(0.6); opacity:0; } 70%{ transform:scale(1.06); opacity:1; } 100%{ transform:scale(1); opacity:1; } }
+  .badge-pop-emoji{ font-size:34px; line-height:1; flex-shrink:0; }
+  .badge-pop-label{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#7a5400; }
+  .badge-pop-name{ font-family:'Baloo 2',sans-serif; font-size:16px; font-weight:800; color:#5a3d00; }
+
   .stat-row{ display:flex; gap:10px; margin-bottom:10px; }
   .stat-row:last-of-type{ margin-bottom:22px; }
   .stat-tile{ flex:1; background:var(--bg-0); border:2px solid var(--line); border-radius:18px; padding:16px 8px; }
@@ -161,6 +175,8 @@
         {{ $levelWentUp ? '⬆️' : '' }} {{ $levelBefore ?? 'New' }} → {{ $levelAfter }}
       </div>
     @endif
+
+    @include('learner._badge-celebration', ['newBadges' => $newBadges])
 
     @if (! empty($wordBreakdown))
       <p class="breakdown-title">Here's how you read each word:</p>

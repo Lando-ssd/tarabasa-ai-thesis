@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Api\Concerns\SerializesLearner;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
+use App\Models\LearnerBadge;
 use App\Services\LearnerAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,7 @@ class LearnerApiController extends Controller
         return response()->json([
             'learner' => $this->learnerPayload($learner),
             'competencyProgress' => $learner->competencyProgressSummary(),
+            'badges' => LearnerBadge::summaryFor($learner),
         ]);
     }
 

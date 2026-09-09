@@ -55,6 +55,15 @@
   .big-btn:active{ transform:scale(0.97); }
   .games-btn{ background:linear-gradient(155deg, #ff8a65, var(--owl-orange-600)); box-shadow:0 16px 26px -12px rgba(221,112,20,0.5); }
 
+  .nav-link{
+    display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px;
+    border:2px solid var(--line); border-radius:16px; margin-bottom:14px; box-sizing:border-box;
+    font:800 14.5px/1 'Baloo 2',sans-serif; color:var(--navy-900); text-decoration:none;
+    transition:border-color .15s ease, transform .15s ease;
+  }
+  .nav-link:hover{ border-color:var(--owl-orange-500); transform:translateY(-1px); }
+  .nav-link-count{ font-size:12.5px; font-weight:800; color:var(--slate-600); background:var(--bg-0); padding:2px 8px; border-radius:999px; }
+
   .switch-btn{ background:none; border:none; color:var(--slate-600); font:700 14.5px/1 'Inter',sans-serif; cursor:pointer; padding:6px; }
   .switch-btn:hover{ color:var(--blue-600); }
   button:focus-visible, a:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
@@ -138,6 +147,10 @@
 
     <a href="{{ route('learner.activity.find') }}" class="big-btn">Start Reading Activity</a>
     <a href="{{ route('learner.games.index') }}" class="big-btn games-btn">🎮 Practice Games</a>
+
+    <a href="{{ route('learner.badges.index') }}" class="nav-link">
+      🏆 My Badges <span class="nav-link-count">{{ $earnedBadgeCount }}/{{ $totalBadgeCount }}</span>
+    </a>
 
     <form method="POST" action="{{ route('learner.logout') }}">
       @csrf

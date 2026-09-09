@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Models\LearnerBadge;
 use App\Services\LearnerAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -71,8 +72,13 @@ class LearnerAuthController extends Controller
      */
     public function dashboard(Request $request): View
     {
+        $learner = $request->user('learner');
+        $badges = LearnerBadge::summaryFor($learner);
+
         return view('learner.dashboard', [
-            'learner' => $request->user('learner'),
+            'learner' => $learner,
+            'earnedBadgeCount' => count(array_filter($badges, fn (array $b) => $b['earned'])),
+            'totalBadgeCount' => count($badges),
         ]);
     }
 

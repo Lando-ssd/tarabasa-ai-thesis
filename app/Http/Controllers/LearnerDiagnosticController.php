@@ -82,6 +82,7 @@ class LearnerDiagnosticController extends Controller
                 'learner' => $outcome['learner'],
                 'finalLevel' => $outcome['finalLevel'],
                 'resultLabel' => $outcome['resultLabel'],
+                'newBadges' => $outcome['newBadges'],
             ]),
         };
     }

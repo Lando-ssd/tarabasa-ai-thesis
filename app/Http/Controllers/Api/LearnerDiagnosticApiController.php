@@ -57,6 +57,7 @@ class LearnerDiagnosticApiController extends Controller
                 'status' => 'finished',
                 'finalLevel' => $outcome['finalLevel'],
                 'resultLabel' => $outcome['resultLabel'],
+                'newBadges' => $outcome['newBadges'],
             ]);
         }
 

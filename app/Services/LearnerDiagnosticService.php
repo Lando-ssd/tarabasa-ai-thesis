@@ -91,6 +91,15 @@ class LearnerDiagnosticService
             'passages_done' => 0,
             'level_before' => $learner->mastery_level,
             'accuracy_history' => [],
+            // Captured once, right now, before any passage of THIS
+            // diagnostic run creates a real ReadingSession row — the
+            // staircase can take 1-3 passages, each persisting its own
+            // row, so checking "session count === 1" at finish time (as
+            // an earlier version of this code did) would only catch the
+            // 1-passage case, never a genuine first-time Learner whose
+            // diagnostic took 2 or 3 passages to conclude. This flag is
+            // the one honest, order-independent way to know.
+            'is_first_ever_reading' => ReadingSession::where('learner_id', $learner->id)->count() === 0,
         ];
 
         $this->putState($learner, $state);
@@ -217,7 +226,7 @@ class LearnerDiagnosticService
         $reachedCap = $state['passages_done'] >= self::MAX_PASSAGES;
 
         if ($nextTier === null || $reachedCap) {
-            return $this->finishDiagnostic($learner, $tier, $accuracy);
+            return $this->finishDiagnostic($learner, $tier, $accuracy, $state['is_first_ever_reading']);
         }
 
         $state['variant_used'][$nextTier] = min($state['variant_used'][$nextTier] + 1, 1);
@@ -235,7 +244,7 @@ class LearnerDiagnosticService
         ];
     }
 
-    private function finishDiagnostic(Learner $learner, string $landedTier, float $lastAccuracy): array
+    private function finishDiagnostic(Learner $learner, string $landedTier, float $lastAccuracy, bool $isFirstEverReading): array
     {
         $finalLevel = self::TIER_TO_MASTERY[$landedTier];
 
@@ -252,11 +261,22 @@ class LearnerDiagnosticService
 
         $this->clearState($learner);
 
+        // Real badge check, replacing diagnostic-results.blade.php's old
+        // unconditional "You earned your first badge!" text — genuinely
+        // awarded only when this diagnostic really was this Learner's
+        // very first reading. $isFirstEverReading is captured once, in
+        // ensureBundleGenerated(), before any of THIS diagnostic run's
+        // own passages created a ReadingSession row — not re-derived
+        // from the current session count here, which would already
+        // include 1-3 rows from this same diagnostic by this point.
+        $newBadges = app(BadgeService::class)->checkAfterDiagnosticFinish($learner->fresh(), $isFirstEverReading);
+
         return [
             'status' => 'finished',
             'learner' => $learner->fresh(),
             'finalLevel' => $finalLevel,
             'resultLabel' => self::MASTERY_TO_RESULT_LABEL[$finalLevel],
+            'newBadges' => $newBadges,
         ];
     }
 

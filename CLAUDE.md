@@ -3689,6 +3689,160 @@ existing practice of not cleaning up real generated content.
 Part 3 (the native screens/nav) — this entry is Part 1 only, confirmed
 complete and tested before moving on.
 
+## Learner dashboard v2 — Slice 1: Real Badges (Bookshelf/Weekly Goals/
+## Reading Journey are separate, later slices)
+
+The user asked where the "adaptive"/"gamified" side of the app actually
+lives (answer: already real and shipped — Adaptive_Recommendator +
+"How I'm Growing" + Practice Games' adaptive connection, all documented
+elsewhere in this file) and asked for a genuinely richer Learner
+dashboard beyond just the two big buttons. Scoped into 4 slices with
+the user before building anything (Badges → Bookshelf → Weekly Goals →
+Reading Journey visual) — this entry covers Slice 1 only.
+
+**A real fabrication bug found while scoping, not while building.**
+`diagnostic-results.blade.php` has said "You earned your first badge —
+the First Reading Star!" unconditionally, every single time, for every
+Learner, since Sprint 4 — despite Badges being explicitly deferred back
+then for lack of defined content. There was never a `badges` table, a
+`learner_badges` table, or any check at all behind that claim. Fixing
+this specific screen (award a genuine badge at that exact moment
+instead of printing static copy) was the anchor requirement for this
+whole slice, not an afterthought.
+
+**Design simplification made and confirmed with the user before
+building**: badge *definitions* (name/description/emoji) live in
+`config/badges.php`, not a database table — they're fixed content
+nobody edits through a UI, the same reasoning already applied to
+`MASTERY_TO_RESULT_LABEL`. Only `learner_badges` (`learner_id`,
+`badge_code`, `earned_at`, `unique(learner_id, badge_code)`) is a real
+migration — the one genuinely dynamic fact.
+
+**Six badges shipped this slice**, all backed by data this app already
+tracked (a seventh, "Game Explorer" tied to completing a Practice Games
+session, is a confirmed, deliberate fast-follow — Practice Games are
+100% client-side by design and never write anything to the server on
+completion, so there's no real signal to check yet):
+- 🌟 **First Reading Star** — this Learner's very first completed
+  reading ever (Practice or Diagnostic). The real fix for the
+  fabrication above.
+- 🔥 **3-Day Streak** / 🔥 **7-Day Streak** — `learner.streak` crossing
+  3 / 7.
+- 📈 **Leveled Up** — the mastery tier genuinely changed AND moved up
+  (`levelChanged && levelWentUp` together — not `levelWentUp` alone,
+  which stays true even at the Proficient ceiling with no real change;
+  same distinction `reading-results.blade.php` itself already draws
+  between those two flags).
+- 📖 **10 Readings** / 📚 **25 Readings** — real Practice-only
+  `ReadingSession` count crossing 10 / 25 (Diagnostic sessions
+  excluded, matching Analytics' own established convention for what
+  counts as a "reading").
+
+**New `BadgeService`** (`app/Services/`) — the one place real data gets
+checked against these thresholds, called from both
+`LearnerReadingService::scoreAndPersist()` (after a real Practice
+reading) and `LearnerDiagnosticService::finishDiagnostic()` (after the
+diagnostic concludes), so the award logic lives in exactly one place
+rather than being duplicated at each trigger point. Both return a real
+`newBadges` array (empty most of the time) as part of their existing
+outcome data — passed through by the web controllers to
+`reading-results.blade.php`/`diagnostic-results.blade.php` and by both
+mobile API controllers to their JSON responses, for parity.
+
+**A real, second bug found and fixed during testing, not assumed
+correct from the diff** — a genuinely fresh mistake in this slice's own
+new code, distinct from the diagnostic-completion bug found in the
+mobile API work: the original `isFirstEverReading()` check was
+`ReadingSession::count() === 1`, computed at the moment the diagnostic
+*finishes*. But the diagnostic staircase can take 1-3 passages, and
+`applyStaircaseStep()` persists a real `ReadingSession` row for *every*
+attempted passage, immediately — so by the time `finishDiagnostic()`
+ran, a genuinely first-time Learner whose diagnostic took 2 or 3
+passages already had 2 or 3 rows, never exactly 1. Caught by testing a
+real 2-passage diagnostic end-to-end and finding zero badges awarded
+despite the Learner genuinely being first-time. Fixed by capturing
+`is_first_ever_reading` once, in `ensureBundleGenerated()`, before any
+passage of that run has created a row — the one order-independent way
+to know — and threading it through `applyStaircaseStep()` →
+`finishDiagnostic()` → `BadgeService::checkAfterDiagnosticFinish()`
+instead of re-deriving it after the fact. The Practice-reading path's
+own `isFirstEverReading` check is safe as originally written and stays
+a plain `count() === 1` computed inline — `scoreAndPersist()` only ever
+adds exactly one row per call, so there's no multi-row ambiguity there.
+
+**Shared, not duplicated**: `LearnerBadge::summaryFor(Learner $learner)`
+(merges `config('badges')` definitions with this Learner's real
+earned/unearned state) is the one source both the new "My Badges" web
+screen (`BadgeController`) and the mobile API's `/api/learner/dashboard`
+endpoint build from — same shared-static-method pattern already
+established by `ReadingSession::sourceSummaryForLearner()`.
+
+**New "My Badges" screen** (`GET /learner/badges`): every defined badge
+shown always, earned ones lit up in a real gold-gradient tile with the
+real earned date, unearned ones as a dimmed grey silhouette with a
+"🔒 Not yet" label — never hidden, so a child can see what's still
+ahead. A new small `.nav-link` on the Dashboard ("🏆 My Badges N/6")
+gives a real earned-count at a glance without a click.
+
+**The celebratory moment**: a new shared `_badge-celebration.blade.php`
+partial (markup only, matching this app's standalone-per-view CSS
+convention), reusing the exact gold star-badge visual language
+`diagnostic-results.blade.php` originally used for its own fabricated
+text — now genuinely earned. Included on both results screens right
+after their existing level-change callout; renders nothing at all when
+`$newBadges` is empty (confirmed via direct template checks, not
+assumed from the Blade `@if`). Handles more than one badge earned in
+the same moment (a real possibility on `reading-results.blade.php` —
+e.g. a 10th reading landing on the same session as a level-up).
+
+**Tested for real, both fabrication-fix directions and every
+threshold, not assumed from the diff:**
+- A genuinely fresh Learner (`ZZBadgeTest2`, `TB-BADGE2`) ran a real
+  2-passage TTS diagnostic end-to-end (this is what surfaced the
+  multi-passage bug above) — confirmed `first_reading_star` correctly
+  awarded exactly once at real completion, `learner_badges` holding
+  exactly 1 row, not 0 and not 2.
+- The exact fabrication scenario, confirmed the other direction too: a
+  second fresh Learner (`ZZBadgeTest`, `TB-BADGE1`) whose diagnostic
+  had already completed under the pre-fix code (genuinely zero real
+  badges) was confirmed, via a live screenshot of "My Badges," to show
+  all 6 badges honestly locked — no retroactive fabrication for a
+  reading that, in fact, wasn't their first.
+- One real Practice reading (genuine TTS, the project's own "cat dog
+  pig hen cow" test phrase) confirmed the live pipeline end-to-end:
+  60% accuracy, streak → 1, mastery Proficient → Developing (a
+  downward move, correctly earning no Leveled Up badge).
+- One real reflection-based call (this project's established technique
+  for exercising a real, hard-to-reach-live branch — see the earlier
+  ≥90%-accuracy precedent) drove a genuine Developing → Proficient
+  level-up: confirmed `leveled_up` awarded exactly on that call, not
+  before.
+- A full real threshold sweep (25 sequential real `BadgeService::
+  checkAfterPracticeReading()` calls against real Learner state and
+  real `ReadingSession` rows — not the full external-call pipeline
+  replayed 24 more times, which had already been proven wired in by
+  the calls above): `streak_3` fired exactly at streak=3, `streak_7`
+  exactly at streak=7, `readings_10` exactly at practiceCount=10,
+  `readings_25` exactly at practiceCount=25 — never early, never late,
+  never duplicated (`learner_badges` held exactly 6 rows at the end,
+  matching the 6 real badges earned, confirmed by direct count).
+- Both results-screen templates rendered directly (`view(...)->render()`)
+  with real `$newBadges` data confirmed the celebration markup appears
+  with a real badge and confirmed — via an HTML-attribute-precise
+  string check, after an initial test methodology mistake matched a
+  CSS class *selector* instead of rendered markup, caught and corrected
+  before treating it as a real result — that zero markup renders when
+  `$newBadges` is empty, on both `reading-results.blade.php` and
+  `diagnostic-results.blade.php`.
+- `php -l` clean and `php artisan route:list` clean (76 routes, +1 for
+  `/learner/badges`) across the whole pass. Both disposable test
+  Learners and all their `ReadingSession`/`ActivityAssignment`/
+  `PersonalWordBank`/`LearnerBadge` rows cleaned up afterward.
+
+**Not started yet**: Slices 2-4 (My Bookshelf, Weekly Goals, the
+Reading Journey visual) — this entry is Slice 1 only, confirmed
+complete and tested before moving on, per the confirmed build order.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
