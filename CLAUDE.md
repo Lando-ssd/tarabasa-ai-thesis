@@ -3424,6 +3424,48 @@ looks right) — the same live-DOM-geometry verification technique
 already established elsewhere in this project for exactly this kind
 of "does it just look right or does the code prove it" question.
 
+## Practice Games — explicit in-game Exit button, repointed straight to
+## the Dashboard
+
+A follow-up on the resume-in-progress fix directly above: both games
+already had an explicit exit link (not just reliance on browser back-
+navigation), but it read "Back to Games" and went to the Games hub, one
+hop short of the Dashboard — inconsistent with every other Learner
+screen's exit affordance in this app (activity-picker, activity-found,
+diagnostic, the Games hub itself), which all go straight to
+`learner.dashboard` labeled "Back to My Dashboard." Repointed both
+games' exit link to match that established convention exactly, rather
+than inventing a new one, and added an explicit `onclick="saveProgress()"`
+so leaving mid-round is guaranteed to persist state at the exact moment
+of leaving — belt-and-suspenders on top of the existing "save at every
+stable waiting-for-input moment" behavior, not a replacement for it.
+
+**Tested for real, the exact reported scenario, on both games**: in
+Word Builder, tapped the first correct letter of "pig" (leaving the
+tile filled and disabled), clicked the new "Back to My Dashboard" link,
+confirmed it landed on the real dashboard, then navigated back into
+Word Builder and confirmed — via live DOM state and a screenshot — the
+identical scrambled tile arrangement resumed with "P" still filled and
+disabled, not a restart. Same test in Letter Match: matched one real
+pair ("C"), clicked the exit link, confirmed landing on the dashboard,
+then confirmed on return the same board arrangement resumed with the
+"C" pair still shown matched.
+
+**The completion edge case re-confirmed for both games, driven all the
+way through a full session (not stopped after one attempt)**: played
+Word Builder through a genuine full climb (Level 1 → 2 → 3, ending "You
+finished at Level 3 — great climbing!"), confirmed `localStorage` was
+`null` immediately after and the exit link itself was hidden
+(`backLink.style.display === 'none'`) on the finished screen, then
+reloaded the same route fresh and confirmed a genuinely new session
+started (Level 1, attempt 0) rather than resuming the finished one. Ran
+the identical full-climb-to-completion test on Letter Match (Level 1's
+6 pairs → Level 2's 10 pairs → Level 3's full 3-sub-round alphabet
+sequence) with the same result: `localStorage` cleared, exit link
+hidden, and a fresh reload correctly started over at Level 1/12 cards.
+Test Learner (`ZZExitTest`, code `TB-EXIT1`) and its dummy Diagnostic
+`ReadingSession` row cleaned up afterward.
+
 ## Activity picker — missing exit link fixed (real UX gap, not the
 ## empty-state screen)
 

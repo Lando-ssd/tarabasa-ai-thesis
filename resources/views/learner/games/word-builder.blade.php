@@ -167,9 +167,9 @@
       <a href="{{ route('learner.games.word-builder') }}" class="big-btn">Play Again</a>
     </div>
 
-    <a href="{{ route('learner.games.index') }}" class="back-link" id="backLink">
+    <a href="{{ route('learner.dashboard') }}" class="back-link" id="backLink" onclick="saveProgress()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Back to Games
+      Back to My Dashboard
     </a>
   </div>
 </div>
