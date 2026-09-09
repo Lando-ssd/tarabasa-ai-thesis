@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\ReadingSession;
+use App\Services\LearnerDiagnosticService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,16 +19,20 @@ class EnsureDiagnosticComplete
      * back-buttoned request could reach the dashboard directly, so this
      * is a standing guard on every route that check applies to, not just
      * a one-time redirect at login.
+     *
+     * Delegates to LearnerDiagnosticService::hasGenuinelyCompletedDiagnostic()
+     * — a real bug (found while building the mobile API, not caused by
+     * it) meant this used to just check "does any Diagnostic session
+     * exist," true after passage 1 of up to 3, letting a Learner who
+     * bookmarked/back-buttoned to the dashboard mid-staircase through
+     * before their real level was ever confirmed. See that method's own
+     * doc comment.
      */
     public function handle(Request $request, Closure $next): Response
     {
         $learner = $request->user('learner');
 
-        $hasCompletedDiagnostic = ReadingSession::where('learner_id', $learner->id)
-            ->where('session_type', 'Diagnostic')
-            ->exists();
-
-        if (! $hasCompletedDiagnostic) {
+        if (! app(LearnerDiagnosticService::class)->hasGenuinelyCompletedDiagnostic($learner)) {
             return redirect()->route('learner.diagnostic.show');
         }
 

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -25,6 +26,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'parent' => \App\Http\Middleware\EnsureUserIsParent::class,
             'learner.auth' => \App\Http\Middleware\EnsureLearnerLoggedIn::class,
             'learner.diagnostic' => \App\Http\Middleware\EnsureDiagnosticComplete::class,
+            // API-only counterpart of 'learner.diagnostic' — same rule
+            // (can't reach the dashboard/activities/games until the
+            // diagnostic is complete), but responds with real JSON
+            // (needs_diagnostic: true) instead of a Blade redirect, since
+            // a mobile client has no concept of one.
+            'learner.diagnostic.api' => \App\Http\Middleware\EnsureDiagnosticCompleteApi::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -3505,6 +3505,190 @@ it and confirmed via a second screenshot it correctly navigates to
 Points/Streak tiles, both game buttons). Test Learner and its
 `ActivityAssignment` rows cleaned up afterward.
 
+## Mobile app — Part 1, the Laravel API layer (Learner-only, MVP scope)
+
+The team is starting a React Native (Expo) mobile app — **Learner only**,
+a confirmed deviation from the manuscript's named Kotlin (see the
+mobile-stack decision recorded outside this file). Teacher/Parent/Admin
+remain web-only. Full scope report (MVP boundary, Expo confirmation,
+screen/nav structure) was proposed and confirmed with the user before
+any building — this entry covers Part 1 only: the real JSON API layer
+the app talks to, which had to exist as a genuine prerequisite before
+any React Native code could be written.
+
+**The core problem, confirmed by reading the actual code first, not
+assumed:** almost all of the real scoring/mastery/adaptive-recommendation
+logic (`scoreAndPersist`, `buildWordBreakdown`, `adjustMasteryLevel`,
+the diagnostic staircase steps, etc.) lived as `private` methods
+directly on the Blade-rendering web controllers, returning `View`
+objects. None of it was callable from anywhere else. Making the mobile
+API a genuine "thin wrapper around the same logic" (not a
+reimplementation) required extracting that logic into real, shared
+service classes first — a real refactor, not just new routes.
+
+**New service classes** (`app/Services/`), each holding the exact same
+computation the original private controller methods did — confirmed via
+careful line-by-line extraction, not a rewrite:
+- `LearnerAuthService` — the real credential-check/throttle logic
+  (`authenticate()`) and the "what should I read?" picker resolution
+  (`findActivityOptions()` + the Adaptive_Recommendator labeling),
+  extracted out of `LearnerAuthController`.
+- `LearnerReadingService` — the full real scoring/mastery/word-breakdown/
+  Adaptive_Recommendator-update pipeline (`recordAttempt()`), extracted
+  out of `LearnerReadingController`.
+- `LearnerDiagnosticService` — the full real staircase (bundle
+  generation, scoring, tier movement, finalization,
+  Adaptive_Recommendator `/initialize`), extracted out of
+  `LearnerDiagnosticController`.
+
+The three web controllers are now thin — they call these services and
+render a Blade view from the returned data array; nothing about their
+external behavior changed. **Regression-tested for real, not assumed
+safe from the diff**: a fresh Learner (`ZZWebRegress`, code
+`TB-WEBRG1`) ran a genuine TTS-scored diagnostic passage through the
+real web flow post-refactor (89.19% accuracy → correctly stopped at
+Developing, matching the 70-89% stop-immediately rule), correctly
+landed straight on the real dashboard afterward (the "never again"
+rule) with a real Adaptive_Recommendator `/initialize` result already
+showing on "How I'm Growing," then read a real assigned Activity
+("cat dog pig hen cow") and got a real 60% accuracy / Beginning-tier
+result with the correct real `word_feedback` breakdown — all confirmed
+directly against the database, matching this exact scenario's
+well-established expected values from this project's own prior
+testing history.
+
+**The session-state problem, and why it had to be fixed, not just
+routed around**: the diagnostic staircase's in-progress state and the
+"3 unclear attempts" retry counters both lived in PHP's `session()`,
+which a Sanctum **token**-authenticated mobile request never carries
+(no session cookie). Moved both to the database `cache` store
+(`config/cache.php`'s existing default — no new infrastructure),
+keyed by `learner_id` (+ `activity_id` for the reading one). This is
+strictly more correct for the web flow too, not a compromise made for
+mobile's sake — same guarantees, just not tied to a cookie.
+
+**Sanctum stood up for real, not just left "installed"**: `laravel/
+sanctum` was in `composer.json` since early in the project but its
+`personal_access_tokens` migration had never actually been published
+or run, `routes/api.php` didn't exist, and `bootstrap/app.php` never
+registered an `api:` routing group. Published the migration, added
+`HasApiTokens` to the `Learner` model (already `AuthenticatableContract`,
+so this was a clean addition, not a restructure), created `routes/
+api.php`, and registered it in `bootstrap/app.php` alongside the
+existing `web:` group. (`php artisan install:api` was tried first to
+automate this — it hung indefinitely on this machine after downgrading
+`laravel/sanctum` to `^4.0` in `composer.json`/`composer.lock` as a
+side effect; killed it and reverted those two files, then did the
+setup by hand instead, which also gave more control over where things
+went than the command's own defaults would have.)
+
+**The 9 real MVP endpoints** (`routes/api.php`, all under `auth:sanctum`
+except login), each a thin JSON wrapper over the services above —
+Learner-only, matching the mobile app's own confirmed scope:
+```
+POST /api/learner/login
+POST /api/learner/logout
+GET  /api/learner/dashboard                        (behind learner.diagnostic.api)
+GET  /api/learner/diagnostic/passage
+POST /api/learner/diagnostic/record
+GET  /api/learner/activities                       (behind learner.diagnostic.api)
+GET  /api/learner/activities/{id}                  (behind learner.diagnostic.api)
+POST /api/learner/activities/{id}/record            (behind learner.diagnostic.api)
+POST /api/learner/reading-preferences/font-step
+```
+New `EnsureDiagnosticCompleteApi` middleware is the API counterpart of
+the existing web `learner.diagnostic` guard — same rule, but responds
+with a real `403 {"error":"diagnostic_required"}` instead of a Blade
+redirect, since a mobile client has no concept of one. A new
+`SerializesLearner` trait (`app/Http/Controllers/Api/Concerns/`) is the
+one place a Learner model gets turned into a safe JSON payload
+(whitelisted fields only — never the raw Eloquent model, which would
+expose the hashed pin), shared by the two controllers that need it
+rather than duplicated.
+
+**A real security catch made before shipping, not after**: the
+activity-detail endpoint was originally going to include
+`follow_up_questions` (for the not-yet-built mobile comprehension
+quiz) — but that field's `answer` key is the literal correct-answer
+text, and the web's own `activity-found.blade.php` never sends it to
+the browser at all (only `choices` gets rendered into the page,
+`answer` stays server-side for scoring). Shipping it in the API now,
+before a quiz UI exists to use it responsibly, would just hand a
+mobile client the answer key. Left out of this endpoint entirely for
+now — a real, disclosed scope cut, not an oversight; add it back
+(choices only, still never `answer`) when the mobile quiz step is
+actually built.
+
+**A real, currently-live bug found while testing — not introduced by
+this refactor, but discovered because testing the new API path hit it
+directly**: `hasCompletedDiagnostic()` (checked at login, and by the
+`learner.diagnostic` gate on every dashboard/activity/games request)
+was just `ReadingSession::where(...'Diagnostic')->exists()` — true
+after passage 1 of up to 3, since `applyStaircaseStep()` persists a
+real session for every attempted passage immediately, not only the
+final one. A Learner who reached the dashboard directly (bookmark,
+back button, app restart) between passage 1 and the staircase's real
+conclusion would be waved through with `mastery_level` still whatever
+the placement-quiz guess was, never finishing their real diagnostic.
+This exact same flawed check was independently duplicated in three
+places before this pass (`LearnerAuthController::login()`, the web
+`EnsureDiagnosticComplete` middleware, and the just-written
+`EnsureDiagnosticCompleteApi`) — fixed once, correctly, in
+`LearnerDiagnosticService::hasGenuinelyCompletedDiagnostic()` (combines
+"a real Diagnostic session exists" AND "no in-progress staircase state
+is still cached"), with all three call sites now delegating to it.
+
+**Tested for real, confirmed both before and after the fix, on both
+channels**: a fresh Learner (`ZZApiTest`, code `TB-APITE1`) genuinely
+mid-staircase (1 of up to 3 passages done, 91.89% accuracy) was
+confirmed via direct cache inspection to still have in-progress state
+— and, before the fix, the API's own `/api/learner/login` response
+showed `needsDiagnostic: false` for this exact Learner, which would
+have been a real bug reaching a real mobile app. After the fix, the
+identical state correctly reports `needsDiagnostic: true`, and both
+`GET /api/learner/dashboard` (403 `diagnostic_required`) and a direct
+`GET /learner/dashboard` web request (redirected to `/learner/
+diagnostic`, not served) correctly enforce it. The same Learner then
+completed passage 2 for real (93.22% at the Hard ceiling → genuine
+diagnostic completion, `mastery_level` → Proficient, a real
+Adaptive_Recommendator `/initialize` call landing `reading_fluency` at
+proficiency 93.22/difficulty hard/confidence 0.6) — confirmed
+`hasGenuinelyCompletedDiagnostic()` then correctly flips to `true` and
+the dashboard becomes reachable.
+
+**Every one of the 9 endpoints exercised for real against this same
+Learner, end to end, not mocked**: `/login` (real token issued),
+`/dashboard` (correct 403 pre-diagnostic, correct 200 + real
+`competencyProgress` data post-diagnostic), `/diagnostic/passage` ×2
+(real Gemini-generated passages), `/diagnostic/record` ×2 (real
+Reading-api scoring driving real staircase advancement, ending in a
+real finish), `/activities` (correctly resolved the one real assigned
+Activity), `/activities/{id}` (real passage detail, confirmed
+`follow_up_questions` correctly absent), `/activities/{id}/record`
+(a real 60%-accuracy TTS reading — `cat dog pig hen cow`, this
+project's own established test phrase — produced the exact same real
+`accuracy`/`wcpm`/`levelBefore→levelAfter`/`wordBreakdown` shape the
+web results screen renders, plus confirmed real downstream effects:
+`PersonalWordBank` got the real missed words "hen"/"cow", and
+`foundational_reading`'s `competency_states` updated via a real
+`/recommend` call), `/reading-preferences/font-step` (real DB
+persistence confirmed), and `/logout` (confirmed the token is
+**genuinely revoked**, not just client-side forgotten — a follow-up
+request with the same token correctly got a real `401`, not a
+cosmetic client-side logout).
+
+Zero new Laravel log entries across the whole test pass (checked
+directly). Both disposable test Learners (`ZZWebRegress`/`TB-WEBRG1`,
+`ZZApiTest`/`TB-APITE1`) and all their `ReadingSession`/
+`ActivityAssignment`/`PersonalWordBank`/Sanctum-token rows cleaned up
+afterward; their real diagnostic-generated Activities (`purpose:
+'diagnostic'`) were left in place, consistent with this project's
+existing practice of not cleaning up real generated content.
+
+**Explicitly not started yet**: Part 2 (the actual Expo project) and
+Part 3 (the native screens/nav) — this entry is Part 1 only, confirmed
+complete and tested before moving on.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

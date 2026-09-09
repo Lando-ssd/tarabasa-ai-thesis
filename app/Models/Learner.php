@@ -6,6 +6,7 @@ use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * A Learner never has a password or email (Learner Actor Prompt, Rule 1)
@@ -14,10 +15,15 @@ use Illuminate\Support\Facades\Hash;
  * a plain Model implementing Authenticatable directly (not extending
  * Laravel's Foundation\Auth\User base) so it doesn't pick up unrelated
  * concerns like password-reset or email verification.
+ *
+ * HasApiTokens (Sanctum) is the mobile app's auth mechanism — a real
+ * bearer token issued at login, completely independent of the 'learner'
+ * session guard the web app uses. Works on any Eloquent model, not just
+ * a "User" — Sanctum just needs createToken()/tokens() from the trait.
  */
 class Learner extends Model implements AuthenticatableContract
 {
-    use Authenticatable;
+    use Authenticatable, HasApiTokens;
 
     public $timestamps = false;
 

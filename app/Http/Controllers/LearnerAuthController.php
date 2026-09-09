@@ -3,19 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
-use App\Models\ActivityAssignment;
-use App\Models\Learner;
-use App\Models\OpenRepositoryListing;
-use App\Models\ReadingSession;
+use App\Services\LearnerAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
+/**
+ * A thin Blade-rendering wrapper — the actual credential-check/throttle
+ * logic and the "what should I read?" picker resolution both live in
+ * LearnerAuthService, shared verbatim with the mobile API's
+ * Api\LearnerApiController. See CLAUDE.md's "Mobile API layer" entry for
+ * why this was extracted.
+ */
 class LearnerAuthController extends Controller
 {
     /**
@@ -36,41 +37,15 @@ class LearnerAuthController extends Controller
      * aggressively than the adult login: 5 wrong attempts locks out for
      * 15 minutes (vs. 60 seconds for Teacher/Parent/Admin).
      */
-    public function login(Request $request): RedirectResponse
+    public function login(Request $request, LearnerAuthService $service): RedirectResponse
     {
         $credentials = $request->validate([
             'learner_code' => ['required', 'string', 'max:20'],
             'pin' => ['required', 'digits:4'],
         ]);
 
-        $code = strtoupper(trim($credentials['learner_code']));
+        $learner = $service->authenticate($credentials['learner_code'], $credentials['pin'], $request->ip());
 
-        // Keyed by the raw submitted code (not a resolved Learner ID) so an
-        // unknown code and a real code with a wrong PIN are throttled
-        // identically — the whole point of the generic message below is
-        // that neither the error nor the lockout behavior may reveal
-        // whether the code itself exists.
-        $throttleKey = 'learner-login:'.$code.'|'.$request->ip();
-
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $minutes = (int) ceil(RateLimiter::availableIn($throttleKey) / 60);
-
-            throw ValidationException::withMessages([
-                'pin' => "Too many attempts. Try again in {$minutes} minute".($minutes === 1 ? '' : 's').'.',
-            ]);
-        }
-
-        $learner = Learner::where('learner_code', $code)->first();
-
-        if (! $learner || ! Hash::check($credentials['pin'], $learner->pin)) {
-            RateLimiter::hit($throttleKey, 900);
-
-            throw ValidationException::withMessages([
-                'pin' => 'Incorrect PIN.',
-            ]);
-        }
-
-        RateLimiter::clear($throttleKey);
         Auth::guard('learner')->login($learner);
         $request->session()->regenerate();
 
@@ -80,11 +55,7 @@ class LearnerAuthController extends Controller
         // bookmarked/back-buttoned requests that skip this login moment —
         // this redirect just avoids an unnecessary extra hop for the
         // common case of a fresh login.
-        $hasCompletedDiagnostic = ReadingSession::where('learner_id', $learner->id)
-            ->where('session_type', 'Diagnostic')
-            ->exists();
-
-        if (! $hasCompletedDiagnostic) {
+        if (! $service->hasCompletedDiagnostic($learner)) {
             return redirect()->route('learner.diagnostic.show');
         }
 
@@ -107,107 +78,21 @@ class LearnerAuthController extends Controller
 
     /**
      * "Start Reading Activity" — Learner Actor Prompt Step 3: "Finding
-     * what to read." Step 1: resolve the Teacher-assigned Activity using
-     * priority — direct-to-this-Learner first, then Class, then Class's
-     * Group tag — "first match wins" is read here as the first PRIORITY
-     * LEVEL with any results (not a single row), since a Teacher can
-     * assign more than one activity at the same level. Step 2: ALSO
-     * gather any Activities unlocked via the Open Repository — always
-     * included alongside the assignment result, not just a fallback when
-     * there's no assignment. Step 3: exactly one option total goes
-     * straight in; more than one shows the picker with a source label
-     * per option ("Assigned by your Teacher" vs. "Extra Practice").
+     * what to read." Exactly one option total goes straight in; more than
+     * one shows the picker with a source label per option.
      *
      * SCOPE BOUNDARY: still stops short of the real read-aloud/AI-scoring
      * engine (Sprint 4 Slices 2-3) — an honest note, not a fake flow.
      */
-    public function findActivity(Request $request): View
+    public function findActivity(Request $request, LearnerAuthService $service): View
     {
-        $learner = $request->user('learner');
-
-        $assignmentIds = ActivityAssignment::where('learner_id', $learner->id)->pluck('activity_id');
-
-        if ($assignmentIds->isEmpty() && $learner->class_id) {
-            $assignmentIds = ActivityAssignment::where('class_id', $learner->class_id)->pluck('activity_id');
-        }
-
-        if ($assignmentIds->isEmpty() && $learner->schoolClass?->group_tag) {
-            $assignmentIds = ActivityAssignment::where('group_tag', $learner->schoolClass->group_tag)
-                ->where('assigned_by_teacher_id', $learner->schoolClass->teacher_id)
-                ->pluck('activity_id');
-        }
-
-        $assignedActivities = Activity::whereIn('id', $assignmentIds)
-            ->where('status', 'Approved')
-            ->get();
-
-        $unlockedListingActivityIds = OpenRepositoryListing::whereHas(
-            'unlocks',
-            fn ($query) => $query->where('learner_id', $learner->id)
-        )->pluck('activity_id');
-
-        $unlockedActivities = Activity::whereIn('id', $unlockedListingActivityIds)
-            ->where('status', 'Approved')
-            ->whereNotIn('id', $assignedActivities->pluck('id'))
-            ->get();
-
-        $options = $assignedActivities->map(fn ($activity) => ['activity' => $activity, 'source' => 'Assigned by your Teacher'])
-            ->concat($unlockedActivities->map(fn ($activity) => ['activity' => $activity, 'source' => 'Extra Practice']))
-            ->values();
-
-        $options = $this->applyAdaptiveRecommendation($learner, $options);
+        $options = $service->findActivityOptions($request->user('learner'));
 
         if ($options->count() === 1) {
             return view('learner.activity-found', ['activity' => $options->first()['activity']]);
         }
 
         return view('learner.activity-picker', ['options' => $options]);
-    }
-
-    /**
-     * Adaptive_Recommendator step (Learner Actor Prompt Step 3's "Adaptive
-     * Recommend" stage) — labels and prioritizes one already-available
-     * option (from a Teacher assignment or a Parent's repository unlock)
-     * to the front of the list, rather than ever generating new content
-     * on the Learner's behalf. Deliberate decision, confirmed with the
-     * user: Learner-triggered generation has no credit-payer concept
-     * (generation credits belong to a Teacher), and a real 30-150s live
-     * Gemini call shouldn't block a child mid-session waiting on it. If
-     * nothing available matches the recommendation, the options are
-     * returned completely unchanged — never a misleading label on a
-     * near-match.
-     */
-    private function applyAdaptiveRecommendation(Learner $learner, \Illuminate\Support\Collection $options): \Illuminate\Support\Collection
-    {
-        if (! $learner->next_recommended_competency) {
-            return $options;
-        }
-
-        $matchIndex = $options->search(function (array $option) use ($learner) {
-            $activity = $option['activity'];
-
-            if ($activity->competency !== $learner->next_recommended_competency) {
-                return false;
-            }
-
-            // A null recommended difficulty means that competency hasn't
-            // been assessed enough yet to have one — match on competency
-            // alone rather than silently downgrading to a difficulty
-            // guess. Otherwise require an exact match: a "Medium" activity
-            // is never labeled as if it perfectly matches an "Easy" call.
-            return $learner->next_recommended_difficulty === null
-                || strtolower($activity->difficulty_tier) === $learner->next_recommended_difficulty;
-        });
-
-        if ($matchIndex === false) {
-            return $options;
-        }
-
-        $recommended = $options->get($matchIndex);
-        $recommended['source'] = 'Picked just for you! 🎯';
-
-        return collect([$recommended])
-            ->concat($options->reject(fn ($option, int $i) => $i === $matchIndex)->values());
     }
 
     /**
