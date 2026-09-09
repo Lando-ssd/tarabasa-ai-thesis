@@ -1267,6 +1267,42 @@ treat the "rebuild around the real API" choice above as closed — it's
 what let the work continue tonight, not a resolution of the underlying
 gap.
 
+**Related, same root cause — Practice Games are standalone, not
+`gameType` attached to a Teacher-approved Activity.** Two of the
+manuscript's six intended `gameType`s (Word Builder, Letter-Sound
+Match) are the two Practice Games actually built — but per the conflict
+above, `activities` never got a real `gameType`/pre-game-mechanics
+`content` JSON at all, because `gemini_activity_gen` has no such
+concept to build it from. Building these two games as genuinely
+Activity-attached content (Teacher-generated, Teacher-approved, tied to
+a specific passage/difficulty tier) was never actually possible given
+that standing gap. **Decision, confirmed with the user before
+building:** ship them as standalone Learner-initiated free play instead
+— a new "🎮 Practice Games" entry on the Learner Dashboard, alongside
+"Start Reading Activity," not attached to any Activity or Teacher
+workflow at all. No points, no scoring, no `ReadingSession` row — a
+deliberate, clean separation from the real reading-achievement system,
+so a Learner grinding Practice Games can never inflate their real
+level/points/streak. Word Builder's word source (real
+`PersonalWordBank` "Struggling" words, falling back to a small
+hardcoded per-grade list) is the one place real personalization made it
+in despite the missing per-learner-adaptivity API gap noted above — it
+works here specifically because this app already owns that data itself
+(populated by `LearnerReadingController`/`LearnerDiagnosticController`
+independent of `gemini_activity_gen`), unlike Activity Generation's
+struggling-word injection, which would have needed the AI service
+itself to accept and use that data mid-generation.
+
+**What the team/adviser needs to decide before finalizing:** same
+underlying question as the Activity Generation conflict — if
+`gemini_activity_gen` is ever extended with a real `game_type`/content
+concept, should these two games be rebuilt as genuine Teacher-assigned
+Activities matching the manuscript's original model, or is standalone
+free-play practice (what's shipped now) an acceptable permanent form
+for this feature? Not resolved either way — this is what let the
+feature ship without a whole new content-authoring pipeline, not a
+final architectural decision.
+
 ## ⚠️ PROVISIONAL, NOT FINAL — Diagnostic can't truly find a struggling
 ## learner's real floor across grades (needs team/adviser review before
 ## thesis submission)
@@ -2854,6 +2890,269 @@ rendered with correct colors and captions, and all 5 legend dots
 measured at an identical 13.49px height — confirmed via direct
 `getBoundingClientRect()` comparison across all five, not just visual
 inspection. Test data cleaned up afterward.
+
+## Practice Games — Word Builder + Letter Match, standalone free play
+
+Two real games, confirmed scope per the standing decision recorded
+above (see the "Practice Games are standalone" note next to the
+Activity Generation conflict) — no `ReadingSession`, no points, no
+mastery-level impact, a genuinely separate system from real reading
+achievement. New `GameController` (`index()`, `wordBuilder()`,
+`letterMatch()`), routed inside the same `learner.diagnostic`-gated
+group as the Dashboard/reading routes (a Learner reaches Games from the
+Dashboard, so the same "must have completed the diagnostic" gate
+applies consistently). New "🎮 Practice Games" button on
+`learner/dashboard.blade.php`, styled as a second `.big-btn` variant
+(orange gradient) next to the existing blue "Start Reading Activity,"
+so the two primary actions read as visually distinct without either
+looking like an afterthought.
+
+**Word Builder** (`games/word-builder.blade.php`): 5 words per round,
+tap scrambled letters in the correct order to spell each one. Word
+source, exactly as scoped: the Learner's own real `PersonalWordBank`
+"Struggling" words first, topped up with a small hardcoded per-grade
+word list (`GameController::WORD_LISTS`, ~20 real CVC-appropriate words
+per grade) when there are fewer than 5 — a partial-fill, not an
+all-or-nothing swap, so a Learner with 1-4 real struggling words still
+gets to practice all of them plus enough filler to reach 5, rather than
+discarding real personalized content just because there wasn't a full
+set. Each scrambled letter is tracked by its own tile index (not by
+letter value), so words with repeated letters work correctly — tapping
+either "e" tile of "letter" at the right moment is equally valid,
+exactly like a real physical letter-tile set would behave. Instant
+feedback per tap: a correct tap bounces the tile and fills the next
+answer slot (`slotPop` animation); a wrong tap shakes that exact tile
+red and changes nothing else. Word-complete and round-complete both get
+a real celebration screen, not just a silent state change.
+
+**Letter Match** (`games/letter-match.blade.php`): classic
+memory-match, uppercase paired to lowercase. Grade 1 gets a smaller
+10-letter subset (A-J); Grade 2/3 get the full alphabet — but split
+into 3 rounds of ~8-9 pairs each (`GameController::LETTER_ROUNDS`)
+rather than one 52-card grid, which would be unplayably tiny on a real
+phone screen. This round-chunking is an implementation detail the
+original scope didn't spell out explicitly; disclosed here rather than
+silently decided, since "full alphabet" could otherwise have been read
+literally as one giant grid. A wrong pair shakes both cards briefly
+then flips back; a correct pair locks in green with a real pop
+animation. All rounds' data is preloaded into the view up front (a
+small, fixed dataset), so round transitions are instant client-side
+state changes, not server round-trips.
+
+**A real bug found and fixed during testing, not assumed correct from
+the diff:** Word Builder's `finishRound()` never hid the still-visible
+spelled-word tiles from the just-completed final word before showing
+the "All done!" celebration — confirmed visually (a screenshot showed
+the last word's green letter tiles bleeding through above the
+celebration text) and fixed by adding the same `playArea.style.display
+= 'none'` the per-word celebration already used. Letter Match's
+equivalent `finishGame()` already had this right from the start (no
+matching bug there).
+
+**Tested for real against real data, both fallback branches, both
+grade-tier branches — not assumed from the diff:**
+- **Real struggling words, partial-fill case**: Miguel (id 1, the
+  flagship reference Learner, Grade 3) has 24 real `PersonalWordBank`
+  "Struggling" rows — but only 4 *distinct* words among them (`hen`,
+  `cow`, `cat`, `dog`, repeated across many real past sessions).
+  Confirmed the game correctly used all 4 real distinct words plus
+  exactly 1 real filler from the Grade 3 static list (`castle`) to
+  reach 5 — a genuine, previously-untested edge case (many rows, few
+  distinct words) that the partial-fill logic handled correctly the
+  first time.
+- **Full fallback, zero bank entries**: a second real Learner named
+  Miguel (id 9, Grade 1, a distinct account from the flagship
+  reference one, with zero `PersonalWordBank` rows at all) correctly
+  got all 5 words from the Grade 1 static list.
+- Played a full real round to completion on the id-1 case (including a
+  deliberate wrong tap first, confirmed rejected with no state change)
+  — confirmed correct word-by-word advancement, correct progress dots,
+  and a clean round-complete screen after the fix above.
+- **Letter Match, Grade 1**: confirmed the real 10-letter/20-card
+  single round, played a deliberate wrong pair first (confirmed
+  rejected, flipped back, `matchedCount` unchanged), then played all 10
+  real pairs to completion — clean round-complete screen, no leftover
+  visible cards.
+- **Letter Match, Grade 2/3**: confirmed the real 3-round/26-letter
+  split (9/9/8), played all 3 rounds to completion — confirmed correct
+  round-to-round transitions (fresh grid, correct progress dots/label
+  each time) and the final "All done!" screen only appearing after all
+  3 rounds, not after round 1. (A screenshot taken at this exact moment
+  showed a tiled/repeated rendering — the same already-documented
+  `background-attachment:fixed` stale-screenshot-capture quirk of this
+  sandboxed browser tool noted elsewhere in this file; cross-checked
+  and confirmed correct via direct DOM inspection instead, not assumed
+  from the bad screenshot.)
+- `php -l` clean on all new/touched files; zero new Laravel log entries
+  across the whole test pass. Test setup (2 disposable dummy Diagnostic
+  `ReadingSession` rows created purely to satisfy the `learner.
+  diagnostic` route gate for accounts that hadn't completed a real
+  diagnostic) cleaned up afterward; no real `ReadingSession`/points/
+  streak data was touched by either game, by design.
+
+## Practice Games — real visual identity (hand-coded SVG, no emoji) +
+## honest adaptive connection
+
+A follow-up pass on the Practice Games slice above, per explicit user
+request: the games needed to feel genuinely TaraBasa-branded (not
+plain white backgrounds/emoji game pieces) and to actually connect to
+the Learner's real adaptive data, not sit as two static disconnected
+buttons. Reported a plan for both parts before building, per the
+user's own request, and built exactly what was proposed — no scope
+creep into the other game types GamifiedLibrary_v2.txt/the manuscript
+describe (Trace-and-Write, Sentence Scramble, Picture-Word Match,
+etc.) — this was explicitly an enhance-what-exists pass, not a new
+build. Confirmed decision, matching this project's own prior 3D
+rejection logic: claymorphism (existing technique, CSS gradients +
+soft shadows), not live 3D — this app's own GamifiedLibrary_v2.txt
+already argues against 3D here on lower-end-phone performance grounds,
+and the user explicitly re-confirmed accepting that tradeoff before
+this pass started.
+
+**Real hand-coded SVG mascot — "Tara the owl" actually exists as an
+asset for the first time.** Despite being referenced throughout this
+app's copy since Sprint 4 ("Tara the owl wants to hear you read!"),
+no owl had ever actually been drawn — every mascot slot in this whole
+app has always just rendered the plain 🦉 emoji. New shared
+`games/_owl-mascot.blade.php` partial (a real, simple, geometric
+claymorphism owl face — ear tufts, wing hints, cream body, belly
+patch, expressive eyes, orange beak — built from basic SVG primitives
+using this app's own real color tokens, not an external asset or icon
+font) — reused identically across the Games hub and both games via
+`@include(...,['id'=>'uniqueId'])`, one instance per placement since a
+page can show it more than once. Two real, distinct behaviors, both
+class-toggled by the including page's own JS, not separate hand-drawn
+poses:
+- **`.is-celebrating`**: swaps the normal circle-pupil eyes for a
+  happy scrunched-arc pair and fades in 4 small hand-drawn sparkle
+  marks around the face — triggered on a completed word (Word
+  Builder), a completed match-round (Letter Match), and both games'
+  final round-complete screens.
+- **`.is-encouraging`**: a brief, warm 2-cycle tilt animation (CSS
+  `@keyframes`, not a different facial expression — a wrong answer
+  isn't a sad moment) — triggered by both games' own `nudgeOwl()`
+  functions on a wrong tap/wrong pair, retriggerable mid-animation the
+  same way the existing tile/card shake animations already were.
+Both respect `prefers-reduced-motion`, matching this app's existing
+standard elsewhere.
+
+**Game pieces redesigned in claymorphism, replacing flat/emoji
+placeholders — logic completely untouched, confirmed via `git diff`
+after the pass (same discipline as the earlier font-size-control
+visual-only polish).**
+- **Word Builder**: letter tiles are now raised claymorphism (white→
+  light-blue gradient, layered inset/outset `box-shadow` for a real
+  "physical tile" look) instead of a flat bordered box; answer slots
+  get a genuine carved-in inset-shadow look instead of a plain dashed
+  box, filled slots get a soft green gradient instead of a flat tint.
+- **Letter Match**: face-down cards show a small hand-drawn sparkle/
+  star mark (deliberately the *same* star shape used by the owl's own
+  celebration sparkles, so the two pieces read as one consistent
+  decorative system rather than two unrelated ones) instead of a bare
+  "?" character; matched cards get a small corner sparkle badge on top
+  of the existing green highlight; all card states got layered
+  inset/outset shadows for a genuine raised/pressed claymorphism feel
+  instead of a flat color swap.
+- **Games hub**: each game card got a small custom SVG icon (three
+  overlapping claymorphism letter tiles for Word Builder, two
+  overlapping claymorphism cards for Letter Match) instead of a bare
+  🔤/🧩 emoji, visually previewing what each game actually looks like.
+
+**Honest limit, stated up front and still true after building**: this
+is a clean, appealing, on-brand *geometric* icon/illustration set built
+from SVG primitives (circles, paths, rects) — not painterly or
+detailed character art. Good enough to feel genuinely TaraBasa-branded
+instead of a generic placeholder, but not a substitute for actual
+illustration work if that's ultimately the bar wanted.
+
+**Adaptive connection — deliberately honest about what these two
+games can and can't measure.** New `Learner::recommendedGameFocus()`:
+returns `null` (render a neutral state) unless
+`next_recommended_competency === 'foundational_reading'` — Word
+Builder and Letter Match are both real foundational-skill practice
+(spelling/letter recognition), and this method never claims a
+connection to `reading_fluency`/`reading_comprehension`, which neither
+game touches. When foundational_reading genuinely is the adaptive
+engine's current real recommendation, a second real, disclosed signal
+picks *which* game to emphasize: a Learner with real
+`PersonalWordBank` "Struggling" words gets Word Builder highlighted
+(it directly drills their own actual weak words); otherwise Letter
+Match is the safer foundational default. **Never a hard gate** — both
+games stay fully playable regardless of this signal, matching the
+user's own explicit instruction; this only affects which card shows a
+real "⭐ Recommended" badge and border treatment on the Games hub.
+`GameController::index()` also passes `hasCompetencyData` (whether
+`competency_states` is non-null at all) so the hub can render one of
+three honest states: a specific recommendation (foundational_reading
+is current), a quiet neutral "your foundational skills are looking
+strong" note (fluency/comprehension is current instead — deliberately
+*not* silent about the real adaptive state, but also not
+manufacturing a fake recommendation), or nothing at all
+(pre-diagnostic, no real data exists yet). No new writes anywhere —
+this is read-only surfacing of already-real data, the exact same
+`competency_states`/`next_recommended_competency`/`PersonalWordBank`
+fields already driving "Picked just for you!" and "How I'm Growing"
+elsewhere; the games still never touch `ReadingSession`/points/
+mastery, unchanged from the original Practice Games decision above.
+
+**A real, easy-to-miss operator-precedence bug caught before it
+shipped, not after**: the Games hub's Blade line for the Word
+Builder card's conditional CSS class was originally written as
+`{{ $recommendedGame['game'] ?? null === 'word-builder' ? '...' : '' }}`
+— PHP's `??` binds *looser* than `===`, so this actually parsed as
+`$recommendedGame['game'] ?? (null === 'word-builder')`, meaning
+*any* non-null `$recommendedGame['game']` value (including
+`'letter-match'`) made the whole expression truthy and marked the
+Word Builder card "recommended" regardless of which game was actually
+picked. Caught by manually tracing PHP operator precedence before
+testing, not by observing broken output — fixed by parenthesizing
+`($recommendedGame['game'] ?? null) === 'word-builder'`, matching the
+(correctly parenthesized) Letter Match card right next to it, which is
+what made the mismatch noticeable in the first place.
+
+**Tested for real against 4 real adaptive states, not just the happy
+path — 4 disposable test Learners, each with a distinct real
+`competency_states`/`next_recommended_competency` shape (the same
+legitimate synthetic-injection technique already established and
+approved in this project for exercising adaptive-engine states a live
+run can't reliably reach), each verified live in the browser:**
+- **`foundational_reading` recommended + real Struggling word present**:
+  Games hub correctly showed the Word Builder-specific note text,
+  Word Builder card carried the "⭐ Recommended" badge and orange
+  highlight, Letter Match card carried neither.
+- **`foundational_reading` recommended + zero Struggling words**:
+  correctly flipped to the Letter Match-specific note and badge
+  instead, Word Builder correctly un-badged — this is the case that
+  would have been silently broken by the precedence bug above if it
+  had shipped.
+- **`reading_fluency` recommended instead**: correctly showed the
+  neutral "your foundational skills are looking strong" note, zero
+  badges on either card — confirmed the connection never overclaims a
+  relationship to a competency neither game measures.
+- **`competency_states` still null (pre-diagnostic)**: confirmed zero
+  adaptive UI renders at all — no note, no badge — matching the
+  existing "How I'm Growing" card's own established pattern of full
+  omission over a fabricated state.
+- **Full real gameplay pass on both games** with the visual redesign
+  in place: Word Builder — a genuine wrong tap correctly triggered
+  `is-encouraging` on the main owl (confirmed via class inspection,
+  since the CSS tilt is brief and hard to catch in a screenshot over
+  network round-trip latency); a genuine completed word correctly
+  triggered `is-celebrating` + visible happy eyes on the celebrate
+  screen's owl (caught via a precisely-timed check between the 350ms
+  pre-celebrate delay and the 1300ms celebrate duration); the final
+  round-complete screen's owl also showed the celebrating expression,
+  confirmed both live and via screenshot. Letter Match — a genuine
+  wrong pair correctly triggered the same owl nudge; a genuine correct
+  match showed the new green claymorphism card treatment with a real
+  visible corner sparkle badge, confirmed via screenshot; played a
+  full real 3-round match-through to completion, confirming the
+  round-complete owl's celebrating state both via class inspection and
+  a clean screenshot (no leftover play-area content bleeding through,
+  re-confirming the earlier `finishGame()`/`finishRound()` display-none
+  fix still holds with the new markup).
+- All 4 disposable test Learners and their `ReadingSession`/
+  `PersonalWordBank`/`Notification` rows cleaned up afterward.
 
 ## The user's working style
 

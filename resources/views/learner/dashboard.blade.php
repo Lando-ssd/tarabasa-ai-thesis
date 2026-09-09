@@ -53,6 +53,7 @@
   }
   .big-btn:hover{ transform:translateY(-2px) scale(1.02); }
   .big-btn:active{ transform:scale(0.97); }
+  .games-btn{ background:linear-gradient(155deg, #ff8a65, var(--owl-orange-600)); box-shadow:0 16px 26px -12px rgba(221,112,20,0.5); }
 
   .switch-btn{ background:none; border:none; color:var(--slate-600); font:700 14.5px/1 'Inter',sans-serif; cursor:pointer; padding:6px; }
   .switch-btn:hover{ color:var(--blue-600); }
@@ -136,6 +137,7 @@
     @endif
 
     <a href="{{ route('learner.activity.find') }}" class="big-btn">Start Reading Activity</a>
+    <a href="{{ route('learner.games.index') }}" class="big-btn games-btn">🎮 Practice Games</a>
 
     <form method="POST" action="{{ route('learner.logout') }}">
       @csrf

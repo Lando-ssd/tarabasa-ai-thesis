@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassController;
+use App\Http\Controllers\GameController;
 use App\Http\Controllers\LearnerAuthController;
 use App\Http\Controllers\LearnerController;
 use App\Http\Controllers\LearnerDiagnosticController;
@@ -85,6 +86,13 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         // is re-checked inside the controller via the same Activity model
         // method showActivity() uses, not duplicated.
         Route::post('/activity/{activity}/record', [LearnerReadingController::class, 'submitRecording'])->name('activity.record');
+
+        // Practice Games — standalone free-play, no points/scoring/
+        // ReadingSession impact, deliberately kept separate from the real
+        // reading-achievement system (see GameController's own doc block).
+        Route::get('/games', [GameController::class, 'index'])->name('games.index');
+        Route::get('/games/word-builder', [GameController::class, 'wordBuilder'])->name('games.word-builder');
+        Route::get('/games/letter-match', [GameController::class, 'letterMatch'])->name('games.letter-match');
     });
 
     Route::post('/logout', [LearnerAuthController::class, 'logout'])->name('logout');

@@ -186,6 +186,36 @@ class Learner extends Model implements AuthenticatableContract
     }
 
     /**
+     * Practice Games — Word Builder and Letter Match are both real
+     * `foundational_reading` skill practice (spelling/letter recognition);
+     * neither one measures reading_fluency or reading_comprehension, so
+     * this deliberately never claims a connection to those two. Only
+     * emphasizes a specific game when the adaptive engine's own real
+     * current recommendation actually IS foundational_reading — never a
+     * hard gate (both games stay fully playable regardless), just which
+     * one the Games hub leads with. Returns null when there's nothing
+     * honest to recommend (pre-diagnostic, or the current focus is
+     * fluency/comprehension instead) so the caller can render a neutral
+     * state rather than a fabricated one.
+     */
+    public function recommendedGameFocus(): ?array
+    {
+        if ($this->next_recommended_competency !== 'foundational_reading') {
+            return null;
+        }
+
+        // A real, disclosed secondary signal, not a coin flip: a Learner
+        // with real struggling words gets Word Builder, since it's the
+        // one game that directly drills their own actual weak words —
+        // Letter Match is the safer foundational default otherwise.
+        $hasStrugglingWords = PersonalWordBank::where('learner_id', $this->id)
+            ->where('mastery_status', 'Struggling')
+            ->exists();
+
+        return ['game' => $hasStrugglingWords ? 'word-builder' : 'letter-match'];
+    }
+
+    /**
      * The passage-text size step (1=Small ... 5=Extra Large) actually
      * used for this Learner — their own explicit choice if they've ever
      * made one, otherwise a sensible grade-based starting point (younger
