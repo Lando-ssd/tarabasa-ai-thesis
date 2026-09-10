@@ -18,8 +18,11 @@ class BadgeController extends Controller
 {
     public function index(Request $request): View
     {
+        $learner = $request->user('learner');
+
         return view('learner.badges', [
-            'badges' => LearnerBadge::summaryFor($request->user('learner')),
+            'learner' => $learner,
+            'badges' => LearnerBadge::summaryFor($learner),
         ]);
     }
 }

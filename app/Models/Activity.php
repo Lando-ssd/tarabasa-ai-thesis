@@ -58,6 +58,11 @@ class Activity extends Model
         return $this->hasOne(OpenRepositoryListing::class);
     }
 
+    public function readingSessions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReadingSession::class);
+    }
+
     /**
      * Shared by ActivityController (Teacher-authored) and
      * LearnerDiagnosticController (system-generated diagnostic passages)
@@ -153,5 +158,23 @@ class Activity extends Model
     public function initiatedBySourceFor(Learner $learner): string
     {
         return $this->isAssignedToLearner($learner) ? 'Teacher' : 'Parent';
+    }
+
+    /**
+     * "My Bookshelf" access boundary — deliberately NOT
+     * isAccessibleByLearner(). That check is about whether a Teacher
+     * assignment or Parent unlock is currently live; Bookshelf is a
+     * Learner's own reading history, which should stay revisitable even
+     * if the original assignment/unlock has since gone away (a Teacher
+     * un-assigning something doesn't erase that the child already read
+     * it). The real, correct question here is simply: did this Learner
+     * genuinely complete a real Practice reading of this Activity before?
+     */
+    public function hasCompletedPracticeReadingFor(Learner $learner): bool
+    {
+        return $this->readingSessions()
+            ->where('learner_id', $learner->id)
+            ->where('session_type', 'Practice')
+            ->exists();
     }
 }

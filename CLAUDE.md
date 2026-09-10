@@ -3843,6 +3843,385 @@ threshold, not assumed from the diff:**
 Reading Journey visual) — this entry is Slice 1 only, confirmed
 complete and tested before moving on, per the confirmed build order.
 
+## Learner dashboard v2 — Slice 2: My Bookshelf
+
+Real data reuse, exactly as scoped: a query over Activities this
+Learner already has a completed real Practice `ReadingSession` for —
+no new scoring logic for the listing itself. One card per distinct
+Activity (title, real times-read count, most recent date, best
+accuracy), grouped and aggregated from existing `ReadingSession` rows
+(`BookshelfController::index()`), sorted by most recently read.
+Diagnostic sessions are excluded from the listing, same as every other
+"reading count" concern in this app (Analytics, the Badges' 10/25-
+readings thresholds) — a diagnostic passage is system-generated
+throwaway content, never a "book" a child chose to read.
+
+**New `Activity::hasCompletedPracticeReadingFor(Learner $learner)`** —
+deliberately NOT `isAccessibleByLearner()`. That check is about whether
+a Teacher assignment or Parent unlock is *currently live*; Bookshelf is
+a Learner's own reading history, which should stay revisitable even if
+the original assignment/unlock has since gone away (a Teacher
+un-assigning something doesn't erase that the child already read it).
+Guards both `BookshelfController::reread()` (the recording screen) and
+`submitReread()` — re-verified server-side, never trusted just because
+the Bookshelf UI only links to Activities it already listed. Confirmed
+with a real direct request to reread an Activity this Learner never
+completed: a real `403`.
+
+**The re-reading decision, built exactly as recommended and confirmed
+with the user**: free and unscored. New
+`LearnerReadingService::recordFreeReattempt()` calls the real
+Reading-api and builds the exact same real word-by-word feedback a
+normal reading gets (so the practice value — seeing what you got right/
+wrong — is preserved), but deliberately skips everything
+`scoreAndPersist()` does: no `ReadingSession` row, no mastery/points/
+streak change, no `PersonalWordBank` entries, no notification, no
+Adaptive_Recommendator call. (Badges are naturally excluded too, with
+no special-casing needed — `BadgeService::checkAfterPracticeReading()`
+is simply never called on this path, and even if it somehow were, its
+thresholds all key off `ReadingSession` rows/`streak`, neither of which
+a free reread ever touches.) Same reasoning already established for
+Practice Games: if re-reading scored for real, a Learner could
+repeatedly re-read one easy Activity to inflate their real level/
+points/streak, undermining the whole adaptive system's integrity. No
+comprehension quiz on this path either — tied to the real scoring
+pipeline this deliberately bypasses. No capped-unclear-attempts
+counter either — since nothing is at stake, a Learner can simply keep
+trying as many times as they want; a silent/unclear free reread just
+shows a plain "try again," no 3-strikes cap, no Cache-backed counter
+needed.
+
+**New screens**: `bookshelf.blade.php` (the list), `bookshelf-reread.
+blade.php` (recording screen, reuses the existing `_recording-widget`/
+`_reading-font-control` partials, with a clear "🎈 Free practice — no
+points, just for fun" badge so a child doesn't mistake this for a real
+scored activity), `bookshelf-reread-results.blade.php` (the real word
+breakdown + Accuracy/WCPM/Words-to-Practice stats, deliberately no
+Points/Streak tiles at all — not zeroed out, genuinely absent, since
+showing them would misleadingly imply this reading affected them), and
+`bookshelf-reread-unclear.blade.php` (a plain retry, no attempt-cap
+language). A new "📚 My Bookshelf N" `.nav-link` on the Dashboard,
+same pattern as the Badges one, with a real distinct-Activity count.
+
+**Tested for real, both re-reading's zero-effect guarantee and the
+aggregate stats' correctness — not assumed from the diff:**
+- A fresh Learner (`ZZShelfTest`, `TB-SHELF1`) read a real assigned
+  Activity for real (60% accuracy, "cat dog pig hen cow") — Bookshelf
+  correctly showed "Read 1 time · Best: 60%."
+- **The core guarantee, confirmed by snapshotting every relevant field
+  before and after a real free reread**: `mastery_level`, `points`,
+  `streak`, `competency_states`, the real Practice `ReadingSession`
+  count, `PersonalWordBank` count, `Notification` count, and
+  `LearnerBadge` count were all captured before, then re-checked after
+  a genuine TTS-scored free reread — every single one identical, byte
+  for byte. The reread-results screen itself, confirmed via direct
+  response inspection and a live screenshot, showed the real word
+  breakdown (a real skip + a real "heard 'headcount'" substitution)
+  and Accuracy/WCPM/Words-to-Practice, with no Points/Streak tiles
+  present at all.
+- Confirmed the free reread did NOT bump Bookshelf's real count (still
+  "Read 1 time" immediately after), then did a second genuine *scored*
+  Practice reading of the same Activity and confirmed Bookshelf
+  correctly updated to "Read 2 times," with the most-recent date
+  advancing — proving the aggregate query correctly counts real
+  readings while continuing to exclude free ones.
+- The access-control boundary: a direct request to reread an Activity
+  this Learner never actually completed (`Activity` id 2, never read)
+  correctly returned a real `403`, not just a hidden UI link.
+- The unclear path: genuine silent (volume-zero TTS) audio submitted
+  through the free-reread endpoint correctly returned the friendly
+  "Didn't quite catch that — try again!" screen with no attempt cap,
+  and confirmed zero new `ReadingSession` rows were created by it.
+- `php -l` clean and `php artisan route:list` clean (79 routes, +3 for
+  the Bookshelf list/reread/reread-submit routes) across the whole
+  pass. The disposable test Learner and all its `ReadingSession`/
+  `ActivityAssignment`/`PersonalWordBank`/`LearnerBadge` rows cleaned
+  up afterward; two real, unrelated Reading-api connection timeouts hit
+  mid-testing (a cURL connect timeout, then a DNS resolution timeout)
+  were confirmed as real transient network hiccups via a live `/health`
+  check before retrying, not code bugs — both retries succeeded
+  cleanly.
+
+**Not started yet at the time this entry was written**: Slices 3-4
+(Weekly Goals, the Reading Journey visual) — this entry was Slice 2
+only. See the full app-shell redesign entry below, which folds the
+Reading Journey visual (originally "Slice 4") into a much larger
+layout pass and covers Weekly Goals with an honest "Coming soon"
+instead.
+
+## Learner dashboard v2 — full app-shell redesign (icon-only rail,
+## bento Home, real winding-path Journey folded in from "Slice 4")
+
+A full structural redesign of the Learner dashboard, moving from the
+old single-column phone-scroll layout to a real landscape app-shell:
+a persistent left rail (bottom tab bar on phone) + a panel-based main
+area covering Home/Journey/Badges/Bookshelf/Goals/Growth. Built from a
+v2 HTML reference the user provided directly, per the standing
+reference+enhance policy, with three explicit enhancements requested
+on top of it: a bento grid (not uniform tiles) on Home, a large
+illustrated claymorphism "Continue" hero tile with Tara the owl as the
+Home screen's clear visual anchor, and an icon-only compact rail.
+
+**Real data audit done before building, per explicit instruction**:
+Badges and Bookshelf were already fully real (prior slices); Weekly
+Goals had nothing built; the Reading Journey visual had real
+underlying data (`Learner::competencyProgressSummary()`) but only a
+plain-bar version existed (the fancier winding-path was the original,
+separate "Slice 4," never built). **User's explicit decision**: fold
+Slice 4 into this layout pass now, rather than shipping a plain-bar
+Home today and re-polishing the same panel for Slice 4 later — the
+reference's own Home panel implies the fancier path, not plain bars.
+Goals and the newly-scoped "Growth" panel (a bar chart of stories read
+per weekday — a genuinely new, small feature the user flagged
+separately, not part of the original 4-feature scope) both ship as
+honest "Coming soon" screens, no fabricated data, until their own
+backend work is scoped next.
+
+**Icon-only rail accessibility — proposed and approved before
+building, not decided silently**: the user's own aesthetic request
+(icon-only, no labels at rest) was flagged as a real risk for
+6-9-year-old readers before any code was written. Shipped exactly as
+approved: icon-only at rest, the active item shows its own label,
+every rail item carries a real `title` attribute (hover/press
+tooltip), and a one-time full-label reveal fires on a Learner's first-
+ever dashboard load (`localStorage`-keyed by `learner_code`, wrapped in
+try/catch, 2.8s then collapses) — confirmed live: `railNav` correctly
+lost its `reveal-labels` class after the timeout, rail width settled
+at 84px (icon-only), and all 6 items report correct real `title`s
+(“Home”, “My Growth Path”, “My Badges”, “My Bookshelf”, “Weekly Goal”,
+“My Growth”) with correct active-state detection via
+`request()->routeIs(...)`.
+
+**New shared `layouts/learner-app.blade.php`** — this app's first real
+`@extends`/`@yield` layout for the Learner area (every Learner screen
+before this was a fully standalone HTML document); the only existing
+precedent anywhere in the app was `layouts/auth.blade.php`, followed
+directly rather than inventing a new pattern. Dashboard, Journey,
+Badges, Bookshelf, Goals, and Growth all now extend it; the Bookshelf
+re-read/results/unclear screens deliberately do NOT (see the
+un-confirmed decision below).
+
+**Home redesigned as a real bento grid**, not uniform tiles: one large
+hero tile (claymorphism, the `_owl-mascot` partial included as
+`heroOwl`, real "Picked just for you" copy driven by
+`collect($learner->competencyProgressSummary())->firstWhere('isUpNext', true)`,
+honest generic invitation when nothing is flagged next yet) beside a
+2×2 `bento-side` grid of 4 smaller tiles: Games (real, links to
+Practice Games), "This Week's Goal" (honest Coming Soon), "My Badges"
+(real — first 5 badges via `array_slice`, real earned count, links to
+the full Badges panel), "My Growth" (honest Coming Soon).
+
+**Reading Journey — the real winding-path visual, replacing the
+original plain-bar plan and the never-built standalone "Slice 4"**:
+new `LearnerGrowthController::journey()` + `journey.blade.php`. Every
+number comes straight from the existing, already-real
+`competencyProgressSummary()` — nothing new computed or fabricated.
+5 fixed zigzag `(x,y)` points per competency row; real proficiency
+(0-100) is linearly interpolated between two of those points server-
+side (`buildTrack()`) to place a marker at the exact real position, and
+checkpoints below the real proficiency light up (quartile checks, not
+an invented threshold). A competency with `proficiency === null`
+(never assessed) renders as a fully locked/dashed row instead of a
+marker at position 0, since 0 is a real assessed score and "not yet
+assessed" is a different, honest state. The competency matching
+`next_recommended_competency` gets the same "⭐ Up Next" badge already
+used on the old Dashboard card. A Learner with `competency_states`
+still null (pre-diagnostic — genuinely reachable, since a diagnostic
+completing without ever reaching a successful Adaptive_Recommendator
+call is possible) gets a full honest empty state ("Your growth path
+fills in once you complete your first reading check! 🌱") instead of
+three locked rows — confirmed live, not just from source.
+
+**A real bug found and fixed during testing, not assumed correct from
+the diff**: `LearnerGrowthController`'s `journey()`, `goals()`, and
+`growth()` methods never passed `'learner' => $learner` to their
+views — every screen extending the new shared layout needs `$learner`
+in scope for the rail avatar, but these three didn't provide it.
+Caught immediately on the first real page load
+(`ErrorException: Undefined variable $learner` at
+`layouts/learner-app.blade.php:110`), not from reading the diff. Fixed
+by passing `$learner` (via `$request->user('learner')`) from all three
+methods; re-verified all three render cleanly afterward.
+
+**Tested for real, both desktop and phone width, with genuine mixed
+adaptive data — not just "doesn't break":**
+- Logged in as Miguel (the flagship reference Learner) through the
+  real browser. Real accumulated data already covered Badges (3
+  genuinely-earned-but-never-checked badges — `streak_3`/`streak_7`/
+  `readings_10` — surfaced by running `BadgeService::
+  checkAfterPracticeReading()` against his real existing streak/
+  session-count state, since `BadgeService` only checks at the moment
+  of a new reading/diagnostic and never retroactively scans existing
+  Learners; a real, disclosed gap for any pre-existing Learner) and
+  Bookshelf (3 real distinct Activities from prior sessions). For
+  Journey specifically, a realistic mixed `competency_states` shape
+  was written directly via `tinker` (this project's established
+  synthetic-injection technique for exercising a state a live run
+  can't reliably reach) — `foundational_reading` partially assessed
+  and flagged "Up Next," `reading_fluency` highly proficient, and
+  `reading_comprehension` left genuinely null — then **fully reverted
+  to Miguel's exact prior state (0 badges, `competency_states` back to
+  null) once testing was done**, since none of this was triggered by a
+  real user action and Miguel is this project's non-disposable
+  flagship account.
+- **Desktop (1280×720)**: bento Home confirmed visually — real hero
+  copy ("Time to work on Sounding Out Words!"), real badge strip (3 of
+  6), honest Coming Soon on Goals/Growth tiles. Journey panel showed
+  all three real states side by side: a marker correctly interpolated
+  between checkpoints 2-3 for the 42%-proficiency "Up Next" row, a
+  marker near the end for the 93.3%-proficiency row, and a fully
+  locked/dashed row for the unassessed competency. Badges and
+  Bookshelf panels confirmed still rendering their real, unchanged
+  data correctly inside the new shell. Goals/Growth confirmed showing
+  their honest Coming Soon cards.
+- **Phone (375×812)**: confirmed via computed styles that the rail
+  genuinely becomes a bottom tab bar at this width (`flex-direction:
+  row`, `position: sticky`, pinned to the viewport bottom — `rail`'s
+  `getBoundingClientRect().bottom` exactly equals `window.innerHeight`)
+  with the avatar and "Switch learner" correctly hidden
+  (`display:none`) — a deliberate enhancement decision (see below),
+  not a shrunk copy of the desktop rail. Confirmed active-tab
+  detection still works correctly on the bottom bar after navigating
+  to Journey. Confirmed via screenshot that the bento Home, the
+  Journey visual, and the Badges/Bookshelf panels all reflow to a
+  single readable column and look genuinely designed for the width,
+  not just "technically doesn't overflow."
+- The `hasAnyData === false` Journey empty state was confirmed live,
+  not just from source, using Miguel's own reverted (null
+  `competency_states`) post-test state.
+- `php -l` clean on every new/modified file; `php artisan route:list`
+  confirmed the 3 new routes (`learner.journey.index`,
+  `learner.goals.index`, `learner.growth.index`) register correctly
+  alongside all existing Learner routes; zero unexpected entries in
+  the Laravel log across the whole pass (the one real
+  `Undefined variable $learner` exception above was the only error
+  seen, and was fixed and re-verified clean).
+
+**Two design decisions made independently during this pass, not
+explicitly run past the user beforehand — flagged here rather than
+left silent:**
+1. **Bottom tab bar on phone width, not a squeezed left rail.** The
+   reference only shows a desktop rail; converting to a bottom bar
+   below a new `max-width:680px` breakpoint was this session's own
+   call, reasoning that a persistent 84px icon-only left rail would
+   consume roughly a fifth of a 375px screen for 6 items, and that a
+   bottom tab bar matches both a "real app shell" feel and the
+   bottom-tab pattern already discussed for the separate React Native
+   mobile app.
+2. **The Bookshelf re-read/results/unclear screens were NOT brought
+   into the new rail-nav shell** — they stay standalone, chrome-free
+   documents, matching this app's existing "a focused task flow omits
+   chrome" pattern (the diagnostic screens, `activity-found.blade.php`,
+   the child-creation wizard). Reasonable given precedent, but not a
+   choice the user explicitly confirmed for this specific redesign.
+
+**Not started yet at the time this entry was written**: Weekly Goals'
+real backend and the new "Growth" daily-chart feature's backend — see
+the entry directly below, where both were scoped, confirmed, and built
+as a same-session follow-up.
+
+## Learner dashboard v2 — Weekly Goal + Growth, real backends (the two
+## panels the app-shell redesign above deliberately left as "Coming soon")
+
+Scoped with the user before building, per their own explicit
+instruction not to build the new "Growth" feature silently. One real
+gap made both panels need a decision before any code: nothing in this
+app defines what a "weekly goal" number even is — no actor prompt or
+patch doc mentions Weekly Goals at all, it only exists as a tile in the
+v2 reference mockup. **Confirmed with the user**: a fixed system
+default target (5 real reading sessions/week), not a Parent/Teacher-set
+number — same reasoning as `config/badges.php`'s fixed definitions, no
+new settings UI or migration needed. New `config/reading_goals.php`
+(`weekly_target => 5`).
+
+**One shared query, not two separate ones** — `Learner::
+thisWeeksPracticeReadingSessions()` (real Practice `ReadingSession`
+rows for the current Carbon week, Diagnostic excluded, same convention
+as Analytics/Badges/Bookshelf) is the single source both panels read
+from, so Weekly Goal and Growth can never quietly disagree about which
+sessions count or where the week boundary falls. Weekly Goal sums it
+into one count-vs-target; Growth buckets the same collection by ISO
+weekday (Mon→Sun, Carbon's real default for `APP_LOCALE=en` — no
+`week_starts_at` override exists, checked directly rather than
+assumed).
+
+**Weekly Goal** (`learner/goals.blade.php`): a real progress bar
+("4 of 5 real reading activities this week"), an honest "N more
+readings to go!" note, and a genuine celebratory gold-gradient state
+(matching the existing earned-badge visual language) once the target is
+met — "You hit your goal this week — amazing job! 🎉". No badge tie-in
+was added for hitting the goal — the user didn't ask for one, and
+adding one silently would be scope creep beyond what was scoped.
+
+**Growth** (`learner/growth.blade.php`): a real 7-bar chart, one bar
+per weekday, height proportional to that day's real count (today's bar
+gets a distinct orange highlight), an honest empty state
+("No stories read yet this week — start one today!") when the whole
+week is empty. **Worth remembering for future work on this app**:
+`learner.streak` is NOT a calendar-day streak despite the Badges'
+"Read on 3 days in a row" copy — grepped for any date-based reset logic
+and confirmed there is none; `streak` is incremented by exactly 1 on
+every real scored reading, full stop, no day-boundary check anywhere.
+Growth's per-weekday bucketing is the first place in this app that
+actually computes real distinct-day reading data — it does NOT reuse
+`streak` for anything, precisely because they're honestly different
+numbers despite the similar-sounding badge copy.
+
+**Home bento tiles updated to match** (`learner/dashboard.blade.php`,
+`LearnerAuthController::dashboard()`): "This Week's Goal" and "My
+Growth" no longer show "Coming soon" — they show the same real
+`thisWeeksPracticeReadingSessions()` count, previewed two ways (a mini
+progress bar vs. a plain "N stories read this week" line + "See
+chart"), both now real links into their full panels instead of static
+divs.
+
+**A real test-setup bug caught before it produced a false result, not
+an app bug**: seeding disposable `ReadingSession` rows via `tinker`'s
+`::create()` with an explicit `timestamp` silently dropped it — `
+timestamp` isn't in `ReadingSession::$fillable` (the exact same class
+of gap as the previously-documented `PromotionRecord::$fillable`
+missing `claimed_at`), so mass assignment ignored it and every seeded
+row landed on the DB's own default (now). All 4 rows showed up bucketed
+under "today" instead of the intended Mon/Wed/Thu spread, which would
+have looked like a real bucketing bug if not double-checked. Confirmed
+this was purely a test-harness gap (the real `LearnerReadingService`/
+`LearnerDiagnosticService` set `timestamp` via direct property
+assignment, not mass assignment, so real submissions are unaffected) by
+re-setting the seeded rows' `timestamp` via `$row->timestamp = ...;
+$row->save()` (bypasses `$fillable`) and re-verifying.
+
+**Tested for real, both empty and populated states, on a disposable
+test Learner — not assumed from the diff:**
+- Fresh disposable Learner (`ZZGoals`, `TB-ZZGOL`, id 41, deleted
+  afterward): confirmed the true empty state first — "0 of 5" with the
+  correct "5 more readings to go!" note on Goals, and Growth's honest
+  "No stories read yet this week" empty state with all 7 bars flat.
+- After seeding 4 real Practice sessions (Mon×1, Wed×1, Thu×2 — the
+  timestamp bug above was caught and fixed here): confirmed via direct
+  DOM inspection (not just a screenshot) that Growth's bars read
+  exactly Mon=1 (50% height), Tue=0, Wed=1 (50%), Thu=2 (100%, today-
+  highlighted orange), Fri/Sat/Sun=0 — matching the real seeded data
+  exactly, and confirmed via screenshot the chart looks intentional,
+  not just numerically correct. Goals correctly showed "4 of 5" with an
+  80%-filled bar.
+- Added a 5th real session and confirmed the "met" branch: Goals
+  flipped to the gold celebratory card ("5 of 5," "You hit your goal
+  this week — amazing job! 🎉"), and the Home dashboard's mini tile
+  correctly showed the trophy emoji suffix only once the target was
+  actually met, not before.
+- Confirmed the Home bento tiles' real preview numbers match the full
+  panels exactly (same `thisWeeksPracticeReadingSessions()` call), on
+  both the pre-met and met states.
+- `php -l` clean on every new/modified file; `php artisan route:list`
+  unaffected (no new routes — `learner.goals.index`/`learner.growth.
+  index` already existed from the redesign, now pointing at real
+  content instead of stubs); zero new Laravel log entries across the
+  whole pass. The disposable test Learner and all 5 of its
+  `ReadingSession` rows were deleted afterward; Miguel's real
+  `mastery_level`/`points`/`streak`/badges/`competency_states` were
+  reconfirmed untouched (this test used a separate disposable Learner
+  throughout, never Miguel).
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

@@ -192,6 +192,25 @@ class Learner extends Model implements AuthenticatableContract
     }
 
     /**
+     * The one shared source for "how much real reading happened this
+     * week" — used by both Weekly Goal (a single count vs. a target) and
+     * the Growth panel (the same sessions bucketed by weekday), so the
+     * two panels can never quietly disagree about which sessions count
+     * or where the week boundary falls. Practice only, same convention
+     * as Analytics/Badges/Bookshelf — a Diagnostic passage is system-
+     * generated throwaway content, never a "story read" a child chose.
+     * Carbon's default week start (Monday, since APP_LOCALE has no
+     * week_starts_at override) is used as-is rather than hardcoded.
+     */
+    public function thisWeeksPracticeReadingSessions(): \Illuminate\Support\Collection
+    {
+        return ReadingSession::where('learner_id', $this->id)
+            ->where('session_type', 'Practice')
+            ->whereBetween('timestamp', [now()->startOfWeek(), now()->endOfWeek()])
+            ->get();
+    }
+
+    /**
      * Practice Games — Word Builder and Letter Match are both real
      * `foundational_reading` skill practice (spelling/letter recognition);
      * neither one measures reading_fluency or reading_comprehension, so

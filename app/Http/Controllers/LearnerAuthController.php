@@ -75,10 +75,29 @@ class LearnerAuthController extends Controller
         $learner = $request->user('learner');
         $badges = LearnerBadge::summaryFor($learner);
 
+        // The Home hero tile's "picked for you" copy — real data only.
+        // firstWhere returns null when competency_states doesn't exist yet
+        // or nothing is currently flagged next, and the view renders an
+        // honest generic invitation instead of a fabricated reason.
+        $upNextCompetency = collect($learner->competencyProgressSummary())
+            ->firstWhere('isUpNext', true);
+
+        // Real preview data for the "This Week's Goal" and "My Growth"
+        // bento tiles — same underlying query Weekly Goal/Growth's own
+        // full panels use (Learner::thisWeeksPracticeReadingSessions()),
+        // so the Home preview and the full panel can never disagree.
+        $weeklyCount = $learner->thisWeeksPracticeReadingSessions()->count();
+        $weeklyTarget = config('reading_goals.weekly_target');
+
         return view('learner.dashboard', [
             'learner' => $learner,
+            'badges' => $badges,
             'earnedBadgeCount' => count(array_filter($badges, fn (array $b) => $b['earned'])),
             'totalBadgeCount' => count($badges),
+            'upNextCompetency' => $upNextCompetency,
+            'weeklyCount' => $weeklyCount,
+            'weeklyTarget' => $weeklyTarget,
+            'weeklyMet' => $weeklyCount >= $weeklyTarget,
         ]);
     }
 

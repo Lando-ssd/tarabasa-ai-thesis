@@ -72,6 +72,49 @@ class LearnerReadingService
     }
 
     /**
+     * My Bookshelf's "Read Again" — a real Reading-api score and the same
+     * real word-by-word feedback a normal reading gets, but deliberately
+     * skips everything scoreAndPersist() does: no ReadingSession row, no
+     * mastery/points/streak change, no PersonalWordBank entries, no
+     * notification, no Adaptive_Recommendator call, no badge check. A
+     * confirmed decision: re-reading a favorite from the shelf is free
+     * practice, the same "clean separation from the real reading-
+     * achievement system" reasoning already established for Practice
+     * Games — otherwise a Learner could re-read one easy Activity
+     * repeatedly to inflate their real level/points/streak. No comprehension
+     * quiz either — that's tied to the real scoring pipeline this
+     * deliberately bypasses. Never persists an unclear-attempt counter:
+     * since nothing is at stake, a Learner can simply try again as many
+     * times as they want.
+     */
+    public function recordFreeReattempt(Activity $activity, UploadedFile $audio, ReadingAiClient $readingAi): array
+    {
+        $outcome = $readingAi->analyze($audio, $activity->reference_text ?? $activity->passage_text);
+
+        if ($outcome['unclear']) {
+            return ['status' => 'unclear'];
+        }
+
+        $result = $outcome['result'];
+        $accuracy = (float) ($result['accuracy']['accuracy_score'] ?? 0);
+        $wcpm = $result['speed']['wcpm'] ?? null;
+
+        $breakdown = $this->buildWordBreakdown(
+            $result['accuracy']['word_feedback'] ?? [],
+            $result['word_timestamps'] ?? []
+        );
+
+        return [
+            'status' => 'scored',
+            'accuracy' => $accuracy,
+            'wcpm' => $wcpm,
+            'wordBreakdown' => $breakdown['words'],
+            'extraWordsSaid' => $breakdown['extraWordsSaid'],
+            'wordsToPractice' => $breakdown['practiceCount'],
+        ];
+    }
+
+    /**
      * Only meaningful for reading_comprehension-competency Activities —
      * confirmed via gemini_activity_gen's own real source that
      * follow_up_questions ONLY exist for that competency, enforced by its

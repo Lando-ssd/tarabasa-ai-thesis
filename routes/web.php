@@ -5,11 +5,13 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\BookshelfController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\LearnerAuthController;
 use App\Http\Controllers\LearnerController;
 use App\Http\Controllers\LearnerDiagnosticController;
+use App\Http\Controllers\LearnerGrowthController;
 use App\Http\Controllers\LearnerReadingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ParentDashboardController;
@@ -97,6 +99,21 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
 
         // "My Badges" — real earned/unearned state, see BadgeController.
         Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');
+
+        // "My Bookshelf" — real completed-reading history, free/unscored
+        // re-reads. See BookshelfController's own doc block.
+        Route::get('/bookshelf', [BookshelfController::class, 'index'])->name('bookshelf.index');
+        Route::get('/bookshelf/{activity}/reread', [BookshelfController::class, 'reread'])->name('bookshelf.reread');
+        Route::post('/bookshelf/{activity}/reread', [BookshelfController::class, 'submitReread'])->name('bookshelf.reread.submit');
+
+        // "My Growth Path" — the real winding-path competency visual
+        // (this dashboard redesign folds in the originally-separate
+        // "Slice 4"). Goals/Growth are genuinely not built yet — honest
+        // "Coming soon" panels, not fabricated data. See
+        // LearnerGrowthController's own doc block.
+        Route::get('/journey', [LearnerGrowthController::class, 'journey'])->name('journey.index');
+        Route::get('/goals', [LearnerGrowthController::class, 'goals'])->name('goals.index');
+        Route::get('/growth', [LearnerGrowthController::class, 'growth'])->name('growth.index');
     });
 
     Route::post('/logout', [LearnerAuthController::class, 'logout'])->name('logout');
