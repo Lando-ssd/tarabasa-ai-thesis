@@ -4603,6 +4603,95 @@ no new brand colors introduced.
   size — confirmed via `grep` that no debug/test scaffolding was left
   in the final file.
 
+## Learner Login owl — 3D abandoned entirely, rebuilt as clean 2D SVG
+## matching the real logo directly
+
+Direct follow-up feedback after the logo-matching 3D fix above: still
+"the same owl... alien," with an explicit instruction this time —
+just use the real logo image as the reference, 2D cartoon is
+completely fine, drop 3D. This is the second explicit reversal on this
+one screen (2D→3D→2D again), and this time the user's own framing
+("its fine cartoon 2d as long as the same references") makes clear 2D
+was never the problem — the earlier 3D attempts' proportions/shading
+were. Rather than attempt a third 3D iteration, the whole Three.js/
+WebGL approach was dropped for this screen and replaced with a real
+hand-drawn inline SVG illustration, modeled directly on
+`public/images/logo.png`'s actual shapes and colors.
+
+**Why 2D succeeds where the primitive-geometry 3D approach kept
+failing**: precisely tracing the logo's 2D silhouette (bezier paths for
+the body/ear-tuft/wing outlines, exact circle placements for the
+facial disc and eyes) is straightforward and directly comparable
+against the reference image by eye. Approximating that same silhouette
+from 3D primitives (spheres/cones) is fundamentally lossy — no
+combination of spheres and cones traces a real logo's actual outline,
+which is exactly why two rounds of 3D tuning still wound up "close but
+alien." 2D SVG doesn't have that ceiling.
+
+**What was built**: everything from the 3D passes — the Three.js CDN
+import, the whole WebGL scene/camera/lighting/geometry-construction
+code, the two-layer WebGL-unsupported/module-import-failure safety
+nets, and the emoji fallback — was deleted outright, not kept behind a
+flag. In its place, a single inline `<svg viewBox="0 0 300 300">`
+built from plain paths/circles/ellipses: a two-tone orange-brown/tan
+palette matching the logo exactly, overlapping facial-disc circles
+(the same "two circles create a natural brow-dip" trick the 3D version
+used, now working correctly since 2D shapes don't have z-fighting),
+big expressive eyes with catchlights, rosy cheek ellipses, a rounded
+beak with a small mouth-line, V-shaped two-tone ear tufts, and two
+wing/arm paths curving down to small "hand" circles resting right at
+the card's top edge — preserving the original "holding the card"
+structural idea from the very first reference screenshot, just
+executed in 2D.
+
+**Animation, now pure CSS + one small timer** (no rAF loop, no
+Three.js, far simpler than the 3D version): a one-time elastic
+entrance (`@keyframes owlEntrance`, `cubic-bezier(.34,1.56,.64,1)`
+overshoot) chained into a looping idle bob+sway
+(`@keyframes owlBob`), both skipped under `prefers-reduced-motion`.
+Blinking reuses the *exact* technique already established in
+`games/_owl-mascot.blade.php` — two pre-drawn eye states (`.eyes-open`/
+`.eyes-closed`) as sibling `<g>` groups, visibility toggled via a class
+on the wrapping element — just driven by a `setTimeout` loop instead of
+a gameplay event, so this new illustration stays consistent with the
+one mascot-animation pattern this codebase already has instead of
+inventing a second one.
+
+**The reused chime-on-first-focus sound was kept unchanged** — nothing
+about it was 3D-specific, no reason to touch it.
+
+**A real layout side-effect handled proactively**: since the SVG
+scales cleanly with its container (unlike the old fixed-pixel `<canvas>`
+approach), the existing "owl grows disproportionately on narrow
+screens" fix from the previous pass was kept and re-tuned (owl-stage
+210×210 below 480px, adjusted top offset, `.card` padding-top raised
+to 56px at all widths this time — the SVG's taller silhouette, with
+wings reaching further down toward the card than the 3D version's feet
+did, needed a bit more clearance even at desktop width) — confirmed via
+screenshot at both 375px and desktop that clearance is clean, no
+overlap with the "Hi there!" heading at either size.
+
+**Tested for real, not assumed from the diff**:
+- `grep`-confirmed zero remaining references to Three.js/`THREE.`/the
+  old canvas-based fallback anywhere in the file.
+- Console clean (zero errors) on every reload.
+- Blink toggle verified via direct `getComputedStyle` inspection
+  (`.eyes-open`/`.eyes-closed` opacity flipping correctly on the
+  `is-blinking` class) — the first verification attempt showed the
+  class already gone by the time it was checked, correctly diagnosed as
+  a timing race between the manual test and the real, independently-
+  running `scheduleBlink()` timer (which naturally adds-then-removes
+  the same class every few seconds), not a bug — confirmed by adding
+  the class and reading the computed style in one atomic script call
+  instead of across two separate tool calls with a gap between them.
+- A real login (Miguel, `TB-51763`) through the rebuilt page still
+  lands correctly on the real Dashboard.
+- Both desktop and 375px-phone screenshots confirm the illustration now
+  genuinely reads as the TaraBasa owl at a glance — round expressive
+  eyes, visible beak, rosy cheeks, correct two-tone coloring, clean
+  cartoon outline, hands resting on the card — with no heading overlap
+  at either width.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

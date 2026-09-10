@@ -47,37 +47,53 @@
     transform:rotate(-4deg);
   }
 
-  .wrap{ position:relative; width:100%; max-width:420px; margin-top:96px; }
+  .wrap{ position:relative; width:100%; max-width:420px; margin-top:118px; }
 
-  /* ---- 3D owl stage: overlaps the top of the card, "holding" it the
-     way the reference mascot rests its paws on the card's top edge. ---- */
+  /* ---- Owl illustration: a real hand-drawn SVG cartoon modeled
+     directly on the TaraBasa app icon (public/images/logo.png) — warm
+     orange-brown body, light tan facial disc, rosy cheeks, a visible
+     beak, V ear tufts, dark cartoon outline — standing over and
+     "holding" the top edge of the card, the same structural idea as
+     the reference screenshot's mascot, just this app's own character
+     in clean 2D instead of 3D (2D reads far more reliably as "owl"
+     than the primitive-geometry 3D attempts did). ---- */
   .owl-stage{
-    position:absolute; left:50%; top:-168px; transform:translateX(-50%);
-    width:230px; height:230px; z-index:2; pointer-events:none;
+    position:absolute; left:50%; top:-196px; transform:translateX(-50%);
+    width:260px; height:260px; z-index:2; pointer-events:none;
   }
-  .owl-stage canvas{ width:100% !important; height:100% !important; display:block; }
-  .owl-fallback{
-    display:none; width:120px; height:120px; border-radius:32px; margin:55px auto 0; font-size:60px;
-    background:linear-gradient(155deg, var(--clay-yellow), var(--owl-orange-600));
-    align-items:center; justify-content:center; box-shadow:0 16px 28px -12px rgba(221,112,20,0.5);
-    animation:bob 2.4s ease-in-out infinite;
+  .owl-illustration{
+    width:100%; height:100%; display:block; transform-origin:50% 100%;
+    animation:owlEntrance .7s cubic-bezier(.34,1.56,.64,1) both,
+              owlBob 3.4s ease-in-out .7s infinite;
   }
-  @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+  @keyframes owlEntrance{
+    0%{ transform:translateY(36px) scale(0.7); opacity:0; }
+    70%{ transform:translateY(-6px) scale(1.05); opacity:1; }
+    100%{ transform:translateY(0) scale(1); opacity:1; }
+  }
+  @keyframes owlBob{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-7px) rotate(-1.2deg); }
+  }
+  .owl-illustration .eyes-closed{ opacity:0; }
+  .owl-illustration.is-blinking .eyes-open{ opacity:0; }
+  .owl-illustration.is-blinking .eyes-closed{ opacity:1; }
+  @media (prefers-reduced-motion:reduce){
+    .owl-illustration{ animation:none; }
+  }
 
   .card{
     position:relative; z-index:1;
-    background:var(--surface); border-radius:32px; padding:44px 28px 30px; text-align:center;
+    background:var(--surface); border-radius:32px; padding:56px 28px 30px; text-align:center;
     box-shadow:0 36px 70px -30px rgba(10,40,80,0.45), 0 4px 0 rgba(255,255,255,0.6) inset;
   }
 
   /* The owl-stage is a fixed pixel size, but .wrap/.card shrink below
      their 420px cap on narrow screens — without this, the owl grows
-     proportionally larger than the (now-narrower) card and its feet
-     encroach on the heading. Scale the owl down and give the card a
-     bit more top clearance below ~480px. */
+     proportionally larger than the (now-narrower) card. Scale it down
+     a bit below ~480px. */
   @media (max-width:480px){
-    .owl-stage{ width:190px; height:190px; top:-134px; }
-    .card{ padding-top:56px; }
+    .owl-stage{ width:210px; height:210px; top:-158px; }
   }
   h1{ font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:700; margin:0 0 8px; }
   .sub{ font-size:18px; color:var(--slate-600); font-weight:600; margin:0 0 26px; line-height:1.5; }
@@ -121,10 +137,6 @@
   }
   .back-link:hover{ color:var(--blue-600); }
   a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
-
-  @media (prefers-reduced-motion: reduce){
-    .owl-fallback{ animation:none; }
-  }
 </style>
 </head>
 <body>
@@ -137,7 +149,52 @@
 
 <div class="wrap">
   <div class="owl-stage" id="owlStage">
-    <div class="owl-fallback" id="owlFallback">🦉</div>
+    <svg class="owl-illustration" id="owlIllustration" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+      <!-- Ear tufts, drawn first so the head silhouette overlaps their base -->
+      <path d="M92,118 C74,88 54,56 46,24 C69,45 96,71 110,108 Z" fill="#e0862f" stroke="#2b1810" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M208,118 C226,88 246,56 254,24 C231,45 204,71 190,108 Z" fill="#e0862f" stroke="#2b1810" stroke-width="5" stroke-linejoin="round"/>
+
+      <!-- Body/head silhouette -->
+      <path d="M150,55 C206,55 242,96 246,151 C251,212 230,272 150,277 C70,272 49,212 54,151 C58,96 94,55 150,55 Z"
+            fill="#e0862f" stroke="#2b1810" stroke-width="6" stroke-linejoin="round"/>
+
+      <!-- Facial disc -->
+      <circle cx="117" cy="146" r="59" fill="#f7d9a8"/>
+      <circle cx="183" cy="146" r="59" fill="#f7d9a8"/>
+
+      <!-- Wings/arms, ending in small hands resting on the card's top edge -->
+      <path d="M60,182 C39,213 44,253 86,277 C97,282 108,276 102,266 C81,251 70,220 79,189 Z" fill="#e0862f" stroke="#2b1810" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M240,182 C261,213 256,253 214,277 C203,282 192,276 198,266 C219,251 230,220 221,189 Z" fill="#e0862f" stroke="#2b1810" stroke-width="5" stroke-linejoin="round"/>
+      <circle cx="90" cy="271" r="9" fill="#e0862f" stroke="#2b1810" stroke-width="4"/>
+      <circle cx="210" cy="271" r="9" fill="#e0862f" stroke="#2b1810" stroke-width="4"/>
+
+      <!-- Belly patch -->
+      <ellipse cx="150" cy="228" rx="54" ry="46" fill="#f7d9a8"/>
+
+      <!-- Cheeks -->
+      <ellipse cx="88" cy="184" rx="15" ry="10" fill="#ffb3ab" opacity=".85"/>
+      <ellipse cx="212" cy="184" rx="15" ry="10" fill="#ffb3ab" opacity=".85"/>
+
+      <!-- Eyes: open (default) -->
+      <g class="eyes-open">
+        <circle cx="117" cy="149" r="32" fill="#ffffff" stroke="#2b1810" stroke-width="5"/>
+        <circle cx="183" cy="149" r="32" fill="#ffffff" stroke="#2b1810" stroke-width="5"/>
+        <circle cx="117" cy="155" r="19" fill="#2b1810"/>
+        <circle cx="183" cy="155" r="19" fill="#2b1810"/>
+        <circle cx="108" cy="141" r="6" fill="#ffffff"/>
+        <circle cx="174" cy="141" r="6" fill="#ffffff"/>
+      </g>
+      <!-- Eyes: closed (blink) -->
+      <g class="eyes-closed">
+        <path d="M92,149 Q117,163 142,149" fill="none" stroke="#2b1810" stroke-width="6" stroke-linecap="round"/>
+        <path d="M158,149 Q183,163 208,149" fill="none" stroke="#2b1810" stroke-width="6" stroke-linecap="round"/>
+      </g>
+
+      <!-- Beak -->
+      <path d="M150,168 C159,168 165,174 165,181 C165,191 150,199 150,199 C150,199 135,191 135,181 C135,174 141,168 150,168 Z"
+            fill="#f5a623" stroke="#2b1810" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M142,190 Q150,196 158,190" fill="none" stroke="#a33d1f" stroke-width="3" stroke-linecap="round"/>
+    </svg>
   </div>
 
   <div class="card">
@@ -221,271 +278,27 @@
     } catch (e) { /* never block login over a sound failing to init */ }
   })();
 
-  // Safety net #1: if the 3D owl module below never even runs (CDN
-  // blocked, network down, WebGL disabled) — not something a try/catch
-  // inside that module can always catch, since a failed top-level
-  // `import` throws before any of its own code executes — fall back to
-  // the plain emoji mascot after a short grace period.
-  setTimeout(function () {
-    if (!document.querySelector('#owlStage canvas')) {
-      const fb = document.getElementById('owlFallback');
-      if (fb) fb.style.display = 'flex';
+  // Periodic blinking — the same class-toggle technique already
+  // established in games/_owl-mascot.blade.php (swap which pre-drawn
+  // eye state is visible), just driven by a timer here instead of a
+  // gameplay event. Skipped entirely under prefers-reduced-motion.
+  (function () {
+    const illustration = document.getElementById('owlIllustration');
+    if (!illustration) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    function scheduleBlink() {
+      const delay = 2400 + Math.random() * 2600;
+      setTimeout(function () {
+        illustration.classList.add('is-blinking');
+        setTimeout(function () {
+          illustration.classList.remove('is-blinking');
+          scheduleBlink();
+        }, 160);
+      }, delay);
     }
-  }, 4000);
-</script>
-
-<script type="module">
-  // Safety net #2: any runtime error inside the 3D setup itself (a real
-  // WebGL failure, an API mismatch) is caught here and falls back the
-  // same way — the login screen must never depend on this succeeding.
-  try {
-    const THREE = await import('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.0/three.module.min.js');
-
-    function supportsWebGL() {
-      try {
-        const c = document.createElement('canvas');
-        return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
-      } catch (e) { return false; }
-    }
-    if (!supportsWebGL()) throw new Error('no webgl');
-
-    const stage = document.getElementById('owlStage');
-    const width = stage.clientWidth, height = stage.clientHeight;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 100);
-    camera.position.set(0, 0.35, 5.6);
-    camera.lookAt(0, 0.05, 0);
-
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    stage.appendChild(renderer.domElement);
-
-    // The canvas now genuinely exists — make sure the fallback emoji
-    // is hidden even if the timeout-based safety net above already
-    // raced ahead and shown it (a slow CDN fetch, not a real failure).
-    const fallbackEl = document.getElementById('owlFallback');
-    if (fallbackEl) fallbackEl.style.display = 'none';
-
-    // Lighting — soft ambient fill + a warm key light + a cool rim
-    // light, aiming for the same gentle, rounded "claymorphism" look
-    // the rest of the app uses, just genuinely three-dimensional here.
-    scene.add(new THREE.AmbientLight(0xfff2df, 0.75));
-    const key = new THREE.DirectionalLight(0xffffff, 0.95);
-    key.position.set(2.2, 3, 4);
-    scene.add(key);
-    const rim = new THREE.DirectionalLight(0xbfe0ff, 0.4);
-    rim.position.set(-3, 0.6, -2);
-    scene.add(rim);
-
-    // Tara the owl — built from primitive geometry, this time modeled
-    // directly on the real TaraBasa app icon (public/images/logo.png),
-    // not the paler flat 2D mascot elsewhere in the app: a warm
-    // orange-brown owl with a lighter tan facial disc, rosy cheeks, a
-    // clearly visible yellow-orange beak, proper V-shaped ear tufts,
-    // and a dark cartoon outline around every silhouette — the earlier
-    // pass skipped the facial disc/outline entirely and used oversized,
-    // widely-spaced eyes with thin spike-like ear tufts, which is
-    // exactly what read as "alien" rather than owl.
-    const OUTLINE_COLOR = 0x3a2110;
-    function addOutline(mesh, growth) {
-      const outline = new THREE.Mesh(mesh.geometry, new THREE.MeshBasicMaterial({ color: OUTLINE_COLOR, side: THREE.BackSide }));
-      outline.position.copy(mesh.position);
-      outline.rotation.copy(mesh.rotation);
-      outline.scale.copy(mesh.scale).multiplyScalar(1 + growth);
-      return outline;
-    }
-
-    const owl = new THREE.Group();
-    const BODY_COLOR = 0xe08830;  // warm orange-brown — the logo's body/wing color
-    const FACE_COLOR = 0xffe3ad;  // light tan facial disc / belly
-    const BEAK_COLOR = 0xf5a623;  // warm yellow-orange beak
-    const FOOT_COLOR = 0xd97b28;  // slightly deeper orange for legs/feet
-    const CHEEK_COLOR = 0xffb3ab; // rosy cheek blush
-
-    const bodyMat = new THREE.MeshStandardMaterial({ color: BODY_COLOR, roughness: 0.55 });
-    const faceMat = new THREE.MeshStandardMaterial({ color: FACE_COLOR, roughness: 0.6 });
-
-    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), bodyMat);
-    body.scale.set(1, 0.98, 0.88);
-    owl.add(body, addOutline(body, 0.045));
-
-    // Facial disc — the single biggest fix: a lighter, flattened patch
-    // spanning both eyes, exactly like a real owl (and the logo) has,
-    // instead of eyes floating on a uniform-colored head.
-    const face = new THREE.Mesh(new THREE.SphereGeometry(0.72, 28, 20), faceMat);
-    face.scale.set(1.05, 0.85, 0.35);
-    face.position.set(0, 0.12, 0.68);
-    owl.add(face);
-
-    const belly = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 16), faceMat);
-    belly.scale.set(0.95, 1.1, 0.3);
-    belly.position.set(0, -0.55, 0.62);
-    owl.add(belly);
-
-    // Ear tufts — a real two-tone V shape (body-colored outer + tan
-    // inner), angled up-and-out like the logo's, not thin antenna
-    // spikes.
-    function earTuft(x, tilt) {
-      const g = new THREE.Group();
-      const outer = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.6, 4), bodyMat);
-      outer.scale.set(0.85, 1, 0.5);
-      g.add(outer, addOutline(outer, 0.05));
-      const inner = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.4, 4), faceMat);
-      inner.scale.set(0.8, 1, 0.5);
-      inner.position.z = 0.06;
-      g.add(inner);
-      g.position.set(x, 0.92, 0.05);
-      g.rotation.z = tilt;
-      g.rotation.y = Math.PI / 4;
-      return g;
-    }
-    owl.add(earTuft(-0.4, 0.28), earTuft(0.4, -0.28));
-
-    // Wings — angled forward so they read clearly from the front camera
-    // (the earlier pass hid them almost edge-on, removing a key
-    // owl-identifying feature entirely).
-    function wing(x, rotY) {
-      const w = new THREE.Mesh(new THREE.SphereGeometry(0.48, 20, 16), bodyMat);
-      w.scale.set(0.4, 0.95, 0.55);
-      w.position.set(x, -0.1, 0.15);
-      w.rotation.y = rotY;
-      w.rotation.z = x < 0 ? 0.35 : -0.35;
-      return w;
-    }
-    const wingL = wing(-0.92, 0.4);
-    const wingR = wing(0.92, -0.4);
-    owl.add(wingL, addOutline(wingL, 0.05), wingR, addOutline(wingR, 0.05));
-
-    // Eyes — smaller and closer together than before (oversized, wide-
-    // set eyes were the single biggest cause of the "alien" read), with
-    // a thin dark ring so they pop against the light facial disc, same
-    // as the logo.
-    function eye(x) {
-      const g = new THREE.Group();
-      const white = new THREE.Mesh(new THREE.SphereGeometry(0.21, 20, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 }));
-      g.add(white, addOutline(white, 0.16));
-      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.105, 16, 12), new THREE.MeshStandardMaterial({ color: 0x2b1810, roughness: 0.5 }));
-      pupil.position.set(0, -0.01, 0.16);
-      const hl = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 }));
-      hl.position.set(-0.05, 0.06, 0.24);
-      g.add(pupil, hl);
-      g.position.set(x, 0.14, 0.85);
-      return g;
-    }
-    const eyeL = eye(-0.24);
-    const eyeR = eye(0.24);
-    owl.add(eyeL, eyeR);
-
-    // Rosy cheeks — a cute logo-matching detail, absent before.
-    function cheek(x) {
-      const c = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 10), new THREE.MeshStandardMaterial({ color: CHEEK_COLOR, roughness: 0.8, transparent: true, opacity: 0.85 }));
-      c.scale.set(1, 0.8, 0.25);
-      c.position.set(x, -0.08, 0.86);
-      return c;
-    }
-    owl.add(cheek(-0.42), cheek(0.42));
-
-    // Beak — bigger and clearly visible this time (the earlier one was
-    // nearly invisible), warm yellow-orange matching the logo.
-    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.2, 16), new THREE.MeshStandardMaterial({ color: BEAK_COLOR, roughness: 0.45 }));
-    beak.scale.set(1, 0.8, 0.85);
-    beak.position.set(0, -0.15, 0.93);
-    beak.rotation.x = Math.PI * 0.56;
-    owl.add(beak, addOutline(beak, 0.1));
-
-    // Legs + feet — a real standing stance: a visible leg connecting
-    // body to a proper flattened foot with toe bumps, instead of a
-    // foot floating disconnected below the body.
-    function legAndFoot(x) {
-      const g = new THREE.Group();
-      const legMat = new THREE.MeshStandardMaterial({ color: FOOT_COLOR, roughness: 0.55 });
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.32, 10), legMat);
-      leg.position.set(0, -1.02, 0.3);
-      g.add(leg);
-      const foot = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), legMat);
-      foot.scale.set(1.1, 0.5, 1.4);
-      foot.position.set(0, -1.2, 0.42);
-      g.add(foot, addOutline(foot, 0.08));
-      for (let i = -1; i <= 1; i++) {
-        const toe = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), legMat);
-        toe.position.set(i * 0.075, -1.2, 0.58);
-        g.add(toe);
-      }
-      g.position.x = x;
-      return g;
-    }
-    owl.add(legAndFoot(-0.38), legAndFoot(0.38));
-
-    scene.add(owl);
-
-    // Pointer parallax — small, clamped, purely decorative.
-    let pointerX = 0, pointerY = 0;
-    window.addEventListener('pointermove', (e) => {
-      pointerX = ((e.clientX / window.innerWidth) * 2 - 1) * 0.12;
-      pointerY = -((e.clientY / window.innerHeight) * 2 - 1) * 0.06;
-    }, { passive: true });
-
-    function backOut(t) {
-      const c1 = 1.70158, c3 = c1 + 1;
-      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let start = null;
-    let blinkAt = 2 + Math.random() * 2;
-    let blinking = false, blinkStart = 0;
-
-    function frame(t) {
-      if (start === null) start = t;
-      const elapsed = (t - start) / 1000;
-
-      const entranceDur = reducedMotion ? 0.01 : 0.85;
-      const p = Math.min(elapsed / entranceDur, 1);
-      owl.scale.setScalar(p < 1 ? Math.max(backOut(p), 0) : 1);
-
-      if (!reducedMotion) {
-        owl.position.y = Math.sin(elapsed * 1.3) * 0.06;
-        owl.rotation.y = Math.sin(elapsed * 0.6) * 0.08 + pointerX;
-        owl.rotation.x = pointerY;
-
-        if (!blinking && elapsed > blinkAt) {
-          blinking = true;
-          blinkStart = elapsed;
-        }
-        if (blinking) {
-          const bt = elapsed - blinkStart;
-          const dur = 0.22;
-          const bp = Math.min(bt / dur, 1);
-          const s = bp < 0.5 ? 1 - (bp / 0.5) * 0.9 : 0.1 + ((bp - 0.5) / 0.5) * 0.9;
-          eyeL.scale.y = s; eyeR.scale.y = s;
-          if (bp >= 1) {
-            blinking = false;
-            eyeL.scale.y = 1; eyeR.scale.y = 1;
-            blinkAt = elapsed + 2.5 + Math.random() * 2.5;
-          }
-        }
-      }
-
-      renderer.render(scene, camera);
-      requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
-
-    window.addEventListener('resize', () => {
-      const w = stage.clientWidth, h = stage.clientHeight;
-      if (!w || !h) return;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    });
-  } catch (err) {
-    const fb = document.getElementById('owlFallback');
-    if (fb) fb.style.display = 'flex';
-    const canvas = document.querySelector('#owlStage canvas');
-    if (canvas) canvas.remove();
-  }
+    scheduleBlink();
+  })();
 </script>
 </body>
 </html>
