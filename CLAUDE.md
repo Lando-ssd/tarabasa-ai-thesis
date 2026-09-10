@@ -4692,6 +4692,55 @@ overlap with the "Hi there!" heading at either size.
   cartoon outline, hands resting on the card — with no heading overlap
   at either width.
 
+## Learner Login background — a real WebGL floating-orb field, scoped
+## deliberately separate from the owl (which stays 2D)
+
+Explicit follow-up, scoped narrowly by the user ("just only for bg") —
+the owl was fine now; the flat gradient background wasn't: "not a
+gradient... make it like good 3d... more polish and more interactive."
+Kept the owl and card completely untouched this pass.
+
+**Why real WebGL is the right call here, unlike for the mascot**: the
+background has no "must match a specific character" precision problem
+the way the owl did (which is what sank two rounds of 3D tuning on
+that screen). A field of soft glowing particles is inherently
+forgiving — there's no reference silhouette it needs to trace — so
+genuine 3D depth is safe to reach for here specifically because the
+earlier objection (3D primitives can only approximate a real
+character's outline) doesn't apply to an abstract decorative field.
+
+**What was built**: the flat single linear-gradient background is
+replaced by (1) a richer multi-stop gradient with two soft corner
+highlights as the honest, always-present base layer, and (2) a real
+Three.js/WebGL scene of ~20-38 soft glowing sprite "orbs" (a
+canvas-generated radial-gradient texture, additive blending for a
+genuine bokeh-light look) positioned at varying depths, gently
+drifting, with the camera subtly following pointer movement for real
+interactivity — layered on top of the gradient via a transparent
+canvas. Colors are drawn only from TaraBasa's own existing tokens
+(white, `--sky-100`, `--clay-yellow`, `--owl-orange-500`, plus one new
+soft sky-blue `#8fc7f2` in the same family) — no new brand colors
+introduced, per the user's own "its fine of the colors" note (they
+only wanted the *treatment* changed, not the palette).
+
+**A deliberately simple fallback story, unlike the owl's two-layer
+safety net**: if the CDN import fails or WebGL is unsupported, the
+`catch` block does nothing at all — no fallback UI is needed, because
+the gradient underneath is already a complete, honest background on
+its own (unlike the owl, where "nothing rendered" would have left a
+visibly broken hole above the card). Confirmed by temporarily forcing
+the import to throw: the gradient alone still looks clean and finished,
+zero console errors, zero layout impact.
+
+**Tested for real, not assumed from the diff**: real WebGL canvas
+confirmed rendering at full viewport size on both desktop and 375px
+phone widths (screenshots show genuine layered depth via the glowing
+orbs, not a flat pattern); the login form itself (code/PIN/submit)
+re-confirmed still fully functional through a real login; the
+temporarily-forced-failure fallback path re-confirmed clean with no
+console errors, then reverted and re-confirmed the real orb field
+comes back correctly afterward.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

@@ -24,28 +24,29 @@
     overflow-x:hidden;
   }
 
-  /* ---- Full-screen colorful backdrop: TaraBasa's own tokens, top-to-
-     bottom sky-to-sunshine, plus a very low-opacity scattered "learning
-     icon" texture and a soft angled light-band for depth. ---- */
+  /* ---- Full-screen backdrop: the same TaraBasa color tokens, but now
+     a genuine layered/dimensional scene instead of a single flat
+     gradient — a richer multi-stop base wash, a soft radial spotlight
+     behind the owl, and (below) a real WebGL field of softly-glowing
+     floating orbs at different depths with mouse parallax, for actual
+     3D depth and interactivity. The gradient stays underneath as the
+     honest, always-present base layer — the orb field is a genuine
+     enhancement on top of it, not a replacement that could leave a
+     blank screen if WebGL is ever unavailable. ---- */
   .bg-stage{ position:fixed; inset:0; z-index:-1; overflow:hidden; }
   .bg-stage .grad{
     position:absolute; inset:0;
-    background:linear-gradient(180deg, #062d5c 0%, var(--blue-700) 22%, var(--blue-500) 45%, var(--clay-yellow) 74%, var(--owl-orange-500) 100%);
-  }
-  .bg-stage .icons{
-    position:absolute; inset:-80px; opacity:.11; mix-blend-mode:screen;
-    background-repeat:repeat; background-size:190px 190px;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='190' height='190'%3E%3Cg fill='white'%3E%3Cpath d='M24 14l2.6 6.6 7 .6-5.3 4.7 1.6 6.9-5.9-3.9-5.9 3.9 1.6-6.9-5.3-4.7 7-.6z'/%3E%3Cpath transform='translate(148 24) rotate(18)'%3E%3Ccircle r='9' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M-3 -3h6v2h-2v9h-2v-9h-2z'/%3E%3C/g%3E%3Cg transform='translate(30 130)'%3E%3Cpath d='M0 0h34v26a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3z' opacity='.18'/%3E%3Cpath d='M2 2h13v24H5a3 3 0 0 1-3-3z' opacity='.8'/%3E%3Cpath d='M32 2H19v24h10a3 3 0 0 0 3-3z' opacity='.55'/%3E%3C/g%3E%3Cpath d='M160 120c1.5 4 6.5 4 8 0 4 1.5 4 6.5 0 8 1.5 4-4 6.5-8 4-4 2.5-9.5 0-8-4-4-1.5-4-6.5 0-8z' opacity='.7'/%3E%3Ccircle cx='95' cy='60' r='3.5' opacity='.5'/%3E%3Ccircle cx='60' cy='170' r='3.5' opacity='.5'/%3E%3C/g%3E%3C/svg%3E");
+    background:
+      radial-gradient(1400px 900px at 18% -10%, rgba(255,255,255,0.14), transparent 55%),
+      radial-gradient(1200px 800px at 88% 108%, rgba(255,255,255,0.16), transparent 55%),
+      linear-gradient(180deg, #062d5c 0%, var(--blue-700) 20%, var(--blue-500) 42%, #f3c46a 70%, var(--owl-orange-500) 100%);
   }
   .bg-stage .glow{
     position:absolute; left:50%; top:0; width:640px; height:640px; transform:translate(-50%,-58%);
     background:radial-gradient(circle, rgba(255,255,255,0.35), rgba(255,255,255,0.08) 45%, transparent 70%);
   }
-  .bg-stage .band{
-    position:absolute; left:-15%; right:-15%; top:58%; height:260px;
-    background:radial-gradient(60% 100% at 50% 0%, rgba(255,255,255,0.22), transparent 72%);
-    transform:rotate(-4deg);
-  }
+  .bg-stage .orb-field{ position:absolute; inset:0; }
+  .bg-stage .orb-field canvas{ display:block; width:100% !important; height:100% !important; }
 
   .wrap{ position:relative; width:100%; max-width:420px; margin-top:118px; }
 
@@ -142,9 +143,8 @@
 <body>
 <div class="bg-stage" aria-hidden="true">
   <div class="grad"></div>
-  <div class="icons"></div>
+  <div class="orb-field" id="orbField"></div>
   <div class="glow"></div>
-  <div class="band"></div>
 </div>
 
 <div class="wrap">
@@ -299,6 +299,105 @@
     }
     scheduleBlink();
   })();
+</script>
+
+<script type="module">
+  // A genuine WebGL field of soft glowing orbs at different depths,
+  // layered on top of the gradient background — real 3D positions, not
+  // a flat pattern, with gentle drifting motion and mouse-parallax for
+  // interactivity. Unlike the mascot (rejected in 3D twice over real
+  // fidelity concerns — see CLAUDE.md), a background has no "does it
+  // look like a specific character" precision problem, so genuine
+  // WebGL here is safe: if it fails or isn't supported, the gradient
+  // underneath is already a complete, honest background on its own —
+  // no fallback UI is needed, just a silent catch.
+  try {
+    const THREE = await import('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.0/three.module.min.js');
+
+    const container = document.getElementById('orbField');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.z = 18;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    container.appendChild(renderer.domElement);
+
+    // A soft radial-glow sprite texture, generated on a small canvas —
+    // no external image asset needed.
+    function glowTexture(hex) {
+      const size = 128;
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      g.addColorStop(0, hex + 'ff');
+      g.addColorStop(0.45, hex + '99');
+      g.addColorStop(1, hex + '00');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, size, size);
+      return new THREE.CanvasTexture(c);
+    }
+
+    // TaraBasa's own tokens only — no new brand colors introduced.
+    const PALETTE = ['#ffffff', '#dcedff', '#ffcf6e', '#ef8d2a', '#8fc7f2'];
+    const textures = PALETTE.map(glowTexture);
+
+    const orbs = [];
+    const count = window.innerWidth < 640 ? 20 : 38;
+    for (let i = 0; i < count; i++) {
+      const map = textures[i % textures.length];
+      const mat = new THREE.SpriteMaterial({
+        map, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+        opacity: 0.25 + Math.random() * 0.35,
+      });
+      const sprite = new THREE.Sprite(mat);
+      const scale = 0.8 + Math.random() * 2.6;
+      sprite.scale.set(scale, scale, 1);
+      sprite.position.set((Math.random() - 0.5) * 34, (Math.random() - 0.5) * 26, (Math.random() - 0.5) * 16);
+      sprite.userData.speed = 0.15 + Math.random() * 0.25;
+      sprite.userData.driftPhase = Math.random() * Math.PI * 2;
+      sprite.userData.baseX = sprite.position.x;
+      sprite.userData.baseY = sprite.position.y;
+      scene.add(sprite);
+      orbs.push(sprite);
+    }
+
+    let pointerX = 0, pointerY = 0;
+    window.addEventListener('pointermove', (e) => {
+      pointerX = (e.clientX / window.innerWidth - 0.5) * 2;
+      pointerY = (e.clientY / window.innerHeight - 0.5) * 2;
+    }, { passive: true });
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function frame(t) {
+      const time = t / 1000;
+      if (!reducedMotion) {
+        orbs.forEach((o) => {
+          const d = o.userData;
+          o.position.y = d.baseY + Math.sin(time * d.speed + d.driftPhase) * 1.4;
+          o.position.x = d.baseX + Math.cos(time * d.speed * 0.7 + d.driftPhase) * 1.1;
+        });
+        camera.position.x += (pointerX * 1.6 - camera.position.x) * 0.02;
+        camera.position.y += (-pointerY * 1.0 - camera.position.y) * 0.02;
+        camera.lookAt(0, 0, 0);
+      }
+      renderer.render(scene, camera);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  } catch (err) {
+    // The gradient background is already a complete, honest scene on
+    // its own — nothing further to do here.
+  }
 </script>
 </body>
 </html>
