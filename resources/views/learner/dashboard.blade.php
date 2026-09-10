@@ -145,8 +145,13 @@
   .panel-title .see-count{ font-size:16px; font-weight:700; color:var(--slate-600); }
   .panel-card{ background:var(--surface); border:1px solid var(--line); border-radius:26px; padding:26px 24px; box-shadow:var(--shadow-sm); }
 
-  .pair-row{ display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:26px; }
+  .pair-row{ display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:26px; align-items:stretch; }
   @media (max-width:820px){ .pair-row{ grid-template-columns:1fr; } }
+  /* Stretch both cards to the same height and center their content
+     vertically, so "This Week's Goal" and "My Growth" line up cleanly
+     regardless of which one has more/less content. */
+  .pair-row .panel{ display:flex; flex-direction:column; }
+  .pair-row .panel-card{ flex:1; display:flex; flex-direction:column; justify-content:center; }
 
   /* ---- Journey ---- */
   .journey-legend{
@@ -188,19 +193,30 @@
   @keyframes flapMarkerR{ 0%,100%{ transform:rotate(0deg); } 50%{ transform:rotate(30deg); } }
 
   /* ---- Goal: a real circular progress ring, not just a flat bar ---- */
-  .goal-panel .panel-card{ display:flex; flex-direction:column; align-items:center; }
+  .goal-panel .panel-card{ align-items:center; }
   .goal-panel.met .panel-card{ background:linear-gradient(150deg,#fff3c4,#f0b03e); border-color:transparent; }
-  .goal-ring-wrap{ position:relative; width:150px; height:150px; margin-bottom:14px; }
-  .goal-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
-  .goal-ring-bg{ fill:none; stroke:var(--bg-0); stroke-width:14; }
-  .goal-panel.met .goal-ring-bg{ stroke:rgba(255,255,255,0.5); }
-  .goal-ring-fill{ fill:none; stroke:url(#goalGradient); stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset .6s ease; }
+  .goal-ring-wrap{ position:relative; width:158px; height:158px; margin-bottom:16px; filter:drop-shadow(0 10px 18px -10px rgba(15,60,110,0.35)); }
+  .goal-panel.met .goal-ring-wrap{ filter:drop-shadow(0 10px 18px -10px rgba(122,84,0,0.4)); }
+  .goal-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); display:block; }
+  .goal-ring-bg{ fill:none; stroke:var(--bg-0); stroke-width:13; }
+  .goal-panel.met .goal-ring-bg{ stroke:rgba(255,255,255,0.55); }
+  .goal-ring-fill{ fill:none; stroke:url(#goalGradient); stroke-width:13; stroke-linecap:round; transition:stroke-dashoffset .6s ease; }
+  /* A crisp white "badge" sits inside the ring's empty middle so the
+     ring itself reads with real contrast against the card behind it,
+     instead of the two blending together (worst on the gold "met"
+     card, where a plain orange ring on an orange card looked flat). */
   .goal-ring-center{
-    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:116px; height:116px; border-radius:50%; background:var(--surface);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    box-shadow:0 8px 18px -10px rgba(15,60,110,0.3), inset 0 0 0 1px rgba(15,60,110,0.05);
   }
-  .goal-ring-icon{ font-size:30px; line-height:1; }
-  .goal-ring-count{ font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:800; margin-top:2px; }
-  .goal-panel.met .goal-ring-count{ color:#5a3d00; }
+  .goal-panel.met .goal-ring-center{ box-shadow:0 8px 18px -10px rgba(122,84,0,0.35), inset 0 0 0 1px rgba(122,84,0,0.08); }
+  .goal-ring-icon{ font-size:32px; line-height:1; }
+  .goal-ring-count{ font-family:'Baloo 2',sans-serif; font-size:28px; font-weight:800; margin-top:3px; color:var(--navy-900); line-height:1; }
+  .goal-ring-count span{ font-size:16px; font-weight:700; color:var(--slate-400); margin-left:1px; }
+  .goal-panel.met .goal-ring-count{ color:#8a5a00; }
+  .goal-panel.met .goal-ring-count span{ color:#c78d2e; }
   .goal-sub{ font-size:15px; font-weight:600; color:var(--slate-600); margin:0 0 4px; text-align:center; }
   .goal-panel.met .goal-sub{ color:#7a5400; }
   .goal-note{ font-size:16.5px; font-weight:700; margin-top:8px; text-align:center; }
@@ -209,18 +225,28 @@
 
   /* ---- Growth: rounded "status bar" style bars in a visible track,
      shared baseline so every day lines up cleanly. ---- */
-  .growth-total{ font-size:16px; font-weight:700; color:var(--slate-600); margin:0 0 20px; text-align:center; }
-  .growth-total strong{ color:var(--teal-700); font-family:'Baloo 2',sans-serif; font-size:19px; }
-  .growth-chart{ display:flex; align-items:flex-end; gap:10px; height:140px; }
+  .growth-panel .panel-card{ align-items:stretch; }
+  .growth-total{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    font-size:16px; font-weight:700; color:var(--slate-600); margin:0 0 22px; text-align:center;
+  }
+  .growth-total-icon{ font-size:19px; line-height:1; }
+  .growth-total strong{ color:var(--teal-700); font-family:'Baloo 2',sans-serif; font-size:20px; }
+  .growth-chart{
+    flex:1; display:flex; align-items:flex-end; gap:10px; min-height:140px;
+    padding-bottom:12px; border-bottom:2px solid var(--line);
+  }
   .growth-day{ flex:1; display:flex; flex-direction:column; align-items:center; height:100%; }
   .growth-count{ font-size:13.5px; font-weight:800; color:var(--slate-600); margin:0 0 6px; min-height:17px; }
+  .growth-day.today .growth-count{ color:var(--owl-orange-600); }
   .growth-bar-track{
     flex:1; width:100%; max-width:26px; display:flex; align-items:flex-end;
-    background:var(--bg-0); border-radius:999px; overflow:hidden;
+    background:var(--bg-0); border-radius:999px; overflow:hidden; box-shadow:inset 0 0 0 1px var(--line);
   }
-  .growth-bar{ width:100%; border-radius:999px; background:linear-gradient(180deg, var(--sky-100), var(--blue-500)); min-height:8px; }
+  .growth-day.today .growth-bar-track{ box-shadow:inset 0 0 0 2px var(--owl-orange-500); }
+  .growth-bar{ width:100%; border-radius:999px; background:linear-gradient(180deg, var(--sky-100), var(--blue-500)); }
   .growth-day.today .growth-bar{ background:linear-gradient(180deg, var(--clay-yellow), var(--owl-orange-600)); }
-  .growth-label{ font-size:12.5px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:.03em; margin-top:8px; }
+  .growth-label{ font-size:12.5px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:.03em; margin-top:10px; }
   .growth-day.today .growth-label{ color:var(--owl-orange-600); }
 
   /* ---- Badges: bigger, with a subtle shine sweep on earned tiles ---- */
@@ -489,9 +515,9 @@
           <div class="goal-ring-center">
             <div class="goal-ring-icon">{{ $weeklyMet ? '🏆' : '🎯' }}</div>
             @if ($weeklyMet)
-              <div class="goal-ring-count">{{ $weeklyCount }}!</div>
+              <div class="goal-ring-count">{{ $weeklyCount }}<span>!</span></div>
             @else
-              <div class="goal-ring-count">{{ $weeklyCount }}/{{ $weeklyTarget }}</div>
+              <div class="goal-ring-count">{{ $weeklyCount }}<span>/{{ $weeklyTarget }}</span></div>
             @endif
           </div>
         </div>
@@ -505,16 +531,18 @@
       </div>
     </div>
 
-    <div class="panel" style="margin-bottom:0;">
+    <div class="panel growth-panel" style="margin-bottom:0;">
       <h2 class="panel-title">My Growth</h2>
       <div class="panel-card">
-        <p class="growth-total">You've read <strong>{{ $weeklyCount }}</strong> {{ $weeklyCount === 1 ? 'story' : 'stories' }} this week</p>
+        <p class="growth-total"><span class="growth-total-icon">📈</span>You've read <strong>{{ $weeklyCount }}</strong> {{ $weeklyCount === 1 ? 'story' : 'stories' }} this week</p>
         <div class="growth-chart">
           @foreach ($growthDays as $day)
             <div class="growth-day {{ $day['isToday'] ? 'today' : '' }}">
               <div class="growth-count">{{ $day['count'] > 0 ? $day['count'] : '' }}</div>
               <div class="growth-bar-track">
-                <div class="growth-bar" style="height:{{ $day['count'] > 0 ? max(10, round($day['count'] / $growthMax * 100)) : 6 }}%"></div>
+                @if ($day['count'] > 0)
+                  <div class="growth-bar" style="height:{{ max(12, round($day['count'] / $growthMax * 100)) }}%"></div>
+                @endif
               </div>
               <div class="growth-label">{{ $day['label'] }}</div>
             </div>

@@ -4882,6 +4882,60 @@ mixed data — not assumed from the diff:**
 this project's standing rule, waiting for the user's own explicit
 "push it now" before committing.
 
+## Dashboard v3 follow-up #2 — This Week's Goal / My Growth, real
+## alignment and contrast fixes from a direct production screenshot
+
+The user shared a live screenshot of "This Week's Goal" (10/5, goal
+met) next to "My Growth" (10 stories, 9 Tue/1 Wed) and called out
+"not proper align... polish the design... very polish." Three
+concrete, real issues fixed, not a vague restyle:
+
+- **The Goal ring blended into its own card.** In the "met" state the
+  card background is an orange gradient and the ring's stroke was
+  also orange — same hue family, low contrast, reading as flat.
+  Fixed by adding a crisp white circular badge behind the ring's
+  center content (`goal-ring-center`, sized to sit exactly inside the
+  ring's empty middle) plus a soft drop-shadow on the ring itself, so
+  the trophy/count now has real contrast against the card in both the
+  met and not-met states.
+- **A real bug in "My Growth": today's bar with 0 sessions rendered as
+  an almost-invisible sliver** (a 6%-height gradient bar on a very
+  light track), which read as broken rather than "nothing yet today."
+  Fixed by not rendering a bar at all for a 0-count day and instead
+  giving that day's track a distinct orange inset ring — a deliberate,
+  visible "this is today" marker instead of a near-invisible fill.
+- **The two cards didn't line up** — `.pair-row`'s two `.panel`s
+  weren't stretched to match height, so whichever had less content
+  ended shorter, misaligning the row's bottom edge. Fixed by stretching
+  both panels/cards to equal height and vertically centering each
+  one's content, plus a shared baseline line under the Growth bars so
+  all 7 days visually line up on one axis.
+
+**Tested for real, not assumed from the diff**: seeded 10 real
+disposable `ReadingSession` rows on Miguel (9 on Tue, 1 on Wed, this
+project's own established direct-property-assignment technique for
+backdating `timestamp`, since it isn't `$fillable`) to reproduce the
+exact reported scenario (goal met, Thu = today with 0 sessions).
+Confirmed via direct `getBoundingClientRect()` measurement at a real
+1280px width that both cards' heights now match exactly and all 7
+growth-bar tracks share one baseline y-position; confirmed Thursday's
+track carries the new orange inset ring with zero bar rendered, while
+Tuesday (9) and Wednesday (1) render clearly distinct bar heights.
+Screenshots (mobile width, since this sandboxed browser's screenshot
+tool hit its already-documented stale/tiled-capture artifact on this
+long page at desktop width — cross-checked via DOM geometry instead,
+consistent with this project's established fallback) confirm the ring
+now reads with real contrast and the chart has a clean shared
+baseline. All 10 synthetic `ReadingSession` rows deleted afterward,
+confirmed via a fresh count (`sessions_this_week=0`).
+
+**A real, disclosed side effect of this verification pass**: Miguel's
+local-dev-only PIN was temporarily unknown, so it was reset via
+`tinker` to `1234` to log in and verify — this only touches this
+worktree's local SQLite database, never the live Railway production
+database, but is recorded here since it's a real, if harmless, change
+to the flagship reference Learner's local credentials.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
