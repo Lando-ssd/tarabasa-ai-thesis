@@ -244,8 +244,23 @@
     background:var(--bg-0); border-radius:999px; overflow:hidden; box-shadow:inset 0 0 0 1px var(--line);
   }
   .growth-day.today .growth-bar-track{ box-shadow:inset 0 0 0 2px var(--owl-orange-500); }
-  .growth-bar{ width:100%; border-radius:999px; background:linear-gradient(180deg, var(--sky-100), var(--blue-500)); }
+  .growth-bar{
+    width:100%; border-radius:999px; position:relative;
+    background:linear-gradient(180deg, var(--sky-100), var(--blue-500));
+    /* A real "liquid pouring in" effect: height starts at 0 (set by JS) and
+       transitions up to its real value once this chart scrolls into view —
+       staggered per day (transition-delay, set inline) so it reads as one
+       wave washing across the week, not 7 bars popping at once. */
+    transition:height 1.05s cubic-bezier(.22,.85,.28,1.15);
+  }
   .growth-day.today .growth-bar{ background:linear-gradient(180deg, var(--clay-yellow), var(--owl-orange-600)); }
+  /* A soft glossy cap at the fill's top edge, like light catching a
+     liquid's surface, so it reads as "filling" rather than a plain bar. */
+  .growth-bar::after{
+    content:''; position:absolute; top:0; left:2px; right:2px; height:5px;
+    border-radius:999px; background:rgba(255,255,255,0.6);
+  }
+  @media (prefers-reduced-motion:reduce){ .growth-bar{ transition:none !important; } }
   .growth-label{ font-size:12.5px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:.03em; margin-top:10px; }
   .growth-day.today .growth-label{ color:var(--owl-orange-600); }
 
@@ -535,13 +550,18 @@
       <h2 class="panel-title">My Growth</h2>
       <div class="panel-card">
         <p class="growth-total"><span class="growth-total-icon">📈</span>You've read <strong>{{ $weeklyCount }}</strong> {{ $weeklyCount === 1 ? 'story' : 'stories' }} this week</p>
-        <div class="growth-chart">
+        <div class="growth-chart" id="growthChart">
           @foreach ($growthDays as $day)
             <div class="growth-day {{ $day['isToday'] ? 'today' : '' }}">
               <div class="growth-count">{{ $day['count'] > 0 ? $day['count'] : '' }}</div>
               <div class="growth-bar-track">
                 @if ($day['count'] > 0)
-                  <div class="growth-bar" style="height:{{ max(12, round($day['count'] / $growthMax * 100)) }}%"></div>
+                  {{-- Starts at 0 height; JS animates it up to data-fill (like a
+                       real reading log) once this chart scrolls into view, and
+                       resets back to 0 when it scrolls out — see the script at
+                       the bottom of the page. Falls back to the final height
+                       immediately if JS never runs or motion is reduced. --}}
+                  <div class="growth-bar" data-fill="{{ max(12, round($day['count'] / $growthMax * 100)) }}" style="height:{{ max(12, round($day['count'] / $growthMax * 100)) }}%; transition-delay:{{ $loop->index * 90 }}ms;"></div>
                 @endif
               </div>
               <div class="growth-label">{{ $day['label'] }}</div>
@@ -595,5 +615,37 @@
   </div>
 
 </div>
+<script>
+  // "My Growth" liquid-fill: bars start empty and pour up to their real
+  // count-height the moment the chart scrolls into view, staggered per
+  // day (transition-delay, set inline in Blade) for a wave-like fill
+  // across the week — then reset back to empty if the chart scrolls out
+  // of view again, so scrolling back down replays the fill. A purely
+  // decorative enhancement over real, already-rendered data — if this
+  // script fails for any reason, the bars stay at their correct final
+  // heights (the server-rendered value), never blank or wrong.
+  (function () {
+    try {
+      var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var chart = document.getElementById('growthChart');
+      var bars = chart ? chart.querySelectorAll('.growth-bar') : [];
+      if (reduceMotion || !chart || !bars.length || !('IntersectionObserver' in window)) return;
+
+      bars.forEach(function (bar) { bar.style.height = '0%'; });
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          bars.forEach(function (bar) {
+            bar.style.height = entry.isIntersecting ? (bar.dataset.fill + '%') : '0%';
+          });
+        });
+      }, { threshold: 0.35 });
+
+      observer.observe(chart);
+    } catch (e) {
+      // A failed decorative animation must never block the real dashboard.
+    }
+  })();
+</script>
 </body>
 </html>

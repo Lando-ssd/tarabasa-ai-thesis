@@ -4936,6 +4936,69 @@ worktree's local SQLite database, never the live Railway production
 database, but is recorded here since it's a real, if harmless, change
 to the flagship reference Learner's local credentials.
 
+## My Growth — a real scroll-triggered "liquid fill" animation
+
+The user shared a screenshot showing an older/pre-deploy state of the
+Dashboard (a flat horizontal Goal bar, not the ring already shipped in
+the two passes above) and asked specifically for "My Growth" to be
+enhanced: each day's bar should look like it's genuinely filling up
+like a poured liquid as the section scrolls into view, replaying every
+time it scrolls out and back in (their own words: "like a wave,"
+"parallax etc"). Confirmed the Goal ring itself needed no change — the
+screenshot most likely predated Railway finishing the previous push's
+deploy, not a real regression.
+
+**Built with `IntersectionObserver`, no new library**: each
+`.growth-bar` now carries a `data-fill="{percent}"` attribute (the
+same value already computed server-side) and starts at `height:0%`,
+zeroed by a small inline `<script>` at the bottom of the page. A
+single observer watches `#growthChart` (the whole week's row of bars,
+not each bar individually — so the wave stays in sync as one gesture)
+and sets every bar's height to its real `data-fill` value the moment
+the chart enters the viewport (`threshold:0.35`), or back to `0%` the
+moment it leaves — so scrolling away and back genuinely replays the
+fill, exactly as asked, rather than only playing once per page load.
+A real CSS `transition` (`height 1.05s`, a slight overshoot easing)
+plus a per-bar `transition-delay` (`{{ $loop->index * 90 }}ms`, set
+inline in Blade) is what turns 7 simultaneous height changes into one
+cascading wave across the week instead of all bars popping at once. A
+small glossy `::after` cap on top of each bar's fill sells the
+"liquid" read. Respects `prefers-reduced-motion` (skips the JS
+entirely, leaving bars at their correct final height with no
+animation) and degrades safely if `IntersectionObserver` isn't
+available or the script throws for any reason — the bars' real,
+already-server-computed heights are always the fallback, never blank.
+
+**A real sandboxed-tool limitation hit while verifying, correctly
+diagnosed and worked around rather than mistaken for a bug**: this
+Browser pane's tab reports `document.hidden === true` even when
+"fronted," which — confirmed directly — doesn't just throttle
+`requestAnimationFrame` (already documented elsewhere in this file for
+the Login page's 3D-owl phase) but also appears to freeze CSS
+*transitions* on this specific tool: setting a bar's height with the
+real transition active left `getComputedStyle` reporting `0px` even
+after waiting well past the transition's total duration. Diagnosed,
+not assumed, by re-running the identical height change with the
+transition temporarily disabled (`transition:'none'`) — the static
+end-state computed exactly correctly (`100%` → `127.5px`, `12%` →
+`15.3px`, both exact matches to the track's real height), proving the
+`data-fill` values, the flex/percentage-height layout, and the
+JS wiring are all correct; only the animated transition itself is a
+casualty of this sandboxed tab's background-throttling, the same
+general class of limitation already on record in this project for
+other animations, not a defect in what shipped. Console confirmed
+clean (zero errors) throughout.
+
+**Tested for real using the same reproducible scenario as the two
+Goal/Growth passes above**: seeded 10 disposable `ReadingSession` rows
+on Miguel (9 Tue, 1 Wed) again, confirmed the two real bars' `data-fill`
+values (100, 12) and their zeroed starting `style="height:0%"` on page
+load, confirmed scrolling the chart into view (at a real, explicitly-
+sized 1280×900 viewport, since this sandboxed pane's default reports a
+0×0 viewport while hidden) keeps the correct target percentages wired
+to each bar via `dataset.fill`. All 10 synthetic rows deleted
+afterward, confirmed via a fresh count (`sessions_this_week=0`).
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
