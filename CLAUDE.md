@@ -4741,6 +4741,147 @@ temporarily-forced-failure fallback path re-confirmed clean with no
 console errors, then reverted and re-confirmed the real orb field
 comes back correctly afterward.
 
+## Learner Dashboard v3 follow-up — comprehensive visual redesign pass
+## across every section, driven by direct production-screenshot feedback
+
+A full redesign of the one-page collaged Dashboard (`resources/views/
+learner/dashboard.blade.php`) from a single long, detailed user
+request covering essentially every section on the page at once,
+triggered by 5 real screenshots of the live production Dashboard
+(Learner "Maria"). Not a rewrite of the underlying data — every number
+on the page still comes from the exact same real sources documented in
+the v3 entry above (`competencyProgressSummary()`,
+`thisWeeksPracticeReadingSessions()`, `LearnerBadge::summaryFor()`,
+`bookshelfBooks()`) — this pass only changed layout, sizing, and
+visual treatment.
+
+**A real, pre-existing data-shape bug, fixed at the view layer**: the
+production screenshot showed a real Learner's `avatar_id` column
+literally containing the string `"Maria"` (a full name, not a short
+emoji/preset key), overflowing the small avatar badge. Fixed with a
+length-based fallback chain — a real uploaded photo, else a short
+glyph (`mb_strlen($avatarGlyph) <= 4`), else the first letter of
+`first_name`, uppercased. This is a view-layer safety net for bad
+existing data, not a database migration — the underlying `avatar_id`
+value is untouched. Verified live with a disposable test Learner
+(`ZZAvatar`, `TB-ZZAVA`, `avatar_id` deliberately set to `"Maria"`):
+the badge correctly showed a clean "Z" instead of overflowing text.
+
+**Header**: "Not you? Switch learner" was a bare underlined link,
+reported as looking "orphaned" — restyled as a real pill button (icon
++ border + shadow + hover state), matching the visual weight of every
+other interactive element on the page instead of standing out as
+unstyled.
+
+**Hero "Start Reading Activity" tile**: rebuilt as a 2-column grid
+(content left, a large illustrated owl right — 1 column below 760px)
+instead of everything left-aligned including the CTA button. The owl
+got a "loop" treatment per the user's explicit request ("like Claude
+in the homepage but you can use an alternative object") — a rotating
+dashed halo ring (16s linear) plus a pulsing radial glow behind it, an
+idle bob on the owl itself, and animated wings (`transform-box:
+fill-box` + per-side `transform-origin`, the same technique already
+established for the flying journey-marker owl below) — all respecting
+`prefers-reduced-motion`.
+
+**Practice Games button**: restructured from a stretched, left-
+aligned bar into a real "nav card" layout — icon chip, text block, a
+right-aligned chevron, and a low-opacity decorative circle pattern —
+without touching the underlying link/route.
+
+**Journey ("How I'm Growing")**: three concrete asks — (1) a real
+flying, wing-flapping owl instead of a static emoji marker; (2) more
+circles/density along the curve; (3) the checkpoints and "current
+state" explained in words, never as a raw score. Built: a
+`.journey-legend` (5-column "Just Started" → "All Done!" labels,
+shown once above all rows); small decorative tick-dots interpolated
+at the 33%/67% points between each real track point (purely visual
+density — no new data); the static `🦉` replaced with a hand-built
+inline SVG group — ear-tuft triangles, flapping wings
+(`flapMarkerL`/`flapMarkerR`, ±30° over 0.7s), a small body/beak — and
+a real "🦉 Flying here right now — {difficulty word}" caption under
+each row, built entirely from data already on hand (`difficultyWord`),
+never a percentage.
+
+**A real bug found and fixed during this pass's own live testing, not
+assumed correct from the diff**: the first version of the flying-owl
+marker read as visually ambiguous at its small rendered size — one
+tester's read was "a bit like a monkey face" — because it lacked both
+ear tufts (the single clearest owl-identifying silhouette feature) and
+a "you are here" ring the old emoji marker implicitly had via its own
+surrounding circle. Fixed by adding a `circle r="17"` white-fill/
+orange-stroke ring behind the owl plus small ear-tuft triangle paths,
+and refining the wing-curve proportions. Confirmed fixed two ways: (1)
+directly in the DOM (`document.querySelectorAll('.fly-owl')` — both
+rows' owls carry the ring at `r=17`, `stroke: var(--owl-orange-500)`,
+plus 5 paths for ear tufts/body/beak) after the Browser pane's
+screenshot tool hit its already-documented stale-capture artifact on
+this long page; (2) a subsequent real screenshot at phone width, once
+a viewport-size change reset the capture, visually confirming the
+marker now clearly reads as an owl.
+
+**This Week's Goal**: the flat progress bar replaced with a real
+circular SVG progress ring (`stroke-dasharray`/`stroke-dashoffset`,
+computed from the real `weeklyPercent`), a `<linearGradient>` that
+switches from teal→blue to gold→orange once the goal is met, and a
+centered icon+count overlay.
+
+**My Growth**: bars redesigned as rounded "status bar" pills inside a
+visible light-gray track, replacing bars that floated with no visible
+container and read as misaligned.
+
+**My Badges**: enlarged tiles/icons, added a diagonal shine-sweep
+animation on earned tiles (`prefers-reduced-motion`-respecting) and a
+hover-lift — the literal "do times 1 million better" ask, interpreted
+as a genuinely more celebratory earned-tile treatment rather than a
+literal scale change.
+
+**My Bookshelf**: enlarged book icons with a subtle page-fold accent,
+the "Best: X%" text wrapped in a proper pill badge, hover-lift on each
+card.
+
+**Tested for real across the whole page, both viewports, with real
+mixed data — not assumed from the diff:**
+- Set up realistic test state on Miguel (the flagship reference
+  Learner) the same way as the prior v3 pass: 3 genuinely-earned
+  badges via `BadgeService::checkAfterPracticeReading()`, a mixed
+  synthetic `competency_states` shape (one competency "Up Next" and
+  mid-track, one highly proficient near the end of its track, one
+  left genuinely unassessed) to exercise all 3 real Journey visual
+  states at once, and 3 real dated `ReadingSession` rows this week for
+  Goal/Growth.
+- **Desktop**: confirmed via screenshot and direct DOM inspection —
+  header avatar/pill button, 2-column hero with the halo/pulse/flap
+  animation, the games-btn chevron/deco layout, the Journey legend +
+  tick-dots + both real marker states (mid-track and near-ceiling) +
+  the locked/dashed unassessed row, the Goal ring, the Growth pill
+  bars, and the Badges/Bookshelf tiles — all rendering correctly.
+  Confirmed zero console errors throughout.
+- **Phone (375px)**: a full top-to-bottom screenshot pass confirmed
+  every section reflows to a clean single column at a genuinely large,
+  kid-appropriate size — header, stat tiles, hero+owl, games button,
+  Journey legend/rows/marker (visually re-confirmed reading clearly as
+  an owl at this smaller size too), Goal ring, Growth chart, Badges
+  (2-column grid), and Bookshelf — with zero horizontal overflow
+  (`document.documentElement.scrollWidth === window.innerWidth`,
+  confirmed directly, not assumed from "looks fine").
+- **The avatar-overflow fix**, tested with a real disposable Learner
+  as described above — confirmed via both `get_page_text` and a
+  screenshot.
+- `php -l` clean throughout.
+- **Test data cleaned up afterward**: the disposable `ZZAvatar`
+  (`TB-ZZAVA`, id 42) test Learner and its dummy `ReadingSession` row
+  were deleted; Miguel's 3 synthetic badges, `competency_states`/
+  `next_recommended_competency`/`next_recommended_difficulty`, and the
+  3 synthetic dated `ReadingSession` rows were all removed/reset —
+  confirmed via a fresh Eloquent read afterward (`badges=0`,
+  `competency_states=null`, `sessions_this_week=0`), not just assumed
+  from the cleanup script running without error.
+
+**Not yet committed/pushed** at the time this entry was written — per
+this project's standing rule, waiting for the user's own explicit
+"push it now" before committing.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
