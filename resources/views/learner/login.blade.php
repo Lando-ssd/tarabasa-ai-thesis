@@ -30,16 +30,20 @@
   .bg-stage{ position:fixed; inset:0; z-index:-1; overflow:hidden; }
   .bg-stage .grad{
     position:absolute; inset:0;
-    background:linear-gradient(180deg, var(--blue-700) 0%, var(--blue-500) 40%, var(--clay-yellow) 72%, var(--owl-orange-500) 100%);
+    background:linear-gradient(180deg, #062d5c 0%, var(--blue-700) 22%, var(--blue-500) 45%, var(--clay-yellow) 74%, var(--owl-orange-500) 100%);
   }
   .bg-stage .icons{
-    position:absolute; inset:-60px; opacity:.09; mix-blend-mode:screen;
-    background-repeat:repeat; background-size:150px 150px;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cg fill='white'%3E%3Cpath d='M20 18l2.2 5.6 6 .5-4.6 4 1.4 5.9-5-3.3-5 3.3 1.4-5.9-4.6-4 6-.5z'/%3E%3Cpath d='M110 20c6 0 11 4 11 9s-5 9-11 9-11-4-11-9 5-9 11-9zm-3 6h6v2h-2v9h-2v-9h-2z'/%3E%3Cpath d='M30 100h18v3H30zm0 6h18v3H30zm0 6h12v3H30zM28 96a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v22a2 2 0 0 1-2 2H30a2 2 0 0 1-2-2z' opacity='.85'/%3E%3Cpath d='M95 95c1 3 5 3 6 0 3 1 3 5 0 6 1 3-3 5-6 3-3 2-7 0-6-3-3-1-3-5 0-6-1-3 3-5 6-3z' opacity='.7'/%3E%3C/g%3E%3C/svg%3E");
+    position:absolute; inset:-80px; opacity:.11; mix-blend-mode:screen;
+    background-repeat:repeat; background-size:190px 190px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='190' height='190'%3E%3Cg fill='white'%3E%3Cpath d='M24 14l2.6 6.6 7 .6-5.3 4.7 1.6 6.9-5.9-3.9-5.9 3.9 1.6-6.9-5.3-4.7 7-.6z'/%3E%3Cpath transform='translate(148 24) rotate(18)'%3E%3Ccircle r='9' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M-3 -3h6v2h-2v9h-2v-9h-2z'/%3E%3C/g%3E%3Cg transform='translate(30 130)'%3E%3Cpath d='M0 0h34v26a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3z' opacity='.18'/%3E%3Cpath d='M2 2h13v24H5a3 3 0 0 1-3-3z' opacity='.8'/%3E%3Cpath d='M32 2H19v24h10a3 3 0 0 0 3-3z' opacity='.55'/%3E%3C/g%3E%3Cpath d='M160 120c1.5 4 6.5 4 8 0 4 1.5 4 6.5 0 8 1.5 4-4 6.5-8 4-4 2.5-9.5 0-8-4-4-1.5-4-6.5 0-8z' opacity='.7'/%3E%3Ccircle cx='95' cy='60' r='3.5' opacity='.5'/%3E%3Ccircle cx='60' cy='170' r='3.5' opacity='.5'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .bg-stage .glow{
+    position:absolute; left:50%; top:0; width:640px; height:640px; transform:translate(-50%,-58%);
+    background:radial-gradient(circle, rgba(255,255,255,0.35), rgba(255,255,255,0.08) 45%, transparent 70%);
   }
   .bg-stage .band{
     position:absolute; left:-15%; right:-15%; top:58%; height:260px;
-    background:radial-gradient(60% 100% at 50% 0%, rgba(255,255,255,0.20), transparent 72%);
+    background:radial-gradient(60% 100% at 50% 0%, rgba(255,255,255,0.22), transparent 72%);
     transform:rotate(-4deg);
   }
 
@@ -64,6 +68,16 @@
     position:relative; z-index:1;
     background:var(--surface); border-radius:32px; padding:44px 28px 30px; text-align:center;
     box-shadow:0 36px 70px -30px rgba(10,40,80,0.45), 0 4px 0 rgba(255,255,255,0.6) inset;
+  }
+
+  /* The owl-stage is a fixed pixel size, but .wrap/.card shrink below
+     their 420px cap on narrow screens — without this, the owl grows
+     proportionally larger than the (now-narrower) card and its feet
+     encroach on the heading. Scale the owl down and give the card a
+     bit more top clearance below ~480px. */
+  @media (max-width:480px){
+    .owl-stage{ width:190px; height:190px; top:-134px; }
+    .card{ padding-top:56px; }
   }
   h1{ font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:700; margin:0 0 8px; }
   .sub{ font-size:18px; color:var(--slate-600); font-weight:600; margin:0 0 26px; line-height:1.5; }
@@ -117,6 +131,7 @@
 <div class="bg-stage" aria-hidden="true">
   <div class="grad"></div>
   <div class="icons"></div>
+  <div class="glow"></div>
   <div class="band"></div>
 </div>
 
@@ -264,72 +279,144 @@
     rim.position.set(-3, 0.6, -2);
     scene.add(rim);
 
-    // Tara the owl, built from primitive geometry (same technique this
-    // app's 2D SVG mascot uses — simple shapes, no external model file
-    // — just rendered as real 3D instead of flat paths). Colors match
-    // games/_owl-mascot.blade.php exactly: #fff8ef body, #ffe4c2
-    // belly, #dd7014 beak/feet, #131f2b pupils.
+    // Tara the owl — built from primitive geometry, this time modeled
+    // directly on the real TaraBasa app icon (public/images/logo.png),
+    // not the paler flat 2D mascot elsewhere in the app: a warm
+    // orange-brown owl with a lighter tan facial disc, rosy cheeks, a
+    // clearly visible yellow-orange beak, proper V-shaped ear tufts,
+    // and a dark cartoon outline around every silhouette — the earlier
+    // pass skipped the facial disc/outline entirely and used oversized,
+    // widely-spaced eyes with thin spike-like ear tufts, which is
+    // exactly what read as "alien" rather than owl.
+    const OUTLINE_COLOR = 0x3a2110;
+    function addOutline(mesh, growth) {
+      const outline = new THREE.Mesh(mesh.geometry, new THREE.MeshBasicMaterial({ color: OUTLINE_COLOR, side: THREE.BackSide }));
+      outline.position.copy(mesh.position);
+      outline.rotation.copy(mesh.rotation);
+      outline.scale.copy(mesh.scale).multiplyScalar(1 + growth);
+      return outline;
+    }
+
     const owl = new THREE.Group();
+    const BODY_COLOR = 0xe08830;  // warm orange-brown — the logo's body/wing color
+    const FACE_COLOR = 0xffe3ad;  // light tan facial disc / belly
+    const BEAK_COLOR = 0xf5a623;  // warm yellow-orange beak
+    const FOOT_COLOR = 0xd97b28;  // slightly deeper orange for legs/feet
+    const CHEEK_COLOR = 0xffb3ab; // rosy cheek blush
 
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xfff8ef, roughness: 0.65 });
+    const bodyMat = new THREE.MeshStandardMaterial({ color: BODY_COLOR, roughness: 0.55 });
+    const faceMat = new THREE.MeshStandardMaterial({ color: FACE_COLOR, roughness: 0.6 });
+
     const body = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), bodyMat);
-    body.scale.set(1, 1.05, 0.85);
-    owl.add(body);
+    body.scale.set(1, 0.98, 0.88);
+    owl.add(body, addOutline(body, 0.045));
 
-    const belly = new THREE.Mesh(new THREE.SphereGeometry(0.62, 24, 18), new THREE.MeshStandardMaterial({ color: 0xffe4c2, roughness: 0.7 }));
-    belly.scale.set(1, 1.15, 0.32);
-    belly.position.set(0, -0.14, 0.7);
+    // Facial disc — the single biggest fix: a lighter, flattened patch
+    // spanning both eyes, exactly like a real owl (and the logo) has,
+    // instead of eyes floating on a uniform-colored head.
+    const face = new THREE.Mesh(new THREE.SphereGeometry(0.72, 28, 20), faceMat);
+    face.scale.set(1.05, 0.85, 0.35);
+    face.position.set(0, 0.12, 0.68);
+    owl.add(face);
+
+    const belly = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 16), faceMat);
+    belly.scale.set(0.95, 1.1, 0.3);
+    belly.position.set(0, -0.55, 0.62);
     owl.add(belly);
 
-    function earTuft(x, rotZ) {
-      const t = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.55, 4), bodyMat);
-      t.scale.set(0.7, 1, 0.4);
-      t.position.set(x, 0.98, -0.05);
-      t.rotation.z = rotZ;
-      t.rotation.y = Math.PI / 4;
-      return t;
-    }
-    owl.add(earTuft(-0.46, 0.35), earTuft(0.46, -0.35));
-
-    function wing(x, rotZ) {
-      const w = new THREE.Mesh(new THREE.SphereGeometry(0.45, 20, 16), bodyMat);
-      w.scale.set(0.42, 1, 0.5);
-      w.position.set(x, -0.05, -0.2);
-      w.rotation.z = rotZ;
-      return w;
-    }
-    const wingL = wing(-0.97, 0.28);
-    const wingR = wing(0.97, -0.28);
-    owl.add(wingL, wingR);
-
-    function eye(x) {
+    // Ear tufts — a real two-tone V shape (body-colored outer + tan
+    // inner), angled up-and-out like the logo's, not thin antenna
+    // spikes.
+    function earTuft(x, tilt) {
       const g = new THREE.Group();
-      const white = new THREE.Mesh(new THREE.SphereGeometry(0.26, 20, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 }));
-      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), new THREE.MeshStandardMaterial({ color: 0x131f2b, roughness: 0.5 }));
-      pupil.position.set(0, -0.02, 0.2);
-      const hl = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 }));
-      hl.position.set(-0.06, 0.08, 0.3);
-      g.add(white, pupil, hl);
-      g.position.set(x, 0.16, 0.8);
+      const outer = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.6, 4), bodyMat);
+      outer.scale.set(0.85, 1, 0.5);
+      g.add(outer, addOutline(outer, 0.05));
+      const inner = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.4, 4), faceMat);
+      inner.scale.set(0.8, 1, 0.5);
+      inner.position.z = 0.06;
+      g.add(inner);
+      g.position.set(x, 0.92, 0.05);
+      g.rotation.z = tilt;
+      g.rotation.y = Math.PI / 4;
       return g;
     }
-    const eyeL = eye(-0.34);
-    const eyeR = eye(0.34);
+    owl.add(earTuft(-0.4, 0.28), earTuft(0.4, -0.28));
+
+    // Wings — angled forward so they read clearly from the front camera
+    // (the earlier pass hid them almost edge-on, removing a key
+    // owl-identifying feature entirely).
+    function wing(x, rotY) {
+      const w = new THREE.Mesh(new THREE.SphereGeometry(0.48, 20, 16), bodyMat);
+      w.scale.set(0.4, 0.95, 0.55);
+      w.position.set(x, -0.1, 0.15);
+      w.rotation.y = rotY;
+      w.rotation.z = x < 0 ? 0.35 : -0.35;
+      return w;
+    }
+    const wingL = wing(-0.92, 0.4);
+    const wingR = wing(0.92, -0.4);
+    owl.add(wingL, addOutline(wingL, 0.05), wingR, addOutline(wingR, 0.05));
+
+    // Eyes — smaller and closer together than before (oversized, wide-
+    // set eyes were the single biggest cause of the "alien" read), with
+    // a thin dark ring so they pop against the light facial disc, same
+    // as the logo.
+    function eye(x) {
+      const g = new THREE.Group();
+      const white = new THREE.Mesh(new THREE.SphereGeometry(0.21, 20, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 }));
+      g.add(white, addOutline(white, 0.16));
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.105, 16, 12), new THREE.MeshStandardMaterial({ color: 0x2b1810, roughness: 0.5 }));
+      pupil.position.set(0, -0.01, 0.16);
+      const hl = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 }));
+      hl.position.set(-0.05, 0.06, 0.24);
+      g.add(pupil, hl);
+      g.position.set(x, 0.14, 0.85);
+      return g;
+    }
+    const eyeL = eye(-0.24);
+    const eyeR = eye(0.24);
     owl.add(eyeL, eyeR);
 
-    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.28, 4), new THREE.MeshStandardMaterial({ color: 0xdd7014, roughness: 0.5 }));
-    beak.position.set(0, -0.18, 0.86);
-    beak.rotation.x = Math.PI * 0.55;
-    beak.rotation.y = Math.PI / 4;
-    owl.add(beak);
-
-    function foot(x) {
-      const f = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), new THREE.MeshStandardMaterial({ color: 0xdd7014, roughness: 0.5 }));
-      f.scale.set(1, 0.55, 1.3);
-      f.position.set(x, -1.08, 0.4);
-      return f;
+    // Rosy cheeks — a cute logo-matching detail, absent before.
+    function cheek(x) {
+      const c = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 10), new THREE.MeshStandardMaterial({ color: CHEEK_COLOR, roughness: 0.8, transparent: true, opacity: 0.85 }));
+      c.scale.set(1, 0.8, 0.25);
+      c.position.set(x, -0.08, 0.86);
+      return c;
     }
-    owl.add(foot(-0.4), foot(0.4));
+    owl.add(cheek(-0.42), cheek(0.42));
+
+    // Beak — bigger and clearly visible this time (the earlier one was
+    // nearly invisible), warm yellow-orange matching the logo.
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.2, 16), new THREE.MeshStandardMaterial({ color: BEAK_COLOR, roughness: 0.45 }));
+    beak.scale.set(1, 0.8, 0.85);
+    beak.position.set(0, -0.15, 0.93);
+    beak.rotation.x = Math.PI * 0.56;
+    owl.add(beak, addOutline(beak, 0.1));
+
+    // Legs + feet — a real standing stance: a visible leg connecting
+    // body to a proper flattened foot with toe bumps, instead of a
+    // foot floating disconnected below the body.
+    function legAndFoot(x) {
+      const g = new THREE.Group();
+      const legMat = new THREE.MeshStandardMaterial({ color: FOOT_COLOR, roughness: 0.55 });
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.32, 10), legMat);
+      leg.position.set(0, -1.02, 0.3);
+      g.add(leg);
+      const foot = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), legMat);
+      foot.scale.set(1.1, 0.5, 1.4);
+      foot.position.set(0, -1.2, 0.42);
+      g.add(foot, addOutline(foot, 0.08));
+      for (let i = -1; i <= 1; i++) {
+        const toe = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), legMat);
+        toe.position.set(i * 0.075, -1.2, 0.58);
+        g.add(toe);
+      }
+      g.position.x = x;
+      return g;
+    }
+    owl.add(legAndFoot(-0.38), legAndFoot(0.38));
 
     scene.add(owl);
 

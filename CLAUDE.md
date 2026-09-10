@@ -4503,6 +4503,106 @@ coming**: this pass covers the Login screen only, per their own
 step-by-step framing — the Dashboard, reading screens, etc. were not
 touched here and may get their own passes next.
 
+## Learner Login 3D owl — "looks like an alien" fixed by referencing the
+## real logo, not the paler flat mascot
+
+Direct, blunt follow-up feedback on the first 3D-owl pass above: it
+read as "an alien," not an owl, and should be modeled on the real
+TaraBasa app icon specifically, not invented from scratch. Found and
+opened the real logo (`public/images/logo.png`) before touching any
+code — it's a genuinely different design from the flat 2D SVG mascot
+(`games/_owl-mascot.blade.php`) used elsewhere in the app: warm
+orange-brown body/wings, a distinctly lighter tan facial disc framing
+the eyes, rosy cheek blush, a clearly visible yellow-orange beak,
+proper V-shaped feather ear tufts, and a bold dark cartoon outline
+around every shape. The first 3D pass had none of that — pale uniform
+cream color, no facial disc, thin spike-like ear tufts, a barely-
+visible beak, and no outline — which is exactly what reads as "alien
+head" rather than "owl."
+
+**Rebuilt the geometry and materials to match the real logo directly**,
+not the paler flat mascot (a deliberate choice, since the user pointed
+specifically at the logo): new two-tone palette (`#e08830` body/wings,
+`#ffe3ad` facial disc/belly, `#f5a623` beak, `#d97b28` legs/feet,
+`#ffb3ab` cheeks), a flattened light-colored facial-disc sphere added
+behind the eyes (the single biggest fix — real owls' and the logo's
+defining feature, absent before), smaller/closer-set eyes (oversized
+wide-set eyes were the other biggest cause of the alien look), a
+visible rounded beak, rosy cheek blush spheres, real two-part V ear
+tufts, and — the detail that made the whole thing finally read as a
+polished cartoon rather than a shaded blob — a cheap, standard "inverted
+hull" toon-outline technique (a slightly-larger duplicate of each main
+mesh, `MeshBasicMaterial` + `side: THREE.BackSide`, so only its
+silhouette edge peeks out from behind the real mesh) applied to the
+body, ear tufts, wings, beak, and feet.
+
+**Also fixed, per the explicit "make sure the feet are standing"
+request**: the old feet were flat ovals floating with a visible gap
+below the body. Rebuilt as a real leg (a short cylinder) connecting the
+body down to a proper flattened foot with three small toe bumps, so
+the owl now visibly stands on its own legs at the card's top edge
+instead of appearing to float.
+
+**A real bug found and fixed during this same pass, not assumed
+correct from the diff**: the very first re-test showed the eyes
+rendering as solid dark ovals with no visible white sclera at all —
+investigated rather than assumed cosmetic. Root cause: the eye's dark
+"ring" was implemented as a second, slightly-larger, ordinary front-
+facing sphere placed just behind the white sphere — since it was bigger
+in all directions, its own front surface actually poked out *in front
+of* the white sphere's front surface at the center of the eye (not just
+at the silhouette edge as intended), so normal depth-testing let the
+solid dark ring win almost everywhere, swallowing the eye whole. Fixed
+by replacing that ad-hoc approach with the same proven inverted-hull
+outline technique already used successfully elsewhere on this pass —
+confirmed by temporarily enlarging the owl-stage 2x for close visual
+inspection, both before (solid dark ovals) and after (correct round
+eyes with visible white/pupil/highlight) the fix.
+
+**A second real, smaller bug fixed the same way**: the beak initially
+rendered as a sharp angular diamond facet instead of a rounded beak —
+its cone geometry only had 4 radial segments (fine for the flattened
+triangular ear tufts, wrong for a beak meant to look rounded) plus a
+45° twist that put a flat facet dead-center toward the camera. Fixed
+by raising it to 16 segments and removing the twist.
+
+**A real layout regression caught and fixed on mobile, not assumed
+fine from the desktop screenshot**: at narrow viewports, `.wrap`/
+`.card` naturally shrink below their 420px cap (available width
+minus padding), but the owl-stage was a fixed 230×230px regardless —
+so on a 375px phone the owl grew proportionally much larger relative
+to the now-narrower card, and its feet dropped low enough to overlap
+the "Hi there!" heading. Fixed with a `max-width:480px` rule that
+scales the owl-stage down (190×190px, adjusted top offset) and gives
+the card a bit more top padding — confirmed via screenshot that the
+owl and heading now have clean clearance again at 375px, with no
+regression at desktop width.
+
+**Background polish, per the explicit "still not satisfied" follow-up**:
+richer gradient stops (added a deeper navy at the very top for more
+contrast), a redesigned icon-pattern texture using clearer motifs (a
+star, a treble-note-ish circle-and-stem, a simple open book, a sparkle,
+small dots) instead of the previous more-abstract shapes, and a new
+soft radial glow positioned behind the owl's head for a spotlight
+effect, echoing the reference screenshot's radiant burst behind its
+own mascot — all still built from TaraBasa's own locked color tokens,
+no new brand colors introduced.
+
+**Tested for real after every fix, not assumed from the diff**:
+- Console clean (zero errors) across every reload during this pass.
+- A real login (Miguel, `TB-51763`) through the rebuilt page still
+  lands correctly on the real Dashboard — confirms the extensive
+  geometry rewrite never touched the actual auth form/CSRF/pin-box JS.
+- Desktop and phone-width screenshots both confirmed the owl now
+  genuinely reads as an owl (round expressive eyes, visible beak, rosy
+  cheeks, warm two-tone coloring, cartoon outline, standing on real
+  legs) matching the real logo's character, not an invented one.
+- The temporary 2x-enlarged-stage inspection technique (added and then
+  removed, not shipped) was used specifically to catch the eye and
+  beak geometry bugs that weren't obvious at the real ~230px shipped
+  size — confirmed via `grep` that no debug/test scaffolding was left
+  in the final file.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
