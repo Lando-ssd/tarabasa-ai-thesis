@@ -4376,6 +4376,133 @@ all exactly as documented in the two entries above this one — this
 pass changed how they're arranged on screen and how large everything
 renders, not what data backs any of them.
 
+## Learner Login redesign — a real WebGL 3D owl, explicitly reversing the
+## earlier no-3D decision
+
+The user is working through a list of Learner-end fixes; this is the
+first: the login screen was "completely white," lacking the visual
+richness of a reference screenshot they shared (a colorful full-screen
+background with a large mascot peeking over/holding the login card).
+Built per the standing reference+enhance policy — the reference's
+*structure* (full-bleed color, an oversized mascot gripping the card's
+top edge) was kept, but re-expressed entirely in TaraBasa's own locked
+color tokens and its own owl mascot, not the reference's actual
+branding/colors/character.
+
+**A real, explicit decision reversal, flagged rather than silently
+overridden**: this project's own "Practice Games" pass (documented
+above) explicitly rejected live 3D for the owl mascot, specifically for
+lower-end-phone performance reasons, and every mascot appearance since
+has used 2D SVG claymorphism. Before building this, that precedent was
+surfaced directly and the user was asked to confirm — they explicitly
+chose **real 3D (WebGL/Three.js)** over the recommended enhanced-2D
+option, deliberately reopening and reversing that earlier call. This is
+disclosed here so a future session doesn't treat "no 3D" as still the
+standing rule — it's superseded by this explicit choice, for this
+screen at least.
+
+**What was actually built, and how "3D" was interpreted honestly**:
+there is no tool available to sculpt/import an external 3D character
+model file in this environment, and downloading a random pre-made 3D
+asset from the web would skip this project's own established
+"check the real license before using any asset" discipline (already
+applied to the Practice Games sound effects). So the owl is a genuine
+Three.js/WebGL scene built from primitive geometries (spheres, cones)
+assembled and lit with real `MeshStandardMaterial`s + directional/
+ambient lighting — the exact same "build the character from simple
+primitives" technique the existing 2D SVG mascot already uses, just
+real dimensional geometry instead of flat paths. Colors are pulled
+directly from `games/_owl-mascot.blade.php` (`#fff8ef` body, `#ffe4c2`
+belly, `#dd7014` beak/feet, `#131f2b` pupils) so the 3D owl reads as
+the same character, not a new one.
+
+**Loaded via `import()` of Three.js's real ES-module CDN build**
+(`cdnjs.cloudflare.com/ajax/libs/three.js/0.186.0/three.module.min.js`
+— confirmed via a direct `WebFetch` of cdnjs's own listing first, not
+guessed; modern Three.js versions dropped the old global/UMD
+`three.min.js` build entirely, ES-module-only now, so this is loaded
+via `<script type="module">` + a dynamic `import()`, not a plain
+`<script src>` tag).
+
+**Real animation, not just a static render**: an elastic pop-in
+entrance on load, a continuous idle bob + gentle sway, a real
+periodic blink (eye group scaled down and back over ~220ms, on a
+randomized 2.5-5s interval so it doesn't look robotic), and small
+clamped pointer-parallax rotation for interactivity. All idle motion
+is skipped under `prefers-reduced-motion`, matching this app's
+existing standard.
+
+**A real sound, reused rather than newly sourced**: plays
+`public/sounds/correct.mp3` — the same Mixkit-licensed file already
+cleared and shipped for Practice Games, not a new asset needing fresh
+license verification — once, on the first genuine user interaction
+with the code field (not on page load, since browsers block unearned
+autoplay; wrapped in try/catch + `.catch()` per this app's established
+autoplay-safety convention).
+
+**Two real safety nets, since this is the very first screen every
+Learner sees and must never be allowed to break**: (1) a feature
+detection (`canvas.getContext('webgl2'||'webgl')`) that throws before
+any Three.js work starts if unsupported, caught by a `try/catch`
+wrapping the entire module, falling back to the plain emoji mascot
+chip; (2) a `setTimeout` safety net that independently checks whether
+a `<canvas>` ever actually appeared, for the failure mode a same-module
+`try/catch` genuinely cannot catch — a top-level `import()` failing
+outright (CDN blocked, network down) throws before any of the module's
+own code, including its own `try`, ever runs. Both paths were tested
+for real, not assumed: temporarily forcing the "unsupported" branch
+confirmed the fallback renders cleanly with zero console errors and
+the form stays fully functional; reverting confirmed the real 3D path
+still renders correctly afterward.
+
+**A real race-condition bug found and fixed during testing, not
+assumed correct from the diff**: the first live test showed BOTH the
+real 3D owl AND the emoji fallback rendering at once. Root cause: the
+timeout-based safety net (originally 1800ms) fired before the
+Three.js CDN fetch resolved on a fresh load, showing the fallback —
+which then never got hidden again once the real canvas successfully
+appeared moments later, since the success path had no code to reverse
+that. Fixed two ways: extended the timeout to 4000ms for more real-
+world headroom, and — the more robust fix — made the success path
+itself explicitly hide the fallback element the moment the canvas is
+actually appended, so it self-corrects regardless of timing.
+
+**A real testing-environment limitation hit and correctly diagnosed,
+not mistaken for a bug**: initial animation verification (sampling the
+owl's rotation/position at two points in time) showed values frozen at
+exactly zero. Investigated before concluding anything was broken —
+confirmed via `document.hidden`/`visibilityState` that this sandboxed
+browser tab reports as genuinely hidden to the page (a real Chromium
+behavior: `requestAnimationFrame` is throttled/paused for
+non-visible tabs, unrelated to this project's own code). Verified the
+actual animation math was correct anyway by temporarily exposing the
+internal `frame()` function and driving it directly with synthetic
+timestamps (bypassing `requestAnimationFrame`/tab-visibility entirely)
+— confirmed the entrance pop, idle bob, and sway all compute correctly
+over a simulated 4+ seconds, then removed the temporary debug hooks
+before finishing (confirmed via grep: zero leftover debug code in the
+shipped file).
+
+**Tested for real, end to end — not just visually reviewed:**
+- A real login (Miguel, `TB-51763`) through the redesigned page
+  correctly landed on the real Dashboard, confirming the visual rebuild
+  didn't touch the actual auth flow, the pin-box JS, or CSRF handling.
+- Phone width (375px): confirmed via screenshot — the owl, background,
+  and card all reflow cleanly, no horizontal overflow, the owl reads as
+  large and prominent rather than cramped.
+- The chime: confirmed via `read_network_requests` that a real click
+  into the code field (a genuine trusted gesture, unlike a
+  script-driven `.focus()`, which — correctly — does NOT reliably pass
+  autoplay's gesture check) triggers a real `200 OK` fetch of
+  `correct.mp3` exactly once.
+- Zero console errors across every real/fallback/failure scenario
+  tested.
+
+**Not yet done, flagged since the user said more Learner-end fixes are
+coming**: this pass covers the Login screen only, per their own
+step-by-step framing — the Dashboard, reading screens, etc. were not
+touched here and may get their own passes next.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

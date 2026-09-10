@@ -19,23 +19,52 @@
   *{box-sizing:border-box;} html,body{margin:0;padding:0;}
   body{
     min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
-    background: radial-gradient(1200px 700px at 90% -10%, var(--sky-100), transparent 55%),
-                radial-gradient(900px 600px at 0% 100%, #ffe9c9, transparent 50%), var(--bg-0);
-    background-attachment:fixed;
+    background:var(--blue-700);
     display:flex; align-items:safe center; justify-content:center; padding:24px;
+    overflow-x:hidden;
   }
-  .wrap{ width:100%; max-width:420px; }
-  .card{
-    background:var(--surface); border-radius:30px; padding:34px 28px; text-align:center;
-    box-shadow:0 30px 60px -28px rgba(15,60,110,0.25);
+
+  /* ---- Full-screen colorful backdrop: TaraBasa's own tokens, top-to-
+     bottom sky-to-sunshine, plus a very low-opacity scattered "learning
+     icon" texture and a soft angled light-band for depth. ---- */
+  .bg-stage{ position:fixed; inset:0; z-index:-1; overflow:hidden; }
+  .bg-stage .grad{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, var(--blue-700) 0%, var(--blue-500) 40%, var(--clay-yellow) 72%, var(--owl-orange-500) 100%);
   }
-  .mascot{
-    width:88px;height:88px;border-radius:28px; margin:0 auto 16px; font-size:44px;
+  .bg-stage .icons{
+    position:absolute; inset:-60px; opacity:.09; mix-blend-mode:screen;
+    background-repeat:repeat; background-size:150px 150px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cg fill='white'%3E%3Cpath d='M20 18l2.2 5.6 6 .5-4.6 4 1.4 5.9-5-3.3-5 3.3 1.4-5.9-4.6-4 6-.5z'/%3E%3Cpath d='M110 20c6 0 11 4 11 9s-5 9-11 9-11-4-11-9 5-9 11-9zm-3 6h6v2h-2v9h-2v-9h-2z'/%3E%3Cpath d='M30 100h18v3H30zm0 6h18v3H30zm0 6h12v3H30zM28 96a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v22a2 2 0 0 1-2 2H30a2 2 0 0 1-2-2z' opacity='.85'/%3E%3Cpath d='M95 95c1 3 5 3 6 0 3 1 3 5 0 6 1 3-3 5-6 3-3 2-7 0-6-3-3-1-3-5 0-6-1-3 3-5 6-3z' opacity='.7'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .bg-stage .band{
+    position:absolute; left:-15%; right:-15%; top:58%; height:260px;
+    background:radial-gradient(60% 100% at 50% 0%, rgba(255,255,255,0.20), transparent 72%);
+    transform:rotate(-4deg);
+  }
+
+  .wrap{ position:relative; width:100%; max-width:420px; margin-top:96px; }
+
+  /* ---- 3D owl stage: overlaps the top of the card, "holding" it the
+     way the reference mascot rests its paws on the card's top edge. ---- */
+  .owl-stage{
+    position:absolute; left:50%; top:-168px; transform:translateX(-50%);
+    width:230px; height:230px; z-index:2; pointer-events:none;
+  }
+  .owl-stage canvas{ width:100% !important; height:100% !important; display:block; }
+  .owl-fallback{
+    display:none; width:120px; height:120px; border-radius:32px; margin:55px auto 0; font-size:60px;
     background:linear-gradient(155deg, var(--clay-yellow), var(--owl-orange-600));
-    display:flex;align-items:center;justify-content:center; box-shadow:0 16px 28px -12px rgba(221,112,20,0.5);
+    align-items:center; justify-content:center; box-shadow:0 16px 28px -12px rgba(221,112,20,0.5);
     animation:bob 2.4s ease-in-out infinite;
   }
   @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+
+  .card{
+    position:relative; z-index:1;
+    background:var(--surface); border-radius:32px; padding:44px 28px 30px; text-align:center;
+    box-shadow:0 36px 70px -30px rgba(10,40,80,0.45), 0 4px 0 rgba(255,255,255,0.6) inset;
+  }
   h1{ font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:700; margin:0 0 8px; }
   .sub{ font-size:18px; color:var(--slate-600); font-weight:600; margin:0 0 26px; line-height:1.5; }
 
@@ -78,12 +107,25 @@
   }
   .back-link:hover{ color:var(--blue-600); }
   a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .owl-fallback{ animation:none; }
+  }
 </style>
 </head>
 <body>
+<div class="bg-stage" aria-hidden="true">
+  <div class="grad"></div>
+  <div class="icons"></div>
+  <div class="band"></div>
+</div>
+
 <div class="wrap">
+  <div class="owl-stage" id="owlStage">
+    <div class="owl-fallback" id="owlFallback">🦉</div>
+  </div>
+
   <div class="card">
-    <div class="mascot">🦉</div>
     <h1>Hi there!</h1>
     <p class="sub">Type your code, then your secret PIN.</p>
 
@@ -148,6 +190,215 @@
     btn.disabled = true;
     btn.textContent = 'Checking…';
   });
+
+  // A real friendly chime when the child taps in — reuses the same
+  // Mixkit-licensed "correct.mp3" already cleared/shipped for Practice
+  // Games (see CLAUDE.md), not a new asset. Fires on the first genuine
+  // user gesture (focusing the code field), since browsers block
+  // autoplay without one — this is NOT tied to page load.
+  (function () {
+    try {
+      const chime = new Audio('/sounds/correct.mp3');
+      chime.volume = 0.35;
+      document.getElementById('learner_code').addEventListener('focus', function once() {
+        chime.play().catch(() => {});
+      }, { once: true });
+    } catch (e) { /* never block login over a sound failing to init */ }
+  })();
+
+  // Safety net #1: if the 3D owl module below never even runs (CDN
+  // blocked, network down, WebGL disabled) — not something a try/catch
+  // inside that module can always catch, since a failed top-level
+  // `import` throws before any of its own code executes — fall back to
+  // the plain emoji mascot after a short grace period.
+  setTimeout(function () {
+    if (!document.querySelector('#owlStage canvas')) {
+      const fb = document.getElementById('owlFallback');
+      if (fb) fb.style.display = 'flex';
+    }
+  }, 4000);
+</script>
+
+<script type="module">
+  // Safety net #2: any runtime error inside the 3D setup itself (a real
+  // WebGL failure, an API mismatch) is caught here and falls back the
+  // same way — the login screen must never depend on this succeeding.
+  try {
+    const THREE = await import('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.0/three.module.min.js');
+
+    function supportsWebGL() {
+      try {
+        const c = document.createElement('canvas');
+        return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+      } catch (e) { return false; }
+    }
+    if (!supportsWebGL()) throw new Error('no webgl');
+
+    const stage = document.getElementById('owlStage');
+    const width = stage.clientWidth, height = stage.clientHeight;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 100);
+    camera.position.set(0, 0.35, 5.6);
+    camera.lookAt(0, 0.05, 0);
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    stage.appendChild(renderer.domElement);
+
+    // The canvas now genuinely exists — make sure the fallback emoji
+    // is hidden even if the timeout-based safety net above already
+    // raced ahead and shown it (a slow CDN fetch, not a real failure).
+    const fallbackEl = document.getElementById('owlFallback');
+    if (fallbackEl) fallbackEl.style.display = 'none';
+
+    // Lighting — soft ambient fill + a warm key light + a cool rim
+    // light, aiming for the same gentle, rounded "claymorphism" look
+    // the rest of the app uses, just genuinely three-dimensional here.
+    scene.add(new THREE.AmbientLight(0xfff2df, 0.75));
+    const key = new THREE.DirectionalLight(0xffffff, 0.95);
+    key.position.set(2.2, 3, 4);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0xbfe0ff, 0.4);
+    rim.position.set(-3, 0.6, -2);
+    scene.add(rim);
+
+    // Tara the owl, built from primitive geometry (same technique this
+    // app's 2D SVG mascot uses — simple shapes, no external model file
+    // — just rendered as real 3D instead of flat paths). Colors match
+    // games/_owl-mascot.blade.php exactly: #fff8ef body, #ffe4c2
+    // belly, #dd7014 beak/feet, #131f2b pupils.
+    const owl = new THREE.Group();
+
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xfff8ef, roughness: 0.65 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), bodyMat);
+    body.scale.set(1, 1.05, 0.85);
+    owl.add(body);
+
+    const belly = new THREE.Mesh(new THREE.SphereGeometry(0.62, 24, 18), new THREE.MeshStandardMaterial({ color: 0xffe4c2, roughness: 0.7 }));
+    belly.scale.set(1, 1.15, 0.32);
+    belly.position.set(0, -0.14, 0.7);
+    owl.add(belly);
+
+    function earTuft(x, rotZ) {
+      const t = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.55, 4), bodyMat);
+      t.scale.set(0.7, 1, 0.4);
+      t.position.set(x, 0.98, -0.05);
+      t.rotation.z = rotZ;
+      t.rotation.y = Math.PI / 4;
+      return t;
+    }
+    owl.add(earTuft(-0.46, 0.35), earTuft(0.46, -0.35));
+
+    function wing(x, rotZ) {
+      const w = new THREE.Mesh(new THREE.SphereGeometry(0.45, 20, 16), bodyMat);
+      w.scale.set(0.42, 1, 0.5);
+      w.position.set(x, -0.05, -0.2);
+      w.rotation.z = rotZ;
+      return w;
+    }
+    const wingL = wing(-0.97, 0.28);
+    const wingR = wing(0.97, -0.28);
+    owl.add(wingL, wingR);
+
+    function eye(x) {
+      const g = new THREE.Group();
+      const white = new THREE.Mesh(new THREE.SphereGeometry(0.26, 20, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 }));
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), new THREE.MeshStandardMaterial({ color: 0x131f2b, roughness: 0.5 }));
+      pupil.position.set(0, -0.02, 0.2);
+      const hl = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 }));
+      hl.position.set(-0.06, 0.08, 0.3);
+      g.add(white, pupil, hl);
+      g.position.set(x, 0.16, 0.8);
+      return g;
+    }
+    const eyeL = eye(-0.34);
+    const eyeR = eye(0.34);
+    owl.add(eyeL, eyeR);
+
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.28, 4), new THREE.MeshStandardMaterial({ color: 0xdd7014, roughness: 0.5 }));
+    beak.position.set(0, -0.18, 0.86);
+    beak.rotation.x = Math.PI * 0.55;
+    beak.rotation.y = Math.PI / 4;
+    owl.add(beak);
+
+    function foot(x) {
+      const f = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), new THREE.MeshStandardMaterial({ color: 0xdd7014, roughness: 0.5 }));
+      f.scale.set(1, 0.55, 1.3);
+      f.position.set(x, -1.08, 0.4);
+      return f;
+    }
+    owl.add(foot(-0.4), foot(0.4));
+
+    scene.add(owl);
+
+    // Pointer parallax — small, clamped, purely decorative.
+    let pointerX = 0, pointerY = 0;
+    window.addEventListener('pointermove', (e) => {
+      pointerX = ((e.clientX / window.innerWidth) * 2 - 1) * 0.12;
+      pointerY = -((e.clientY / window.innerHeight) * 2 - 1) * 0.06;
+    }, { passive: true });
+
+    function backOut(t) {
+      const c1 = 1.70158, c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    }
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let start = null;
+    let blinkAt = 2 + Math.random() * 2;
+    let blinking = false, blinkStart = 0;
+
+    function frame(t) {
+      if (start === null) start = t;
+      const elapsed = (t - start) / 1000;
+
+      const entranceDur = reducedMotion ? 0.01 : 0.85;
+      const p = Math.min(elapsed / entranceDur, 1);
+      owl.scale.setScalar(p < 1 ? Math.max(backOut(p), 0) : 1);
+
+      if (!reducedMotion) {
+        owl.position.y = Math.sin(elapsed * 1.3) * 0.06;
+        owl.rotation.y = Math.sin(elapsed * 0.6) * 0.08 + pointerX;
+        owl.rotation.x = pointerY;
+
+        if (!blinking && elapsed > blinkAt) {
+          blinking = true;
+          blinkStart = elapsed;
+        }
+        if (blinking) {
+          const bt = elapsed - blinkStart;
+          const dur = 0.22;
+          const bp = Math.min(bt / dur, 1);
+          const s = bp < 0.5 ? 1 - (bp / 0.5) * 0.9 : 0.1 + ((bp - 0.5) / 0.5) * 0.9;
+          eyeL.scale.y = s; eyeR.scale.y = s;
+          if (bp >= 1) {
+            blinking = false;
+            eyeL.scale.y = 1; eyeR.scale.y = 1;
+            blinkAt = elapsed + 2.5 + Math.random() * 2.5;
+          }
+        }
+      }
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    window.addEventListener('resize', () => {
+      const w = stage.clientWidth, h = stage.clientHeight;
+      if (!w || !h) return;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+  } catch (err) {
+    const fb = document.getElementById('owlFallback');
+    if (fb) fb.style.display = 'flex';
+    const canvas = document.querySelector('#owlStage canvas');
+    if (canvas) canvas.remove();
+  }
 </script>
 </body>
 </html>
