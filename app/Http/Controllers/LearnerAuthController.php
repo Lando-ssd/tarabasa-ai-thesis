@@ -21,6 +21,24 @@ use Illuminate\View\View;
 class LearnerAuthController extends Controller
 {
     /**
+     * 5 fixed zigzag (x,y) points per competency row for the Journey
+     * ("How I'm Growing") visual — moved here from the now-retired
+     * LearnerGrowthController when Journey/Badges/Bookshelf/Goals/Growth
+     * all moved from separate rail-navigated pages onto one collaged
+     * Dashboard. Nothing here is fabricated: every number still comes
+     * straight from Learner::competencyProgressSummary(); this only lays
+     * it out as a path instead of a bar, with a real "you are here"
+     * marker placed by linear interpolation between two of these points.
+     */
+    private const JOURNEY_TRACK_POINTS = [
+        ['x' => 20, 'y' => 48],
+        ['x' => 140, 'y' => 16],
+        ['x' => 260, 'y' => 48],
+        ['x' => 380, 'y' => 16],
+        ['x' => 480, 'y' => 48],
+    ];
+
+    /**
      * Access — Learner Actor Prompt Step 1. Only the code-entry method is
      * built here (typing the learnerCode directly, standing in for a QR
      * scan). The avatar-tap variant (shown when a Parent is already logged
@@ -75,19 +93,38 @@ class LearnerAuthController extends Controller
         $learner = $request->user('learner');
         $badges = LearnerBadge::summaryFor($learner);
 
-        // The Home hero tile's "picked for you" copy — real data only.
+        // The hero tile's "picked for you" copy — real data only.
         // firstWhere returns null when competency_states doesn't exist yet
         // or nothing is currently flagged next, and the view renders an
         // honest generic invitation instead of a fabricated reason.
         $upNextCompetency = collect($learner->competencyProgressSummary())
             ->firstWhere('isUpNext', true);
 
-        // Real preview data for the "This Week's Goal" and "My Growth"
-        // bento tiles — same underlying query Weekly Goal/Growth's own
-        // full panels use (Learner::thisWeeksPracticeReadingSessions()),
-        // so the Home preview and the full panel can never disagree.
-        $weeklyCount = $learner->thisWeeksPracticeReadingSessions()->count();
+        // Journey ("How I'm Growing") — real winding-path rows, now
+        // rendered inline instead of behind its own rail-navigated page.
+        $journeyRows = collect($learner->competencyProgressSummary())->map(function (array $item) {
+            $item['track'] = $this->buildJourneyTrack($item['proficiency']);
+
+            return $item;
+        })->all();
+
+        // Weekly Goal + Growth share one real source of "what counts as
+        // this week's reading" (Learner::thisWeeksPracticeReadingSessions())
+        // so the two can never disagree about the week boundary or which
+        // sessions count.
+        $weeklySessions = $learner->thisWeeksPracticeReadingSessions();
+        $weeklyCount = $weeklySessions->count();
         $weeklyTarget = config('reading_goals.weekly_target');
+
+        $growthDays = collect(range(1, 7))->map(function (int $isoDay) use ($weeklySessions) {
+            $date = now()->startOfWeek()->addDays($isoDay - 1);
+
+            return [
+                'label' => $date->format('D'),
+                'count' => $weeklySessions->filter(fn ($s) => \Illuminate\Support\Carbon::parse($s->timestamp)->dayOfWeekIso === $isoDay)->count(),
+                'isToday' => $date->isToday(),
+            ];
+        });
 
         return view('learner.dashboard', [
             'learner' => $learner,
@@ -95,10 +132,48 @@ class LearnerAuthController extends Controller
             'earnedBadgeCount' => count(array_filter($badges, fn (array $b) => $b['earned'])),
             'totalBadgeCount' => count($badges),
             'upNextCompetency' => $upNextCompetency,
+            'journeyRows' => $journeyRows,
+            'hasJourneyData' => $learner->competency_states !== null,
             'weeklyCount' => $weeklyCount,
             'weeklyTarget' => $weeklyTarget,
+            'weeklyPercent' => $weeklyTarget > 0 ? min(100, round($weeklyCount / $weeklyTarget * 100)) : 0,
             'weeklyMet' => $weeklyCount >= $weeklyTarget,
+            'growthDays' => $growthDays,
+            'growthMax' => max(1, $growthDays->max('count')),
+            'books' => $learner->bookshelfBooks(),
         ]);
+    }
+
+    private function buildJourneyTrack(?float $proficiency): ?array
+    {
+        if ($proficiency === null) {
+            return null;
+        }
+
+        $proficiency = max(0.0, min(100.0, $proficiency));
+        $segmentIndex = min((int) floor($proficiency / 25), 3);
+        $fraction = ($proficiency - $segmentIndex * 25) / 25;
+
+        $from = self::JOURNEY_TRACK_POINTS[$segmentIndex];
+        $to = self::JOURNEY_TRACK_POINTS[$segmentIndex + 1];
+
+        $marker = [
+            'x' => $from['x'] + $fraction * ($to['x'] - $from['x']),
+            'y' => $from['y'] + $fraction * ($to['y'] - $from['y']),
+        ];
+
+        $checkpointsDone = array_map(fn (int $i) => $proficiency >= $i * 25, range(0, 4));
+
+        $coloredPoints = array_slice(self::JOURNEY_TRACK_POINTS, 0, $segmentIndex + 1);
+        $coloredPoints[] = $marker;
+
+        return [
+            'points' => self::JOURNEY_TRACK_POINTS,
+            'marker' => $marker,
+            'checkpointsDone' => $checkpointsDone,
+            'coloredPolyline' => implode(' ', array_map(fn (array $p) => "{$p['x']},{$p['y']}", $coloredPoints)),
+            'greyPolyline' => implode(' ', array_map(fn (array $p) => "{$p['x']},{$p['y']}", self::JOURNEY_TRACK_POINTS)),
+        ];
     }
 
     /**

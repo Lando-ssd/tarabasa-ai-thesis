@@ -25,11 +25,11 @@ class LearnerBadge extends Model
 
     /**
      * Every defined badge (config/badges.php), merged with this Learner's
-     * real earned/unearned state — the one shared source both the web
-     * "My Badges" screen (BadgeController) and the mobile API's dashboard
-     * endpoint build from, so the two can't drift into two different
-     * answers for "which badges does this Learner have." Same shared-
-     * method pattern already established by
+     * real earned/unearned state — the one shared source both the inline
+     * "My Badges" section on the Dashboard (LearnerAuthController) and
+     * the mobile API's dashboard endpoint build from, so the two can't
+     * drift into two different answers for "which badges does this
+     * Learner have." Same shared-method pattern already established by
      * ReadingSession::sourceSummaryForLearner().
      */
     public static function summaryFor(Learner $learner): array

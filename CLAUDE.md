@@ -4222,6 +4222,160 @@ test Learner — not assumed from the diff:**
   reconfirmed untouched (this test used a separate disposable Learner
   throughout, never Miguel).
 
+## Learner dashboard v3 — the rail-based app-shell reversed into one
+## single collaged Dashboard, everything sized up for a 6-9 year old
+
+Direct, blunt feedback on real production screenshots (Learner "Maria"):
+the icon rail from the v2 redesign above was bad UI/UX for kids, every
+element needed to be genuinely bigger (icons, text, touch targets, not
+just nudged), and — the structural ask — drop the rail/menu-bar
+entirely and collage every feature (Journey, Badges, Bookshelf, Goals,
+Growth) directly onto one Home page, the way the pre-v2 dashboard did,
+rather than clicking between separate rail-navigated panels. Confirmed
+the exact shape of "collage" before rebuilding (three options offered:
+full inline content, preview-cards-linking-out, or a hybrid) — the user
+picked **everything fully inline on one page, no separate routes
+needed at all**.
+
+**A real, disclosed bug spotted directly in the user's own screenshot,
+fixed as part of this pass**: "This Week's Goal" showed "10 of 5 this
+week 🏆" — mathematically correct (Maria genuinely read 10 real
+sessions against a target of 5) but reads like an error. Fixed by
+giving the "met" branch its own copy that never uses "X of Y" phrasing
+at all ("10 real readings! — your goal was 5 this week"), so any count
+at or above target (5, 10, or 50) renders sensibly — the "not met"
+branch is the only one that ever shows "X of Y."
+
+**Structural reversal, not an incremental tweak**: the v2 redesign's
+icon-only rail (`layouts/learner-app.blade.php`) and every page it
+routed to — `badges.blade.php`, `bookshelf.blade.php` (the list view),
+`journey.blade.php`, `goals.blade.php`, `growth.blade.php`, and their
+controllers (`BadgeController`, `LearnerGrowthController`) — are all
+deleted, not deprecated. `learner/dashboard.blade.php` goes back to
+being a fully standalone HTML document (the shared layout had no other
+real consumer left once everything moved inline, so keeping the
+`@extends` abstraction alive for exactly one page would have been
+unjustified complexity). `BookshelfController` keeps only its real
+task-flow methods (`reread()`/`submitReread()`) — the list query moved
+to a new `Learner::bookshelfBooks()` model method, reused by the merged
+Dashboard. The Journey visual's `buildTrack()`/`TRACK_POINTS` logic
+moved from the deleted `LearnerGrowthController` into
+`LearnerAuthController` (the one controller that now needs it).
+`LearnerAuthController::dashboard()` gathers everything in one place:
+badges, journey rows, this week's goal/growth data, and bookshelf
+books — four previously-separate controllers' worth of data assembly,
+now one method, since it all renders on one page.
+
+**Routes retired**: `learner.badges.index`, `learner.bookshelf.index`,
+`learner.journey.index`, `learner.goals.index`, `learner.growth.index`
+— all gone. `learner.bookshelf.reread`/`.reread.submit` stay (a real
+re-reading task screen, not a passive display panel — matches this
+app's existing "focused task flow omits chrome" precedent, same
+reasoning already applied to the diagnostic and `activity-found.
+blade.php`). Both Bookshelf re-read screens' "Back to My Bookshelf"
+links were repointed to `route('learner.dashboard')` ("Back to My
+Dashboard"), matching every other standalone screen's exit convention
+in this app.
+
+**The one-page collage, top to bottom** (`learner/dashboard.blade.php`):
+profile header (large avatar + name + grade + a plain "Switch learner"
+link, no icon-only rail item for it anymore) → bigger stat row → the
+existing hero "Continue" tile (Start Reading Activity) → a full-width
+"🎮 Practice Games" button (previously a small bento tile, now a real
+tap target) → "How I'm Growing" (the full real winding-path Journey
+visual, all 3 competency rows, inline) → a two-column "This Week's
+Goal" + "My Growth" row → the full "My Badges" grid (all 6, not a
+5-badge preview) → the full "My Bookshelf" list. Every size bumped up
+across the board: h1 26px→32px, stat values 24px→30px, badge icons
+40px→52px with bigger tiles, book cards with bigger icons/buttons —
+concretely addressing "make everything large," not just a vague pass.
+
+**A real layout bug found and fixed during testing, not assumed correct
+from the diff**: the Journey SVG (`viewBox="0 0 500 70"`, CSS
+`width:100%`) stretched to the full ~1130px card width on desktop,
+which — because a wide SVG scaled from a 500:70 aspect ratio produces
+real proportional height (found via direct `getBoundingClientRect()`
+measurement, not assumed: 1082px wide → 151.5px tall, exactly
+500:70::1082:151.5) — made each competency row balloon to ~230px tall
+mostly on dead viewBox margin, and made the zigzag path itself read as
+a flat, sparse line rather than a proper "winding path." Fixed by
+capping `.journey-track{ max-width:640px }` (card height dropped
+703px→547px for the same 3 rows, confirmed via direct measurement) and
+widening the viewBox to `0 -4 500 78` to stop the marker circle
+(radius 18) from clipping at the top checkpoints (y=16 point minus
+18px radius = -2, outside the old 0-70 box) — a latent bug that
+happened not to be visible in this session's specific test data, fixed
+defensively since it was a one-line change with no downside.
+
+**A real stale-screenshot artifact hit repeatedly during this session's
+testing, correctly diagnosed rather than mistaken for a layout bug**:
+mid-scroll screenshots on this new, much-longer Dashboard page came
+back completely blank or visibly tiled, while `getBoundingClientRect()`
+/`window.scrollY` confirmed the DOM was correctly scrolled to the exact
+target element every time. This is the same `background-attachment:
+fixed`-interacting-with-the-browser-automation-tool quirk already
+documented multiple times elsewhere in this file — now hit harder
+because this page is genuinely long (a real side effect of the
+one-page-collage decision) where the old rail-navigated pages were all
+short. Cross-checked via direct DOM geometry each time rather than
+trusting the screenshot, per this project's own established practice.
+
+**Tested for real, both viewports, with real mixed data — not assumed
+from the diff:**
+- Logged in as Miguel (flagship reference Learner). Set up the same
+  kind of realistic test state as the v2 pass (3 genuinely-earned-but-
+  never-retroactively-checked badges via `BadgeService::
+  checkAfterPracticeReading()`, a synthetic mixed `competency_states`
+  shape for Journey's three visual states, and 3 real dated
+  `ReadingSession` rows this week for Goals/Growth) — confirmed via
+  `get_page_text` that every section (Journey's 3 rows including the
+  "Not started yet" locked state, "3 of 5" Goal progress, a real 3-bar
+  Growth chart, all 6 badges with 3 correctly earned, all 3 real
+  Bookshelf books) renders correctly end-to-end on one page load, one
+  query per feature, no separate navigation needed.
+- **Desktop (1280px real width — screenshots render at a smaller
+  display scale, confirmed by checking `window.innerWidth` directly
+  rather than trusting the screenshot's own pixel dimensions)**:
+  header/hero/stat-row confirmed via screenshot; Goal+Growth pair
+  confirmed side-by-side and Badges grid confirmed at 6 real columns
+  via direct `getBoundingClientRect()` on each tile (174px each) —
+  screenshots of these specific sections were blocked by the stale-
+  capture artifact above, so DOM geometry was the verification method,
+  consistent with this project's own established fallback.
+- **Phone (375px)**: full screenshot confirmed the profile header,
+  stats, and hero all reflow to a clean single column at a genuinely
+  large kid-friendly size; DOM checks confirmed the Goal+Growth pair
+  correctly stacks vertically, the badge grid drops to 2 columns, the
+  book list drops to a single column, the Journey SVG scales down to
+  277px with zero horizontal page overflow (`scrollWidth <=
+  innerWidth`, confirmed directly).
+- The "10 of 5" bug fix confirmed by code inspection of the met/
+  not-met branch split (both branches render distinctly and neither
+  can produce the confusing phrasing) — the "met" branch itself was
+  already live-verified working in the v2 Goals-panel pass earlier
+  this project (same underlying template logic, carried over
+  unchanged into the merged page).
+- `php -l` clean on every new/modified file; grepped the whole
+  `app/`+`resources/`+`routes/` tree for any surviving reference to
+  the retired controllers/routes — found only two harmless doc-comment
+  mentions (one already accurate as history, one stale reference to
+  `BadgeController` in `LearnerBadge.php`, corrected to name the real
+  current call site). Zero unexpected entries in the Laravel log
+  across the whole pass.
+- Miguel's account fully reverted afterward — 0 badges, `competency_
+  states` back to null, the 3 synthetic `ReadingSession` rows deleted,
+  Bookshelf's "Easy Animal Words" count back to its real 16 (was
+  briefly 19 during testing) — confirmed via direct query, not assumed
+  from the revert script running without error.
+
+**Not re-litigated, carried over unchanged from the v2 pass**: the
+underlying data sources (`Learner::competencyProgressSummary()`,
+`thisWeeksPracticeReadingSessions()`, `LearnerBadge::summaryFor()`,
+the fixed 5-session weekly target in `config/reading_goals.php`) are
+all exactly as documented in the two entries above this one — this
+pass changed how they're arranged on screen and how large everything
+renders, not what data backs any of them.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

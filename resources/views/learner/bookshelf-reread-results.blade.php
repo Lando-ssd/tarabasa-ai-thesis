@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <a href="{{ route('learner.bookshelf.index') }}" class="big-btn">Back to My Bookshelf</a>
+    <a href="{{ route('learner.dashboard') }}" class="big-btn">Back to My Dashboard</a>
   </div>
 </div>
 </body>

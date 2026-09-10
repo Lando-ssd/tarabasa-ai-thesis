@@ -211,6 +211,34 @@ class Learner extends Model implements AuthenticatableContract
     }
 
     /**
+     * "My Bookshelf" — Activities this Learner has genuinely completed a
+     * real Practice reading of before, one row per distinct Activity
+     * (real times-read count, most recent date, best accuracy). Moved
+     * here from BookshelfController::index() when the Bookshelf list
+     * moved from its own page onto the single-dashboard collage — the
+     * real re-read task screens (BookshelfController::reread()/
+     * submitReread()) still use Activity::hasCompletedPracticeReadingFor()
+     * as their own, separately-scoped access check.
+     */
+    public function bookshelfBooks(): \Illuminate\Support\Collection
+    {
+        return ReadingSession::where('learner_id', $this->id)
+            ->where('session_type', 'Practice')
+            ->with('activity')
+            ->get()
+            ->filter(fn (ReadingSession $session) => $session->activity !== null)
+            ->groupBy('activity_id')
+            ->map(fn ($sessions) => [
+                'activity' => $sessions->first()->activity,
+                'timesRead' => $sessions->count(),
+                'mostRecentDate' => $sessions->max('timestamp'),
+                'bestAccuracy' => $sessions->max('accuracy_percent'),
+            ])
+            ->sortByDesc('mostRecentDate')
+            ->values();
+    }
+
+    /**
      * Practice Games — Word Builder and Letter Match are both real
      * `foundational_reading` skill practice (spelling/letter recognition);
      * neither one measures reading_fluency or reading_comprehension, so

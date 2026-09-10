@@ -124,7 +124,7 @@
 
     @include('learner._recording-widget', ['recordAction' => route('learner.bookshelf.reread.submit', $activity)])
 
-    <a href="{{ route('learner.bookshelf.index') }}" class="big-btn" style="margin-top:14px; background:var(--surface); color:var(--slate-600); box-shadow:none; border:1.5px solid var(--line);">Back to My Bookshelf</a>
+    <a href="{{ route('learner.dashboard') }}" class="big-btn" style="margin-top:14px; background:var(--surface); color:var(--slate-600); box-shadow:none; border:1.5px solid var(--line);">Back to My Dashboard</a>
   </div>
 </div>
 </body>

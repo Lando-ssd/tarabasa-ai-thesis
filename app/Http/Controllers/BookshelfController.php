@@ -3,46 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
-use App\Models\ReadingSession;
 use App\Services\LearnerReadingService;
 use App\Services\ReadingAiClient;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * "My Bookshelf" — Activities this Learner has genuinely completed a
- * real Practice reading of before, real data reuse (a query over
- * already-existing ReadingSession rows, no new scoring logic for the
- * listing itself). Re-reading is deliberately free/unscored — see
- * LearnerReadingService::recordFreeReattempt()'s own doc comment for
- * the reasoning.
+ * My Bookshelf's list view now renders inline on the Dashboard (see
+ * LearnerAuthController::dashboard() + Learner::bookshelfBooks()) — this
+ * controller is left with only the real task-flow screens: a free/
+ * unscored re-read. See LearnerReadingService::recordFreeReattempt()'s
+ * own doc comment for why re-reading doesn't score.
  */
 class BookshelfController extends Controller
 {
-    public function index(Request $request): View
-    {
-        $learner = $request->user('learner');
-
-        $books = ReadingSession::where('learner_id', $learner->id)
-            ->where('session_type', 'Practice')
-            ->with('activity')
-            ->get()
-            ->filter(fn (ReadingSession $session) => $session->activity !== null)
-            ->groupBy('activity_id')
-            ->map(function ($sessions) {
-                return [
-                    'activity' => $sessions->first()->activity,
-                    'timesRead' => $sessions->count(),
-                    'mostRecentDate' => $sessions->max('timestamp'),
-                    'bestAccuracy' => $sessions->max('accuracy_percent'),
-                ];
-            })
-            ->sortByDesc('mostRecentDate')
-            ->values();
-
-        return view('learner.bookshelf', ['learner' => $learner, 'books' => $books]);
-    }
-
     /**
      * The recording screen for a free re-read — re-verifies real reading
      * history server-side (Activity::hasCompletedPracticeReadingFor()),
