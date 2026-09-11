@@ -4999,6 +4999,83 @@ sized 1280×900 viewport, since this sandboxed pane's default reports a
 to each bar via `dataset.fill`. All 10 synthetic rows deleted
 afterward, confirmed via a fresh count (`sessions_this_week=0`).
 
+## Real production bug — verification emails never sent, then a real
+## 500 after switching mail on: a second real Docker-image gap
+
+**The original report**: after registering (Teacher or Parent) on live
+production, the "check your email" screen showed but no verification
+email ever arrived in a real Gmail inbox — this had worked locally
+before.
+
+**Root cause #1, confirmed by reading the actual send path**: both
+`storeTeacher()`/`storeParent()` in `AuthController` call `$user->
+sendEmailVerificationNotification()` — Laravel's stock, synchronous
+`MustVerifyEmail` notification (confirmed zero `ShouldQueue` usage
+anywhere in `app/`, so this isn't a stuck-queue problem; Railway's
+`docker/entrypoint.sh` also runs no queue worker at all, which is fine
+since nothing here is queued). Railway's real `MAIL_MAILER` was `log`
+— the send call succeeds without error (the log driver "sends" by
+writing to `storage/logs/laravel.log`), so the registration flow
+completes normally with no visible failure, and genuinely no SMTP
+connection is ever attempted. The user confirmed and fixed this
+directly in Railway's Variables tab (real screenshots reviewed):
+`MAIL_MAILER=smtp`, `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`,
+`MAIL_USERNAME=tarabasaai.noreply@gmail.com`, a real Google App
+Password, `MAIL_FROM_ADDRESS=tarabasaai.noreply@gmail.com`.
+
+**Root cause #2, found immediately after deploying that fix — a real,
+different bug, not a continuation of the first**: registering on
+production after the Variables change produced a genuine `500 Server
+Error`. Diagnosed by reproducing the *exact* production mail config
+locally (same host/port/username/real App Password) rather than
+guessing — a real `Mail::raw()` send through that exact config
+**succeeded** locally, proving the credentials/host/port were all
+correct and ruling out the SMTP config itself.
+
+**The real, disclosed no-op found along the way**: the user also set
+`MAIL_ENCRYPTION=tls` on Railway — this codebase's `config/mail.php`
+reads `env('MAIL_SCHEME')`, not `MAIL_ENCRYPTION`, so that variable is
+silently unused. Not the bug (Symfony Mailer auto-negotiates STARTTLS
+on port 587 with an empty scheme, confirmed by the successful local
+repro above), but worth knowing so a future session doesn't assume
+it's doing something.
+
+**The actual cause: `Dockerfile` never installs `ca-certificates`.**
+`php:8.4-cli` is a minimal Debian image with no CA bundle by default —
+this is the exact same *class* of bug already on record in this file
+under "Tech stack" (this machine's local Windows PHP had an empty
+`curl.cainfo`/`openssl.cafile` until fixed with a real CA bundle), now
+hitting the production container instead, on a different code path
+(Symfony Mailer's SMTP+STARTTLS handshake instead of cURL). Without a
+CA bundle, PHP can't verify `smtp.gmail.com`'s TLS certificate — the
+connection throws a real `Symfony\Component\Mailer\
+Exception\TransportException`, uncaught anywhere in `AuthController`,
+which is exactly what turns into a raw `500`. Registration was the
+first feature in this whole app to ever make an outbound TLS
+connection through this specific code path (PHP's mail streams, not
+cURL/`Http::`), which is why this had never surfaced before despite
+the container running unchanged for weeks.
+
+**Fix**: added `ca-certificates` to the Dockerfile's existing
+`apt-get install` line, plus an explicit `update-ca-certificates` call
+— mirrors the already-established local fix for the sibling bug,
+applied to the container this time.
+
+**Tested for real, not assumed from the diagnosis**: the local
+reproduction above is real evidence the credentials/config are sound
+— a `Mail::raw()` call through the exact real Gmail SMTP
+host/port/username/App Password succeeded with zero exception on this
+machine (which already has its own working CA bundle, per the
+existing "Tech stack" entry). The CA-certificates theory itself
+**was not yet independently confirmed against Railway's own log output
+or a genuine post-fix production registration** before this fix was
+written and pushed — the user was mid-troubleshooting live, and no
+Railway log excerpt confirming the exact `TransportException` text was
+captured before applying this fix. **This still needs a real
+end-to-end confirmation once the rebuilt image deploys**: register a
+genuinely new account on live production and confirm an actual email
+lands in a real Gmail inbox — not yet done as of this entry.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
