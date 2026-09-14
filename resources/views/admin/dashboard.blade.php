@@ -102,6 +102,15 @@
 
   .empty-note{ text-align:center; padding:32px 20px; color:var(--slate-600); font-size:13.5px; font-weight:500; }
 
+  .search-box{ position:relative; margin-bottom:16px; }
+  .search-box svg{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--slate-400); pointer-events:none; }
+  .search-box input{
+    width:100%; padding:11px 14px 11px 38px; border:1.5px solid var(--line); border-radius:12px;
+    font:600 13.5px/1 'Inter',sans-serif; color:var(--navy-900); background:var(--bg-0);
+  }
+  .search-box input:focus{ outline:none; border-color:var(--blue-500); background:var(--surface); }
+  .search-box input::placeholder{ color:var(--slate-400); font-weight:500; }
+
   .table-scroll{ overflow-x:auto; }
 
   @media (max-width:640px){
@@ -207,6 +216,12 @@
     @if ($accounts->isEmpty())
       <div class="empty-note">No accounts yet.</div>
     @else
+      @if ($accounts->count() > 5)
+        <div class="search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input type="text" id="accountSearch" placeholder="Search by name or role…" autocomplete="off">
+        </div>
+      @endif
       <div class="table-scroll">
       <table>
         <thead>
@@ -218,9 +233,9 @@
             <th></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="accountRows">
           @foreach ($accounts as $account)
-            <tr>
+            <tr data-search="{{ strtolower($account->first_name.' '.$account->last_name.' '.$account->user_type.' '.$account->status) }}">
               <td data-label="First Name">{{ $account->first_name }}</td>
               <td data-label="Last Name">{{ $account->last_name }}</td>
               <td data-label="User Type">{{ $account->user_type }}</td>
@@ -242,6 +257,7 @@
         </tbody>
       </table>
       </div>
+      <div class="empty-note" id="accountNoMatch" hidden>No accounts match "<span id="accountNoMatchTerm"></span>".</div>
     @endif
   </section>
 
@@ -262,6 +278,27 @@
       }
     });
   });
+
+  // Client-side search over "All Accounts" — no server round trip, mirrors
+  // the same pattern already used on My Activities for the same reason
+  // (a Teacher/Admin quickly scanning a long real list).
+  const accountSearch = document.getElementById('accountSearch');
+  if (accountSearch) {
+    const rows = Array.from(document.querySelectorAll('#accountRows tr'));
+    const noMatch = document.getElementById('accountNoMatch');
+    const noMatchTerm = document.getElementById('accountNoMatchTerm');
+    accountSearch.addEventListener('input', () => {
+      const term = accountSearch.value.trim().toLowerCase();
+      let visible = 0;
+      rows.forEach(row => {
+        const match = !term || row.dataset.search.includes(term);
+        row.hidden = !match;
+        if (match) visible++;
+      });
+      noMatch.hidden = visible > 0;
+      noMatchTerm.textContent = accountSearch.value.trim();
+    });
+  }
 </script>
 </body>
 </html>

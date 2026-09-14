@@ -50,7 +50,12 @@
   .nav-btn.solid{ background:linear-gradient(155deg,var(--blue-500),var(--blue-700)); border:none; color:#fff; box-shadow:0 8px 16px -6px rgba(15,95,174,.5); }
   .nav-btn.solid:hover{ transform:translateY(-1px); }
   .nav-btn[aria-expanded="true"]{ box-shadow:0 0 0 3px rgba(28,126,214,0.25); }
-  @media (max-width:400px){ .nav-btn{ padding:9px 12px; font-size:12.5px; } .nav-btn span.btn-label{ display:none; } }
+  @media (max-width:400px){
+    .nav-inner{ padding:12px 14px; gap:10px; }
+    .nav-actions{ gap:6px; }
+    .nav-logo .wordmark{ font-size:16.5px; }
+    .nav-btn{ padding:9px 11px; font-size:12px; gap:0; }
+  }
 
   .dropdown-menu{
     position:absolute; top:calc(100% + 8px); right:0; min-width:190px; z-index:20;

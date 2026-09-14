@@ -5076,6 +5076,98 @@ end-to-end confirmation once the rebuilt image deploys**: register a
 genuinely new account on live production and confirm an actual email
 lands in a real Gmail inbox — not yet done as of this entry.
 
+## Full application-wide UI/UX pass (post-Dashboard-v3/Games/comprehension-
+## quiz) — fresh re-audit, not assumed still covered by older passes
+
+The user asked for a genuinely fresh, systematic pass across every screen
+against six dimensions (information architecture, interaction design,
+visual/color, typography, layout/responsiveness, realistic user
+scenarios) — explicitly not trusting older audit entries to still cover
+everything, since a lot has shipped since (Badges/Bookshelf/Weekly Goal,
+Dashboard v3, Practice Games leveling/sound, the comprehension quiz,
+Login's owl/background rewrites). Logged in as real accounts throughout
+(Admin, a real Teacher with 25 real activities and a flagged learner, a
+real Parent with 8 real children including Miguel's full real history,
+Miguel himself) — not synthetic-only.
+
+**Two real, concrete defects found and fixed:**
+
+1. **Landing page nav buttons went completely blank at phone width — a
+   real interaction-design bug, not a style nitpick.** `@media
+   (max-width:400px){ .nav-btn span.btn-label{ display:none; } }` hid
+   "Log in"/"Get Started"'s text entirely with nothing left in its
+   place — at exactly the width most real phones actually are (375px,
+   iPhone SE/mini/12 range), the two primary nav CTAs rendered as bare,
+   unlabeled pill outlines with zero indication of what they do.
+   Confirmed via a real 375px screenshot before touching anything.
+   Fixed by shrinking (tighter padding/font/gaps, a smaller wordmark)
+   instead of hiding — confirmed via a second screenshot that both
+   buttons are now clearly legible at 375px with room to spare.
+2. **Admin Dashboard's "All Accounts" table had no search/filter for
+   21 real accumulated accounts** — the same real information-
+   architecture gap My Activities was fixed for earlier (a person
+   quickly scanning a long real list), just never applied here since
+   Admin's account list started small and has since grown. Added the
+   identical client-side search pattern (search box, `data-search`
+   attribute per row, live filtering, an honest "No accounts match"
+   empty state) — no server round trip, matches the established
+   convention rather than inventing a new one. Verified live: typing
+   "parent" correctly narrowed 21 rows to exactly the 7 real Parent
+   accounts; a deliberate no-match query showed the empty state
+   correctly.
+
+**Screens walked through this pass and confirmed already meeting the
+six-dimension bar, no changes needed** — verified via a mix of real
+screenshots, `get_page_text`, and direct DOM/geometry checks (screenshots
+on the long Learner Dashboard hit the already-documented stale/tiled-
+capture artifact repeatedly; cross-checked via `getBoundingClientRect()`
+instead, consistent with this project's established fallback): Login (at
+375px, matching the nav fix), both Registration forms, Admin Dashboard's
+Pending-Teacher table, Teacher Dashboard (real flagged-learner banner,
+real stat row), Class Management, Generate Activity, My Activities
+(search/filter tabs/sticky toolbar all still working against the real
+25-activity account), Promotions, Teacher Profile, Parent Dashboard
+(8 real children, Miguel's real flagged-session history rendering
+correctly — the "worried Parent" scenario reads clearly), Parent
+Progress (Adaptive Focus honest empty state, real 18-session history,
+real accuracy-trend chart), Open Repository, My Children, Parent
+Notifications (color-coded types, unread tinting, per-child grouping),
+Learner Login (2D owl + WebGL orb background), Learner Dashboard v3 (
+header/hero/games-button/Journey-empty-state/Goal-ring/Growth-chart/
+Badges-grid/Bookshelf all confirmed via geometry — equal-height pair-row
+panels still hold, no overlap, positive dimensions throughout — and
+re-confirmed visually at phone width including the Growth chart's
+correct empty/today-ring rendering), Practice Games hub + Word Builder
+(Level 3 default for Miguel/Grade 3, claymorphism tiles, garden accents)
++ Letter Match (star-backed cards, confetti accents), the reading screen
++ real comprehension quiz (triggered via the established
+`window.tarabasaBeforeSubmit()` technique — 3 real questions with 4
+choices each rendered correctly for "A Day at the Coral Reef"), and the
+diagnostic intro + passage screens (fresh Learner, real Gemini-generated
+passage, correct Grade-1 "Large" font default).
+
+**Not re-verified with fresh live evidence this pass** (checked via
+source/structure only, since nothing in this pass touched these files
+and they were extensively real-tested very recently in this same
+project's history): reading-results/reading-unclear's exact rendering,
+full gameplay completion on both Practice Games, and Teacher
+Notifications specifically (Parent Notifications was confirmed directly;
+Teacher's uses the identical `NotificationController`/shared partial
+pattern). Mobile: reconfirmed there are still zero screens — no Expo
+project, no `app.json`, nothing beyond the existing API layer, matching
+the progress report delivered earlier.
+
+**Test data**: a disposable `ZZAudit`/`TB-ZZAUD` Learner created solely
+to reach the diagnostic intro/passage screens fresh was deleted
+afterward; three real Teacher/Parent/Admin accounts' local-dev-only
+passwords were reset via `tinker` to a known value purely to log in and
+inspect (their real production credentials are untouched — this only
+ever touches this worktree's local SQLite database).
+
+`php -l` clean on both touched files. **Not yet committed/pushed** at
+the time this entry was written — per this project's standing rule,
+waiting for the user's own explicit "push it now."
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
