@@ -5168,6 +5168,128 @@ ever touches this worktree's local SQLite database).
 the time this entry was written — per this project's standing rule,
 waiting for the user's own explicit "push it now."
 
+## Landing page — "Choose how you'll sign in" replaced with a real reading
+## scene (Lottie sword-bird entrance + clip-path text reveal)
+
+The old `role-select` section (the eyebrow "Ready to start? Choose how
+you'll sign in" plus the Learner tile + Teacher/Parent/Admin list) is
+gone entirely — deleted, not deprecated. It was genuinely redundant
+with the header's own dynamic Get Started dropdown (which already
+covers Teacher/Parent sign-up) and Log in (which already covers all
+three roles via the existing `?role=` query param) — the only real gap
+it left uncovered was the Learner PIN entry point, which the old
+`.learner-tile` provided. **The real hero above it ("Every child
+deserves to love reading...") was explicitly kept untouched** — this
+was a deliberate, repeatedly-confirmed scope boundary, not an
+oversight.
+
+**What replaced it**: a real illustrated scene — a child (sourced from
+unDraw's "Relaxation" illustration, MIT-licensed, downloaded via
+`curl` from a real GitHub mirror and recolored by swapping only fill
+hex values via `sed`, confirmed byte-for-byte identical file size
+before/after to prove zero linework was touched) sits reading, Tara
+perches on a small hand-coded book stack beside her (three stacked
+boxes with a distinct darker "side face" polygon each, for a real
+sense of thickness), and a hand-coded open book sits in the scene. A
+real Lottie animation (`public/animations/tarabasa-owl.json` — a
+rigged bird-with-a-sword animation from LottieFiles' free tier,
+accepted as-is per explicit user decision; no learner-facing "Enter my
+PIN" CTA was rebuilt here, since that's a separate, not-yet-revisited
+piece of the old section) plays once on scroll-entrance from the
+right, and the new headline ("Real reading, actually fun") + body
+copy reveal via a `clip-path` sweep timed to the *real, verified*
+moment the sword's swing arrives — not tracked pixel-by-pixel, timed
+against real data. `Sword_Blade`'s own rotation peaks at 14.86° exactly
+at frame 19 (settling to 10.88° at frame 20 — a genuine swing-then-
+recoil beat), and `Body`'s rotation independently peaks at 15° at that
+same frame 19 — two unrelated layers agreeing on frame 19 in the raw
+JSON keyframe data is what makes this computed, not guessed. At the
+file's real 24fps, that's `19/24 = 0.7917s`, which is what's actually
+in the timeline.
+
+**Why `clip-path` specifically, not opacity/height**: `clip-path`
+never changes an element's box dimensions — the text's real space is
+reserved from first paint, so the reveal cannot cause layout shift,
+confirmed live at 375/768/1280px widths (`document.documentElement.
+scrollWidth - window.innerWidth` reads 0 or negative — scrollbar-width
+noise — at all three).
+
+**A real, deliberate provisional decision, not yet fully resolved**:
+the sword-bird Lottie asset has no license file attached — it's
+LottieFiles' free tier, confirmed only by where the user downloaded it
+from, not by an explicit license grant read directly. The user
+explicitly accepted this after it was flagged twice across this
+project's history and asked not to be re-litigated further; recorded
+here so a future session doesn't either silently drop it or silently
+assume it was never a concern.
+
+**Three real bugs found during live testing in the actual app, not
+assumed correct from the diff — this is the part worth remembering for
+any future GSAP ScrollTrigger work in this app**:
+1. ScrollTrigger measures trigger positions once, at creation time —
+   which runs before the child `<img>` (no explicit height) has
+   finished loading. Its real eventual size shifts the whole
+   document's height, so the trigger's start/end were computed against
+   a too-short page. Fixed by calling `ScrollTrigger.refresh()` after
+   the page has genuinely finished loading, not at script-execution
+   time.
+2. On a short page, the computed trigger `start` can land *above* the
+   page's actual scroll position at load (a negative pixel value) —
+   meaning the section is already inside its "active" range before any
+   scrolling happens at all. Confirmed directly: `ScrollTrigger.
+   getAll()[0].isActive` read `true` at `scrollY: 0`, yet the
+   timeline's own `.progress()` stayed at `0` — because there's no
+   discrete "crossing" scroll event for `onEnter` to fire from a state
+   that was already active on arrival. Fixed by explicitly checking
+   `scrollTrigger.isActive` after refresh and calling `.play(0)`
+   directly when true, instead of only relying on the automatic
+   enter/leave callbacks.
+3. On a fast local load, `window`'s `load` event can fire **before**
+   the page's own script even attaches a listener for it — confirmed
+   directly via `document.readyState` already reading `"complete"` at
+   the exact line that was about to add the listener, which would mean
+   it simply never fires. Fixed by checking `document.readyState ===
+   'complete'` first and running the fix immediately in that case,
+   only falling back to a real `load` listener otherwise.
+
+**Tested for real, against the actual running app on `php artisan
+serve`, at 375px/768px/1280px widths** — not the standalone mockup,
+the real `landing.blade.php` this time: confirmed via
+`getComputedStyle` that the headline renders at the exact approved
+spec (Baloo 2, 28px, 700, `#f0982c`) and the body at the exact spec
+(Inter, 15px, 500, line-height 24px = 15×1.6 exactly, `#56697a`) at all
+three widths; confirmed zero horizontal overflow at all three;
+confirmed the real assets (`logo.png`, `landing-reading-child.svg`,
+`tarabasa-owl.json`) all return real `200 OK` responses, not 404s.
+**One real environment limitation, not a code defect** — this
+sandboxed browser tool's tab reports `document.hidden: true` even when
+"fronted" (the same already-documented behavior from this project's
+Login-page 3D-owl and My-Growth liquid-fill animation work), which
+throttles `requestAnimationFrame`-driven playback, including GSAP's
+own ticker. This meant the animation's forward *playback* couldn't be
+watched advancing in real time in this tool — worked around the same
+way this project already established for that exact limitation: driving
+the timeline's own `.progress()` directly (bypassing `requestAnimationFrame`
+entirely) to confirm the tween logic and final CSS states are correct,
+which they were, at all three widths. A genuine foregrounded browser
+tab (which is what a real visitor has) does not have this throttling —
+still worth a real human eyeballing the live motion once deployed,
+same as every other animation in this project's history that hit this
+exact tooling limitation.
+
+**A real mistake caught and fixed before it shipped, not left in**:
+the first copy of the child illustration into `public/images/` used
+the *wrong* recolored unDraw file (an old, abandoned "Bibliophile"
+asset from an earlier discarded design direction, viewBox 1078.5×780.36)
+instead of the actually-approved "Relaxation" sitting pose (viewBox
+655.21×773.33) — caught by checking the rendered `naturalWidth`/
+`naturalHeight` against the expected source file's own viewBox during
+testing, not assumed correct because the copy command didn't error.
+
+Committed on this branch but **not pushed** — per this project's
+standing rule, waiting for the user's own explicit "push it now"
+before this goes anywhere near Railway.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

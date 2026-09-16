@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
 <style>
   :root{
     --sky-50:#eef6ff; --sky-100:#dcedff;
@@ -126,58 +129,41 @@
     .hero-mascot{ order:2; margin-top:6px; }
   }
 
-  /* ---------- Role select ---------- */
-  .role-select{ margin-top:26px; }
-  .role-select-eyebrow{
-    text-align:center; font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--slate-400); margin:0 0 14px;
+  /* ---------- Reading scene (replaces the old "choose how you'll sign in"
+     role-select section entirely) ---------- */
+  .reading-scene{ margin-top:40px; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
+  @media (max-width:760px){ .reading-scene{ grid-template-columns:1fr; gap:24px; text-align:center; } }
+
+  .ground-scene{ position:relative; width:340px; height:300px; margin:0 auto; overflow:hidden; }
+  @media (max-width:400px){ .ground-scene{ width:280px; height:250px; transform:scale(.86); transform-origin:top center; } }
+  .shared-shadow{
+    position:absolute; left:50%; bottom:8px; transform:translateX(-50%);
+    width:300px; height:30px; border-radius:50%; background:rgba(19,31,43,0.16); filter:blur(4px);
   }
-  .stage{ display:grid; grid-template-columns:minmax(260px,0.86fr) 1fr; gap:22px; align-items:stretch; }
-  @media (max-width:760px){ .stage{ grid-template-columns:1fr; } }
-  .learner-tile{
-    position:relative; border-radius:28px; padding:30px 26px 28px;
-    display:flex; flex-direction:column; justify-content:flex-end; min-height:340px;
-    background:linear-gradient(160deg, var(--clay-yellow) 0%, var(--owl-orange-500) 62%, var(--owl-orange-600) 100%);
-    box-shadow:0 26px 40px -18px rgba(221,112,20,0.55), inset 0 2px 0 rgba(255,255,255,0.35);
-    cursor:pointer; overflow:hidden; border:none; text-align:left;
-    transition:transform .2s ease, box-shadow .2s ease;
-    font-family:inherit; text-decoration:none; color:inherit;
+  .ground-child{ position:absolute; left:0; bottom:16px; width:185px; height:auto; z-index:2; }
+  .ground-stack{ position:absolute; left:178px; bottom:16px; width:112px; height:auto; z-index:1; }
+  .owl-mascot-lottie{ position:absolute; left:196px; bottom:80px; width:120px; height:120px; z-index:3; }
+  .ground-book{ position:absolute; left:64px; bottom:96px; width:110px; height:auto; z-index:4; transform-origin:22% 30%; }
+  .cel{ stroke:var(--navy-900); stroke-width:3; stroke-linejoin:round; stroke-linecap:round; }
+
+  /* Typography spec for this section, exact values as approved - kept
+     separate from the rest of the page's own type scale on purpose. */
+  .section-headline{
+    font-family:'Baloo 2', sans-serif; font-size:28px; font-weight:700;
+    color:#f0982c; margin:0 0 12px;
   }
-  .learner-tile:hover{ transform:translateY(-4px); box-shadow:0 30px 44px -18px rgba(221,112,20,0.6), inset 0 2px 0 rgba(255,255,255,0.35); }
-  .clay-blob{ position:absolute; border-radius:50%; background:rgba(255,255,255,0.16); }
-  .clay-blob.b1{ width:170px;height:170px; top:-60px; right:-50px; }
-  .clay-blob.b2{ width:110px;height:110px; bottom:20px; right:-30px; background:rgba(255,255,255,0.1); }
-  .clay-icon{
-    width:64px;height:64px;border-radius:20px; background:rgba(255,255,255,0.92);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 10px 18px -8px rgba(90,45,0,0.45); margin-bottom:16px; position:relative; z-index:1;
+  .section-body{
+    font-family:'Inter', sans-serif; font-size:15px; font-weight:500; line-height:1.6;
+    color:#56697a; margin:0 auto; max-width:420px;
   }
-  .learner-tile h3{ font-family:'Baloo 2',sans-serif; font-size:26px; margin:0 0 6px; color:#4a2600; position:relative; z-index:1; }
-  .learner-tile p{ margin:0 0 20px; font-size:14.5px; font-weight:600; color:#6b3900; opacity:.85; position:relative; z-index:1; max-width:220px; }
-  .clay-cta{ display:inline-flex; align-items:center; gap:8px; background:#4a2600; color:#fff8ec; font-weight:700; font-size:14px; padding:11px 20px; border-radius:999px; width:fit-content; position:relative; z-index:1; }
-  .role-list{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); overflow:hidden; display:flex; flex-direction:column; }
-  .role-list-head{ padding:18px 22px 4px; }
-  .role-list-head .eyebrow{ font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--slate-400); }
-  .role-row{
-    display:flex; align-items:center; gap:14px; padding:16px 22px; border-top:1px solid var(--line);
-    background:transparent; width:100%; text-align:left; cursor:pointer; font-family:inherit;
-    transition:background-color .18s ease, padding-left .18s ease; text-decoration:none; color:inherit;
+  @media (min-width:761px){ .section-body{ margin:0; } }
+  /* clip-path never changes box dimensions, so this reveal cannot cause
+     layout shift - the text's real space is reserved from first paint,
+     only its visibility sweeps in. */
+  .text-reveal{ clip-path: inset(0 100% 0 0); }
+  @media (prefers-reduced-motion: reduce){
+    .text-reveal{ clip-path:none; }
   }
-  .role-row:hover{ background:var(--sky-50); padding-left:26px; }
-  .role-row:last-child{ border-radius:0 0 var(--radius-lg) var(--radius-lg); }
-  .role-row:focus-visible{ outline:none; box-shadow:inset 0 0 0 2px var(--blue-500); }
-  .role-icon{ width:42px;height:42px;border-radius:12px; display:flex;align-items:center;justify-content:center;flex-shrink:0; color:#fff; }
-  .role-icon.admin{ background:linear-gradient(150deg,#4a5b6b,var(--navy-900)); }
-  .role-icon.teacher{ background:linear-gradient(150deg,var(--blue-500),var(--blue-700)); }
-  .role-icon.parent{ background:linear-gradient(150deg,#28b895,var(--parent-teal)); }
-  .role-copy{ flex:1; min-width:0; }
-  .role-copy h4{ margin:0 0 2px; font-size:15px; font-weight:700; color:var(--navy-900); }
-  .role-copy p{ margin:0; font-size:13px; color:var(--slate-600); font-weight:500; }
-  .role-arrow{ color:var(--slate-400); flex-shrink:0; transition:transform .18s ease, color .18s ease; }
-  .role-row:hover .role-arrow{ transform:translateX(3px); color:var(--blue-600); }
-  .footnote{ text-align:center; margin-top:26px; font-size:12.5px; color:var(--slate-400); font-weight:500; }
-  .footnote a{ color:var(--blue-600); text-decoration:none; font-weight:700; transition:color .15s ease; }
-  .footnote a:hover{ text-decoration:underline; }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
@@ -300,60 +286,42 @@
   </section>
 
   <div class="wrap">
-    <section class="role-select" id="signin">
-      <p class="role-select-eyebrow">Ready to start? Choose how you'll sign in</p>
+    <section class="reading-scene" id="readingScene">
+      <div class="ground-scene">
+        <!-- one shared ground shadow for the whole group, not one per character -->
+        <div class="shared-shadow"></div>
 
-      <div class="stage">
-        <a class="learner-tile" href="{{ route('learner.login') }}">
-          <div class="clay-blob b1"></div>
-          <div class="clay-blob b2"></div>
-          <div class="clay-icon">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="6" width="18" height="13" rx="4" fill="#ef8d2a"/>
-              <circle cx="8.5" cy="12.5" r="1.6" fill="white"/>
-              <circle cx="15.5" cy="12.5" r="1.6" fill="white"/>
-              <rect x="9.5" y="3" width="2" height="4" rx="1" fill="#ef8d2a"/>
-              <rect x="12.5" y="3" width="2" height="4" rx="1" fill="#ef8d2a"/>
-            </svg>
-          </div>
-          <h3>I'm a Learner</h3>
-          <p>Read, play &amp; earn badges!</p>
-          <span class="clay-cta">
-            Enter my PIN
-          </span>
-        </a>
+        <!-- child: real unDraw asset ("Relaxation"), recolored fills only, linework untouched -->
+        <img class="ground-child" src="{{ asset('images/landing-reading-child.svg') }}" alt="A child sitting on the ground, reading">
 
-        <div class="role-list">
-          <div class="role-list-head"><span class="eyebrow">Sign in as</span></div>
+        <!-- book stack: 3 boxes, alternating palette, hard-shaded side face each -->
+        <svg class="ground-stack" viewBox="0 0 130 80">
+          <polygon class="cel" points="0,58 110,58 110,80 0,80" fill="var(--blue-600)"/>
+          <polygon class="cel" points="110,58 110,80 122,70 122,48" fill="var(--blue-700)"/>
+          <polygon class="cel" points="8,38 96,38 96,58 8,58" fill="var(--parent-teal)"/>
+          <polygon class="cel" points="96,38 96,58 108,48 108,28" fill="#146b56"/>
+          <polygon class="cel" points="16,20 82,20 82,38 16,38" fill="var(--clay-yellow)"/>
+          <polygon class="cel" points="82,20 82,38 94,28 94,8" fill="#c9973e"/>
+        </svg>
 
-          <a class="role-row" href="{{ route('login', ['role' => 'teacher']) }}">
-            <span class="role-icon teacher">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3L2 8l10 5 8-4.2V15h1V8L12 3z" fill="currentColor"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5l-6 3.2-6-3.2z" fill="currentColor" opacity="0.85"/></svg>
-            </span>
-            <span class="role-copy"><h4>Teacher</h4><p>Create activities &amp; track class progress</p></span>
-            <svg class="role-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
+        <!-- entering character: the real Lottie animation (approved, LottieFiles free tier) -->
+        <div id="owlMascotLottie" class="owl-mascot-lottie"></div>
 
-          <a class="role-row" href="{{ route('login', ['role' => 'parent']) }}">
-            <span class="role-icon parent">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" fill="currentColor"/><circle cx="17" cy="9" r="2.4" fill="currentColor" opacity="0.85"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="currentColor"/><path d="M14 20c.3-2.4 1.8-4.3 3.8-5.1 2 .9 3.2 2.8 3.2 5.1" fill="currentColor" opacity="0.85"/></svg>
-            </span>
-            <span class="role-copy"><h4>Parent</h4><p>Monitor your child's reading progress</p></span>
-            <svg class="role-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
+        <!-- the held book: simple hand-coded geometry, cel-shaded spine -->
+        <svg id="heldBook" class="ground-book" viewBox="0 0 90 50">
+          <polygon points="45,6 6,16 6,44 45,36" fill="#fff" stroke="var(--navy-900)" stroke-width="2.6" stroke-linejoin="round"/>
+          <polygon points="45,6 84,16 84,44 45,36" fill="#f4f8fc" stroke="var(--navy-900)" stroke-width="2.6" stroke-linejoin="round"/>
+          <polygon points="42,10 48,10 48,34 42,32" fill="var(--blue-700)"/>
+          <path d="M14 22h20M14 28h16" stroke="var(--sky-100)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M52 22h20M52 28h16" stroke="var(--sky-100)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
 
-          <a class="role-row" href="{{ route('login', ['role' => 'admin']) }}">
-            <span class="role-icon admin">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5l7-3z" fill="currentColor"/></svg>
-            </span>
-            <span class="role-copy"><h4>Admin</h4><p>Manage teacher accounts &amp; approvals</p></span>
-            <svg class="role-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-        </div>
+      <div id="textReveal" class="text-reveal">
+        <h2 class="section-headline">Real reading, actually fun</h2>
+        <p class="section-body">Tara the owl listens while a child reads a real story out loud, checking every word as they go, right there in the moment.</p>
       </div>
     </section>
-
-    <p class="footnote">New teacher at your school? <a href="{{ route('register.teacher') }}">Request an account</a></p>
   </div>
 
 <script>
@@ -399,6 +367,91 @@
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
+
+  // Reading-scene entrance: Tara's real Lottie animation (LottieFiles free
+  // tier, approved as-is) enters from the right; the headline/body are
+  // revealed via an authored clip-path sweep timed to the real, verified
+  // moment the sword's swing arrives - not tracked pixel-by-pixel, timed.
+  // See CLAUDE.md for how frame 19 was derived from this file's own keyframes.
+  if (!prefersReducedMotion && window.gsap && window.lottie) {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const owlAnim = lottie.loadAnimation({
+      container: document.getElementById('owlMascotLottie'),
+      renderer: 'svg',
+      loop: false,
+      autoplay: false,
+      path: '{{ asset("animations/tarabasa-owl.json") }}'
+    });
+
+    // Sword_Blade's own rotation peaks at 14.86deg exactly at frame 19
+    // (settling to 10.88deg at frame 20 - the real swing-then-recoil beat),
+    // and Body's rotation independently peaks at 15deg at that same frame 19.
+    // Two unrelated layers agreeing on frame 19 is what makes this computed
+    // from the file's real data, not guessed. At the file's real 24fps,
+    // frame 19 = 19/24s.
+    const SWORD_EXTENSION_SECONDS = 19 / 24; // 0.7917s
+
+    const readingTl = gsap.timeline({
+      scrollTrigger: { trigger: '.reading-scene', start: 'top 80%' }
+    });
+
+    // Three real bugs found in testing, not assumed correct from the code:
+    // 1) ScrollTrigger measures trigger positions at creation time, before
+    //    the child illustration (an <img> with no explicit height) finishes
+    //    loading - its eventual size shifts the document's height, so the
+    //    trigger's start/end were computed against a too-short page.
+    //    Refreshing once everything has actually loaded fixes that.
+    // 2) On short pages the computed trigger "start" can land above 0 (i.e.
+    //    already behind the scroll position at load) - confirmed directly:
+    //    forcing the timeline's own progress to 1 revealed the text and
+    //    moved the owl correctly, proving the timeline itself works, but
+    //    ScrollTrigger's onEnter never fires because there's no discrete
+    //    "crossing" scroll event to trigger it from a state that was already
+    //    active. Explicitly playing the timeline once if it's already inside
+    //    its active range covers this case.
+    // 3) On a fast local/cached load, `window`'s 'load' event can fire
+    //    before this script even attaches a listener for it - confirmed via
+    //    document.readyState already reading "complete" at this point in a
+    //    real test, meaning the listener below would simply never run.
+    //    Running the same fix immediately when that's already true, instead
+    //    of only waiting for an event that may never come, is what actually
+    //    fixes it.
+    function activateReadingScene() {
+      ScrollTrigger.refresh();
+      if (readingTl.scrollTrigger.isActive) {
+        readingTl.play(0);
+      }
+    }
+    if (document.readyState === 'complete') {
+      activateReadingScene();
+    } else {
+      window.addEventListener('load', activateReadingScene);
+    }
+
+    readingTl.set('#owlMascotLottie', { opacity: 0, x: 160 })
+      .set('#textReveal', { clipPath: 'inset(0 100% 0 0)' })
+      .to('#owlMascotLottie', {
+        opacity: 1, x: 0, duration: 0.6, ease: 'power2.out',
+        onStart: () => owlAnim.play()
+      }, 0)
+      .to('#textReveal', {
+        clipPath: 'inset(0 0% 0 0)',
+        duration: SWORD_EXTENSION_SECONDS,
+        ease: 'power2.out'
+      }, 0);
+
+    // Independent idle bob for the child + a held-book flip loop - only
+    // start once the one-shot entrance has fully finished, so nothing
+    // fights the reveal while it's happening.
+    readingTl.eventCallback('onComplete', () => {
+      gsap.to('.ground-child', { y: -6, duration: 1.3, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+      gsap.to('#heldBook', {
+        rotationZ: -4, transformOrigin: '20% 60%',
+        duration: 1.1, delay: -0.4, repeat: -1, yoyo: true, ease: 'sine.inOut'
+      });
+    });
+  }
 </script>
 </body>
 </html>
