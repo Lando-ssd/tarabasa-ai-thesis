@@ -105,11 +105,16 @@
   .hero-grid{ position:relative; display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:center; }
   .hero-copy{ text-align:left; }
   .hero-headline{
-    font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1.12;
-    font-size:clamp(28px, 4.2vw, 44px); margin:0 0 14px; color:#ffffff;
+    /* line-height was 1.12 - too tight for a bold 3-line wrap at the text
+       column width the bigger owl now leaves (~280-320px on desktop), the
+       lines read as merging into each other. 1.28 gives real breathing room
+       between lines; margin-bottom bumped to match so the step down to the
+       subhead reads as a deliberate paragraph break, not a leftover gap. */
+    font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1.28;
+    font-size:clamp(28px, 4.2vw, 44px); margin:0 0 18px; color:#ffffff;
   }
   .hero-headline .accent{ color:var(--owl-orange-400); }
-  .hero-sub{ font-size:16px; color:var(--sky-50); opacity:.92; font-weight:500; line-height:1.55; margin:0; max-width:420px; }
+  .hero-sub{ font-size:16px; color:var(--sky-50); opacity:.92; font-weight:500; line-height:1.6; margin:0; max-width:420px; }
 
   .hero-mascot{ position:relative; display:flex; flex-direction:column; align-items:center; }
   /* Bumped up again per direct feedback - 700px is a real, meaningfully
