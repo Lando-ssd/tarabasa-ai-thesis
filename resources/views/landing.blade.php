@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
 <style>
   :root{
     --sky-50:#eef6ff; --sky-100:#dcedff;
@@ -111,13 +112,15 @@
   .hero-sub{ font-size:16px; color:var(--sky-50); opacity:.92; font-weight:500; line-height:1.55; margin:0; max-width:420px; }
 
   .hero-mascot{ position:relative; display:flex; flex-direction:column; align-items:center; }
-  .mascot-stage{ position:relative; width:min(320px, 78vw); }
-  .mascot-contact-shadow{
-    position:absolute; left:50%; bottom:2%; transform:translateX(-50%); width:58%; height:22px; border-radius:50%;
-    background:rgba(6,16,30,0.32); filter:blur(6px); z-index:0;
-  }
-  .owl-mascot{ position:relative; z-index:1; width:100%; height:auto; display:block; animation:bob 4s ease-in-out infinite; }
-  @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
+  /* 420px (up from the previous static SVG's 320px rendered width — a real,
+     measured ~31% size increase, not a guess) still leaves comfortable room
+     in the two-column hero grid at desktop widths. */
+  .mascot-stage{ position:relative; width:min(420px, 78vw); }
+  /* The Lottie asset's own composition is a 1080x1080 square (confirmed from
+     its real source, unrelated to the old static SVG's 300x320 viewBox), so
+     the container is square too — forcing the old aspect ratio here would
+     stretch the new animation. */
+  .hero-owl-lottie{ position:relative; z-index:1; width:100%; aspect-ratio:1/1; display:block; }
 
   @media (max-width:760px){
     .hero-grid{ grid-template-columns:1fr; gap:14px; }
@@ -129,7 +132,6 @@
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
   @media (prefers-reduced-motion: reduce){
-    .owl-mascot{ animation:none; }
     html{ scroll-behavior:auto; }
   }
 </style>
@@ -197,42 +199,16 @@
 
         <div class="hero-mascot" data-parallax="0.03">
           <div class="mascot-stage">
-            <div class="mascot-contact-shadow"></div>
-            <svg class="owl-mascot" viewBox="0 0 300 320" fill="none" role="img" aria-label="Basa the owl, holding an open book">
-              <rect x="112" y="278" width="26" height="22" rx="9" fill="var(--owl-orange-600)"/>
-              <rect x="162" y="278" width="26" height="22" rx="9" fill="var(--owl-orange-600)"/>
-
-              <path d="M45 205c-6 20-2 45 20 55l14-38c-14-2-27-9-34-17z" fill="var(--owl-orange-600)"/>
-              <path d="M255 205c6 20 2 45-20 55l-14-38c14-2 27-9 34-17z" fill="var(--owl-orange-600)"/>
-
-              <ellipse cx="150" cy="168" rx="112" ry="116" fill="var(--owl-orange-500)"/>
-
-              <path d="M78 92c-10-24-6-48 8-62 4 20 16 34 30 40-16 4-30 12-38 22z" fill="var(--owl-orange-600)"/>
-              <path d="M222 92c10-24 6-48-8-62-4 20-16 34-30 40 16 4 30 12 38 22z" fill="var(--owl-orange-600)"/>
-
-              <ellipse cx="110" cy="168" rx="46" ry="50" fill="rgba(255,255,255,0.92)"/>
-              <ellipse cx="190" cy="168" rx="46" ry="50" fill="rgba(255,255,255,0.92)"/>
-
-              <circle cx="108" cy="192" r="13" fill="var(--owl-orange-400)" opacity="0.55"/>
-              <circle cx="192" cy="192" r="13" fill="var(--owl-orange-400)" opacity="0.55"/>
-
-              <circle cx="110" cy="168" r="33" fill="#ffffff"/>
-              <circle cx="190" cy="168" r="33" fill="#ffffff"/>
-              <circle cx="110" cy="168" r="15" fill="var(--navy-900)"/>
-              <circle cx="190" cy="168" r="15" fill="var(--navy-900)"/>
-              <circle cx="104" cy="161" r="4.5" fill="#ffffff"/>
-              <circle cx="184" cy="161" r="4.5" fill="#ffffff"/>
-
-              <path d="M150 190l12 14h-24z" fill="var(--owl-orange-600)"/>
-
-              <path d="M96 232c14 10 34 15 54 15s40-5 54-15c-4 26-28 46-54 46s-50-20-54-46z" fill="var(--owl-orange-500)"/>
-
-              <g transform="translate(114,222)">
-                <path d="M0 8c0 0 14-6 24 3 2.4 2.2 4 6 4 10.4V44c0 0-8-6-28-4V8z" fill="var(--blue-500)"/>
-                <path d="M72 8c0 0-14-6-24 3-2.4 2.2-4 6-4 10.4V44c0 0 8-6 28-4V8z" fill="var(--parent-teal)"/>
-                <rect x="34" y="10" width="4" height="34" fill="#ffffff" opacity="0.8"/>
-              </g>
-            </svg>
+            <!-- Real Lottie greeting animation (jsdelivr/lottie-web@5.12.2, the
+                 same CDN/version already established in this app). Frames 0-176
+                 are the verified clean loop — the body's own position/rotation
+                 and the speech-bubble's own scale all return to the exact same
+                 "at rest" values at both ends. Includes its own baked-in ground
+                 shadow (the "sombra" layer), so no separate shadow div is
+                 needed here — an opaque white background layer baked into the
+                 raw export was stripped out before saving, or it would have
+                 rendered as a solid white square behind the owl. -->
+            <div id="heroOwlLottie" class="hero-owl-lottie" role="img" aria-label="Basa the owl waving hello"></div>
           </div>
         </div>
       </div>
@@ -289,6 +265,30 @@
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
+
+  // Hero owl: real Lottie greeting animation. Frames 0-176 (of a 600-frame
+  // asset) are the one verified clean loop - four independent layers (body
+  // position, body rotation, the speech bubble's scale, and both eyes) all
+  // land on the exact same "at rest" values at both frame 0 and frame ~176,
+  // so looping this exact range never pops or jumps. Played at 0.5x speed
+  // (a real ~5.87s loop) since native speed reads too fast for a decorative,
+  // always-visible hero element. For reduced-motion, it renders once as a
+  // still frame instead of looping.
+  if (window.lottie) {
+    const heroOwlAnim = lottie.loadAnimation({
+      container: document.getElementById('heroOwlLottie'),
+      renderer: 'svg',
+      loop: !prefersReducedMotion,
+      autoplay: !prefersReducedMotion,
+      path: '{{ asset("animations/tarabasa-owl-hello.json") }}',
+      initialSegment: [0, 176]
+    });
+    if (!prefersReducedMotion) {
+      heroOwlAnim.setSpeed(0.5);
+    } else {
+      heroOwlAnim.goToAndStop(90, true);
+    }
+  }
 </script>
 </body>
 </html>
