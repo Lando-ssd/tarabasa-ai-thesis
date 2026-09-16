@@ -7,9 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/ScrollTrigger.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
 <style>
   :root{
     --sky-50:#eef6ff; --sky-100:#dcedff;
@@ -127,42 +124,6 @@
     .hero-copy{ text-align:center; }
     .hero-sub{ margin:0 auto; }
     .hero-mascot{ order:2; margin-top:6px; }
-  }
-
-  /* ---------- Reading scene (replaces the old "choose how you'll sign in"
-     role-select section entirely) ---------- */
-  .reading-scene{ margin-top:40px; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
-  @media (max-width:760px){ .reading-scene{ grid-template-columns:1fr; gap:24px; text-align:center; } }
-
-  .ground-scene{ position:relative; width:340px; height:300px; margin:0 auto; overflow:hidden; }
-  @media (max-width:400px){ .ground-scene{ width:280px; height:250px; transform:scale(.86); transform-origin:top center; } }
-  .shared-shadow{
-    position:absolute; left:50%; bottom:8px; transform:translateX(-50%);
-    width:300px; height:30px; border-radius:50%; background:rgba(19,31,43,0.16); filter:blur(4px);
-  }
-  .ground-child{ position:absolute; left:0; bottom:16px; width:185px; height:auto; z-index:2; }
-  .ground-stack{ position:absolute; left:178px; bottom:16px; width:112px; height:auto; z-index:1; }
-  .owl-mascot-lottie{ position:absolute; left:196px; bottom:80px; width:120px; height:120px; z-index:3; }
-  .ground-book{ position:absolute; left:64px; bottom:96px; width:110px; height:auto; z-index:4; transform-origin:22% 30%; }
-  .cel{ stroke:var(--navy-900); stroke-width:3; stroke-linejoin:round; stroke-linecap:round; }
-
-  /* Typography spec for this section, exact values as approved - kept
-     separate from the rest of the page's own type scale on purpose. */
-  .section-headline{
-    font-family:'Baloo 2', sans-serif; font-size:28px; font-weight:700;
-    color:#f0982c; margin:0 0 12px;
-  }
-  .section-body{
-    font-family:'Inter', sans-serif; font-size:15px; font-weight:500; line-height:1.6;
-    color:#56697a; margin:0 auto; max-width:420px;
-  }
-  @media (min-width:761px){ .section-body{ margin:0; } }
-  /* clip-path never changes box dimensions, so this reveal cannot cause
-     layout shift - the text's real space is reserved from first paint,
-     only its visibility sweeps in. */
-  .text-reveal{ clip-path: inset(0 100% 0 0); }
-  @media (prefers-reduced-motion: reduce){
-    .text-reveal{ clip-path:none; }
   }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
@@ -285,45 +246,6 @@
     </div>
   </section>
 
-  <div class="wrap">
-    <section class="reading-scene" id="readingScene">
-      <div class="ground-scene">
-        <!-- one shared ground shadow for the whole group, not one per character -->
-        <div class="shared-shadow"></div>
-
-        <!-- child: real unDraw asset ("Relaxation"), recolored fills only, linework untouched -->
-        <img class="ground-child" src="{{ asset('images/landing-reading-child.svg') }}" alt="A child sitting on the ground, reading">
-
-        <!-- book stack: 3 boxes, alternating palette, hard-shaded side face each -->
-        <svg class="ground-stack" viewBox="0 0 130 80">
-          <polygon class="cel" points="0,58 110,58 110,80 0,80" fill="var(--blue-600)"/>
-          <polygon class="cel" points="110,58 110,80 122,70 122,48" fill="var(--blue-700)"/>
-          <polygon class="cel" points="8,38 96,38 96,58 8,58" fill="var(--parent-teal)"/>
-          <polygon class="cel" points="96,38 96,58 108,48 108,28" fill="#146b56"/>
-          <polygon class="cel" points="16,20 82,20 82,38 16,38" fill="var(--clay-yellow)"/>
-          <polygon class="cel" points="82,20 82,38 94,28 94,8" fill="#c9973e"/>
-        </svg>
-
-        <!-- entering character: the real Lottie animation (approved, LottieFiles free tier) -->
-        <div id="owlMascotLottie" class="owl-mascot-lottie"></div>
-
-        <!-- the held book: simple hand-coded geometry, cel-shaded spine -->
-        <svg id="heldBook" class="ground-book" viewBox="0 0 90 50">
-          <polygon points="45,6 6,16 6,44 45,36" fill="#fff" stroke="var(--navy-900)" stroke-width="2.6" stroke-linejoin="round"/>
-          <polygon points="45,6 84,16 84,44 45,36" fill="#f4f8fc" stroke="var(--navy-900)" stroke-width="2.6" stroke-linejoin="round"/>
-          <polygon points="42,10 48,10 48,34 42,32" fill="var(--blue-700)"/>
-          <path d="M14 22h20M14 28h16" stroke="var(--sky-100)" stroke-width="3" stroke-linecap="round"/>
-          <path d="M52 22h20M52 28h16" stroke="var(--sky-100)" stroke-width="3" stroke-linecap="round"/>
-        </svg>
-      </div>
-
-      <div id="textReveal" class="text-reveal">
-        <h2 class="section-headline">Real reading, actually fun</h2>
-        <p class="section-body">Tara the owl listens while a child reads a real story out loud, checking every word as they go, right there in the moment.</p>
-      </div>
-    </section>
-  </div>
-
 <script>
   // Get Started dropdown: closes on outside click / Escape.
   const dropdowns = document.querySelectorAll('[data-dropdown]');
@@ -367,91 +289,6 @@
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
-
-  // Reading-scene entrance: Tara's real Lottie animation (LottieFiles free
-  // tier, approved as-is) enters from the right; the headline/body are
-  // revealed via an authored clip-path sweep timed to the real, verified
-  // moment the sword's swing arrives - not tracked pixel-by-pixel, timed.
-  // See CLAUDE.md for how frame 19 was derived from this file's own keyframes.
-  if (!prefersReducedMotion && window.gsap && window.lottie) {
-    gsap.registerPlugin(ScrollTrigger);
-
-    const owlAnim = lottie.loadAnimation({
-      container: document.getElementById('owlMascotLottie'),
-      renderer: 'svg',
-      loop: false,
-      autoplay: false,
-      path: '{{ asset("animations/tarabasa-owl.json") }}'
-    });
-
-    // Sword_Blade's own rotation peaks at 14.86deg exactly at frame 19
-    // (settling to 10.88deg at frame 20 - the real swing-then-recoil beat),
-    // and Body's rotation independently peaks at 15deg at that same frame 19.
-    // Two unrelated layers agreeing on frame 19 is what makes this computed
-    // from the file's real data, not guessed. At the file's real 24fps,
-    // frame 19 = 19/24s.
-    const SWORD_EXTENSION_SECONDS = 19 / 24; // 0.7917s
-
-    const readingTl = gsap.timeline({
-      scrollTrigger: { trigger: '.reading-scene', start: 'top 80%' }
-    });
-
-    // Three real bugs found in testing, not assumed correct from the code:
-    // 1) ScrollTrigger measures trigger positions at creation time, before
-    //    the child illustration (an <img> with no explicit height) finishes
-    //    loading - its eventual size shifts the document's height, so the
-    //    trigger's start/end were computed against a too-short page.
-    //    Refreshing once everything has actually loaded fixes that.
-    // 2) On short pages the computed trigger "start" can land above 0 (i.e.
-    //    already behind the scroll position at load) - confirmed directly:
-    //    forcing the timeline's own progress to 1 revealed the text and
-    //    moved the owl correctly, proving the timeline itself works, but
-    //    ScrollTrigger's onEnter never fires because there's no discrete
-    //    "crossing" scroll event to trigger it from a state that was already
-    //    active. Explicitly playing the timeline once if it's already inside
-    //    its active range covers this case.
-    // 3) On a fast local/cached load, `window`'s 'load' event can fire
-    //    before this script even attaches a listener for it - confirmed via
-    //    document.readyState already reading "complete" at this point in a
-    //    real test, meaning the listener below would simply never run.
-    //    Running the same fix immediately when that's already true, instead
-    //    of only waiting for an event that may never come, is what actually
-    //    fixes it.
-    function activateReadingScene() {
-      ScrollTrigger.refresh();
-      if (readingTl.scrollTrigger.isActive) {
-        readingTl.play(0);
-      }
-    }
-    if (document.readyState === 'complete') {
-      activateReadingScene();
-    } else {
-      window.addEventListener('load', activateReadingScene);
-    }
-
-    readingTl.set('#owlMascotLottie', { opacity: 0, x: 160 })
-      .set('#textReveal', { clipPath: 'inset(0 100% 0 0)' })
-      .to('#owlMascotLottie', {
-        opacity: 1, x: 0, duration: 0.6, ease: 'power2.out',
-        onStart: () => owlAnim.play()
-      }, 0)
-      .to('#textReveal', {
-        clipPath: 'inset(0 0% 0 0)',
-        duration: SWORD_EXTENSION_SECONDS,
-        ease: 'power2.out'
-      }, 0);
-
-    // Independent idle bob for the child + a held-book flip loop - only
-    // start once the one-shot entrance has fully finished, so nothing
-    // fights the reveal while it's happening.
-    readingTl.eventCallback('onComplete', () => {
-      gsap.to('.ground-child', { y: -6, duration: 1.3, repeat: -1, yoyo: true, ease: 'sine.inOut' });
-      gsap.to('#heldBook', {
-        rotationZ: -4, transformOrigin: '20% 60%',
-        duration: 1.1, delay: -0.4, repeat: -1, yoyo: true, ease: 'sine.inOut'
-      });
-    });
-  }
 </script>
 </body>
 </html>
