@@ -101,22 +101,33 @@
     .cloud svg{ animation:none; }
   }
 
-  .hero-inner{ position:relative; z-index:3; max-width:1040px; margin:0 auto; padding:24px 20px 0; }
+  /* Widened from 1040px to 1300px specifically to give the headline room to
+     wrap onto 2 lines again (matching how it read before the owl grew) while
+     keeping the owl at its current bigger size, instead of shrinking either
+     one to fit the old width. Only the hero's own content is affected - the
+     nav bar keeps its separate, unchanged 1040px max-width. */
+  .hero-inner{ position:relative; z-index:3; max-width:1300px; margin:0 auto; padding:24px 20px 0; }
   .hero-grid{ position:relative; display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:center; }
   .hero-copy{ text-align:left; }
   .hero-headline{
-    /* line-height was 1.12 - too tight for a bold 3-line wrap at the text
-       column width the bigger owl now leaves (~280-320px on desktop), the
-       lines read as merging into each other. 1.28 gives real breathing room
-       between lines; margin-bottom bumped to match so the step down to the
-       subhead reads as a deliberate paragraph break, not a leftover gap. */
-    font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1.28;
-    font-size:clamp(28px, 4.2vw, 44px); margin:0 0 18px; color:#ffffff;
+    /* Per direct feedback: line-height back down to 1.0 (1.28 read as the
+       lines "floating" apart), and font-size roughly doubled (clamp max
+       44px -> 84px) for real visual weight - re-tested against the wider
+       1300px hero-inner to confirm it still wraps cleanly at 2 lines
+       instead of overflowing or forcing a 3rd/4th line. */
+    font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1.0;
+    font-size:clamp(32px, 7.5vw, 84px); margin:0 0 18px; color:#ffffff;
   }
   .hero-headline .accent{ color:var(--owl-orange-400); }
   .hero-sub{ font-size:16px; color:var(--sky-50); opacity:.92; font-weight:500; line-height:1.6; margin:0; max-width:420px; }
 
-  .hero-mascot{ position:relative; display:flex; flex-direction:column; align-items:center; }
+  /* Shifted from centered to flex-end (right-aligned within its own grid
+     column) per direct feedback that a dead-centered owl looked off - now it
+     sits toward the right side of the hero instead of the middle. Only for
+     the two-column desktop layout; re-centered below in the stacked
+     single-column media query, where "right-aligned" would just look
+     off-center against the full-width column instead of intentional. */
+  .hero-mascot{ position:relative; display:flex; flex-direction:column; align-items:flex-end; }
   /* Bumped up again per direct feedback - 700px is a real, meaningfully
      larger jump from 560px (and 420px, and the original static SVG's
      320px). The stacking breakpoint below is re-tuned to match. */
@@ -135,7 +146,7 @@
     .hero-grid{ grid-template-columns:1fr; gap:14px; }
     .hero-copy{ text-align:center; }
     .hero-sub{ margin:0 auto; }
-    .hero-mascot{ order:2; margin-top:6px; }
+    .hero-mascot{ order:2; margin-top:6px; align-items:center; }
   }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
