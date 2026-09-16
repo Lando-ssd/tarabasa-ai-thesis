@@ -112,23 +112,21 @@
   .hero-sub{ font-size:16px; color:var(--sky-50); opacity:.92; font-weight:500; line-height:1.55; margin:0; max-width:420px; }
 
   .hero-mascot{ position:relative; display:flex; flex-direction:column; align-items:center; }
-  /* Bumped up again per direct feedback ("make it bigger") - 560px is a real,
-     meaningfully larger jump from the previous 420px (and the original static
-     SVG's 320px), tested against the two-column hero grid to confirm it
-     doesn't crowd the headline column or cause page overflow. */
-  .mascot-stage{ position:relative; width:min(560px, 82vw); }
+  /* Bumped up again per direct feedback - 700px is a real, meaningfully
+     larger jump from 560px (and 420px, and the original static SVG's
+     320px). The stacking breakpoint below is re-tuned to match. */
+  .mascot-stage{ position:relative; width:min(700px, 86vw); }
   /* The Lottie asset's own composition is a 1080x1080 square (confirmed from
      its real source, unrelated to the old static SVG's 300x320 viewBox), so
      the container is square too — forcing the old aspect ratio here would
      stretch the new animation. */
   .hero-owl-lottie{ position:relative; z-index:1; width:100%; aspect-ratio:1/1; display:block; }
 
-  /* Raised from 760px to 920px specifically because of the bigger 560px owl:
-     below ~920px viewport, a fixed 560px mascot next to a two-column grid
-     leaves the headline column too narrow to read (tested directly at 800px
-     - it wrapped to one or two words per line). Stacking to one column below
-     this width keeps the mascot full-size without crowding the text. */
-  @media (max-width:920px){
+  /* Re-tuned again for the 700px owl (previously 920px, for the 560px owl) -
+     re-tested the same way: below ~1060px, a fixed 700px mascot squeezed the
+     text column down to ~175px. Stacking to one column below this width
+     keeps the mascot full-size without crowding the text. */
+  @media (max-width:1060px){
     .hero-grid{ grid-template-columns:1fr; gap:14px; }
     .hero-copy{ text-align:center; }
     .hero-sub{ margin:0 auto; }
