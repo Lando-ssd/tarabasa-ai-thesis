@@ -119,8 +119,13 @@
     font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1.0;
     font-size:clamp(36px, 8.5vw, 100px); margin:0 0 18px; color:#ffffff;
   }
-  .hero-headline .accent{ color:var(--owl-orange-400); }
-  .hero-sub{ font-size:16px; color:var(--sky-50); opacity:.92; font-weight:500; line-height:1.6; margin:0; max-width:420px; }
+  /* white-space:nowrap keeps "love reading." from breaking between the two
+     words at narrower widths - per direct feedback, it should read as one
+     continuous phrase, never "love" / "reading." split across two lines. */
+  .hero-headline .accent{ color:var(--owl-orange-400); white-space:nowrap; }
+  /* Bumped per direct follow-up feedback - 16px -> 20px, a real but smaller
+     step than the headline's own jump. */
+  .hero-sub{ font-size:20px; color:var(--sky-50); opacity:.92; font-weight:500; line-height:1.6; margin:0; max-width:420px; }
 
   /* Shifted from centered to flex-end (right-aligned within its own grid
      column) per direct feedback that a dead-centered owl looked off - now it
