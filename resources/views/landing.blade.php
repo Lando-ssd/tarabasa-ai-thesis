@@ -302,12 +302,20 @@
 
   /* ---------- Section 4: stay motivated (looping text + sword-bird
      chase) ---------- */
-  /* Single overlapping "lane" (not the two-column layout Sections 2-3 use):
-     the text runs in from the left toward a right-anchored resting spot,
-     and the owl chases it in from further back/left, catching up right as
-     the text settles - both positioned via position:absolute inside this
-     relative box so their transform transitions can carry them across the
-     lane without affecting layout/flow (no layout thrashing). */
+  /* A real flexbox row, NOT absolute-offset math - direct feedback caught a
+     real problem with the earlier absolute-position version: the owl ended
+     up overlapping/behind the text, when the actual ask is a clean
+     side-by-side composition (owl left, a real gap, text right) that the
+     owl's sword must never cross into ("no trespass"), at rest AND at every
+     point during the chase. Flexbox guarantees this structurally instead of
+     needing careful pixel-tuning: both children's LAYOUT boxes (including
+     the real `gap` between them) are fixed by flex from the very first
+     frame - only their `transform` is animated for the entrance, and
+     `transform` never affects layout, so the owl's rendered pixels can
+     never actually enter the text's own reserved column no matter how far
+     it's translated. `order:-1` visually places the owl first (left) while
+     it stays second in the real DOM/reading order (decorative content
+     shouldn't need to be read before the actual copy). */
   .stay-scene{
     position:relative;
     /* Starts on Section 3's own closing tint (#f3faf8) so there's no seam,
@@ -318,19 +326,19 @@
     padding:100px 0;
     overflow:hidden;
   }
+  /* Wider than the site's usual 1040px column - measured live (see the
+     max-width:1099px breakpoint below): a 680px owl + a real 56px gap +
+     the text column need ~1200px to sit side by side without the owl's
+     own left edge clipping past the viewport at typical laptop widths.
+     Only this section needs the extra room, since it's the only one with
+     a character this large next to its text. */
   .stay-scene-inner{
-    position:relative;
-    max-width:1040px; margin:0 auto; padding:0 20px;
-    height:520px;
+    display:flex; align-items:center; justify-content:flex-end;
+    gap:56px; flex-wrap:nowrap;
+    max-width:1200px; margin:0 auto; padding:0 20px;
+    min-height:460px;
   }
-  /* Anchored at the lane's right edge, vertically centered via top/margin
-     (not transform) so transform stays free for the entrance-motion
-     transition. */
-  .stay-text-wrap{
-    position:absolute; z-index:1;
-    top:50%; right:20px; margin-top:-110px;
-    max-width:480px; width:100%;
-  }
+  .stay-text-wrap{ position:relative; z-index:1; flex:0 0 auto; max-width:480px; }
   /* The text genuinely runs from a left starting point to its right-
      anchored resting spot (confirmed with the user directly - this is the
      literal "chased by the owl" visual, not just a plain fade). It fully
@@ -354,25 +362,26 @@
   }
   /* The soft glow that reinforces "the sword has caught up" during the
      hold phase - a plain radial gradient, GPU-cheap (opacity only),
-     positioned at the text's LEFT edge now (where the owl arrives from,
-     since it's chasing in from the left, not the right). */
+     sitting IN the real gap between the two, not overlapping either one. */
   .stay-text-wrap::after{
-    content:''; position:absolute; top:50%; left:-40px;
-    width:180px; height:180px; margin-top:-90px;
+    content:''; position:absolute; top:50%; left:-56px;
+    width:120px; height:180px; margin-top:-90px;
     background:radial-gradient(circle, rgba(239,141,42,0.35) 0%, rgba(239,141,42,0) 70%);
     opacity:0; transition:opacity .5s ease; pointer-events:none; z-index:0;
   }
   .stay-text-wrap.arrived::after{ opacity:1; }
-  /* The owl - doubled in size per direct feedback (340px -> 680px) and
-     repositioned to chase in from the left instead of flying in from a
-     fixed right-side stage. Rests just behind/left of the text (z-index:0,
-     under the text's z-index:1) so it visually catches up TO the text
-     rather than sitting in its own separate column. */
+  /* The owl - doubled in size per direct feedback (340px -> 680px), placed
+     in its own real flex column to the text's left (order:-1) with a real
+     56px gap between them that it never crosses. It chases in via its own
+     transform, starting off past its own reserved slot (translateX(-820px)
+     - well past its own 680px width, so it's genuinely off-screen, not
+     merely adjacent) and animating to translateX(0), which is simply its
+     already-reserved flex position - the "catching up" is entirely this
+     element's own motion, never a change to where the text sits. */
   .duo-stage{
-    position:absolute; z-index:0;
-    top:50%; right:70px; margin-top:-340px;
+    position:relative; z-index:0; order:-1; flex:0 0 auto;
     width:680px; aspect-ratio:1/1;
-    opacity:0; transform:translateX(-680px);
+    opacity:0; transform:translateX(-820px);
     transition:opacity .3s ease, transform .83s cubic-bezier(.22,.68,.36,1);
     pointer-events:none;
   }
@@ -387,10 +396,16 @@
   .duo-flip{ transform:scaleX(-1); width:100%; height:100%; }
   .duo-lottie{ width:100%; height:100%; display:block; }
 
-  @media (max-width:640px){
-    /* A left-right "chase" doesn't fit a narrow phone screen, so mobile
-       switches to a vertical stack instead: text above, owl chasing in
-       from below. Real normal document flow (flex-column), not absolute
+  @media (max-width:1099px){
+    /* A real side-by-side "owl left, gap, text right" composition at
+       680px-owl size needs roughly 1200px of width (680 owl + 56 gap +
+       ~460 text column) - measured live, not guessed: on any viewport
+       narrower than that, either the owl or the text would have to
+       shrink well below what was asked for, or the two would end up
+       clipped/cramped. Rather than compromise the size or the real gap
+       Sections needs, anything under 1100px (phones AND most tablets)
+       gets a vertical stack instead: text above, owl chasing in from
+       below. Real normal document flow (flex-column), not absolute
        offsets against an auto-height box - the earlier absolute-offset
        version measured a real live bug here (the owl's bottom:24px was
        anchored against a short auto-height inner container, pushing most
@@ -414,7 +429,7 @@
        direction (the owl now arrives from underneath, not from the side). */
     .stay-text-wrap::after{ left:50%; top:auto; bottom:-70px; margin-left:-90px; margin-top:0; }
     .duo-stage{
-      position:static; margin-top:0;
+      position:static; order:0; margin-top:0;
       width:min(320px, 78vw);
       transform:translateY(50px);
     }
