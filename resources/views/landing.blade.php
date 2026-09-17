@@ -302,6 +302,12 @@
 
   /* ---------- Section 4: stay motivated (looping text + sword-bird
      chase) ---------- */
+  /* Single overlapping "lane" (not the two-column layout Sections 2-3 use):
+     the text runs in from the left toward a right-anchored resting spot,
+     and the owl chases it in from further back/left, catching up right as
+     the text settles - both positioned via position:absolute inside this
+     relative box so their transform transitions can carry them across the
+     lane without affecting layout/flow (no layout thrashing). */
   .stay-scene{
     position:relative;
     /* Starts on Section 3's own closing tint (#f3faf8) so there's no seam,
@@ -309,23 +315,28 @@
        streaks/points theme via the existing --owl-orange/--clay-yellow
        tokens instead of introducing a new color. */
     background:linear-gradient(180deg, #f3faf8 0%, #fff6e9 100%);
-    padding:96px 0;
+    padding:100px 0;
     overflow:hidden;
   }
   .stay-scene-inner{
+    position:relative;
     max-width:1040px; margin:0 auto; padding:0 20px;
-    display:flex; align-items:center; gap:36px; flex-wrap:wrap;
+    height:520px;
   }
-  .stay-text-wrap{ position:relative; flex:1 1 320px; min-width:260px; }
-  /* Same reveal mechanics as Sections 2-3's text (opacity+translateY), but
-     driven by the Section 4 state machine adding/removing .revealed on a
-     repeating cycle instead of a one-time IntersectionObserver reveal. */
+  /* Anchored at the lane's right edge, vertically centered via top/margin
+     (not transform) so transform stays free for the entrance-motion
+     transition. */
+  .stay-text-wrap{
+    position:absolute; z-index:1;
+    top:50%; right:20px; margin-top:-110px;
+    max-width:480px; width:100%;
+  }
   .stay-text{
-    position:relative; z-index:1;
-    opacity:0; transform:translateY(16px);
-    transition:opacity .6s ease, transform .6s ease;
+    text-align:right;
+    opacity:0; transform:translateX(-320px);
+    transition:opacity .6s ease, transform .7s cubic-bezier(.22,.68,.36,1);
   }
-  .stay-text.revealed{ opacity:1; transform:translateY(0); }
+  .stay-text.revealed{ opacity:1; transform:translateX(0); }
   .stay-text .section-headline{
     font-family:'Baloo 2',sans-serif; font-weight:700;
     font-size:clamp(28px, 4vw, 40px); line-height:1.2;
@@ -333,31 +344,75 @@
   }
   .stay-text .section-body{
     font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
-    color:var(--slate-600); margin:0; max-width:480px;
+    color:var(--slate-600); margin:0 0 0 auto; max-width:460px;
   }
-  /* The soft glow that reinforces "the sword has arrived" during the
+  /* The soft glow that reinforces "the sword has caught up" during the
      hold phase - a plain radial gradient, GPU-cheap (opacity only),
-     positioned at the text's right edge (where the owl arrives from). */
+     positioned at the text's LEFT edge now (where the owl arrives from,
+     since it's chasing in from the left, not the right). */
   .stay-text-wrap::after{
-    content:''; position:absolute; top:50%; right:-40px;
+    content:''; position:absolute; top:50%; left:-40px;
     width:180px; height:180px; margin-top:-90px;
     background:radial-gradient(circle, rgba(239,141,42,0.35) 0%, rgba(239,141,42,0) 70%);
     opacity:0; transition:opacity .5s ease; pointer-events:none; z-index:0;
   }
   .stay-text-wrap.arrived::after{ opacity:1; }
+  /* The owl - doubled in size per direct feedback (340px -> 680px) and
+     repositioned to chase in from the left instead of flying in from a
+     fixed right-side stage. Rests just behind/left of the text (z-index:0,
+     under the text's z-index:1) so it visually catches up TO the text
+     rather than sitting in its own separate column. */
   .duo-stage{
-    position:relative; width:min(340px, 62vw); flex-shrink:0;
-    opacity:0; transition:opacity .3s ease;
+    position:absolute; z-index:0;
+    top:50%; right:70px; margin-top:-340px;
+    width:680px; aspect-ratio:1/1;
+    opacity:0; transform:translateX(-680px);
+    transition:opacity .3s ease, transform .83s cubic-bezier(.22,.68,.36,1);
+    pointer-events:none;
   }
-  .duo-stage.visible{ opacity:1; }
-  .duo-lottie{ width:100%; aspect-ratio:1/1; display:block; }
+  .duo-stage.visible{ opacity:1; transform:translateX(0); }
+  /* Duo's own baked keyframes move it right-to-left within its own frame
+     (Body's real position data goes from x:1408 to x:502 in a 1080-wide
+     canvas) - the opposite of the new left-to-right chase direction this
+     section now needs. Mirroring the artwork itself (not the outer
+     .duo-stage, which is busy with the chase transition) makes that baked
+     motion read as coming from the left instead of fighting the new
+     direction, with no changes to the asset itself. */
+  .duo-flip{ transform:scaleX(-1); width:100%; height:100%; }
+  .duo-lottie{ width:100%; height:100%; display:block; }
 
   @media (max-width:640px){
-    .stay-scene-inner{ justify-content:center; text-align:center; }
-    .stay-text{ text-align:center; }
+    /* A left-right "chase" doesn't fit a narrow phone screen, so mobile
+       switches to a vertical stack instead: text above, owl chasing in
+       from below. Real normal document flow (flex-column), not absolute
+       offsets against an auto-height box - the earlier absolute-offset
+       version measured a real live bug here (the owl's bottom:24px was
+       anchored against a short auto-height inner container, pushing most
+       of the 380px-tall owl above the section's own overflow:hidden
+       bounds - confirmed via getBoundingClientRect showing duoStage's top
+       143px above stayScene's own top edge). Flex stacking sizes the
+       container from its children's real height instead, so there's
+       nothing to miscalculate. */
+    .stay-scene{ padding:64px 0 72px; }
+    .stay-scene-inner{
+      height:auto; display:flex; flex-direction:column; align-items:center; gap:28px;
+    }
+    .stay-text-wrap{
+      position:relative; top:auto; right:auto; margin-top:0;
+      max-width:100%; text-align:center;
+    }
+    .stay-text{ text-align:center; transform:translateY(-24px); }
+    .stay-text.revealed{ transform:translateY(0); }
     .stay-text .section-body{ margin:0 auto; }
-    .duo-stage{ margin:0 auto; }
-    .stay-text-wrap::after{ right:50%; margin-right:-90px; }
+    /* Glow moves to below the text, matching the new vertical chase
+       direction (the owl now arrives from underneath, not from the side). */
+    .stay-text-wrap::after{ left:50%; top:auto; bottom:-70px; margin-left:-90px; margin-top:0; }
+    .duo-stage{
+      position:static; margin-top:0;
+      width:min(320px, 78vw);
+      transform:translateY(50px);
+    }
+    .duo-stage.visible{ transform:translateY(0); }
   }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
@@ -534,7 +589,9 @@
              loop driven by the state machine below, not autoplay - this is
              the one Lottie instance on this page that's reused every cycle
              instead of loaded once and left alone. -->
-        <div id="duoLottie" class="duo-lottie" role="img" aria-label="Tara the owl arriving with a sword, pointing toward the text"></div>
+        <div class="duo-flip">
+          <div id="duoLottie" class="duo-lottie" role="img" aria-label="Tara the owl arriving with a sword, pointing toward the text"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -776,23 +833,33 @@
 
       if (!staySteps) {
         staySteps = [
-          // Phase 1: text in.
+          // Phase 1: text runs in from the left toward its right-anchored
+          // resting spot (.7s transform transition).
           { delay: 800, action: () => { stayText.classList.add('revealed'); } },
-          // Phase 2 (the 800ms delay above already covers the "text sits
-          // alone briefly" beat) -> Phase 3: owl enters, playing from frame
-          // 0 - the asset's own baked position keyframes carry it from
-          // off-canvas-right toward center, landing the sword's real,
-          // verified "arrived" rotation at frame 19-20 (0.79s-0.83s at this
-          // asset's native 24fps) right around when this 850ms phase ends.
-          { delay: 850, action: () => { duoStage.classList.add('visible'); duoAnim.goToAndPlay(0, true); } },
-          // Phase 4: arrived / hold - sword pointed at the text, glow cue.
+          // Phase 2 (the 800ms delay above already covers the "text settles
+          // alone briefly" beat) -> Phase 3: owl becomes visible and chases
+          // in from further left (.83s transform transition on .duo-stage),
+          // playing the Lottie from frame 0 at the same moment - the real,
+          // verified sword-arrival rotation (frame 19-20, 0.79s-0.83s at
+          // this asset's native 24fps) lands right as the chase transform
+          // finishes, so the owl visually catches up to the text right when
+          // the sword swings.
+          { delay: 830, action: () => { duoStage.classList.add('visible'); duoAnim.goToAndPlay(0, true); } },
+          // Phase 4: arrived / hold - sword has caught up to the text, glow cue.
           { delay: 650, action: () => { stayTextWrap.classList.add('arrived'); } },
-          // Phase 5: owl out.
-          { delay: 450, action: () => { duoStage.classList.remove('visible'); stayTextWrap.classList.remove('arrived'); } },
-          // Phase 6: text out.
-          { delay: 450, action: () => { stayText.classList.remove('revealed'); } },
-          // Phase 7: reset gap, then loop back to Phase 1.
-          { delay: 350, action: () => { duoAnim.goToAndStop(0, true); } }
+          // Phase 5: synchronized fade - text and owl fade out together in
+          // one action, not staggered like the first version of this section.
+          { delay: 500, action: () => {
+              stayText.classList.remove('revealed');
+              duoStage.classList.remove('visible');
+              stayTextWrap.classList.remove('arrived');
+            } },
+          // Phase 6: reset gap - both are already fully transparent by now,
+          // so their positions can settle back off-screen unseen before the
+          // Lottie resets and the loop repeats from Phase 1. Long enough
+          // (450ms) that the .83s owl transform-out has finished by the time
+          // Phase 1 fires again (500ms fade + 450ms gap = 950ms > 830ms).
+          { delay: 450, action: () => { duoAnim.goToAndStop(0, true); } }
         ];
       }
 
@@ -812,8 +879,6 @@
       stayTextWrap.classList.remove('arrived');
       duoStage.classList.remove('visible');
     }
-
-    window.__stayDebug = { startStayLoop, stopStayLoop, ensureDuoAnim };
 
     if (prefersReducedMotion) {
       // A fully static "arrived" end-state - the real verified frame where
