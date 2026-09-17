@@ -200,12 +200,13 @@
     font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
     color:var(--slate-600); margin:0; max-width:480px;
   }
-  /* Widened from a narrow 760px centered block to the section's own full
-     inner width (matching .reading-scene-inner), and pulled the bottom
-     margin down close to 0 - per the reference mockup, this graphic spans
-     edge-to-edge and its clouds sit right at the section's own lower edge,
-     not floating in the middle of extra padding. */
-  .sunrise-stage{ max-width:1040px; margin:28px auto 0; padding:0 20px; }
+  /* Widened again per direct feedback ("full in the screen") - the earlier
+     1040px cap with 20px side padding still left visible margin on wide
+     screens. Raised the cap to 1600px (not fully unbounded - at 594:222
+     aspect, unbounded width would make it absurdly tall on ultra-wide
+     monitors) and dropped padding to a minimal 8px, matching the reference
+     image the user pointed at. */
+  .sunrise-stage{ max-width:1600px; margin:28px auto 0; padding:0 8px; }
   .sunrise-lottie{ width:100%; aspect-ratio:594/222; display:block; }
 
   @media (max-width:640px){
@@ -233,7 +234,11 @@
     display:flex; align-items:center; gap:36px; flex-wrap:wrap;
   }
   .learner-text-wrap{ position:relative; flex:1 1 320px; min-width:260px; }
+  /* Given a real stacking context (z-index:1) so it renders in front of
+     .plane-stage (z-index:0 below) once that grew bigger and was moved
+     behind the text per direct feedback. */
   .learner-text{
+    position:relative; z-index:1;
     opacity:0; transform:translateY(16px);
     transition:opacity .6s ease, transform .6s ease;
   }
@@ -243,22 +248,28 @@
     font-size:clamp(28px, 4vw, 40px); line-height:1.2;
     color:var(--parent-teal); margin:0 0 12px;
   }
+  /* text-align:justify per direct feedback ("justify for clean") - clean,
+     even edges on both sides of the paragraph instead of a ragged right
+     edge. */
   .learner-text .section-body{
     font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
-    color:var(--slate-600); margin:0; max-width:480px;
+    color:var(--slate-600); margin:0; max-width:480px; text-align:justify;
   }
-  /* The plane accent: a small, absolutely-positioned Lottie orbiting near
-     the text block's own corner via a CSS keyframe loop, layered on top of
-     the asset's own internal motion - Plane.json is a 270-frame raster
-     image sequence (confirmed from its raw source: every layer's own
-     transform position is fixed at [0,0], each visible for exactly one
-     frame), so there's no separate position/transform data to sync a path
-     to. This CSS orbit is what makes it genuinely move "around" the text,
-     independent of whatever motion is baked into the asset's own pixels. */
+  /* The plane accent, per direct follow-up feedback: sized up 2x (120px ->
+     240px) and moved behind the text (z-index:0, below .learner-text's
+     z-index:1) instead of floating in front of it at the corner. Kept
+     roughly the same anchor/orbit behavior, just bigger and now peeking
+     out from behind the headline/body rather than sitting fully in front
+     of them - Plane.json is a 270-frame raster image sequence (confirmed
+     from its raw source: every layer's own transform position is fixed at
+     [0,0], each visible for exactly one frame), so there's no separate
+     position/transform data to sync a path to - this CSS orbit is what
+     makes it genuinely move "around" the text, independent of whatever
+     motion is baked into the asset's own pixels. */
   .plane-stage{
-    position:absolute; top:-18px; right:-8px; width:120px; aspect-ratio:960/800;
+    position:absolute; z-index:0; top:-10px; right:-60px; width:240px; aspect-ratio:960/800;
     animation:planeOrbit 14s ease-in-out infinite;
-    pointer-events:none;
+    pointer-events:none; opacity:.92;
   }
   .plane-lottie{ width:100%; height:100%; display:block; }
   @keyframes planeOrbit{
@@ -276,7 +287,7 @@
     .learner-text{ text-align:center; }
     .learner-text .section-body{ margin:0 auto; }
     .hero-flying-stage{ margin:0 auto; }
-    .plane-stage{ top:-12px; right:6px; width:96px; }
+    .plane-stage{ top:-8px; right:-10px; width:160px; }
   }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
