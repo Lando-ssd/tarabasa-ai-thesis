@@ -226,7 +226,11 @@
        by the section's own end, echoing the headline's --parent-teal
        accent without being loud. */
     background:linear-gradient(180deg, var(--section-tint) 0%, #f3faf8 100%);
-    padding:64px 0 72px;
+    /* Bottom padding grew to make real room for the plane accent, which
+       now sits below the text block instead of overlapping it - measured
+       live and increased until the plane's own real bottom edge no
+       longer got clipped by this section's overflow:hidden. */
+    padding:64px 0 300px;
     overflow:hidden;
   }
   .learner-scene-inner{
@@ -255,21 +259,27 @@
     font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
     color:var(--slate-600); margin:0; max-width:480px; text-align:justify;
   }
-  /* The plane accent, per direct follow-up feedback: sized up 2x (120px ->
-     240px) and moved behind the text (z-index:0, below .learner-text's
-     z-index:1) instead of floating in front of it at the corner. Kept
-     roughly the same anchor/orbit behavior, just bigger and now peeking
-     out from behind the headline/body rather than sitting fully in front
-     of them - Plane.json is a 270-frame raster image sequence (confirmed
-     from its raw source: every layer's own transform position is fixed at
-     [0,0], each visible for exactly one frame), so there's no separate
-     position/transform data to sync a path to - this CSS orbit is what
-     makes it genuinely move "around" the text, independent of whatever
-     motion is baked into the asset's own pixels. */
+  /* The plane accent, per direct follow-up feedback (reversing the
+     previous "send it behind the text" call): sized up again (240px ->
+     360px, 3x the original 120px) and moved to sit BELOW the text,
+     horizontally centered on the text block rather than right-aligned at
+     a corner - in front of the text again (z-index above it), not tucked
+     behind it. top:100% + margin-top anchors it exactly at the text
+     wrap's own bottom edge regardless of how tall the copy is, and
+     left:50% + a negative margin-left half its own width centers it -
+     both more robust than hardcoded pixel offsets. Plane.json is a
+     270-frame raster image sequence (confirmed from its raw source:
+     every layer's own transform position is fixed at [0,0], each visible
+     for exactly one frame), so there's no separate position/transform
+     data to sync a path to - the CSS orbit below is what makes it
+     genuinely move "around" the text, independent of whatever motion is
+     baked into the asset's own pixels. */
   .plane-stage{
-    position:absolute; z-index:0; top:-10px; right:-60px; width:240px; aspect-ratio:960/800;
+    position:absolute; z-index:2;
+    left:50%; margin-left:-180px; top:100%; margin-top:16px;
+    width:360px; aspect-ratio:960/800;
     animation:planeOrbit 14s ease-in-out infinite;
-    pointer-events:none; opacity:.92;
+    pointer-events:none;
   }
   .plane-lottie{ width:100%; height:100%; display:block; }
   @keyframes planeOrbit{
@@ -286,8 +296,14 @@
     .learner-scene-inner{ justify-content:center; text-align:center; }
     .learner-text{ text-align:center; }
     .learner-text .section-body{ margin:0 auto; }
+    /* Real bug caught testing: at this stacked width the plane (which now
+       hangs below .learner-text-wrap) landed on top of the flying-hero
+       image directly below it in the stacked column, since an absolutely-
+       positioned element doesn't push flow siblings down on its own. This
+       margin-bottom on the wrap is what actually reserves that space. */
+    .learner-text-wrap{ margin-bottom:272px; }
     .hero-flying-stage{ margin:0 auto; }
-    .plane-stage{ top:-8px; right:-10px; width:160px; }
+    .plane-stage{ margin-left:-120px; margin-top:12px; width:240px; }
   }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
