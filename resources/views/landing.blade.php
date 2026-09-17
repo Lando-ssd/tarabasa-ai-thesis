@@ -215,11 +215,77 @@
     .reading-text .section-body{ margin:0 auto; }
   }
 
+  /* ---------- Section 3: personalized learning (text + flying hero, plane
+     accent) ---------- */
+  .learner-scene{
+    position:relative;
+    /* Starts at the exact same color Section 2 ends on (--section-tint) so
+       there's no seam at that boundary - the same lesson learned from the
+       hero-to-Section-2 transition - then drifts to a soft mint/teal tint
+       by the section's own end, echoing the headline's --parent-teal
+       accent without being loud. */
+    background:linear-gradient(180deg, var(--section-tint) 0%, #f3faf8 100%);
+    padding:64px 0 72px;
+    overflow:hidden;
+  }
+  .learner-scene-inner{
+    max-width:1040px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:36px; flex-wrap:wrap;
+  }
+  .learner-text-wrap{ position:relative; flex:1 1 320px; min-width:260px; }
+  .learner-text{
+    opacity:0; transform:translateY(16px);
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .learner-text.revealed{ opacity:1; transform:translateY(0); }
+  .learner-text .section-headline{
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    font-size:clamp(28px, 4vw, 40px); line-height:1.2;
+    color:var(--parent-teal); margin:0 0 12px;
+  }
+  .learner-text .section-body{
+    font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
+    color:var(--slate-600); margin:0; max-width:480px;
+  }
+  /* The plane accent: a small, absolutely-positioned Lottie orbiting near
+     the text block's own corner via a CSS keyframe loop, layered on top of
+     the asset's own internal motion - Plane.json is a 270-frame raster
+     image sequence (confirmed from its raw source: every layer's own
+     transform position is fixed at [0,0], each visible for exactly one
+     frame), so there's no separate position/transform data to sync a path
+     to. This CSS orbit is what makes it genuinely move "around" the text,
+     independent of whatever motion is baked into the asset's own pixels. */
+  .plane-stage{
+    position:absolute; top:-18px; right:-8px; width:120px; aspect-ratio:960/800;
+    animation:planeOrbit 14s ease-in-out infinite;
+    pointer-events:none;
+  }
+  .plane-lottie{ width:100%; height:100%; display:block; }
+  @keyframes planeOrbit{
+    0%{ transform:translate(0,0) rotate(0deg); }
+    25%{ transform:translate(-14px,10px) rotate(-4deg); }
+    50%{ transform:translate(-4px,22px) rotate(2deg); }
+    75%{ transform:translate(10px,8px) rotate(4deg); }
+    100%{ transform:translate(0,0) rotate(0deg); }
+  }
+  .hero-flying-stage{ position:relative; width:min(340px, 62vw); flex-shrink:0; }
+  .hero-flying-lottie{ width:100%; aspect-ratio:1/1; display:block; }
+
+  @media (max-width:640px){
+    .learner-scene-inner{ justify-content:center; text-align:center; }
+    .learner-text{ text-align:center; }
+    .learner-text .section-body{ margin:0 auto; }
+    .hero-flying-stage{ margin:0 auto; }
+    .plane-stage{ top:-12px; right:6px; width:96px; }
+  }
+
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
   @media (prefers-reduced-motion: reduce){
     html{ scroll-behavior:auto; }
     .reading-text{ opacity:1; transform:none; transition:none; }
+    .learner-text{ opacity:1; transform:none; transition:none; }
+    .plane-stage{ animation:none; }
   }
 </style>
 </head>
@@ -332,6 +398,31 @@
            on its own (every layer's own keyframes return to their starting
            value by the end), so it plays its full native range too. -->
       <div id="sunriseLottie" class="sunrise-lottie" role="img" aria-label="A calm sunrise through clouds"></div>
+    </div>
+  </section>
+
+  <section class="learner-scene" id="learnerScene">
+    <div class="learner-scene-inner">
+      <div class="learner-text-wrap">
+        <!-- Small decorative Lottie plane orbiting near the text via a CSS
+             keyframe loop layered on top of its own baked-in motion (this
+             asset is a raster frame-sequence with no separate position
+             data to sync a path to - see CLAUDE.md). -->
+        <div class="plane-stage">
+          <div id="planeLottie" class="plane-lottie" role="img" aria-label="A small paper plane"></div>
+        </div>
+        <div id="learnerText" class="learner-text">
+          <h2 class="section-headline">Personalized for every learner</h2>
+          <p class="section-body">TaraBasa pays attention to how the last story went and quietly adjusts what comes next, so a child keeps climbing at their own pace instead of getting stuck or bored.</p>
+        </div>
+      </div>
+
+      <div class="hero-flying-stage">
+        <!-- Real Lottie flying-superhero-boy animation, a clean 3s loop
+             confirmed from its own keyframe data - every layer returns to
+             its frame-0 value by frame 90, no trimming needed. -->
+        <div id="heroFlyingLottie" class="hero-flying-lottie" role="img" aria-label="A boy flying like a superhero"></div>
+      </div>
     </div>
   </section>
 
@@ -460,6 +551,62 @@
       readingSceneObserver.observe(readingScene);
     } else {
       activateReadingScene2();
+    }
+  }
+
+  // Section 3: personalized learning (text + flying-hero-boy, plane
+  // accent). Hero-flying is a clean 3s loop (every layer returns to its
+  // frame-0 value by frame 90, confirmed from its own keyframe data); the
+  // plane is a 270-frame raster flipbook (confirmed from its raw source -
+  // each frame is its own image layer with a fixed [0,0] transform, no
+  // separate position keyframes to trim or sync). Both play their full
+  // native range. Loading/playing is gated behind the section scrolling
+  // into view, matching Section 2's own pattern.
+  const learnerScene = document.getElementById('learnerScene');
+  const learnerText = document.getElementById('learnerText');
+  if (learnerScene && window.lottie) {
+    let learnerSceneActivated = false;
+    function activateLearnerScene() {
+      if (learnerSceneActivated) return;
+      learnerSceneActivated = true;
+
+      const heroFlyingAnim = lottie.loadAnimation({
+        container: document.getElementById('heroFlyingLottie'),
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: !prefersReducedMotion,
+        path: '{{ asset("animations/tarabasa-hero-flying.json") }}'
+      });
+      const planeAnim = lottie.loadAnimation({
+        container: document.getElementById('planeLottie'),
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: !prefersReducedMotion,
+        path: '{{ asset("animations/tarabasa-plane.json") }}'
+      });
+
+      if (prefersReducedMotion) {
+        heroFlyingAnim.goToAndStop(0, true);
+        planeAnim.goToAndStop(0, true);
+        learnerText.classList.add('revealed');
+        return;
+      }
+
+      setTimeout(() => learnerText.classList.add('revealed'), 300);
+    }
+
+    if ('IntersectionObserver' in window) {
+      const learnerSceneObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            activateLearnerScene();
+            learnerSceneObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.25 });
+      learnerSceneObserver.observe(learnerScene);
+    } else {
+      activateLearnerScene();
     }
   }
 </script>
