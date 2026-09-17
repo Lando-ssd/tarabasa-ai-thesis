@@ -110,13 +110,14 @@
   .hero-grid{ position:relative; display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:center; }
   .hero-copy{ text-align:left; }
   .hero-headline{
-    /* Per direct feedback: line-height back down to 1.0 (1.28 read as the
-       lines "floating" apart), and font-size roughly doubled (clamp max
-       44px -> 84px) for real visual weight - re-tested against the wider
-       1300px hero-inner to confirm it still wraps cleanly at 2 lines
-       instead of overflowing or forcing a 3rd/4th line. */
+    /* Bumped again per direct follow-up feedback: clamp max 84px -> 100px,
+       min 32px -> 36px, vw factor 7.5 -> 8.5 so it scales up proportionally
+       larger at mid-size viewports too, not just at the very top/bottom of
+       the clamp range. Re-tested at every width already on record for this
+       hero (375/1059/1280/1920) to confirm it still wraps cleanly with zero
+       overflow and no overlap with the owl. */
     font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1.0;
-    font-size:clamp(32px, 7.5vw, 84px); margin:0 0 18px; color:#ffffff;
+    font-size:clamp(36px, 8.5vw, 100px); margin:0 0 18px; color:#ffffff;
   }
   .hero-headline .accent{ color:var(--owl-orange-400); }
   .hero-sub{ font-size:16px; color:var(--sky-50); opacity:.92; font-weight:500; line-height:1.6; margin:0; max-width:420px; }
