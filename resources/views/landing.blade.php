@@ -155,10 +155,60 @@
     .hero-mascot{ order:2; margin-top:6px; align-items:center; }
   }
 
+  /* ---------- Section 2: reading scene (rabbit + text, closing sunrise) ----------
+     A fresh build, not a replacement - the old sword-bird section was fully
+     removed earlier this session (HTML/CSS/JS and its assets), so nothing
+     here reuses or collides with that removed code. */
+  .reading-scene{
+    position:relative;
+    /* Soft blue-gray into the page's existing --bg-0, distinct from the
+       hero's saturated blue but close enough in hue to feel connected
+       rather than jarring. */
+    background:linear-gradient(180deg, #eef2f7 0%, var(--bg-0) 100%);
+    padding:64px 0 56px;
+    overflow:hidden;
+  }
+  .reading-scene-inner{
+    max-width:1040px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:flex-start; gap:36px; flex-wrap:wrap;
+  }
+  .rabbit-stage{ position:relative; width:min(240px, 52vw); flex-shrink:0; }
+  .rabbit-lottie{ width:100%; aspect-ratio:1/1; display:block; }
+  /* Starts hidden, revealed via IntersectionObserver + a delayed class add
+     once the section scrolls into view - the delay matches the rabbit's own
+     real "settle" frame (frame 15 of its 30fps gesture = 0.5s), verified
+     from the file's own keyframe data, not guessed. */
+  .reading-text{
+    flex:1 1 300px; min-width:260px; padding-top:8px;
+    opacity:0; transform:translateY(16px);
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .reading-text.revealed{ opacity:1; transform:translateY(0); }
+  .reading-text .section-headline{
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    font-size:clamp(24px, 3.4vw, 34px); line-height:1.2;
+    color:var(--navy-900); margin:0 0 12px;
+  }
+  .reading-text .section-headline .section-accent{ color:var(--owl-orange-500); }
+  .reading-text .section-body{
+    font-family:'Inter',sans-serif; font-weight:500; font-size:17px; line-height:1.6;
+    color:var(--slate-600); margin:0; max-width:440px;
+  }
+  .sunrise-stage{ max-width:760px; margin:48px auto 0; padding:0 20px; }
+  .sunrise-lottie{ width:100%; aspect-ratio:594/222; display:block; }
+
+  @media (max-width:640px){
+    .reading-scene-inner{ justify-content:center; text-align:center; }
+    .rabbit-stage{ margin:0 auto; }
+    .reading-text{ text-align:center; }
+    .reading-text .section-body{ margin:0 auto; }
+  }
+
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
   @media (prefers-reduced-motion: reduce){
     html{ scroll-behavior:auto; }
+    .reading-text{ opacity:1; transform:none; transition:none; }
   }
 </style>
 </head>
@@ -248,6 +298,32 @@
     </div>
   </section>
 
+  <section class="reading-scene" id="readingScene">
+    <div class="reading-scene-inner">
+      <div class="rabbit-stage">
+        <!-- Real Lottie character animation (jsdelivr/lottie-web@5.12.2,
+             already loaded above for the hero owl - no new script tag
+             needed here). The file already loops its own 0.5s gesture 4
+             times to fill its native 2s duration, so this plays that full
+             native range rather than trimming a sub-segment - trimming
+             would work against how it was actually authored. -->
+        <div id="rabbitLottie" class="rabbit-lottie" role="img" aria-label="A rabbit character"></div>
+      </div>
+      <div id="readingText" class="reading-text">
+        <h2 class="section-headline">Real reading, <span class="section-accent">actually fun</span></h2>
+        <p class="section-body">TaraBasa listens while a child reads a real story out loud, checking every word as they go, right there in the moment.</p>
+      </div>
+    </div>
+
+    <div class="sunrise-stage">
+      <!-- Real Lottie "breathe in, breathe out" sunrise animation, a closing
+           visual for this section. Already a complete, self-returning loop
+           on its own (every layer's own keyframes return to their starting
+           value by the end), so it plays its full native range too. -->
+      <div id="sunriseLottie" class="sunrise-lottie" role="img" aria-label="A calm sunrise through clouds"></div>
+    </div>
+  </section>
+
 <script>
   // Get Started dropdown: closes on outside click / Escape.
   const dropdowns = document.querySelectorAll('[data-dropdown]');
@@ -313,6 +389,66 @@
       heroOwlAnim.setSpeed(0.5);
     } else {
       heroOwlAnim.goToAndStop(90, true);
+    }
+  }
+
+  // Section 2: rabbit + sunrise. Both files are already complete,
+  // self-looping animations by design (confirmed from their own keyframe
+  // data), so both play their full native range rather than a computed
+  // sub-segment. Loading/playing is gated behind the section actually
+  // scrolling into view - the same IntersectionObserver pattern already
+  // used elsewhere in this app (the My Growth chart's liquid-fill reveal),
+  // not a new dependency, since this section sits below the fold.
+  const readingScene = document.getElementById('readingScene');
+  const readingText = document.getElementById('readingText');
+  if (readingScene && window.lottie) {
+    let readingSceneActivated = false;
+    function activateReadingScene2() {
+      if (readingSceneActivated) return;
+      readingSceneActivated = true;
+
+      const rabbitAnim = lottie.loadAnimation({
+        container: document.getElementById('rabbitLottie'),
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: !prefersReducedMotion,
+        path: '{{ asset("animations/tarabasa-rabbit.json") }}'
+      });
+      const sunriseAnim = lottie.loadAnimation({
+        container: document.getElementById('sunriseLottie'),
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: !prefersReducedMotion,
+        path: '{{ asset("animations/tarabasa-sunrise.json") }}'
+      });
+
+      if (prefersReducedMotion) {
+        rabbitAnim.goToAndStop(15, true);
+        sunriseAnim.goToAndStop(0, true);
+        readingText.classList.add('revealed');
+        return;
+      }
+
+      // The rabbit's real settle frame - verified from its own keyframe
+      // data: the body outline, both hand shapes/positions, the mouth, and
+      // the moustache all reach their exact frame-0 value again by frame 15
+      // of its 30fps timeline - is 15/30 = 0.5s. The text reveals right as
+      // that first gesture completes, not on an arbitrary delay.
+      setTimeout(() => readingText.classList.add('revealed'), 500);
+    }
+
+    if ('IntersectionObserver' in window) {
+      const readingSceneObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            activateReadingScene2();
+            readingSceneObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.25 });
+      readingSceneObserver.observe(readingScene);
+    } else {
+      activateReadingScene2();
     }
   }
 </script>
