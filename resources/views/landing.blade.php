@@ -15,7 +15,7 @@
     --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
     --owl-orange-400:#f5a544; --owl-orange-500:#ef8d2a; --owl-orange-600:#dd7014;
     --clay-yellow:#ffcf6e; --parent-teal:#1f9e83;
-    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff; --section-tint:#eef2f7;
     --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
     --radius-lg:22px; --radius-md:16px; --radius-sm:10px;
   }
@@ -161,18 +161,24 @@
      here reuses or collides with that removed code. */
   .reading-scene{
     position:relative;
-    /* Soft blue-gray into the page's existing --bg-0, distinct from the
-       hero's saturated blue but close enough in hue to feel connected
-       rather than jarring. */
-    background:linear-gradient(180deg, #eef2f7 0%, var(--bg-0) 100%);
-    padding:64px 0 56px;
+    /* Flat, matching the horizon wave's own fill (--section-tint) exactly -
+       per direct feedback, the earlier two-stop gradient started at a
+       different shade than the wave above it, creating a visible hard
+       rectangular seam ("a square box") right at the section boundary.
+       Using the identical color the wave is filled with means the curve
+       itself is the only boundary - no seam to blend. */
+    background:var(--section-tint);
+    padding:64px 0 24px;
     overflow:hidden;
   }
   .reading-scene-inner{
     max-width:1040px; margin:0 auto; padding:0 20px;
     display:flex; align-items:flex-start; gap:36px; flex-wrap:wrap;
   }
-  .rabbit-stage{ position:relative; width:min(240px, 52vw); flex-shrink:0; }
+  /* Bumped up per direct feedback ("suit the best size") - 300px is a real,
+     visible increase from 240px, matching the size/font relationship shown
+     in the reference mockup more closely. */
+  .rabbit-stage{ position:relative; width:min(300px, 58vw); flex-shrink:0; }
   .rabbit-lottie{ width:100%; aspect-ratio:1/1; display:block; }
   /* Starts hidden, revealed via IntersectionObserver + a delayed class add
      once the section scrolls into view - the delay matches the rabbit's own
@@ -186,15 +192,20 @@
   .reading-text.revealed{ opacity:1; transform:translateY(0); }
   .reading-text .section-headline{
     font-family:'Baloo 2',sans-serif; font-weight:700;
-    font-size:clamp(24px, 3.4vw, 34px); line-height:1.2;
+    font-size:clamp(28px, 4vw, 40px); line-height:1.2;
     color:var(--navy-900); margin:0 0 12px;
   }
   .reading-text .section-headline .section-accent{ color:var(--owl-orange-500); }
   .reading-text .section-body{
-    font-family:'Inter',sans-serif; font-weight:500; font-size:17px; line-height:1.6;
-    color:var(--slate-600); margin:0; max-width:440px;
+    font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
+    color:var(--slate-600); margin:0; max-width:480px;
   }
-  .sunrise-stage{ max-width:760px; margin:48px auto 0; padding:0 20px; }
+  /* Widened from a narrow 760px centered block to the section's own full
+     inner width (matching .reading-scene-inner), and pulled the bottom
+     margin down close to 0 - per the reference mockup, this graphic spans
+     edge-to-edge and its clouds sit right at the section's own lower edge,
+     not floating in the middle of extra padding. */
+  .sunrise-stage{ max-width:1040px; margin:28px auto 0; padding:0 20px; }
   .sunrise-lottie{ width:100%; aspect-ratio:594/222; display:block; }
 
   @media (max-width:640px){
@@ -293,7 +304,7 @@
     <!-- Layer 3: horizon — a wavy, curved edge (not a hard line) transitioning into the page's normal background. -->
     <div class="horizon-band">
       <svg viewBox="0 0 1440 90" preserveAspectRatio="none" fill="none">
-        <path d="M0,46 C 180,10 340,78 520,50 C 700,22 860,72 1040,48 C 1220,24 1320,60 1440,40 L1440,90 L0,90 Z" fill="var(--bg-0)"/>
+        <path d="M0,46 C 180,10 340,78 520,50 C 700,22 860,72 1040,48 C 1220,24 1320,60 1440,40 L1440,90 L0,90 Z" fill="var(--section-tint)"/>
       </svg>
     </div>
   </section>
