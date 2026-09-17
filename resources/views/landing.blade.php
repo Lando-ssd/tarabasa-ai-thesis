@@ -360,16 +360,6 @@
     font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
     color:var(--slate-600); margin:0 0 0 auto; max-width:460px;
   }
-  /* The soft glow that reinforces "the sword has caught up" during the
-     hold phase - a plain radial gradient, GPU-cheap (opacity only),
-     sitting IN the real gap between the two, not overlapping either one. */
-  .stay-text-wrap::after{
-    content:''; position:absolute; top:50%; left:-56px;
-    width:120px; height:180px; margin-top:-90px;
-    background:radial-gradient(circle, rgba(239,141,42,0.35) 0%, rgba(239,141,42,0) 70%);
-    opacity:0; transition:opacity .5s ease; pointer-events:none; z-index:0;
-  }
-  .stay-text-wrap.arrived::after{ opacity:1; }
   /* The owl - doubled in size per direct feedback (340px -> 680px), placed
      in its own real flex column to the text's left (order:-1) with a real
      56px gap between them that it never crosses. It chases in via its own
@@ -425,9 +415,6 @@
     .stay-text{ text-align:center; transform:translateY(-24px); }
     .stay-text.revealed{ transform:translateY(0); }
     .stay-text .section-body{ margin:0 auto; }
-    /* Glow moves to below the text, matching the new vertical chase
-       direction (the owl now arrives from underneath, not from the side). */
-    .stay-text-wrap::after{ left:50%; top:auto; bottom:-70px; margin-left:-90px; margin-top:0; }
     .duo-stage{
       position:static; order:0; margin-top:0;
       width:min(320px, 78vw);
@@ -445,7 +432,6 @@
     .plane-stage{ animation:none; }
     .stay-text{ opacity:1; transform:none; transition:none; }
     .duo-stage{ opacity:1; transition:none; }
-    .stay-text-wrap::after{ transition:none; }
   }
 </style>
 </head>
@@ -588,7 +574,7 @@
 
   <section class="stay-scene" id="stayScene">
     <div class="stay-scene-inner">
-      <div id="stayTextWrap" class="stay-text-wrap">
+      <div class="stay-text-wrap">
         <div id="stayText" class="stay-text">
           <h2 class="section-headline">Stay motivated</h2>
           <p class="section-body">Streaks, points and a friendly nudge from Tara keep a child looking forward to reading again tomorrow, not dreading it.</p>
@@ -814,10 +800,9 @@
   // opacity/transform-driven classes, never a layout-affecting property.
   const stayScene = document.getElementById('stayScene');
   const stayText = document.getElementById('stayText');
-  const stayTextWrap = document.getElementById('stayTextWrap');
   const duoStage = document.getElementById('duoStage');
 
-  if (stayScene && stayText && stayTextWrap && duoStage && window.lottie) {
+  if (stayScene && stayText && duoStage && window.lottie) {
     let duoAnim = null;
     let stayTimer = null;
     let stayStepIndex = 0;
@@ -867,14 +852,14 @@
           // finishes, so the owl visually catches up to the text right when
           // the sword swings.
           { delay: 830, action: () => { duoStage.classList.add('visible'); duoAnim.goToAndPlay(0, true); } },
-          // Phase 4: arrived / hold - sword has caught up to the text, glow cue.
-          { delay: 650, action: () => { stayTextWrap.classList.add('arrived'); } },
+          // Phase 4: arrived / hold - sword has caught up to the text, held
+          // for a beat so the moment actually reads before fading out.
+          { delay: 650, action: () => {} },
           // Phase 5: synchronized fade - text and owl fade out together in
           // one action, not staggered like the first version of this section.
           { delay: 500, action: () => {
               stayText.classList.remove('revealed');
               duoStage.classList.remove('visible');
-              stayTextWrap.classList.remove('arrived');
             } },
           // Phase 6: reset gap - both are already fully transparent by now,
           // so their positions can settle back off-screen unseen before the
@@ -898,7 +883,6 @@
       // cleanly from Phase 1, instead of resuming mid-fade from wherever
       // scrolling away happened to interrupt it.
       stayText.classList.remove('revealed');
-      stayTextWrap.classList.remove('arrived');
       duoStage.classList.remove('visible');
     }
 
@@ -908,7 +892,6 @@
       ensureDuoAnim().goToAndStop(20, true);
       stayText.classList.add('revealed');
       duoStage.classList.add('visible');
-      stayTextWrap.classList.add('arrived');
     } else if ('IntersectionObserver' in window) {
       const stayObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
