@@ -300,6 +300,66 @@
     .plane-stage{ margin-left:-240px; margin-top:-200px; width:480px; }
   }
 
+  /* ---------- Section 4: stay motivated (looping text + sword-bird
+     chase) ---------- */
+  .stay-scene{
+    position:relative;
+    /* Starts on Section 3's own closing tint (#f3faf8) so there's no seam,
+       drifts to a soft warm orange tint by the end - echoing the
+       streaks/points theme via the existing --owl-orange/--clay-yellow
+       tokens instead of introducing a new color. */
+    background:linear-gradient(180deg, #f3faf8 0%, #fff6e9 100%);
+    padding:96px 0;
+    overflow:hidden;
+  }
+  .stay-scene-inner{
+    max-width:1040px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:36px; flex-wrap:wrap;
+  }
+  .stay-text-wrap{ position:relative; flex:1 1 320px; min-width:260px; }
+  /* Same reveal mechanics as Sections 2-3's text (opacity+translateY), but
+     driven by the Section 4 state machine adding/removing .revealed on a
+     repeating cycle instead of a one-time IntersectionObserver reveal. */
+  .stay-text{
+    position:relative; z-index:1;
+    opacity:0; transform:translateY(16px);
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .stay-text.revealed{ opacity:1; transform:translateY(0); }
+  .stay-text .section-headline{
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    font-size:clamp(28px, 4vw, 40px); line-height:1.2;
+    color:var(--owl-orange-600); margin:0 0 12px;
+  }
+  .stay-text .section-body{
+    font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
+    color:var(--slate-600); margin:0; max-width:480px;
+  }
+  /* The soft glow that reinforces "the sword has arrived" during the
+     hold phase - a plain radial gradient, GPU-cheap (opacity only),
+     positioned at the text's right edge (where the owl arrives from). */
+  .stay-text-wrap::after{
+    content:''; position:absolute; top:50%; right:-40px;
+    width:180px; height:180px; margin-top:-90px;
+    background:radial-gradient(circle, rgba(239,141,42,0.35) 0%, rgba(239,141,42,0) 70%);
+    opacity:0; transition:opacity .5s ease; pointer-events:none; z-index:0;
+  }
+  .stay-text-wrap.arrived::after{ opacity:1; }
+  .duo-stage{
+    position:relative; width:min(340px, 62vw); flex-shrink:0;
+    opacity:0; transition:opacity .3s ease;
+  }
+  .duo-stage.visible{ opacity:1; }
+  .duo-lottie{ width:100%; aspect-ratio:1/1; display:block; }
+
+  @media (max-width:640px){
+    .stay-scene-inner{ justify-content:center; text-align:center; }
+    .stay-text{ text-align:center; }
+    .stay-text .section-body{ margin:0 auto; }
+    .duo-stage{ margin:0 auto; }
+    .stay-text-wrap::after{ right:50%; margin-right:-90px; }
+  }
+
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
   @media (prefers-reduced-motion: reduce){
@@ -307,6 +367,9 @@
     .reading-text{ opacity:1; transform:none; transition:none; }
     .learner-text{ opacity:1; transform:none; transition:none; }
     .plane-stage{ animation:none; }
+    .stay-text{ opacity:1; transform:none; transition:none; }
+    .duo-stage{ opacity:1; transition:none; }
+    .stay-text-wrap::after{ transition:none; }
   }
 </style>
 </head>
@@ -443,6 +506,35 @@
              confirmed from its own keyframe data - every layer returns to
              its frame-0 value by frame 90, no trimming needed. -->
         <div id="heroFlyingLottie" class="hero-flying-lottie" role="img" aria-label="A boy flying like a superhero"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stay-scene" id="stayScene">
+    <div class="stay-scene-inner">
+      <div id="stayTextWrap" class="stay-text-wrap">
+        <div id="stayText" class="stay-text">
+          <h2 class="section-headline">Stay motivated</h2>
+          <p class="section-body">Streaks, points and a friendly nudge from Tara keep a child looking forward to reading again tomorrow, not dreading it.</p>
+        </div>
+      </div>
+
+      <div id="duoStage" class="duo-stage">
+        <!-- Real Lottie sword-bird animation ("Duo") - a genuine vector
+             rig, not a raster sequence. Body's own position keyframes move
+             it from x:1408 (outside the 1080-wide canvas) to x:502 between
+             frame 0 and ~18, so the "flies in from the right" motion is
+             already baked into the asset itself - no extra CSS translation
+             needed here. Sword_Blade's rotation peaks at 14.86deg at frame
+             19 (settling to 10.88deg at frame 20), and Body's own rotation
+             independently peaks at 15deg at that same frame 19 - two
+             unrelated layers agreeing on frame 19 is what makes that the
+             real, verified "sword has arrived" moment (19/24s = 0.79s at
+             this asset's native 24fps), not a guess. Played on a repeating
+             loop driven by the state machine below, not autoplay - this is
+             the one Lottie instance on this page that's reused every cycle
+             instead of loaded once and left alone. -->
+        <div id="duoLottie" class="duo-lottie" role="img" aria-label="Tara the owl arriving with a sword, pointing toward the text"></div>
       </div>
     </div>
   </section>
@@ -628,6 +720,121 @@
       learnerSceneObserver.observe(learnerScene);
     } else {
       activateLearnerScene();
+    }
+  }
+
+  // ---------- Section 4: stay motivated (looping text + sword-bird chase) ----------
+  // Unlike every earlier section, this one repeats forever while it's on
+  // screen - so, unlike Sections 2-3's "activate once via IntersectionObserver
+  // and disconnect" pattern, this observer stays connected for the section's
+  // whole lifetime: entering starts the loop, leaving stops it (clears the
+  // pending timer and pauses the Lottie) so the timer chain and the
+  // animation's own rendering only ever run while actually visible. The
+  // Lottie instance itself is created once and reused every cycle via
+  // goToAndPlay/goToAndStop, never destroyed and recreated, so nothing leaks
+  // over an extended session. Every phase below only ever toggles
+  // opacity/transform-driven classes, never a layout-affecting property.
+  const stayScene = document.getElementById('stayScene');
+  const stayText = document.getElementById('stayText');
+  const stayTextWrap = document.getElementById('stayTextWrap');
+  const duoStage = document.getElementById('duoStage');
+
+  if (stayScene && stayText && stayTextWrap && duoStage && window.lottie) {
+    let duoAnim = null;
+    let stayTimer = null;
+    let stayStepIndex = 0;
+    let staySteps = null;
+    let stayLoopRunning = false;
+
+    function ensureDuoAnim() {
+      if (!duoAnim) {
+        duoAnim = lottie.loadAnimation({
+          container: document.getElementById('duoLottie'),
+          renderer: 'svg',
+          loop: false,
+          autoplay: false,
+          path: '{{ asset("animations/tarabasa-owl.json") }}'
+        });
+      }
+      return duoAnim;
+    }
+
+    function scheduleStayStep() {
+      if (!stayLoopRunning) return;
+      const step = staySteps[stayStepIndex];
+      step.action();
+      stayTimer = setTimeout(() => {
+        stayStepIndex = (stayStepIndex + 1) % staySteps.length;
+        scheduleStayStep();
+      }, step.delay);
+    }
+
+    function startStayLoop() {
+      if (stayLoopRunning) return;
+      stayLoopRunning = true;
+      ensureDuoAnim();
+
+      if (!staySteps) {
+        staySteps = [
+          // Phase 1: text in.
+          { delay: 800, action: () => { stayText.classList.add('revealed'); } },
+          // Phase 2 (the 800ms delay above already covers the "text sits
+          // alone briefly" beat) -> Phase 3: owl enters, playing from frame
+          // 0 - the asset's own baked position keyframes carry it from
+          // off-canvas-right toward center, landing the sword's real,
+          // verified "arrived" rotation at frame 19-20 (0.79s-0.83s at this
+          // asset's native 24fps) right around when this 850ms phase ends.
+          { delay: 850, action: () => { duoStage.classList.add('visible'); duoAnim.goToAndPlay(0, true); } },
+          // Phase 4: arrived / hold - sword pointed at the text, glow cue.
+          { delay: 650, action: () => { stayTextWrap.classList.add('arrived'); } },
+          // Phase 5: owl out.
+          { delay: 450, action: () => { duoStage.classList.remove('visible'); stayTextWrap.classList.remove('arrived'); } },
+          // Phase 6: text out.
+          { delay: 450, action: () => { stayText.classList.remove('revealed'); } },
+          // Phase 7: reset gap, then loop back to Phase 1.
+          { delay: 350, action: () => { duoAnim.goToAndStop(0, true); } }
+        ];
+      }
+
+      stayStepIndex = 0;
+      scheduleStayStep();
+    }
+
+    function stopStayLoop() {
+      if (!stayLoopRunning) return;
+      stayLoopRunning = false;
+      if (stayTimer) { clearTimeout(stayTimer); stayTimer = null; }
+      if (duoAnim) duoAnim.pause();
+      // Reset visual state so re-entering the section always restarts
+      // cleanly from Phase 1, instead of resuming mid-fade from wherever
+      // scrolling away happened to interrupt it.
+      stayText.classList.remove('revealed');
+      stayTextWrap.classList.remove('arrived');
+      duoStage.classList.remove('visible');
+    }
+
+    window.__stayDebug = { startStayLoop, stopStayLoop, ensureDuoAnim };
+
+    if (prefersReducedMotion) {
+      // A fully static "arrived" end-state - the real verified frame where
+      // the sword reads as pointed - with zero timers running at all.
+      ensureDuoAnim().goToAndStop(20, true);
+      stayText.classList.add('revealed');
+      duoStage.classList.add('visible');
+      stayTextWrap.classList.add('arrived');
+    } else if ('IntersectionObserver' in window) {
+      const stayObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            startStayLoop();
+          } else {
+            stopStayLoop();
+          }
+        });
+      }, { threshold: 0.25 });
+      stayObserver.observe(stayScene);
+    } else {
+      startStayLoop();
     }
   }
 </script>
