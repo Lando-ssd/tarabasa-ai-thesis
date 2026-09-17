@@ -331,10 +331,16 @@
     top:50%; right:20px; margin-top:-110px;
     max-width:480px; width:100%;
   }
+  /* The text genuinely runs from a left starting point to its right-
+     anchored resting spot (confirmed with the user directly - this is the
+     literal "chased by the owl" visual, not just a plain fade). It fully
+     completes and comes to a stop BEFORE the owl's own chase-in begins
+     (see the phase timing below) so the two motions never race each other -
+     text runs and stops, then the owl runs and catches up to it. */
   .stay-text{
     text-align:right;
     opacity:0; transform:translateX(-320px);
-    transition:opacity .6s ease, transform .7s cubic-bezier(.22,.68,.36,1);
+    transition:opacity .6s ease, transform .65s cubic-bezier(.22,.68,.36,1);
   }
   .stay-text.revealed{ opacity:1; transform:translateX(0); }
   .stay-text .section-headline{
@@ -833,11 +839,12 @@
 
       if (!staySteps) {
         staySteps = [
-          // Phase 1: text runs in from the left toward its right-anchored
-          // resting spot (.7s transform transition).
+          // Phase 1: text runs in from the left to its right-anchored
+          // resting spot (.65s transition) and fully stops there.
           { delay: 800, action: () => { stayText.classList.add('revealed'); } },
-          // Phase 2 (the 800ms delay above already covers the "text settles
-          // alone briefly" beat) -> Phase 3: owl becomes visible and chases
+          // Phase 2 (the 800ms delay above = text's own .65s run + a clean
+          // 150ms gap after it has genuinely stopped, so the two motions
+          // never overlap/race) -> Phase 3: owl becomes visible and chases
           // in from further left (.83s transform transition on .duo-stage),
           // playing the Lottie from frame 0 at the same moment - the real,
           // verified sword-arrival rotation (frame 19-20, 0.79s-0.83s at
