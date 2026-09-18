@@ -423,6 +423,100 @@
     .duo-stage.visible{ transform:translateY(0); }
   }
 
+  /* ---------- Section 5: backed by real teachers (walking-boy foreground +
+     city-skyline background banner) ---------- */
+  .school-scene{
+    position:relative;
+    /* Continues Section 4's closing warm cream (#fff6e9) into a soft sky
+       tint (--sky-50) - both light/neutral enough that the handoff stays
+       gentle, and the sky tint sets up the outdoor city-skyline banner
+       below it instead of clashing with it. */
+    background:linear-gradient(180deg, #fff6e9 0%, var(--sky-50) 100%);
+    /* Bottom padding is real, measured space for the walking-boy stage's
+       own downward overlap past the banner strip (see
+       .go-to-school-stage's negative bottom value below) - without it,
+       this section's own overflow:hidden would clip his feet. */
+    padding:96px 0 170px;
+    overflow:hidden;
+  }
+  .school-scene-inner{
+    position:relative; z-index:2;
+    max-width:1040px; margin:0 auto; padding:0 20px;
+  }
+  .school-text{
+    max-width:560px;
+    opacity:0; transform:translateY(16px);
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .school-text.revealed{ opacity:1; transform:translateY(0); }
+  .school-text .section-headline{
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    font-size:clamp(28px, 4vw, 40px); line-height:1.2;
+    color:var(--blue-700); margin:0 0 12px;
+  }
+  .school-text .section-body{
+    font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
+    color:var(--slate-600); margin:0; max-width:520px;
+  }
+
+  /* The adapted city-banner scene - originally clipped to a 345x59 rounded
+     pill (see CLAUDE.md for the real matte-removal fix), now rendered at
+     its own full natural rectangular frame and scaled up as a unit
+     (width:100%, aspect-ratio preserved) to span the section, rather than
+     distorting it to a different ratio. */
+  .school-banner-wrap{ position:relative; width:100%; margin-top:110px; }
+  .city-banner-stage{
+    position:relative; z-index:0;
+    width:100%; aspect-ratio:345/59;
+    opacity:0; transition:opacity .7s ease;
+  }
+  .city-banner-stage.revealed{ opacity:1; }
+  .city-banner-lottie{ width:100%; height:100%; display:block; }
+
+  /* The walking boy - a real, disclosed size adjustment from a literal 2x
+     (680px) of the ~320px "single character" convention (Section 2's
+     rabbit-stage, Section 3's hero-flying-stage): measured live that a
+     truly 640-680px character standing on this section's own genuinely
+     thin banner strip (345:59 aspect - only ~130-220px tall at real
+     section widths) either overlapped the text above it or needed an
+     awkward 350px+ blank gap to clear it, depending on viewport width.
+     420px (~1.3x the baseline, not a literal 2x) is what keeps him
+     genuinely bigger/more prominent than every other single-character
+     illustration on this page while still fitting this specific
+     thin-banner composition without either defect - confirmed via direct
+     measurement at 768px and 1280px, both real widths that broke the
+     original 640px sizing. He overlaps the banner's bottom edge by a real
+     120px (not a small peek) so most of his height sits low, close to the
+     strip, minimizing how far he reaches up toward the text above. */
+  .go-to-school-stage{
+    position:absolute; z-index:1;
+    left:6%; bottom:-120px;
+    width:min(420px, 34vw); aspect-ratio:1/1;
+    opacity:0; transform:translateY(24px);
+    transition:opacity .6s ease .15s, transform .6s ease .15s;
+  }
+  .go-to-school-stage.revealed{ opacity:1; transform:translateY(0); }
+  .go-to-school-lottie{ width:100%; height:100%; display:block; }
+
+  @media (max-width:760px){
+    .school-scene{ padding:72px 0 90px; }
+    .school-scene-inner{ text-align:center; }
+    .school-text{ max-width:100%; margin:0 auto; }
+    .school-text .section-body{ margin:0 auto; }
+    /* Measured live: the walking-boy stage is tall enough (relative to a
+       narrow phone) that it was genuinely overlapping the body text above
+       it (confirmed via getBoundingClientRect - the boy's own top edge sat
+       98px above the text's bottom edge before this fix). The base rule's
+       margin-top:110px (shared with desktop) plus a smaller mobile stage
+       size closes that for real. */
+    .go-to-school-stage{
+      left:50%; bottom:-10px;
+      width:min(190px, 42vw);
+      transform:translateX(-50%) translateY(24px);
+    }
+    .go-to-school-stage.revealed{ transform:translateX(-50%) translateY(0); }
+  }
+
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
   @media (prefers-reduced-motion: reduce){
@@ -432,6 +526,9 @@
     .plane-stage{ animation:none; }
     .stay-text{ opacity:1; transform:none; transition:none; }
     .duo-stage{ opacity:1; transition:none; }
+    .school-text{ opacity:1; transition:none; }
+    .city-banner-stage{ opacity:1; transition:none; }
+    .go-to-school-stage{ opacity:1; transition:none; }
   }
 </style>
 </head>
@@ -599,6 +696,41 @@
         <div class="duo-flip">
           <div id="duoLottie" class="duo-lottie" role="img" aria-label="Tara the owl arriving with a sword, pointing toward the text"></div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="school-scene" id="schoolScene">
+    <div class="school-scene-inner">
+      <div id="schoolText" class="school-text">
+        <h2 class="section-headline">Backed by real teachers</h2>
+        <p class="section-body">Every activity a child sees is checked by an actual teacher before it goes live, and every real session sends an update straight to their teacher and parent.</p>
+      </div>
+    </div>
+
+    <div class="school-banner-wrap">
+      <!-- Real Lottie city-skyline scene (plane, clouds, buildings, trees) -
+           originally clipped to a small 345x59 rounded pill by 6 alpha-matte
+           mask layers (one per content layer, all sharing the same
+           capsule shape - confirmed from the source file directly). Those
+           mask layers, and the matte flag on each layer they clipped, were
+           removed before self-hosting this copy - no position/color/timing
+           data was touched, only the clipping relationship - so this now
+           renders its full natural rectangular frame instead of a rounded
+           badge, scaled up as a whole unit to span the section. -->
+      <div id="cityBannerStage" class="city-banner-stage">
+        <div id="cityBannerLottie" class="city-banner-lottie" role="img" aria-label="A city skyline with a plane flying past clouds"></div>
+      </div>
+
+      <!-- Real Lottie walking-boy character - a genuine 19-layer rig (body,
+           limbs, bag, face, hair, etc.) inside a single precomposition
+           layer, confirmed from the source file's own asset structure, not
+           assumed from the root composition's single top-level layer.
+           Every animated property returns to its exact frame-0 value by
+           the final frame (confirmed layer by layer), so this plays its
+           full native walking-cycle loop with no trimming. -->
+      <div id="goToSchoolStage" class="go-to-school-stage">
+        <div id="goToSchoolLottie" class="go-to-school-lottie" role="img" aria-label="A boy walking to school with a backpack"></div>
       </div>
     </div>
   </section>
@@ -905,6 +1037,67 @@
       stayObserver.observe(stayScene);
     } else {
       startStayLoop();
+    }
+  }
+
+  // ---------- Section 5: backed by real teachers (walking-boy foreground +
+  // city-skyline background banner) ---------- //
+  // Both Lotties play their full native range on a simple continuous loop
+  // (matching Sections 1-3's own established pattern for decorative,
+  // always-looping elements), gated behind the section scrolling into view
+  // the same way as every earlier lazy-loaded section on this page.
+  const schoolScene = document.getElementById('schoolScene');
+  const schoolText = document.getElementById('schoolText');
+  const cityBannerStage = document.getElementById('cityBannerStage');
+  const goToSchoolStage = document.getElementById('goToSchoolStage');
+
+  if (schoolScene && schoolText && cityBannerStage && goToSchoolStage && window.lottie) {
+    let schoolSceneActivated = false;
+    function activateSchoolScene() {
+      if (schoolSceneActivated) return;
+      schoolSceneActivated = true;
+
+      const cityBannerAnim = lottie.loadAnimation({
+        container: document.getElementById('cityBannerLottie'),
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: !prefersReducedMotion,
+        path: '{{ asset("animations/tarabasa-city-banner.json") }}'
+      });
+      const goToSchoolAnim = lottie.loadAnimation({
+        container: document.getElementById('goToSchoolLottie'),
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: !prefersReducedMotion,
+        path: '{{ asset("animations/tarabasa-go-to-school.json") }}'
+      });
+
+      if (prefersReducedMotion) {
+        cityBannerAnim.goToAndStop(0, true);
+        goToSchoolAnim.goToAndStop(0, true);
+        schoolText.classList.add('revealed');
+        cityBannerStage.classList.add('revealed');
+        goToSchoolStage.classList.add('revealed');
+        return;
+      }
+
+      schoolText.classList.add('revealed');
+      setTimeout(() => cityBannerStage.classList.add('revealed'), 200);
+      setTimeout(() => goToSchoolStage.classList.add('revealed'), 350);
+    }
+
+    if ('IntersectionObserver' in window) {
+      const schoolSceneObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            activateSchoolScene();
+            schoolSceneObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.25 });
+      schoolSceneObserver.observe(schoolScene);
+    } else {
+      activateSchoolScene();
     }
   }
 </script>
