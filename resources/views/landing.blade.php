@@ -517,6 +517,100 @@
     .go-to-school-stage.revealed{ transform:translateX(-50%) translateY(0); }
   }
 
+  /* ---------- Section 6: learning that feels like play (aerial farmland +
+     kite + seesaw) ---------- */
+  .games-scene{
+    position:relative;
+    /* Continues Section 5's closing sky tint (--sky-50) into a soft pale
+       green, tying into the real green/brown farmland colors baked into
+       the Lottie asset itself below, instead of a hard seam. */
+    background:linear-gradient(180deg, var(--sky-50) 0%, #eef9f0 100%);
+    padding:96px 0 60px;
+    overflow:hidden;
+  }
+  .games-scene-inner{
+    position:relative; z-index:3;
+    max-width:1040px; margin:0 auto; padding:0 20px;
+  }
+  .games-text{
+    max-width:560px;
+    opacity:0; transform:translateY(16px);
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .games-text.revealed{ opacity:1; transform:translateY(0); }
+  .games-text .section-headline{
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    font-size:clamp(28px, 4vw, 40px); line-height:1.2;
+    color:var(--parent-teal); margin:0 0 12px;
+  }
+  .games-text .section-body{
+    font-family:'Inter',sans-serif; font-weight:500; font-size:19px; line-height:1.6;
+    color:var(--slate-600); margin:0; max-width:520px;
+  }
+
+  /* A fixed-height "sky zone" holds the kite, deliberately NOT an
+     absolute-positioned element left to overflow upward past the land
+     strip and guess at clearance - that exact mistake (Section 5's
+     walking boy overlapping its text) is what this structure avoids: the
+     wrap's own real layout height already includes room for the kite
+     (sky-zone's own height + the land strip's aspect-ratio height), so a
+     single modest margin-top is all that's needed above it, not a
+     measured-after-the-fact fudge factor. */
+  .farm-scene-wrap{ position:relative; width:100%; margin-top:60px; }
+  .sky-zone{ position:relative; width:100%; height:220px; }
+  .kite-stage{
+    position:absolute; z-index:2;
+    right:8%; top:0;
+    width:min(220px, 50vw); aspect-ratio:1/1;
+    opacity:0; transform:translateY(-16px);
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .kite-stage.revealed{ opacity:1; transform:translateY(0); }
+  .kite-lottie{ width:100%; height:100%; display:block; }
+
+  /* The farmland - a genuinely flat, non-scrolling illustration (confirmed
+     from its own source: the layer's own transform is fully static) with
+     one real one-shot detail animation baked in (some crop/foreground
+     elements grow from a squashed to a full scale over its first ~2.5s) -
+     played once on reveal, not looped, matching what the asset actually
+     does rather than forcing a loop it was never authored for. Scaled up
+     as a whole unit (width:100%, its own 2960:700 aspect-ratio preserved)
+     to span the section, the same wide-banner technique already
+     established for Section 2's sunrise and Section 5's city banner. */
+  .farm-land-stage{
+    position:relative; z-index:0;
+    width:100%; aspect-ratio:2960/700;
+    opacity:0; transition:opacity .8s ease;
+  }
+  .farm-land-stage.revealed{ opacity:1; }
+  .farm-land-lottie{ width:100%; height:100%; display:block; }
+
+  /* The see-saw kids - sized to read as small, recognizable children on a
+     big aerial landscape (per the bird's-eye-view brief), anchored with a
+     percentage bottom offset (not a fixed px value) so it stays
+     proportionally in the same spot on the land strip regardless of the
+     strip's own responsive height. */
+  .seesaw-stage{
+    position:absolute; z-index:1;
+    left:30%; bottom:10%;
+    width:min(160px, 40vw); aspect-ratio:800/619;
+    opacity:0; transform:translateY(12px);
+    transition:opacity .6s ease .1s, transform .6s ease .1s;
+  }
+  .seesaw-stage.revealed{ opacity:1; transform:translateY(0); }
+  .seesaw-lottie{ width:100%; height:100%; display:block; }
+
+  @media (max-width:640px){
+    .games-scene{ padding:72px 0 48px; }
+    .games-scene-inner{ text-align:center; }
+    .games-text{ max-width:100%; margin:0 auto; }
+    .games-text .section-body{ margin:0 auto; }
+    .farm-scene-wrap{ margin-top:44px; }
+    .sky-zone{ height:150px; }
+    .kite-stage{ right:4%; width:min(140px, 46vw); }
+    .seesaw-stage{ left:26%; width:min(110px, 34vw); }
+  }
+
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
   @media (prefers-reduced-motion: reduce){
@@ -529,6 +623,10 @@
     .school-text{ opacity:1; transition:none; }
     .city-banner-stage{ opacity:1; transition:none; }
     .go-to-school-stage{ opacity:1; transition:none; }
+    .games-text{ opacity:1; transition:none; }
+    .kite-stage{ opacity:1; transition:none; }
+    .farm-land-stage{ opacity:1; transition:none; }
+    .seesaw-stage{ opacity:1; transition:none; }
   }
 </style>
 </head>
@@ -731,6 +829,50 @@
            full native walking-cycle loop with no trimming. -->
       <div id="goToSchoolStage" class="go-to-school-stage">
         <div id="goToSchoolLottie" class="go-to-school-lottie" role="img" aria-label="A boy walking to school with a backpack"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="games-scene" id="gamesScene">
+    <div class="games-scene-inner">
+      <div id="gamesText" class="games-text">
+        <h2 class="section-headline">Learning that feels like play</h2>
+        <p class="section-body">Word Builder and Letter Match turn practice into a real game, built around each child's own tricky words, no points or pressure attached.</p>
+      </div>
+    </div>
+
+    <div class="farm-scene-wrap">
+      <div class="sky-zone">
+        <!-- Real Lottie kite - a genuine flat 7-layer rig (a colorful
+             diamond body plus 3 tail ribbons), confirmed from source: zero
+             precomps, zero stray solids. Every animated position/rotation
+             property returns to its exact frame-0 value by the final
+             frame, so this plays its full native ~2s loop, no trimming. -->
+        <div id="kiteStage" class="kite-stage">
+          <div id="kiteLottie" class="kite-lottie" role="img" aria-label="A colorful kite flying in the sky"></div>
+        </div>
+      </div>
+
+      <!-- Real Lottie aerial farmland - confirmed from source to be a
+           genuinely flat single shape layer (refId:null, zero assets),
+           not a precomp hiding more layers the way GO_TO_SCHOOL's root
+           layer did. Its own layer transform is fully static - no baked
+           scrolling - but a few nested elements play a real one-shot
+           "grow from squashed to full size" animation over their first
+           ~2.5s, then hold still; played once on reveal below rather than
+           forced into a loop it was never authored for. -->
+      <div id="farmLandStage" class="farm-land-stage">
+        <div id="farmLandLottie" class="farm-land-lottie" role="img" aria-label="An aerial view of farmland"></div>
+
+        <!-- Real Lottie see-saw scene - a genuine flat 42-layer rig (two
+             full character rigs plus the see-saw itself), confirmed zero
+             precomps and zero stray solids. Every one of its 168 animated
+             transform properties returns to its exact frame-0 value by the
+             final frame, confirmed layer by layer, so this plays its full
+             native ~2.3s rocking loop. -->
+        <div id="seesawStage" class="seesaw-stage">
+          <div id="seesawLottie" class="seesaw-lottie" role="img" aria-label="Two children playing on a see-saw"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -1098,6 +1240,86 @@
       schoolSceneObserver.observe(schoolScene);
     } else {
       activateSchoolScene();
+    }
+  }
+
+  // ---------- Section 6: learning that feels like play (aerial farmland +
+  // kite + seesaw) ---------- //
+  // The kite and see-saw are genuine loops and play continuously once
+  // revealed (matching Sections 1-3's own established "always-looping
+  // decorative element" pattern). The farmland is different - confirmed
+  // from its own source that it's a one-shot "grow into place" animation,
+  // not a loop, so it's played once (loop:false) and left to hold its own
+  // final settled frame, matching what the asset actually does.
+  const gamesScene = document.getElementById('gamesScene');
+  const gamesText = document.getElementById('gamesText');
+  const kiteStage = document.getElementById('kiteStage');
+  const farmLandStage = document.getElementById('farmLandStage');
+  const seesawStage = document.getElementById('seesawStage');
+
+  if (gamesScene && gamesText && kiteStage && farmLandStage && seesawStage && window.lottie) {
+    let gamesSceneActivated = false;
+    function activateGamesScene() {
+      if (gamesSceneActivated) return;
+      gamesSceneActivated = true;
+
+      const kiteAnim = lottie.loadAnimation({
+        container: document.getElementById('kiteLottie'),
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: !prefersReducedMotion,
+        path: '{{ asset("animations/tarabasa-kite.json") }}'
+      });
+      const farmLandAnim = lottie.loadAnimation({
+        container: document.getElementById('farmLandLottie'),
+        renderer: 'svg',
+        loop: false,
+        autoplay: !prefersReducedMotion,
+        path: '{{ asset("animations/tarabasa-farm-land.json") }}'
+      });
+      const seesawAnim = lottie.loadAnimation({
+        container: document.getElementById('seesawLottie'),
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: !prefersReducedMotion,
+        path: '{{ asset("animations/tarabasa-seesaw.json") }}'
+      });
+
+      if (prefersReducedMotion) {
+        kiteAnim.goToAndStop(0, true);
+        seesawAnim.goToAndStop(0, true);
+        // The farmland's frame 0 is the "squashed, not grown yet" state -
+        // freezing there would look unfinished, not like a real resting
+        // frame, so this waits for the real duration to load and stops on
+        // its own last frame (the settled, fully-grown state) instead.
+        farmLandAnim.addEventListener('DOMLoaded', () => {
+          farmLandAnim.goToAndStop(farmLandAnim.totalFrames - 1, true);
+        });
+        gamesText.classList.add('revealed');
+        kiteStage.classList.add('revealed');
+        farmLandStage.classList.add('revealed');
+        seesawStage.classList.add('revealed');
+        return;
+      }
+
+      gamesText.classList.add('revealed');
+      setTimeout(() => farmLandStage.classList.add('revealed'), 150);
+      setTimeout(() => kiteStage.classList.add('revealed'), 300);
+      setTimeout(() => seesawStage.classList.add('revealed'), 450);
+    }
+
+    if ('IntersectionObserver' in window) {
+      const gamesSceneObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            activateGamesScene();
+            gamesSceneObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.2 });
+      gamesSceneObserver.observe(gamesScene);
+    } else {
+      activateGamesScene();
     }
   }
 </script>
