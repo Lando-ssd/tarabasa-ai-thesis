@@ -525,15 +525,29 @@
        green, tying into the real green/brown farmland colors baked into
        the Lottie asset itself below, instead of a hard seam. */
     background:linear-gradient(180deg, var(--sky-50) 0%, #eef9f0 100%);
-    padding:96px 0 60px;
+    /* Top padding is real, measured space for the kite's own upward
+       overlap (translate(-50%,-45%) on a 300px-tall stage = ~135px above
+       the text-wrap's own top edge) - confirmed live that the previous
+       96px padding clipped the kite's top tip by a real 39px via this
+       section's own overflow:hidden. */
+    padding:150px 0 60px;
     overflow:hidden;
   }
   .games-scene-inner{
     position:relative; z-index:3;
     max-width:1040px; margin:0 auto; padding:0 20px;
   }
+  /* The text-wrap is the kite's own positioning context - matching the
+     exact technique already proven for Section 3's plane (centered on the
+     text via left:50%/margin or transform, z-index:0 behind the text's
+     z-index:1, genuinely overlapping with no gap) instead of the earlier
+     separate "sky zone" approach, which one real live test showed
+     rendering far larger than intended in a real browser and overlapping
+     the text anyway - so the fix leans into that overlap deliberately and
+     correctly instead of fighting it. */
+  .games-text-wrap{ position:relative; max-width:560px; }
   .games-text{
-    max-width:560px;
+    position:relative; z-index:1;
     opacity:0; transform:translateY(16px);
     transition:opacity .6s ease, transform .6s ease;
   }
@@ -548,24 +562,22 @@
     color:var(--slate-600); margin:0; max-width:520px;
   }
 
-  /* A fixed-height "sky zone" holds the kite, deliberately NOT an
-     absolute-positioned element left to overflow upward past the land
-     strip and guess at clearance - that exact mistake (Section 5's
-     walking boy overlapping its text) is what this structure avoids: the
-     wrap's own real layout height already includes room for the kite
-     (sky-zone's own height + the land strip's aspect-ratio height), so a
-     single modest margin-top is all that's needed above it, not a
-     measured-after-the-fact fudge factor. */
-  .farm-scene-wrap{ position:relative; width:100%; margin-top:60px; }
-  .sky-zone{ position:relative; width:100%; height:220px; }
+  /* The kite - centered horizontally on the text-wrap and vertically
+     straddling its top edge (roughly half above, half overlapping down
+     into the headline), z-index:0 so the actual words render in front of
+     it - genuinely no gap, by the same construction as Section 3's plane.
+     translate(-50%,-45%) is a constant positioning offset (not part of
+     the reveal), so it stays correctly centered at any width without
+     needing width-dependent margin math. */
   .kite-stage{
-    position:absolute; z-index:2;
-    right:8%; top:0;
-    width:min(220px, 50vw); aspect-ratio:1/1;
-    opacity:0; transform:translateY(-16px);
+    position:absolute; z-index:0;
+    left:50%; top:0;
+    width:min(300px, 70vw); aspect-ratio:1/1;
+    opacity:0; transform:translate(-50%, -45%) translateY(-16px);
     transition:opacity .6s ease, transform .6s ease;
+    pointer-events:none;
   }
-  .kite-stage.revealed{ opacity:1; transform:translateY(0); }
+  .kite-stage.revealed{ opacity:1; transform:translate(-50%, -45%) translateY(0); }
   .kite-lottie{ width:100%; height:100%; display:block; }
 
   /* The farmland - a genuinely flat, non-scrolling illustration (confirmed
@@ -576,24 +588,30 @@
      does rather than forcing a loop it was never authored for. Scaled up
      as a whole unit (width:100%, its own 2960:700 aspect-ratio preserved)
      to span the section, the same wide-banner technique already
-     established for Section 2's sunrise and Section 5's city banner. */
+     established for Section 2's sunrise and Section 5's city banner.
+     overflow:hidden is a deliberate defensive addition - direct live
+     feedback showed the see-saw rendering as an oversized, uncropped
+     rectangle spilling past this strip in a real browser, so this now
+     hard-clips anything inside it to the strip's own visible bounds
+     regardless of how big a child ends up rendering. */
   .farm-land-stage{
     position:relative; z-index:0;
     width:100%; aspect-ratio:2960/700;
+    margin-top:56px;
     opacity:0; transition:opacity .8s ease;
+    overflow:hidden;
   }
   .farm-land-stage.revealed{ opacity:1; }
   .farm-land-lottie{ width:100%; height:100%; display:block; }
 
-  /* The see-saw kids - sized to read as small, recognizable children on a
-     big aerial landscape (per the bird's-eye-view brief), anchored with a
-     percentage bottom offset (not a fixed px value) so it stays
-     proportionally in the same spot on the land strip regardless of the
-     strip's own responsive height. */
+  /* The see-saw kids - sized genuinely big per direct feedback (160px was
+     read as too small), anchored with a percentage bottom offset (not a
+     fixed px value) so it stays proportionally in the same spot on the
+     land strip regardless of the strip's own responsive height. */
   .seesaw-stage{
     position:absolute; z-index:1;
-    left:30%; bottom:10%;
-    width:min(160px, 40vw); aspect-ratio:800/619;
+    left:28%; bottom:6%;
+    width:min(280px, 34vw); aspect-ratio:800/619;
     opacity:0; transform:translateY(12px);
     transition:opacity .6s ease .1s, transform .6s ease .1s;
   }
@@ -601,14 +619,17 @@
   .seesaw-lottie{ width:100%; height:100%; display:block; }
 
   @media (max-width:640px){
-    .games-scene{ padding:72px 0 48px; }
+    /* Measured live: at mobile widths the kite stays at its own 220px cap
+       (min(220px,66vw) still resolves to 220 at typical phone widths), so
+       it needs the same real clearance as desktop - confirmed a 27px
+       real clip here too before this fix. */
+    .games-scene{ padding:120px 0 48px; }
     .games-scene-inner{ text-align:center; }
-    .games-text{ max-width:100%; margin:0 auto; }
+    .games-text-wrap{ max-width:100%; margin:0 auto; }
     .games-text .section-body{ margin:0 auto; }
-    .farm-scene-wrap{ margin-top:44px; }
-    .sky-zone{ height:150px; }
-    .kite-stage{ right:4%; width:min(140px, 46vw); }
-    .seesaw-stage{ left:26%; width:min(110px, 34vw); }
+    .kite-stage{ width:min(220px, 66vw); }
+    .farm-land-stage{ margin-top:64px; }
+    .seesaw-stage{ left:24%; width:min(190px, 48vw); }
   }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
@@ -835,44 +856,44 @@
 
   <section class="games-scene" id="gamesScene">
     <div class="games-scene-inner">
-      <div id="gamesText" class="games-text">
-        <h2 class="section-headline">Learning that feels like play</h2>
-        <p class="section-body">Word Builder and Letter Match turn practice into a real game, built around each child's own tricky words, no points or pressure attached.</p>
-      </div>
-    </div>
-
-    <div class="farm-scene-wrap">
-      <div class="sky-zone">
+      <div class="games-text-wrap">
         <!-- Real Lottie kite - a genuine flat 7-layer rig (a colorful
              diamond body plus 3 tail ribbons), confirmed from source: zero
              precomps, zero stray solids. Every animated position/rotation
              property returns to its exact frame-0 value by the final
-             frame, so this plays its full native ~2s loop, no trimming. -->
+             frame, so this plays its full native ~2s loop, no trimming.
+             Positioned centered on the text and behind it (z-index:0
+             under the text's z-index:1), the same proven technique
+             already established for Section 3's plane. -->
         <div id="kiteStage" class="kite-stage">
           <div id="kiteLottie" class="kite-lottie" role="img" aria-label="A colorful kite flying in the sky"></div>
         </div>
-      </div>
-
-      <!-- Real Lottie aerial farmland - confirmed from source to be a
-           genuinely flat single shape layer (refId:null, zero assets),
-           not a precomp hiding more layers the way GO_TO_SCHOOL's root
-           layer did. Its own layer transform is fully static - no baked
-           scrolling - but a few nested elements play a real one-shot
-           "grow from squashed to full size" animation over their first
-           ~2.5s, then hold still; played once on reveal below rather than
-           forced into a loop it was never authored for. -->
-      <div id="farmLandStage" class="farm-land-stage">
-        <div id="farmLandLottie" class="farm-land-lottie" role="img" aria-label="An aerial view of farmland"></div>
-
-        <!-- Real Lottie see-saw scene - a genuine flat 42-layer rig (two
-             full character rigs plus the see-saw itself), confirmed zero
-             precomps and zero stray solids. Every one of its 168 animated
-             transform properties returns to its exact frame-0 value by the
-             final frame, confirmed layer by layer, so this plays its full
-             native ~2.3s rocking loop. -->
-        <div id="seesawStage" class="seesaw-stage">
-          <div id="seesawLottie" class="seesaw-lottie" role="img" aria-label="Two children playing on a see-saw"></div>
+        <div id="gamesText" class="games-text">
+          <h2 class="section-headline">Learning that feels like play</h2>
+          <p class="section-body">Word Builder and Letter Match turn practice into a real game, built around each child's own tricky words, no points or pressure attached.</p>
         </div>
+      </div>
+    </div>
+
+    <!-- Real Lottie aerial farmland - confirmed from source to be a
+         genuinely flat single shape layer (refId:null, zero assets), not
+         a precomp hiding more layers the way GO_TO_SCHOOL's root layer
+         did. Its own layer transform is fully static - no baked
+         scrolling - but a few nested elements play a real one-shot "grow
+         from squashed to full size" animation over their first ~2.5s,
+         then hold still; played once on reveal below rather than forced
+         into a loop it was never authored for. -->
+    <div id="farmLandStage" class="farm-land-stage">
+      <div id="farmLandLottie" class="farm-land-lottie" role="img" aria-label="An aerial view of farmland"></div>
+
+      <!-- Real Lottie see-saw scene - a genuine flat 42-layer rig (two
+           full character rigs plus the see-saw itself), confirmed zero
+           precomps and zero stray solids. Every one of its 168 animated
+           transform properties returns to its exact frame-0 value by the
+           final frame, confirmed layer by layer, so this plays its full
+           native ~2.3s rocking loop. -->
+      <div id="seesawStage" class="seesaw-stage">
+        <div id="seesawLottie" class="seesaw-lottie" role="img" aria-label="Two children playing on a see-saw"></div>
       </div>
     </div>
   </section>
