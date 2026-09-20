@@ -226,13 +226,19 @@
        by the section's own end, echoing the headline's --parent-teal
        accent without being loud. */
     background:linear-gradient(180deg, var(--section-tint) 0%, #f3faf8 100%);
-    /* Top/bottom padding grew from 64/72px to fit the now much-bigger
-       plane (720px, centered on the text block) without this section's
-       own overflow:hidden clipping it - measured live (it was clipped by
-       66px at the top and 58px at the bottom before this change) and
-       increased past that with a small buffer. */
-    padding:140px 0 140px;
+    /* Spacing trimmed to just what the 720px plane needs. The plane is a
+       full-frame flight (its real painted pixels span y 56-756 of its 800px
+       canvas, checked frame by frame), so it needs about 620px of vertical
+       room centered on the text block, far more than the ~340px row itself.
+       The top padding is the smallest that keeps the plane's highest point
+       below Section 2's sunrise (the plane may dip into that section's own
+       empty bottom margin, which is why overflow-y is left visible - hiding
+       it would slice the plane off). Horizontal overflow is still clipped
+       so the 720px stage can't cause sideways scrolling. */
+    padding:63px 0 150px;
     overflow:hidden;
+    overflow-x:clip;
+    overflow-y:visible;
   }
   .learner-scene-inner{
     max-width:1040px; margin:0 auto; padding:0 20px;
@@ -298,6 +304,10 @@
     .learner-text .section-body{ margin:0 auto; }
     .hero-flying-stage{ margin:0 auto; }
     .plane-stage{ margin-left:-240px; margin-top:-200px; width:480px; }
+    /* Stacked layout: the plane (480x400) only reaches ~100px below the
+       text block, well inside the boy below it, so the big bottom padding
+       the side-by-side desktop layout needs would just be empty space. */
+    .learner-scene{ padding:63px 0 30px; }
   }
 
   /* ---------- Section 4: stay motivated (looping text + sword-bird
@@ -323,7 +333,12 @@
        streaks/points theme via the existing --owl-orange/--clay-yellow
        tokens instead of introducing a new color. */
     background:linear-gradient(180deg, #f3faf8 0%, #fff6e9 100%);
-    padding:100px 0;
+    /* Tightened (was 100px top/bottom): the owl's artboard has a lot of
+       empty margin (its painted pixels only fill ~400 of its 680px), which
+       .duo-stage now trims with a negative margin below, so the section no
+       longer needs big padding on top of that. The 51px top is the smallest
+       that still clears the paper plane's lowest point in Section 3. */
+    padding:51px 0 20px;
     overflow:hidden;
   }
   /* Wider than the site's usual 1040px column - measured live (see the
@@ -371,6 +386,11 @@
   .duo-stage{
     position:relative; z-index:0; order:-1; flex:0 0 auto;
     width:680px; aspect-ratio:1/1;
+    /* Trims the owl artboard's empty top/bottom margin out of the layout
+       (its artwork sits in the middle ~400px of the 680px box). Only
+       layout changes: the artwork isn't scaled or moved relative to the
+       text, and the chase transform below is unaffected. */
+    margin:-110px 0;
     opacity:0; transform:translateX(-820px);
     transition:opacity .3s ease, transform .83s cubic-bezier(.22,.68,.36,1);
     pointer-events:none;
@@ -404,9 +424,13 @@
        143px above stayScene's own top edge). Flex stacking sizes the
        container from its children's real height instead, so there's
        nothing to miscalculate. */
-    .stay-scene{ padding:64px 0 72px; }
+    /* Tightened with the desktop pass: the stacked owl artboard has empty
+       margin top and bottom (its artwork fills the middle ~70%), trimmed
+       below with negative margins instead of big section padding. The top
+       padding still has to clear the Section 3 paper plane above. */
+    .stay-scene{ padding:30px 0 20px; }
     .stay-scene-inner{
-      height:auto; display:flex; flex-direction:column; align-items:center; gap:28px;
+      height:auto; min-height:0; display:flex; flex-direction:column; align-items:center; gap:28px;
     }
     .stay-text-wrap{
       position:relative; top:auto; right:auto; margin-top:0;
@@ -416,7 +440,7 @@
     .stay-text.revealed{ transform:translateY(0); }
     .stay-text .section-body{ margin:0 auto; }
     .duo-stage{
-      position:static; order:0; margin-top:0;
+      position:static; order:0; margin:-18px 0 -50px;
       width:min(320px, 78vw);
       transform:translateY(50px);
     }
@@ -436,7 +460,7 @@
        own downward overlap past the banner strip (see
        .go-to-school-stage's negative bottom value below) - without it,
        this section's own overflow:hidden would clip his feet. */
-    padding:96px 0 170px;
+    padding:56px 0 118px;
     overflow:hidden;
   }
   .school-scene-inner{
@@ -499,7 +523,7 @@
   .go-to-school-lottie{ width:100%; height:100%; display:block; }
 
   @media (max-width:760px){
-    .school-scene{ padding:72px 0 90px; }
+    .school-scene{ padding:56px 0 40px; }
     .school-scene-inner{ text-align:center; }
     .school-text{ max-width:100%; margin:0 auto; }
     .school-text .section-body{ margin:0 auto; }
@@ -528,7 +552,7 @@
     /* The farmland now sits flush at the bottom of the section (the
        see-saw stands ON it, per the reference picture), so no extra
        bottom allowance is needed. */
-    padding:96px 0 0;
+    padding:39px 0 0;
     overflow:hidden;
   }
   .games-scene-inner{
@@ -618,12 +642,15 @@
        kite wrapping to its own line. A column direction removes the
        ambiguity: text and kite simply stack, each free to use the full
        width. Raised from 640px to 760px now that the kite is doubled. */
-    .games-scene{ padding:72px 0 0; }
+    .games-scene{ padding:48px 0 0; }
     .games-scene-inner{ text-align:center; }
     .games-text-row{ flex-direction:column; align-items:center; }
-    .games-text-wrap{ max-width:100%; padding-bottom:0; }
+    /* flex-basis is a HEIGHT once this row stacks into a column, so the
+       desktop flex:1 1 320px was forcing 320px of height under ~230px of
+       text; auto lets it size to its content. */
+    .games-text-wrap{ max-width:100%; padding-bottom:0; flex:0 0 auto; }
     .games-text .section-body{ margin:0 auto; }
-    .kite-stage{ width:min(300px, 72vw); margin-bottom:60px; }
+    .kite-stage{ width:min(300px, 72vw); margin-bottom:45px; }
     .seesaw-stage{ left:46%; bottom:10%; width:50%; }
   }
 
