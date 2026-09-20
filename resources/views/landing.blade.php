@@ -525,11 +525,10 @@
        green, tying into the real green/brown farmland colors baked into
        the Lottie asset itself below, instead of a hard seam. */
     background:linear-gradient(180deg, var(--sky-50) 0%, #eef9f0 100%);
-    /* Bottom padding is real, measured space for the see-saw's own deep
-       downward overlap past the farmland strip (see .seesaw-stage's
-       negative bottom value below) - without it, this section's own
-       overflow:hidden would clip its feet. */
-    padding:96px 0 220px;
+    /* The farmland now sits flush at the bottom of the section (the
+       see-saw stands ON it, per the reference picture), so no extra
+       bottom allowance is needed. */
+    padding:96px 0 0;
     overflow:hidden;
   }
   .games-scene-inner{
@@ -544,10 +543,10 @@
      overlapping the text" version - direct follow-up asked for the kite
      positioned on the right instead, matching the reference screenshot. */
   .games-text-row{
-    display:flex; align-items:flex-start; flex-wrap:wrap;
+    display:flex; align-items:flex-end; flex-wrap:wrap;
     gap:28px;
   }
-  .games-text-wrap{ position:relative; flex:1 1 320px; max-width:560px; }
+  .games-text-wrap{ position:relative; flex:1 1 320px; max-width:560px; padding-bottom:14px; }
   .games-text{
     opacity:0; transform:translateY(16px);
     transition:opacity .6s ease, transform .6s ease;
@@ -563,12 +562,14 @@
     color:var(--slate-600); margin:0; max-width:520px;
   }
 
-  /* The kite - a real flex item now (not absolutely positioned over the
+  /* The kite - a real flex item (not absolutely positioned over the
      text), sitting to the text's right with a genuine gap, matching the
-     reference composition directly. */
+     reference picture. Doubled again per direct feedback (240px -> 480px).
+     margin-bottom lifts its tail clear of the see-saw's raised end below. */
   .kite-stage{
     flex:0 0 auto;
-    width:min(240px, 30vw); aspect-ratio:1/1;
+    width:min(480px, 44vw); aspect-ratio:1/1;
+    margin-bottom:120px;
     opacity:0; transform:translateY(-16px);
     transition:opacity .6s ease, transform .6s ease;
   }
@@ -580,72 +581,50 @@
      is deliberately allowed to extend past the farmland strip's own box
      (standing prominently in front of it) rather than being cropped to
      it. */
-  .farm-land-wrap{ position:relative; width:100%; margin-top:80px; }
+  .farm-land-wrap{ position:relative; width:100%; margin-top:0; }
 
-  /* The farmland - a genuinely flat, non-scrolling illustration (confirmed
-     from its own source: the layer's own transform is fully static) with
-     one real one-shot detail animation baked in (some crop/foreground
-     elements grow from a squashed to a full scale over its first ~2.5s,
-     played once on reveal, not looped). Direct follow-up asked for real
-     movement, which the asset itself genuinely doesn't have baked in (no
-     scrolling position data, confirmed from source) - so a slow, gentle
-     CSS drift is layered on top instead, the same honest approach already
-     used for Section 4's plane (a CSS orbit on top of an asset with no
-     position data of its own). The lottie div itself is rendered 12%
-     wider than its frame and panned side to side; farm-land-stage clips
-     that pan to its own visible strip so no empty edge is ever revealed. */
+  /* The farmland stays put - no panning (direct feedback: it should not
+     move left to right). It plays only its OWN animation, confirmed from
+     its source: three green hills rising from flat (scale 14%) up to full
+     height over ~1.7-2.5s. The JS below replays that rise on a slow loop
+     (rise, hold, sink, rest) using only the asset's own keyframes, run in
+     forward and reverse so there is no jarring snap back to flat. */
   .farm-land-stage{
     position:relative; z-index:0;
     width:100%; aspect-ratio:2960/700;
-    opacity:0; transition:opacity .8s ease;
+    opacity:0; transition:opacity .3s ease;
     overflow:hidden;
   }
   .farm-land-stage.revealed{ opacity:1; }
-  .farm-land-lottie{
-    position:relative; left:-6%;
-    width:112%; height:100%; display:block;
-    animation:farmDrift 22s ease-in-out infinite;
-  }
-  @keyframes farmDrift{
-    0%, 100%{ transform:translateX(0); }
-    50%{ transform:translateX(-5.5%); }
-  }
+  .farm-land-lottie{ width:100%; height:100%; display:block; }
 
-  /* The see-saw kids - sized genuinely big per direct, repeated feedback
-     (160px, then 280px, were both read as too small) and moved to the
-     right side (not the rightmost edge). Anchored with a percentage left
-     offset plus a constant translateX(-50%) so it stays centered on that
-     point regardless of its own responsive width, and a deep negative
-     bottom value so most of its height sits low/close to the farmland
-     strip - measured live so this doesn't reach up far enough to
-     overlap the text row above (see the section's own padding-bottom and
-     farm-land-wrap's margin-top, both sized around this same number). */
+  /* The see-saw kids - placed to match the reference picture: standing ON
+     the farmland, right of center (not the far edge). Sized and positioned
+     as percentages of the land strip (the wrap is exactly the strip's
+     size) so the composition scales identically at every viewport width
+     instead of needing per-breakpoint pixel guesses. */
   .seesaw-stage{
     position:absolute; z-index:2;
-    left:62%; bottom:-160px;
-    transform:translateX(-50%);
-    width:min(480px, 42vw); aspect-ratio:800/619;
+    left:58%; bottom:12%;
+    width:36%; aspect-ratio:800/619;
     opacity:0; transition:opacity .6s ease .15s;
   }
   .seesaw-stage.revealed{ opacity:1; }
   .seesaw-lottie{ width:100%; height:100%; display:block; }
 
-  @media (max-width:640px){
-    /* Real bug caught live: flex-wrap alone let the text-wrap's own
-       min-content width force a horizontal overflow instead of the kite
-       actually wrapping to its own line (flex items don't shrink below
-       min-content by default) - confirmed via a real screenshot showing
-       the headline/body text clipped past the viewport's right edge.
-       Switching to a column direction removes the ambiguity entirely:
-       text and kite simply stack, each free to use the full width. */
-    .games-scene{ padding:72px 0 130px; }
+  @media (max-width:760px){
+    /* Real bug caught live earlier: flex-wrap alone let the text-wrap's
+       own min-content width force a horizontal overflow instead of the
+       kite wrapping to its own line. A column direction removes the
+       ambiguity: text and kite simply stack, each free to use the full
+       width. Raised from 640px to 760px now that the kite is doubled. */
+    .games-scene{ padding:72px 0 0; }
     .games-scene-inner{ text-align:center; }
     .games-text-row{ flex-direction:column; align-items:center; }
-    .games-text-wrap{ max-width:100%; }
+    .games-text-wrap{ max-width:100%; padding-bottom:0; }
     .games-text .section-body{ margin:0 auto; }
-    .kite-stage{ width:min(150px, 34vw); }
-    .farm-land-wrap{ margin-top:60px; }
-    .seesaw-stage{ left:58%; bottom:-70px; width:min(240px, 64vw); }
+    .kite-stage{ width:min(300px, 72vw); margin-bottom:60px; }
+    .seesaw-stage{ left:46%; bottom:10%; width:50%; }
   }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
@@ -663,7 +642,6 @@
     .games-text{ opacity:1; transform:none; transition:none; }
     .kite-stage{ opacity:1; transform:none; transition:none; }
     .farm-land-stage{ opacity:1; transition:none; }
-    .farm-land-lottie{ animation:none; }
     .seesaw-stage{ opacity:1; transition:none; }
   }
 </style>
@@ -902,12 +880,10 @@
            layer did. Its own layer transform is fully static - no baked
            scrolling - but a few nested elements play a real one-shot
            "grow from squashed to full size" animation over their first
-           ~2.5s, then hold still; played once on reveal below rather than
-           forced into a loop it was never authored for. Since the asset
-           itself has no real scrolling motion, a slow CSS drift is
-           layered on top (see .farm-land-lottie's own animation) so the
-           strip genuinely moves, not just sits static after its one-shot
-           grow-in finishes. -->
+           ~2.5s (the three green hills rising). The strip itself stays
+           put - no panning; the script below plays that rise on reveal
+           and then repeats it smoothly (forward, hold, reverse, rest)
+           using only the asset's own keyframes. -->
       <div id="farmLandStage" class="farm-land-stage">
         <div id="farmLandLottie" class="farm-land-lottie" role="img" aria-label="An aerial view of farmland"></div>
       </div>
@@ -1297,9 +1273,10 @@
   // The kite and see-saw are genuine loops and play continuously once
   // revealed (matching Sections 1-3's own established "always-looping
   // decorative element" pattern). The farmland is different - confirmed
-  // from its own source that it's a one-shot "grow into place" animation,
-  // not a loop, so it's played once (loop:false) and left to hold its own
-  // final settled frame, matching what the asset actually does.
+  // from its own source that it's a one-shot "hills rise into place"
+  // animation, not a loop, so it's loaded with loop:false and repeated by
+  // hand in activateGamesScene (rise, hold, reverse, rest) so it never
+  // snaps from full height back to flat.
   const gamesScene = document.getElementById('gamesScene');
   const gamesText = document.getElementById('gamesText');
   const kiteStage = document.getElementById('kiteStage');
@@ -1323,7 +1300,7 @@
         container: document.getElementById('farmLandLottie'),
         renderer: 'svg',
         loop: false,
-        autoplay: !prefersReducedMotion,
+        autoplay: false,
         path: '{{ asset("animations/tarabasa-farm-land.json") }}'
       });
       const seesawAnim = lottie.loadAnimation({
@@ -1351,10 +1328,42 @@
         return;
       }
 
+      // The land's hills rise using the asset's own keyframes: all four
+      // animated properties finish by frame 249 (checked in the JSON; frames
+      // 250-350 just hold). The frame is driven directly on a fixed timeline
+      // - rise (2.5s = the asset's native pace at 100fps), hold at full
+      // height, sink back along the same keyframes, rest flat, repeat - so
+      // there is never an instant snap from full height to flat, and the
+      // timing is deterministic rather than depending on lottie's reverse
+      // playback. Only renders while the strip is on screen.
+      farmLandAnim.addEventListener('DOMLoaded', () => {
+        const RISE_END = 249, RISE_MS = 2500, HOLD_MS = 3200, SINK_MS = 1800, REST_MS = 900;
+        const CYCLE = RISE_MS + HOLD_MS + SINK_MS + REST_MS;
+        let farmInView = true;
+        if ('IntersectionObserver' in window) {
+          new IntersectionObserver((es) => { farmInView = es[0].isIntersecting; }).observe(farmLandStage);
+        }
+        let farmStart = null;
+        function farmTick(now) {
+          if (farmStart === null) farmStart = now;
+          if (farmInView) {
+            const t = (now - farmStart) % CYCLE;
+            let frame;
+            if (t < RISE_MS) frame = RISE_END * (t / RISE_MS);
+            else if (t < RISE_MS + HOLD_MS) frame = RISE_END;
+            else if (t < RISE_MS + HOLD_MS + SINK_MS) frame = RISE_END * (1 - (t - RISE_MS - HOLD_MS) / SINK_MS);
+            else frame = 0;
+            farmLandAnim.goToAndStop(frame, true);
+          }
+          requestAnimationFrame(farmTick);
+        }
+        requestAnimationFrame(farmTick);
+      });
+
       gamesText.classList.add('revealed');
-      setTimeout(() => farmLandStage.classList.add('revealed'), 150);
-      setTimeout(() => kiteStage.classList.add('revealed'), 300);
-      setTimeout(() => seesawStage.classList.add('revealed'), 450);
+      farmLandStage.classList.add('revealed');
+      setTimeout(() => kiteStage.classList.add('revealed'), 200);
+      setTimeout(() => seesawStage.classList.add('revealed'), 350);
     }
 
     if ('IntersectionObserver' in window) {
