@@ -654,6 +654,124 @@
     .seesaw-stage{ left:46%; bottom:10%; width:50%; }
   }
 
+  /* ---------- Section 7 (final): "I'm a Learner!" card over the globe ----------
+     The closing section of the page. Starts on Section 6's own ending tone
+     (#eef9f0) and fades to a pale sky, the owl peeks over the top edge of
+     the card (behind it), and the animated globe fills the full width at the
+     very bottom of the page, edge to edge, with the card overlapping its top. */
+  .finale{
+    position:relative;
+    background:linear-gradient(180deg, #eef9f0 0%, #e3f1fc 45%, #d3e8fa 100%);
+    padding-top:56px;
+    overflow:hidden;
+  }
+  .finale-inner{ position:relative; z-index:2; max-width:600px; margin:0 auto; padding:0 20px; }
+  /* The owl artwork is drawn in a 512x512 canvas with a lot of empty margin,
+     so the animation is cropped to its real painted area (254x208, see the
+     JS) and sized here. The negative bottom margin tucks its lower part
+     behind the card, so it reads as peeking over the top edge. */
+  .finale-owl{ position:relative; z-index:1; width:min(230px, 56vw); aspect-ratio:254/208; margin:0 auto -58px; }
+  .finale-owl-lottie{ width:100%; height:100%; display:block; }
+  .finale-card{
+    position:relative; z-index:2;
+    padding:46px 36px 34px; text-align:center; color:#f4f9fd;
+    background:linear-gradient(165deg, #173a78 0%, #1d5a93 52%, #1a7a8c 100%);
+    border-radius:28px;
+    box-shadow:0 30px 60px -24px rgba(9,40,84,.6), inset 0 1px 0 rgba(255,255,255,.18);
+    opacity:0; transform:translateY(16px);
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .finale-card.revealed{ opacity:1; transform:translateY(0); }
+  .finale-title{
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    font-size:clamp(32px, 4.6vw, 44px); line-height:1.15; margin:0 0 14px; color:#fff;
+  }
+  .finale-title .accent{ color:#ffb04a; }
+  .finale-body{
+    font-family:'Inter',sans-serif; font-weight:500; font-size:18px; line-height:1.6;
+    color:#f4f9fd; margin:0 auto 26px; max-width:440px;
+  }
+  /* The one frictionless path for a child: a plain, real link with no gate. */
+  .finale-pin{
+    display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    padding:16px 38px; border-radius:999px; text-decoration:none;
+    background:#fff; color:#c2570c;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:21px; line-height:1;
+    box-shadow:0 14px 26px -12px rgba(4,20,48,.65);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .finale-pin:hover{ transform:translateY(-3px); box-shadow:0 20px 30px -12px rgba(4,20,48,.7); }
+  .finale-pin:active{ transform:translateY(0); }
+  .finale-pin svg{ flex:none; }
+  .finale-adult{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; line-height:1.5;
+    color:#f4f9fd; margin:26px 0 12px;
+  }
+  .finale-pills{ display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .finale-pill{
+    display:inline-block; padding:9px 16px; border-radius:999px; text-decoration:none;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px; line-height:1.3; color:#fff;
+    background:rgba(6,24,52,.40); border:1px solid rgba(255,255,255,.28);
+    transition:transform .2s ease, background .2s ease, border-color .2s ease;
+  }
+  .finale-pill:hover{ background:rgba(6,24,52,.55); border-color:rgba(255,255,255,.6); transform:translateY(-2px); }
+  .finale-foot{ font-family:'Inter',sans-serif; font-weight:500; font-size:14px; color:#f4f9fd; margin:18px 0 0; }
+  .finale-foot a{ color:#fff; font-weight:600; text-underline-offset:3px; white-space:nowrap; }
+  .finale-pin:focus-visible, .finale-pill:focus-visible, .finale-foot a:focus-visible{ outline:3px solid #ffb04a; outline-offset:3px; }
+  /* The globe: 1000x500 artwork whose top ~40% is transparent sky, so the
+     card can overlap the arc. Full width, zero margin, drawn with a "slice"
+     fit so a phone (where the natural height would be tiny) gets a taller
+     box and the artwork's sides are cropped evenly instead of leaving gaps.
+     The negative top margin is 30% of the width: 20% for the empty sky above
+     the arc, plus 10% for how far the card overlaps the globe, so the
+     proportions stay the same at every width (a fixed pixel overlap left
+     too little globe showing on a tablet). */
+  .finale-globe{
+    position:relative; z-index:1; width:100%;
+    aspect-ratio:2/1; min-height:280px;
+    margin-top:-30%;
+  }
+  .finale-globe-lottie{ position:absolute; inset:0; }
+  @media (max-width:640px){
+    .finale-card{ padding:40px 22px 28px; border-radius:24px; }
+    .finale-body{ font-size:17px; }
+    .finale-globe{ margin-top:-130px; }
+  }
+
+  /* ---------- Parent gate: a small "grown-ups only" math question ---------- */
+  .gate{ position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .gate[hidden]{ display:none; }
+  .gate-backdrop{ position:absolute; inset:0; background:rgba(8,24,48,.58); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
+  .gate-dialog{
+    position:relative; width:min(380px, 100%); box-sizing:border-box;
+    padding:30px 28px 26px; text-align:center; background:#fff; border-radius:24px;
+    box-shadow:0 30px 70px -20px rgba(6,20,44,.6);
+    animation:gatePop .28s cubic-bezier(.22,.9,.3,1.1);
+  }
+  .gate-dialog:focus{ outline:none; }
+  .gate-dialog.shake{ animation:gateShake .4s ease; }
+  @keyframes gatePop{ from{ opacity:0; transform:translateY(14px) scale(.96); } to{ opacity:1; transform:none; } }
+  @keyframes gateShake{ 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-9px); } 40%{ transform:translateX(8px); } 60%{ transform:translateX(-6px); } 80%{ transform:translateX(4px); } }
+  .gate-title{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:26px; line-height:1.2; color:var(--navy-900); margin:0 0 4px; }
+  .gate-hint{ font-family:'Inter',sans-serif; font-weight:500; font-size:15px; color:var(--slate-600); margin:0; }
+  .gate-question{ display:block; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:36px; line-height:1.1; color:var(--blue-700); margin:20px 0 12px; }
+  .gate-input{
+    width:100%; box-sizing:border-box; text-align:center; padding:12px 14px;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:30px; color:var(--navy-900);
+    border:2px solid #cbd8e6; border-radius:16px; background:#fff;
+  }
+  .gate-input:focus{ outline:none; border-color:var(--blue-500); box-shadow:0 0 0 4px rgba(28,126,214,.18); }
+  .gate-error{ min-height:22px; margin:10px 0 0; font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; color:#b42318; }
+  .gate-actions{ display:flex; gap:10px; margin-top:8px; }
+  .gate-actions button{
+    flex:1; padding:13px 10px; border-radius:14px; cursor:pointer;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:17px; line-height:1;
+  }
+  .gate-cancel{ background:#fff; border:2px solid #cbd8e6; color:var(--slate-600); }
+  .gate-cancel:hover{ border-color:#9fb2c6; }
+  .gate-ok{ border:none; color:#fff; background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); box-shadow:0 10px 18px -8px rgba(15,95,174,.55); }
+  .gate-ok:hover{ filter:brightness(1.06); }
+
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
   @media (prefers-reduced-motion: reduce){
@@ -670,6 +788,9 @@
     .kite-stage{ opacity:1; transform:none; transition:none; }
     .farm-land-stage{ opacity:1; transition:none; }
     .seesaw-stage{ opacity:1; transition:none; }
+    .finale-card{ opacity:1; transform:none; transition:none; }
+    .finale-pin, .finale-pill{ transition:none; }
+    .gate-dialog, .gate-dialog.shake{ animation:none; }
   }
 </style>
 </head>
@@ -928,6 +1049,69 @@
       </div>
     </div>
   </section>
+
+  <section class="finale" id="finaleScene" aria-labelledby="finaleTitle">
+    <div class="finale-inner">
+      <!-- The owl mascot peeking over the top of the card (drawn behind it).
+           Decorative, so hidden from assistive tech. -->
+      <div class="finale-owl" aria-hidden="true">
+        <div id="finaleOwl" class="finale-owl-lottie"></div>
+      </div>
+
+      <div id="finaleCard" class="finale-card">
+        <h2 id="finaleTitle" class="finale-title">I'm a <span class="accent">Learner!</span></h2>
+        <p class="finale-body">Read out loud, play games, and earn badges — just your own code and a secret PIN, no email or password needed.</p>
+
+        <!-- The child's own path: a plain real link, deliberately NOT gated. -->
+        <a class="finale-pin" href="{{ route('learner.login') }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#c2570c" stroke-width="2.4" stroke-linecap="round"/><rect x="5" y="11" width="14" height="9.5" rx="2.6" fill="#c2570c"/><circle cx="12" cy="15.6" r="1.5" fill="#fff"/></svg>
+          <span>Enter my PIN</span>
+        </a>
+
+        <p class="finale-adult">Teacher, Parent, or Admin? Use Log in above instead</p>
+
+        <!-- The adult links. Each is a real link with its real href (so they
+             work even with scripts off); the data-adult-gate attribute is
+             what the parent-gate script listens for, so one gate covers all
+             of them. These are the same routes the old role-select section
+             used for each role. -->
+        <div class="finale-pills">
+          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'teacher']) }}">Teachers confirm their school</a>
+          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'parent']) }}">Parents add their child</a>
+          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'admin']) }}">Admins approve every teacher</a>
+        </div>
+        <p class="finale-foot">New teacher at your school? <a data-adult-gate href="{{ route('register.teacher') }}">Request an account</a></p>
+      </div>
+    </div>
+
+    <!-- The animated globe (1000x500, transparent sky above the arc): full
+         width, no padding or max-width. -->
+    <div class="finale-globe" aria-hidden="true">
+      <div id="finaleGlobe" class="finale-globe-lottie"></div>
+    </div>
+  </section>
+
+  <!-- Parent gate: shown before any adult link in the section above. A quick
+       multiplication question a young child can't answer but a grown-up can
+       in a few seconds. It's friction to stop an accidental tap, not
+       security (the links are real, and a determined child could still open
+       one in a new tab or use the header's Log in). -->
+  <div id="parentGate" class="gate" hidden>
+    <div class="gate-backdrop" data-gate-close></div>
+    <div id="gateDialog" class="gate-dialog" role="dialog" aria-modal="true" aria-labelledby="gateTitle" aria-describedby="gateHint" tabindex="-1">
+      <h3 id="gateTitle" class="gate-title">Grown-ups only</h3>
+      <p id="gateHint" class="gate-hint">Answer this to continue.</p>
+      <form id="gateForm" novalidate>
+        <label id="gateQuestion" class="gate-question" for="gateAnswer">What is 14 × 6?</label>
+        <input id="gateAnswer" class="gate-input" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" aria-describedby="gateError">
+        <p id="gateError" class="gate-error" role="alert"></p>
+        <div class="gate-actions">
+          <button type="button" class="gate-cancel" data-gate-close>Cancel</button>
+          <button type="submit" class="gate-ok">Continue</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
 <script>
   // Get Started dropdown: closes on outside click / Escape.
@@ -1405,6 +1589,167 @@
       gamesSceneObserver.observe(gamesScene);
     } else {
       activateGamesScene();
+    }
+  }
+
+  // ---------- Final section: parent gate ----------
+  // Every link marked data-adult-gate first asks a quick multiplication
+  // question (first number 12-29, second 3-9, never a multiple of ten, and
+  // never the same question twice in a row). Correct: goes to the link's real
+  // destination. Wrong: shakes and asks a NEW question, so guessing the same
+  // problem repeatedly doesn't work. This is friction for a curious child, not
+  // security: the links are real (they work without scripts), and the header's
+  // own Log in is deliberately not gated.
+  const parentGate = document.getElementById('parentGate');
+  const gateDialog = document.getElementById('gateDialog');
+  const gateForm = document.getElementById('gateForm');
+  const gateQuestion = document.getElementById('gateQuestion');
+  const gateAnswer = document.getElementById('gateAnswer');
+  const gateError = document.getElementById('gateError');
+
+  if (parentGate && gateDialog && gateForm && gateQuestion && gateAnswer && gateError) {
+    let gateExpected = 0, gateTarget = null, gateOpener = null, gateLastQuestion = '';
+
+    function gateRandInt(min, max) {
+      if (window.crypto && crypto.getRandomValues) {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        return min + (buf[0] % (max - min + 1));
+      }
+      return min + Math.floor(Math.random() * (max - min + 1));
+    }
+    function newGateQuestion() {
+      let a, b, key;
+      do {
+        a = gateRandInt(12, 29);
+        b = gateRandInt(3, 9);
+        key = a + 'x' + b;
+      } while (a % 10 === 0 || key === gateLastQuestion);
+      gateLastQuestion = key;
+      gateExpected = a * b;
+      gateQuestion.textContent = 'What is ' + a + ' × ' + b + '?';
+    }
+    function openGate(link) {
+      gateOpener = link;
+      gateTarget = link.href;
+      newGateQuestion();
+      gateAnswer.value = '';
+      gateError.textContent = '';
+      parentGate.hidden = false;
+      document.body.style.overflow = 'hidden';
+      gateAnswer.focus();
+    }
+    function closeGate() {
+      parentGate.hidden = true;
+      document.body.style.overflow = '';
+      gateTarget = null;
+      if (gateOpener) gateOpener.focus();
+    }
+
+    document.querySelectorAll('[data-adult-gate]').forEach((link) => {
+      link.addEventListener('click', (e) => { e.preventDefault(); openGate(link); });
+    });
+    parentGate.querySelectorAll('[data-gate-close]').forEach((el) => el.addEventListener('click', closeGate));
+
+    gateForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const typed = gateAnswer.value.trim();
+      if (typed === '') { gateError.textContent = 'Type your answer first.'; gateAnswer.focus(); return; }
+      if (/^\d+$/.test(typed) && parseInt(typed, 10) === gateExpected) {
+        const destination = gateTarget;
+        parentGate.hidden = true;
+        document.body.style.overflow = '';
+        window.location.href = destination;
+        return;
+      }
+      gateError.textContent = 'Not quite — try this one.';
+      gateDialog.classList.remove('shake');
+      void gateDialog.offsetWidth; // restart the shake animation
+      gateDialog.classList.add('shake');
+      newGateQuestion();
+      gateAnswer.value = '';
+      gateAnswer.focus();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (parentGate.hidden) return;
+      if (e.key === 'Escape') { e.preventDefault(); closeGate(); return; }
+      if (e.key === 'Tab') {
+        // Keep keyboard focus inside the dialog while it is open.
+        const items = Array.from(gateDialog.querySelectorAll('input, button')).filter((el) => !el.disabled);
+        const first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+  }
+
+  // ---------- Final section: owl + globe ----------
+  // The owl's artwork sits in the middle of a 512x512 canvas; the animation is
+  // cropped to the union of everything it paints over its whole loop
+  // (x 136-375, y 102-297, measured frame by frame, plus a small margin) so
+  // the wing flap never clips. The globe loops seamlessly (its clouds are off
+  // the canvas at both ends). Both only play while the section is on screen.
+  const finaleScene = document.getElementById('finaleScene');
+  const finaleOwlEl = document.getElementById('finaleOwl');
+  const finaleGlobeEl = document.getElementById('finaleGlobe');
+  const finaleCard = document.getElementById('finaleCard');
+
+  if (finaleScene && finaleOwlEl && finaleGlobeEl && finaleCard && window.lottie) {
+    let finaleActivated = false, finaleInView = false, finaleOwlAnim = null, finaleGlobeAnim = null;
+
+    function finaleWhenReady(anim, fn) {
+      if (anim.isLoaded) fn(); else anim.addEventListener('DOMLoaded', fn);
+    }
+    function applyFinalePlayState() {
+      if (prefersReducedMotion) return;
+      [finaleOwlAnim, finaleGlobeAnim].forEach((anim) => {
+        if (!anim) return;
+        if (finaleInView) anim.play(); else anim.pause();
+      });
+    }
+    function activateFinale() {
+      if (finaleActivated) return;
+      finaleActivated = true;
+      finaleOwlAnim = lottie.loadAnimation({
+        container: finaleOwlEl,
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: false,
+        path: '{{ asset("animations/tarabasa-owl-logo.json") }}',
+        rendererSettings: { preserveAspectRatio: 'xMidYMax meet', viewBoxSize: '128 96 254 208' }
+      });
+      finaleGlobeAnim = lottie.loadAnimation({
+        container: finaleGlobeEl,
+        renderer: 'svg',
+        loop: !prefersReducedMotion,
+        autoplay: false,
+        path: '{{ asset("animations/tarabasa-globe.json") }}',
+        rendererSettings: { preserveAspectRatio: 'xMidYMax slice' }
+      });
+      // Reduced motion: still frames (owl at rest, globe with clouds in view).
+      finaleWhenReady(finaleOwlAnim, () => { finaleOwlAnim.goToAndStop(prefersReducedMotion ? 60 : 0, true); applyFinalePlayState(); });
+      finaleWhenReady(finaleGlobeAnim, () => { finaleGlobeAnim.goToAndStop(prefersReducedMotion ? 500 : 300, true); applyFinalePlayState(); });
+    }
+
+    if ('IntersectionObserver' in window) {
+      // Start loading (the globe is ~1.5MB) well before it scrolls into view.
+      const finaleLoadObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) { activateFinale(); finaleLoadObserver.disconnect(); }
+      }, { rootMargin: '900px 0px' });
+      finaleLoadObserver.observe(finaleScene);
+      new IntersectionObserver((entries) => {
+        finaleInView = entries[0].isIntersecting;
+        applyFinalePlayState();
+      }, { threshold: 0.05 }).observe(finaleScene);
+      const finaleCardObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) { finaleCard.classList.add('revealed'); finaleCardObserver.disconnect(); }
+      }, { threshold: 0.3 });
+      finaleCardObserver.observe(finaleCard);
+    } else {
+      finaleInView = true;
+      activateFinale();
+      finaleCard.classList.add('revealed');
     }
   }
 </script>
