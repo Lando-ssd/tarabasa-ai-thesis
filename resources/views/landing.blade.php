@@ -669,55 +669,157 @@
   /* The owl artwork is drawn in a 512x512 canvas with a lot of empty margin,
      so the animation is cropped to its real painted area (254x208, see the
      JS) and sized here. The negative bottom margin tucks its lower part
-     behind the card, so it reads as peeking over the top edge. */
-  .finale-owl{ position:relative; z-index:1; width:min(230px, 56vw); aspect-ratio:254/208; margin:0 auto -58px; }
+     behind the card, so it reads as peeking over the top edge. The soft
+     drop shadow lifts it off the sky like the other cartoon art on the page. */
+  .finale-owl{
+    position:relative; z-index:1; width:min(250px, 58vw); aspect-ratio:254/208;
+    margin:0 auto -66px;
+    filter:drop-shadow(0 12px 10px rgba(8,34,74,.28));
+  }
   .finale-owl-lottie{ width:100%; height:100%; display:block; }
+
+  /* Claymorphism, the same soft puffy language as the Learner screens: a
+     bright rim light along the top, a darker inner shade along the bottom,
+     big rounded corners, and layered soft shadows underneath. */
   .finale-card{
-    position:relative; z-index:2;
-    padding:46px 36px 34px; text-align:center; color:#f4f9fd;
-    background:linear-gradient(165deg, #173a78 0%, #1d5a93 52%, #1a7a8c 100%);
-    border-radius:28px;
-    box-shadow:0 30px 60px -24px rgba(9,40,84,.6), inset 0 1px 0 rgba(255,255,255,.18);
+    position:relative; z-index:2; overflow:hidden;
+    padding:50px 38px 36px; text-align:center; color:#f4f9fd;
+    background:
+      radial-gradient(90% 60% at 16% 0%, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 60%),
+      linear-gradient(165deg, #1a4189 0%, #1d5a93 52%, #1a7a8c 100%);
+    border-radius:40px;
+    box-shadow:
+      0 40px 64px -30px rgba(5,28,66,.75),
+      0 14px 24px -12px rgba(5,28,66,.4),
+      inset 0 5px 0 rgba(255,255,255,.28),
+      inset 0 -18px 26px rgba(3,24,58,.42),
+      inset 10px 0 18px -8px rgba(255,255,255,.14);
     opacity:0; transform:translateY(16px);
     transition:opacity .6s ease, transform .6s ease;
   }
   .finale-card.revealed{ opacity:1; transform:translateY(0); }
+  /* Two soft clay "blobs" of light inside the card, plus a few twinkles. */
+  .finale-card::before{
+    content:''; position:absolute; top:-70px; right:-50px; width:210px; height:210px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, rgba(255,255,255,.14), rgba(255,255,255,0) 70%);
+    pointer-events:none;
+  }
+  .finale-card::after{
+    content:''; position:absolute; bottom:-90px; left:-60px; width:260px; height:260px; border-radius:50%;
+    background:radial-gradient(circle at 60% 40%, rgba(120,238,214,.22), rgba(120,238,214,0) 70%);
+    pointer-events:none;
+  }
+  .finale-card > :not(.finale-spark){ position:relative; z-index:1; }
+  .finale-spark{ position:absolute; z-index:1; fill:#ffd98a; pointer-events:none; animation:finaleTwinkle 3.2s ease-in-out infinite; }
+  .finale-spark.s1{ top:30px; left:11%; width:20px; height:20px; }
+  .finale-spark.s2{ top:62px; right:10%; width:13px; height:13px; animation-delay:1.1s; }
+  .finale-spark.s3{ top:22px; right:24%; width:9px; height:9px; animation-delay:2s; }
+  @keyframes finaleTwinkle{ 0%,100%{ transform:scale(.7) rotate(0deg); opacity:.55; } 50%{ transform:scale(1.12) rotate(14deg); opacity:1; } }
   .finale-title{
     font-family:'Baloo 2',sans-serif; font-weight:700;
     font-size:clamp(32px, 4.6vw, 44px); line-height:1.15; margin:0 0 14px; color:#fff;
+    text-shadow:0 3px 0 rgba(4,26,64,.38);
   }
-  .finale-title .accent{ color:#ffb04a; }
+  .finale-title .accent{ color:#ffb04a; text-shadow:0 3px 0 rgba(120,52,0,.45); }
   .finale-body{
     font-family:'Inter',sans-serif; font-weight:500; font-size:18px; line-height:1.6;
-    color:#f4f9fd; margin:0 auto 26px; max-width:440px;
+    color:#f4f9fd; margin:0 auto 28px; max-width:440px;
   }
-  /* The one frictionless path for a child: a plain, real link with no gate. */
+  .finale-body span{ display:block; text-wrap:balance; }
+  .finale-body span + span{ margin-top:6px; }
+  /* The one frictionless path for a child: a plain, real link with no gate.
+     A chunky pressable clay button: cream top, a solid warm "base" edge under
+     it, and a round orange lock badge that hangs on its left. */
   .finale-pin{
-    display:inline-flex; align-items:center; justify-content:center; gap:10px;
-    padding:16px 38px; border-radius:999px; text-decoration:none;
-    background:#fff; color:#c2570c;
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:21px; line-height:1;
-    box-shadow:0 14px 26px -12px rgba(4,20,48,.65);
-    transition:transform .2s ease, box-shadow .2s ease;
+    display:inline-flex; align-items:center; gap:14px;
+    padding:12px 36px 12px 12px; border-radius:999px; text-decoration:none;
+    background:linear-gradient(180deg, #ffffff 0%, #fff3df 100%);
+    color:#b34d08;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:22px; line-height:1;
+    box-shadow:
+      0 6px 0 #f2b56e,
+      0 22px 28px -10px rgba(3,20,50,.7),
+      inset 0 3px 0 #fff,
+      inset 0 -8px 12px rgba(239,141,42,.28);
+    transition:transform .18s ease, box-shadow .18s ease;
   }
-  .finale-pin:hover{ transform:translateY(-3px); box-shadow:0 20px 30px -12px rgba(4,20,48,.7); }
-  .finale-pin:active{ transform:translateY(0); }
-  .finale-pin svg{ flex:none; }
+  .finale-pin:hover{
+    transform:translateY(-3px);
+    box-shadow:
+      0 9px 0 #f2b56e,
+      0 28px 32px -10px rgba(3,20,50,.72),
+      inset 0 3px 0 #fff,
+      inset 0 -8px 12px rgba(239,141,42,.28);
+  }
+  .finale-pin:active{
+    transform:translateY(5px);
+    box-shadow:
+      0 1px 0 #f2b56e,
+      0 8px 14px -8px rgba(3,20,50,.6),
+      inset 0 3px 0 #fff,
+      inset 0 -8px 12px rgba(239,141,42,.28);
+  }
+  .finale-pin-badge{
+    flex:none; width:44px; height:44px; border-radius:50%;
+    display:grid; place-items:center;
+    background:linear-gradient(180deg, #ffc36a 0%, #ef8d2a 100%);
+    box-shadow:
+      inset 0 3px 0 rgba(255,255,255,.55),
+      inset 0 -5px 7px rgba(150,60,0,.35),
+      0 5px 8px -3px rgba(150,60,0,.5);
+  }
+  .finale-pin-badge svg{ display:block; }
+  /* "Or" divider: the line of text sits between two soft rules. */
   .finale-adult{
-    font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; line-height:1.5;
-    color:#f4f9fd; margin:26px 0 12px;
+    display:flex; align-items:center; gap:14px;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; line-height:1.45;
+    color:#f4f9fd; margin:32px 0 16px;
   }
-  .finale-pills{ display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .finale-adult::before, .finale-adult::after{ content:''; flex:1 1 18px; height:3px; border-radius:3px; background:rgba(255,255,255,.2); box-shadow:inset 0 1px 0 rgba(3,24,58,.35); }
+  .finale-pills{ display:flex; flex-wrap:wrap; justify-content:center; gap:12px 10px; }
+  /* The adult pills: smaller siblings of the button, in the same clay style
+     but deep blue so the child's cream button stays the clear main action. */
   .finale-pill{
-    display:inline-block; padding:9px 16px; border-radius:999px; text-decoration:none;
-    font-family:'Inter',sans-serif; font-weight:600; font-size:14px; line-height:1.3; color:#fff;
-    background:rgba(6,24,52,.40); border:1px solid rgba(255,255,255,.28);
-    transition:transform .2s ease, background .2s ease, border-color .2s ease;
+    display:inline-flex; align-items:center; gap:9px;
+    padding:10px 18px 10px 12px; border-radius:999px; text-decoration:none;
+    font-family:'Inter',sans-serif; font-weight:700; font-size:14px; line-height:1.2; color:#fff;
+    background:linear-gradient(180deg, #2c66a8 0%, #1c4b85 100%);
+    box-shadow:
+      0 4px 0 #0f325f,
+      0 12px 16px -8px rgba(3,20,50,.7),
+      inset 0 2px 0 rgba(255,255,255,.35),
+      inset 0 -4px 8px rgba(3,20,50,.35);
+    transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
   }
-  .finale-pill:hover{ background:rgba(6,24,52,.55); border-color:rgba(255,255,255,.6); transform:translateY(-2px); }
-  .finale-foot{ font-family:'Inter',sans-serif; font-weight:500; font-size:14px; color:#f4f9fd; margin:18px 0 0; }
-  .finale-foot a{ color:#fff; font-weight:600; text-underline-offset:3px; white-space:nowrap; }
-  .finale-pin:focus-visible, .finale-pill:focus-visible, .finale-foot a:focus-visible{ outline:3px solid #ffb04a; outline-offset:3px; }
+  .finale-pill:hover{
+    transform:translateY(-2px); filter:brightness(1.08);
+    box-shadow:
+      0 6px 0 #0f325f,
+      0 16px 20px -8px rgba(3,20,50,.72),
+      inset 0 2px 0 rgba(255,255,255,.35),
+      inset 0 -4px 8px rgba(3,20,50,.35);
+  }
+  .finale-pill:active{
+    transform:translateY(3px);
+    box-shadow:
+      0 1px 0 #0f325f,
+      0 6px 10px -6px rgba(3,20,50,.6),
+      inset 0 2px 0 rgba(255,255,255,.35),
+      inset 0 -4px 8px rgba(3,20,50,.35);
+  }
+  .finale-pill .dot{
+    flex:none; width:13px; height:13px; border-radius:50%;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.6), inset 0 -2px 3px rgba(0,0,0,.28);
+  }
+  .finale-pill .dot.t{ background:#6cc0ff; }
+  .finale-pill .dot.p{ background:#43dcb8; }
+  .finale-pill .dot.a{ background:#ffcf6e; }
+  .finale-foot{
+    font-family:'Inter',sans-serif; font-weight:500; font-size:14px; color:#f4f9fd;
+    margin:24px 0 0; padding-top:18px; border-top:2px solid rgba(255,255,255,.12);
+  }
+  .finale-foot a{ color:#fff; font-weight:700; text-underline-offset:3px; white-space:nowrap; }
+  .finale-pin:focus-visible, .finale-pill:focus-visible, .finale-foot a:focus-visible{ outline:3px solid #ffb04a; outline-offset:4px; }
   /* The globe: 1000x500 artwork whose top ~40% is transparent sky, so the
      card can overlap the arc. Full width, zero margin, drawn with a "slice"
      fit so a phone (where the natural height would be tiny) gets a taller
@@ -733,44 +835,75 @@
   }
   .finale-globe-lottie{ position:absolute; inset:0; }
   @media (max-width:640px){
-    .finale-card{ padding:40px 22px 28px; border-radius:24px; }
+    .finale-owl{ margin-bottom:-50px; }
+    .finale-card{ padding:44px 22px 30px; border-radius:34px; }
+    .finale-adult::before, .finale-adult::after{ display:none; }
     .finale-body{ font-size:17px; }
+    .finale-pin{ font-size:21px; padding-right:30px; }
     .finale-globe{ margin-top:-130px; }
   }
 
-  /* ---------- Parent gate: a small "grown-ups only" math question ---------- */
+  /* ---------- Parent gate: a small "grownups only" math question ----------
+     Same clay language as the card above: puffy white dialog, an inset
+     answer well, and chunky pressable buttons. */
   .gate{ position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
   .gate[hidden]{ display:none; }
   .gate-backdrop{ position:absolute; inset:0; background:rgba(8,24,48,.58); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
   .gate-dialog{
-    position:relative; width:min(380px, 100%); box-sizing:border-box;
-    padding:30px 28px 26px; text-align:center; background:#fff; border-radius:24px;
-    box-shadow:0 30px 70px -20px rgba(6,20,44,.6);
+    position:relative; width:min(390px, 100%); box-sizing:border-box;
+    padding:34px 28px 28px; text-align:center;
+    background:linear-gradient(180deg, #ffffff 0%, #f1f7fd 100%);
+    border-radius:34px;
+    box-shadow:
+      0 40px 70px -26px rgba(5,24,56,.65),
+      0 10px 20px -10px rgba(5,24,56,.3),
+      inset 0 4px 0 #fff,
+      inset 0 -10px 18px rgba(150,180,215,.28);
     animation:gatePop .28s cubic-bezier(.22,.9,.3,1.1);
   }
   .gate-dialog:focus{ outline:none; }
   .gate-dialog.shake{ animation:gateShake .4s ease; }
   @keyframes gatePop{ from{ opacity:0; transform:translateY(14px) scale(.96); } to{ opacity:1; transform:none; } }
   @keyframes gateShake{ 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-9px); } 40%{ transform:translateX(8px); } 60%{ transform:translateX(-6px); } 80%{ transform:translateX(4px); } }
-  .gate-title{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:26px; line-height:1.2; color:var(--navy-900); margin:0 0 4px; }
+  .gate-badge{
+    width:58px; height:58px; margin:0 auto 12px; border-radius:50%;
+    display:grid; place-items:center;
+    background:linear-gradient(180deg, #ffc36a 0%, #ef8d2a 100%);
+    box-shadow:
+      inset 0 3px 0 rgba(255,255,255,.55),
+      inset 0 -5px 8px rgba(150,60,0,.35),
+      0 9px 14px -6px rgba(150,60,0,.5);
+  }
+  .gate-badge svg{ display:block; }
+  .gate-title{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:27px; line-height:1.2; color:var(--navy-900); margin:0 0 4px; }
   .gate-hint{ font-family:'Inter',sans-serif; font-weight:500; font-size:15px; color:var(--slate-600); margin:0; }
-  .gate-question{ display:block; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:36px; line-height:1.1; color:var(--blue-700); margin:20px 0 12px; }
+  .gate-question{ display:block; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:38px; line-height:1.1; color:var(--blue-700); margin:20px 0 14px; }
   .gate-input{
-    width:100%; box-sizing:border-box; text-align:center; padding:12px 14px;
+    width:100%; box-sizing:border-box; text-align:center; padding:14px 14px;
     font-family:'Baloo 2',sans-serif; font-weight:700; font-size:30px; color:var(--navy-900);
-    border:2px solid #cbd8e6; border-radius:16px; background:#fff;
+    border:none; border-radius:22px; background:#eaf2fb;
+    box-shadow:inset 0 5px 10px rgba(30,70,120,.2), inset 0 -2px 0 #fff;
   }
-  .gate-input:focus{ outline:none; border-color:var(--blue-500); box-shadow:0 0 0 4px rgba(28,126,214,.18); }
-  .gate-error{ min-height:22px; margin:10px 0 0; font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; color:#b42318; }
-  .gate-actions{ display:flex; gap:10px; margin-top:8px; }
+  .gate-input:focus{ outline:none; box-shadow:inset 0 5px 10px rgba(30,70,120,.2), inset 0 -2px 0 #fff, 0 0 0 4px rgba(28,126,214,.3); }
+  .gate-error{ min-height:22px; margin:12px 0 0; font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; color:#b42318; }
+  .gate-actions{ display:flex; gap:12px; margin-top:10px; padding-bottom:5px; }
   .gate-actions button{
-    flex:1; padding:13px 10px; border-radius:14px; cursor:pointer;
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:17px; line-height:1;
+    flex:1; padding:14px 10px; border-radius:20px; border:none; cursor:pointer;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; line-height:1;
+    transition:transform .16s ease, box-shadow .16s ease;
   }
-  .gate-cancel{ background:#fff; border:2px solid #cbd8e6; color:var(--slate-600); }
-  .gate-cancel:hover{ border-color:#9fb2c6; }
-  .gate-ok{ border:none; color:#fff; background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); box-shadow:0 10px 18px -8px rgba(15,95,174,.55); }
+  .gate-actions button:active{ transform:translateY(4px); }
+  .gate-cancel{
+    color:var(--slate-600); background:linear-gradient(180deg, #ffffff 0%, #eaf2fb 100%);
+    box-shadow:0 5px 0 #c4d3e4, 0 12px 14px -8px rgba(30,70,120,.4), inset 0 2px 0 #fff;
+  }
+  .gate-cancel:active{ box-shadow:0 1px 0 #c4d3e4, 0 4px 8px -6px rgba(30,70,120,.4), inset 0 2px 0 #fff; }
+  .gate-ok{
+    color:#fff; background:linear-gradient(180deg, #3d95ea 0%, var(--blue-600) 100%);
+    box-shadow:0 5px 0 #0a3d73, 0 14px 18px -8px rgba(15,95,174,.6), inset 0 2px 0 rgba(255,255,255,.35), inset 0 -4px 8px rgba(3,30,70,.25);
+  }
   .gate-ok:hover{ filter:brightness(1.06); }
+  .gate-ok:active{ box-shadow:0 1px 0 #0a3d73, 0 4px 8px -6px rgba(15,95,174,.6), inset 0 2px 0 rgba(255,255,255,.35), inset 0 -4px 8px rgba(3,30,70,.25); }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
@@ -789,7 +922,8 @@
     .farm-land-stage{ opacity:1; transition:none; }
     .seesaw-stage{ opacity:1; transition:none; }
     .finale-card{ opacity:1; transform:none; transition:none; }
-    .finale-pin, .finale-pill{ transition:none; }
+    .finale-pin, .finale-pill, .gate-actions button{ transition:none; }
+    .finale-spark{ animation:none; opacity:.9; transform:none; }
     .gate-dialog, .gate-dialog.shake{ animation:none; }
   }
 </style>
@@ -1059,12 +1193,19 @@
       </div>
 
       <div id="finaleCard" class="finale-card">
+        <!-- Decorative twinkles (four-point stars), hidden from assistive tech. -->
+        <svg class="finale-spark s1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4Z"/></svg>
+        <svg class="finale-spark s2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4Z"/></svg>
+        <svg class="finale-spark s3" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4Z"/></svg>
+
         <h2 id="finaleTitle" class="finale-title">I'm a <span class="accent">Learner!</span></h2>
-        <p class="finale-body">Read out loud, play games, and earn badges — just your own code and a secret PIN, no email or password needed.</p>
+        <p class="finale-body"><span>Read out loud, play games, and earn badges.</span> <span>Just your own code and a secret PIN, no email or password needed.</span></p>
 
         <!-- The child's own path: a plain real link, deliberately NOT gated. -->
         <a class="finale-pin" href="{{ route('learner.login') }}">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#c2570c" stroke-width="2.4" stroke-linecap="round"/><rect x="5" y="11" width="14" height="9.5" rx="2.6" fill="#c2570c"/><circle cx="12" cy="15.6" r="1.5" fill="#fff"/></svg>
+          <span class="finale-pin-badge" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><rect x="5" y="11" width="14" height="9.5" rx="2.6" fill="#fff"/><circle cx="12" cy="15.6" r="1.6" fill="#dd7014"/></svg>
+          </span>
           <span>Enter my PIN</span>
         </a>
 
@@ -1076,9 +1217,9 @@
              of them. These are the same routes the old role-select section
              used for each role. -->
         <div class="finale-pills">
-          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'teacher']) }}">Teachers confirm their school</a>
-          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'parent']) }}">Parents add their child</a>
-          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'admin']) }}">Admins approve every teacher</a>
+          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'teacher']) }}"><span class="dot t" aria-hidden="true"></span>Teachers confirm their school</a>
+          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'parent']) }}"><span class="dot p" aria-hidden="true"></span>Parents add their child</a>
+          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'admin']) }}"><span class="dot a" aria-hidden="true"></span>Admins approve every teacher</a>
         </div>
         <p class="finale-foot">New teacher at your school? <a data-adult-gate href="{{ route('register.teacher') }}">Request an account</a></p>
       </div>
@@ -1099,7 +1240,10 @@
   <div id="parentGate" class="gate" hidden>
     <div class="gate-backdrop" data-gate-close></div>
     <div id="gateDialog" class="gate-dialog" role="dialog" aria-modal="true" aria-labelledby="gateTitle" aria-describedby="gateHint" tabindex="-1">
-      <h3 id="gateTitle" class="gate-title">Grown-ups only</h3>
+      <div class="gate-badge" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><rect x="5" y="11" width="14" height="9.5" rx="2.6" fill="#fff"/><circle cx="12" cy="15.6" r="1.6" fill="#dd7014"/></svg>
+      </div>
+      <h3 id="gateTitle" class="gate-title">Grownups only</h3>
       <p id="gateHint" class="gate-hint">Answer this to continue.</p>
       <form id="gateForm" novalidate>
         <label id="gateQuestion" class="gate-question" for="gateAnswer">What is 14 × 6?</label>
@@ -1662,7 +1806,7 @@
         window.location.href = destination;
         return;
       }
-      gateError.textContent = 'Not quite — try this one.';
+      gateError.textContent = 'Not quite, try this one.';
       gateDialog.classList.remove('shake');
       void gateDialog.offsetWidth; // restart the shake animation
       gateDialog.classList.add('shake');
