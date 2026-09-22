@@ -2,7 +2,7 @@
 @section('title', "You're registered — TaraBasa AI")
 @section('content')
 
-  <div style="width:52px;height:52px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+  <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(150deg,#28c79f,var(--success));display:flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4), inset 0 -4px 6px rgba(0,0,0,.18), 0 8px 16px -8px rgba(31,158,131,.55);">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
 

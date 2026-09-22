@@ -31,7 +31,8 @@
     display:flex; align-items:safe center; justify-content:center;
     padding:32px 20px 48px;
   }
-  .card-outer{ width:100%; max-width:440px; }
+  .card-outer{ width:100%; max-width:440px; animation:cardRise .5s ease both; }
+  @keyframes cardRise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
   .back-link{
     display:inline-flex; align-items:center; gap:6px; background:none; border:none;
     color:var(--slate-600); font:600 13px/1 'Inter',sans-serif; cursor:pointer;
@@ -41,28 +42,43 @@
   .back-link:hover{ color:var(--blue-600); }
   .back-link svg{ transition:transform .15s ease; }
   .back-link:hover svg{ transform:translateX(-2px); }
+  /* Real clay depth, matching the landing page's own card recipe: a soft
+     ambient shadow plus a tighter contact shadow, an inset highlight along
+     the top edge and a faint inset shade along the bottom, and a subtle
+     corner glow instead of a flat white fill. */
   .card{
-    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg);
-    box-shadow:0 24px 60px -30px rgba(19,31,43,0.25); padding:32px;
+    position:relative; overflow:hidden;
+    background:
+      radial-gradient(120% 90% at 12% -10%, rgba(28,126,214,.05) 0%, rgba(28,126,214,0) 55%),
+      var(--surface);
+    border-radius:30px; padding:34px 32px;
+    box-shadow:
+      0 30px 54px -28px rgba(19,31,43,.32),
+      0 10px 18px -12px rgba(19,31,43,.16),
+      inset 0 2px 0 #fff,
+      inset 0 -1px 0 var(--line);
   }
   .logo-badge{
-    width:48px;height:48px;border-radius:14px; overflow:hidden; margin-bottom:14px;
-    box-shadow:0 6px 16px -6px rgba(15,95,174,0.5);
+    width:50px;height:50px;border-radius:15px; overflow:hidden; margin-bottom:16px; position:relative;
+    box-shadow:0 8px 16px -6px rgba(15,95,174,.5), inset 0 2px 0 rgba(255,255,255,.35);
   }
   .logo-badge img{ width:100%; height:100%; object-fit:cover; display:block; }
-  h1{ font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:700; margin:0 0 4px; }
-  .sub{ margin:0 0 22px; font-size:13.5px; color:var(--slate-600); font-weight:500; line-height:1.5; }
+  h1{ font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:700; margin:0 0 5px; }
+  .sub{ margin:0 0 24px; font-size:15px; color:var(--slate-600); font-weight:500; line-height:1.55; }
   .role-badge{
     display:inline-flex; align-items:center; gap:8px; background:var(--sky-50); border:1px solid var(--line);
     border-radius:999px; padding:6px 14px 6px 6px; font-size:12.5px; font-weight:600; color:var(--slate-600);
     margin-bottom:18px;
   }
-  .role-badge .icon{ width:22px;height:22px;border-radius:50%; display:flex;align-items:center;justify-content:center; color:#fff; }
+  .role-badge .icon{
+    width:22px;height:22px;border-radius:50%; display:flex;align-items:center;justify-content:center; color:#fff;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.5), inset 0 -2px 3px rgba(0,0,0,.22);
+  }
   .role-badge .icon.teacher{ background:linear-gradient(150deg,var(--blue-500),var(--blue-700)); }
   .role-badge .icon.parent{ background:linear-gradient(150deg,#28b895,#1f9e83); }
   .role-badge .icon.admin{ background:linear-gradient(150deg,#4a5b6b,var(--navy-900)); }
-  .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
-  .field label{ font-size:12.5px; font-weight:700; }
+  .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:15px; }
+  .field label{ font-size:13px; font-weight:700; }
   .field .opt{ font-size:11px; font-weight:600; color:var(--slate-400); margin-left:3px; }
   .name-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .name-row.three{ grid-template-columns:1fr 74px 1fr; }
@@ -72,13 +88,16 @@
     transition:color .15s ease;
   }
   .field-icon-btn:hover{ color:var(--blue-600); }
+  /* A faint inset "carved-in" shadow instead of a flat bordered box, the
+     same tactile-field language as the landing page's parent-gate input. */
   input{
-    width:100%; font:500 14px/1 'Inter',sans-serif; padding:12px 13px; border:1.5px solid var(--line);
-    border-radius:11px; background:var(--bg-0); color:var(--navy-900); outline:none;
+    width:100%; font:500 15px/1 'Inter',sans-serif; padding:12.5px 13px; border:1.5px solid var(--line);
+    border-radius:12px; background:var(--bg-0); color:var(--navy-900); outline:none;
+    box-shadow:inset 0 2px 4px rgba(19,31,43,.05);
     transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
   }
   input::placeholder{ color:var(--slate-400); font-weight:500; }
-  input:focus{ border-color:var(--blue-500); background:var(--surface); box-shadow:0 0 0 4px rgba(28,126,214,0.14); }
+  input:focus{ border-color:var(--blue-500); background:var(--surface); box-shadow:inset 0 2px 4px rgba(19,31,43,.05), 0 0 0 4px rgba(28,126,214,0.14); }
   input.error{ border-color:var(--danger); }
   .field-error{ font-size:12px; color:var(--danger); font-weight:600; margin-top:2px; }
   .divider-label{
@@ -100,19 +119,35 @@
     color:var(--danger); border-radius:11px; padding:11px 13px; font-size:12.5px; font-weight:600;
     margin-bottom:16px;
   }
+  /* A real pressable clay button - a solid base-color edge under it plus a
+     soft ambient shadow, an inset highlight along the top, lifts on hover
+     and genuinely sinks on press, matching the landing page's own button
+     recipe instead of a flat gradient pill. */
   .submit-btn{
-    width:100%; padding:14px; border:none; border-radius:12px; font:700 15px/1 'Inter',sans-serif;
-    cursor:pointer; background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); color:#fff;
-    box-shadow:0 12px 22px -10px rgba(15,95,174,0.55); transition:transform .15s ease, opacity .15s ease;
+    width:100%; padding:14.5px; border:none; border-radius:14px; font:700 16px/1 'Inter',sans-serif;
+    cursor:pointer; background:linear-gradient(160deg, var(--blue-500), var(--blue-700)); color:#fff;
+    box-shadow:
+      0 4px 0 var(--blue-700),
+      0 16px 26px -12px rgba(15,95,174,.6),
+      inset 0 2px 0 rgba(255,255,255,.3);
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
   }
-  .submit-btn:hover{ transform:translateY(-1px); }
-  .submit-btn:disabled{ opacity:.65; cursor:not-allowed; transform:none; }
-  .switch-note{ text-align:center; font-size:13px; color:var(--slate-600); font-weight:500; margin:18px 0 0; }
+  .submit-btn:hover{ transform:translateY(-2px); }
+  .submit-btn:active{
+    transform:translateY(2px);
+    box-shadow:0 1px 0 var(--blue-700), 0 6px 12px -8px rgba(15,95,174,.6), inset 0 2px 0 rgba(255,255,255,.3);
+  }
+  .submit-btn:disabled{ opacity:.65; cursor:not-allowed; transform:none; box-shadow:0 4px 0 var(--blue-700), 0 16px 26px -12px rgba(15,95,174,.6), inset 0 2px 0 rgba(255,255,255,.3); }
+  .switch-note{ text-align:center; font-size:13.5px; color:var(--slate-600); font-weight:500; margin:20px 0 0; }
   .switch-note a{ color:var(--blue-600); font-weight:700; text-decoration:none; transition:color .15s ease; }
   .switch-note a:hover{ text-decoration:underline; }
 
   a:focus-visible, button:focus-visible{
     outline:2px solid var(--blue-500); outline-offset:2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card-outer{ animation:none; }
   }
 </style>
 </head>

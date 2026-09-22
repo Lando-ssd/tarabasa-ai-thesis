@@ -85,7 +85,11 @@
   @elseif ($role === 'parent')
     <p class="switch-note">New here? <a href="{{ route('register.parent') }}">Register as Parent</a></p>
   @elseif (! $role)
-    <p class="switch-note">New here? <a href="{{ route('landing') }}#signin">Choose your role to get started</a></p>
+    {{-- Fixed a real dead link here: #signin pointed at a section id that no
+         longer exists (the old role-select section it belonged to was
+         replaced long ago). The landing page's own header already has
+         Log in / Get Started right at the top, so this just goes there. --}}
+    <p class="switch-note">New here? <a href="{{ route('landing') }}">Choose your role to get started</a></p>
   @endif
   {{-- Admin: no registration link at all, by design. --}}
 
