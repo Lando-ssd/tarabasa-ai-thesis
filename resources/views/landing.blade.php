@@ -826,7 +826,6 @@
   }
   .finale-end-inner{
     max-width:1080px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
-    padding-top:22px; border-top:1px solid rgba(255,255,255,.16);
   }
   .finale-brand{ display:flex; align-items:center; gap:12px; }
   .finale-brand img{ width:44px; height:44px; border-radius:14px; display:block; box-shadow:0 4px 0 rgba(0,0,0,.22), inset 0 2px 0 rgba(255,255,255,.3); }
