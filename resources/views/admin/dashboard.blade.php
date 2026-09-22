@@ -29,43 +29,64 @@
 
   .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .logo-lockup{ display:flex; align-items:center; gap:10px; }
-  .logo-badge{ width:38px;height:38px;border-radius:11px; overflow:hidden; box-shadow:0 6px 14px -5px rgba(15,95,174,0.5); }
+  .logo-badge{ width:38px;height:38px;border-radius:11px; overflow:hidden; box-shadow:0 6px 14px -5px rgba(15,95,174,0.5), inset 0 2px 0 rgba(255,255,255,.3); }
   .logo-badge img{ width:100%; height:100%; object-fit:cover; display:block; }
   .wordmark{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; }
   .wordmark span{ color:var(--owl-orange-500); }
   .topbar-actions{ display:flex; align-items:center; gap:10px; }
   .avatar-chip{
     display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
-    padding:5px 12px 5px 5px; border-radius:999px; box-shadow:var(--shadow-sm);
+    padding:5px 12px 5px 5px; border-radius:999px; box-shadow:0 2px 6px -2px rgba(19,31,43,.1);
   }
   .avatar-chip .av{
     width:30px;height:30px;border-radius:50%; background:linear-gradient(155deg,var(--navy-900),#3a4b5c);
     display:flex;align-items:center;justify-content:center; color:#fff; font-weight:700; font-size:13px;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.2), inset 0 -2px 3px rgba(0,0,0,.3);
   }
   .avatar-chip span.name{ font-size:13.5px; font-weight:700; }
   .logout-btn{
     background:var(--surface); border:1px solid var(--line); color:var(--slate-600); font:700 13px/1 'Inter',sans-serif;
-    padding:10px 16px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow-sm);
-    transition:color .15s ease, border-color .15s ease;
+    padding:10px 16px; border-radius:12px; cursor:pointer; box-shadow:0 2px 6px -2px rgba(19,31,43,.1);
+    transition:color .15s ease, border-color .15s ease, box-shadow .15s ease;
   }
-  .logout-btn:hover{ color:var(--danger); border-color:var(--danger); }
+  .logout-btn:hover{ color:var(--danger); border-color:var(--danger); box-shadow:0 4px 10px -3px rgba(214,69,69,.25); }
 
-  h1{ font-family:'Baloo 2',sans-serif; font-size:25px; font-weight:700; margin:18px 0 6px; }
-  .sub{ color:var(--slate-600); font-size:13.5px; font-weight:500; margin:0 0 22px; }
+  h1{ font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:700; margin:18px 0 6px; }
+  .sub{ color:var(--slate-600); font-size:14.5px; font-weight:500; margin:0 0 22px; }
 
   .flash{
     background:var(--success-bg); border:1px solid var(--success); color:var(--success); font-weight:700;
     font-size:13px; border-radius:14px; padding:12px 16px; margin-bottom:20px;
   }
 
+  /* Real depth (soft ambient + tight contact shadow, inset top highlight)
+     instead of one flat 1px shadow - the landing page's underlying card
+     recipe, scaled down to suit a dense data screen rather than copied
+     literally as a big chunky hero card. Each stat gets its own tint so
+     the row reads at a glance instead of three identical white boxes. */
   .stat-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:30px; }
-  .stat-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:var(--shadow-sm); }
-  .stat-card .val{ font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:700; }
+  .stat-card{
+    position:relative; overflow:hidden; border-radius:20px; padding:19px 18px;
+    background:var(--surface);
+    box-shadow:0 10px 22px -14px rgba(19,31,43,.22), 0 2px 6px -2px rgba(19,31,43,.08), inset 0 1px 0 #fff, inset 0 -1px 0 var(--line);
+    animation:panelRise .45s ease both;
+  }
+  .stat-card::before{ content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--accent, var(--blue-500)); opacity:.7; }
+  .stat-card.pending{ --accent:var(--amber); }
+  .stat-card.active{ --accent:var(--success); }
+  .stat-card.total{ --accent:var(--blue-500); }
+  .stat-card .val{ font-family:'Baloo 2',sans-serif; font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; }
   .stat-card .lbl{ font-size:12.5px; color:var(--slate-600); font-weight:700; margin-top:2px; }
 
-  section.panel{ background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow-sm); padding:22px; margin-bottom:24px; }
-  section.panel h2{ font-family:'Baloo 2',sans-serif; font-size:17px; font-weight:700; margin:0 0 3px; }
-  section.panel .panel-sub{ color:var(--slate-600); font-size:12.5px; font-weight:500; margin:0 0 16px; }
+  section.panel{
+    position:relative; background:var(--surface); border-radius:22px; padding:24px; margin-bottom:24px;
+    box-shadow:0 14px 30px -20px rgba(19,31,43,.25), 0 2px 6px -2px rgba(19,31,43,.08), inset 0 1px 0 #fff, inset 0 -1px 0 var(--line);
+    animation:panelRise .45s ease both;
+  }
+  section.panel:nth-of-type(2){ animation-delay:.06s; }
+  @keyframes panelRise{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+  section.panel h2{ font-family:'Baloo 2',sans-serif; font-size:17.5px; font-weight:700; margin:0 0 3px; }
+  section.panel .panel-sub{ color:var(--slate-600); font-size:13px; font-weight:500; margin:0 0 16px; }
 
   table{ width:100%; border-collapse:collapse; }
   thead th{
@@ -87,17 +108,18 @@
   .row-actions form{ display:inline; }
   .btn-sm{
     padding:8px 14px; border-radius:10px; font:700 12.5px/1 'Inter',sans-serif; cursor:pointer; border:1.5px solid transparent;
-    white-space:nowrap; transition:background-color .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
+    white-space:nowrap; transition:background-color .15s ease, color .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease;
   }
-  .btn-sm:hover{ transform:translateY(-1px); }
-  .btn-activate{ background:var(--success); color:#fff; }
+  .btn-sm:hover{ transform:translateY(-1px); box-shadow:0 6px 14px -6px var(--btn-shadow, rgba(19,31,43,.3)); }
+  .btn-sm:active{ transform:translateY(0); }
+  .btn-activate{ background:var(--success); color:#fff; --btn-shadow:rgba(31,158,131,.5); }
   .btn-activate:hover{ background:#188a72; }
   .btn-reject{ background:var(--danger-bg); color:var(--danger); }
-  .btn-reject:hover{ background:var(--danger); color:#fff; }
+  .btn-reject:hover{ background:var(--danger); color:#fff; --btn-shadow:rgba(214,69,69,.4); }
   .btn-deactivate{ background:var(--danger-bg); color:var(--danger); }
-  .btn-deactivate:hover{ background:var(--danger); color:#fff; }
+  .btn-deactivate:hover{ background:var(--danger); color:#fff; --btn-shadow:rgba(214,69,69,.4); }
   .btn-reactivate{ background:var(--success-bg); color:var(--success); }
-  .btn-reactivate:hover{ background:var(--success); color:#fff; }
+  .btn-reactivate:hover{ background:var(--success); color:#fff; --btn-shadow:rgba(31,158,131,.5); }
   .btn-sm:focus-visible, .logout-btn:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
   .empty-note{ text-align:center; padding:32px 20px; color:var(--slate-600); font-size:13.5px; font-weight:500; }
@@ -107,8 +129,9 @@
   .search-box input{
     width:100%; padding:11px 14px 11px 38px; border:1.5px solid var(--line); border-radius:12px;
     font:600 13.5px/1 'Inter',sans-serif; color:var(--navy-900); background:var(--bg-0);
+    box-shadow:inset 0 2px 4px rgba(19,31,43,.05); transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
   }
-  .search-box input:focus{ outline:none; border-color:var(--blue-500); background:var(--surface); }
+  .search-box input:focus{ outline:none; border-color:var(--blue-500); background:var(--surface); box-shadow:inset 0 2px 4px rgba(19,31,43,.05), 0 0 0 4px rgba(28,126,214,.14); }
   .search-box input::placeholder{ color:var(--slate-400); font-weight:500; }
 
   .table-scroll{ overflow-x:auto; }
@@ -117,6 +140,10 @@
     .topbar{ flex-wrap:wrap; gap:10px; }
     .avatar-chip span.name{ display:none; }
     .logout-btn{ white-space:nowrap; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .stat-card, section.panel{ animation:none; }
   }
 
   @media (max-width:760px){
@@ -157,9 +184,9 @@
   @endif
 
   <div class="stat-row">
-    <div class="stat-card"><div class="val">{{ $pendingTeacherCount }}</div><div class="lbl">Pending Teachers</div></div>
-    <div class="stat-card"><div class="val">{{ $activeTeacherCount }}</div><div class="lbl">Active Teachers</div></div>
-    <div class="stat-card"><div class="val">{{ $totalAccountCount }}</div><div class="lbl">Total Accounts</div></div>
+    <div class="stat-card pending"><div class="val">{{ $pendingTeacherCount }}</div><div class="lbl">Pending Teachers</div></div>
+    <div class="stat-card active"><div class="val">{{ $activeTeacherCount }}</div><div class="lbl">Active Teachers</div></div>
+    <div class="stat-card total"><div class="val">{{ $totalAccountCount }}</div><div class="lbl">Total Accounts</div></div>
   </div>
 
   <section class="panel">
