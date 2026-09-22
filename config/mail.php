@@ -45,7 +45,12 @@ return [
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            // Was null (no limit) — a genuinely unreachable/blocked SMTP
+            // connection would then hang for PHP's own default (~60s)
+            // before failing, turning one slow mail attempt into a full
+            // request timeout. 10s is generous for a real SMTP handshake
+            // but fails fast enough that it can't stall a registration.
+            'timeout' => 10,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 

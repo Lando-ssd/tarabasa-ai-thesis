@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -71,10 +72,7 @@ class AuthController extends Controller
             return $user;
         });
 
-        // Sends the real confirmation email (writes to storage/logs/laravel.log
-        // right now, since MAIL_MAILER=log — switches to real Gmail delivery
-        // the moment we update .env, no code change needed).
-        $user->sendEmailVerificationNotification();
+        $this->sendVerificationEmailSafely($user);
 
         // Log in immediately — verification does not block access, per the
         // actor prompt's explicit "logs in right away" rule.
@@ -125,7 +123,7 @@ class AuthController extends Controller
             return $user;
         });
 
-        $user->sendEmailVerificationNotification();
+        $this->sendVerificationEmailSafely($user);
 
         Auth::login($user);
 
@@ -134,6 +132,29 @@ class AuthController extends Controller
             'email' => $user->email,
             'role' => 'parent',
         ]);
+    }
+
+    /**
+     * Sends the real confirmation email — but a registration must never
+     * fail just because SMTP is slow or unreachable. Confirmed for real:
+     * an unprotected send here could hang the whole request for ~60s and
+     * then return a raw 500, turning a mail-server problem into a broken
+     * registration. Every other external call in this app (Gemini,
+     * Reading-api, Adaptive_Recommendator) already degrades gracefully
+     * instead of crashing the user-facing flow — this brings registration
+     * in line with that same pattern.
+     */
+    private function sendVerificationEmailSafely(User $user): void
+    {
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (Throwable $e) {
+            Log::warning('Verification email failed to send during registration.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
