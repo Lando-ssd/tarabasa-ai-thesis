@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Laravel\Socialite\Facades\Socialite;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -190,46 +192,56 @@ class AuthController extends Controller
             ]);
         }
 
-        // The role picked on the login form (Teacher/Parent/Admin login
-        // links, or the general "Log in" link with no role at all) must
-        // match the account's real user_type. Correct credentials on the
-        // wrong role's form are rejected with a specific message rather
-        // than silently logging the person in under their real role.
-        $roleMap = ['teacher' => 'Teacher', 'parent' => 'Parent', 'admin' => 'Admin'];
-        $submittedRole = $credentials['role'] ?? null;
-
-        if ($submittedRole && ($roleMap[$submittedRole] ?? null) !== $user->user_type) {
+        if ($blockedReason = $this->reasonLoginBlocked($user, $credentials['role'] ?? null)) {
             RateLimiter::hit($throttleKey, 60);
 
-            throw ValidationException::withMessages([
-                'email' => "This account is registered as a {$user->user_type}. Please use the {$user->user_type} login instead.",
-            ]);
-        }
-
-        // Account-level deactivation (Admin's "Deactivate" action) blocks
-        // login outright, regardless of correct credentials.
-        if ($user->status === 'Inactive') {
-            RateLimiter::hit($throttleKey, 60);
-
-            throw ValidationException::withMessages([
-                'email' => 'This account has been deactivated. Contact your school\'s TaraBasa admin.',
-            ]);
-        }
-
-        // A Rejected Teacher gets a clear, specific rejection message even
-        // though their credentials are correct — per the Admin Actor Prompt.
-        if ($user->user_type === 'Teacher' && $user->teacher && $user->teacher->status === 'Rejected') {
-            RateLimiter::hit($throttleKey, 60);
-
-            throw ValidationException::withMessages([
-                'email' => 'Your teacher registration was not approved. Contact your school\'s TaraBasa admin.',
-            ]);
+            throw ValidationException::withMessages(['email' => $blockedReason]);
         }
 
         RateLimiter::clear($throttleKey);
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
+        return $this->redirectForUserType($user);
+    }
+
+    /**
+     * The same eligibility rules (role match / active / not-rejected)
+     * password login already enforced — pulled out so "Continue with
+     * Google" checks the exact same rules instead of risking a second,
+     * slightly-different copy. Returns a user-facing message when login
+     * should be blocked, or null when it's fine to proceed.
+     */
+    private function reasonLoginBlocked(User $user, ?string $submittedRole): ?string
+    {
+        // The role picked on the login form (Teacher/Parent/Admin login
+        // links, or the general "Log in" link with no role at all) must
+        // match the account's real user_type. Correct credentials on the
+        // wrong role's form are rejected with a specific message rather
+        // than silently logging the person in under their real role.
+        $roleMap = ['teacher' => 'Teacher', 'parent' => 'Parent', 'admin' => 'Admin'];
+
+        if ($submittedRole && ($roleMap[$submittedRole] ?? null) !== $user->user_type) {
+            return "This account is registered as a {$user->user_type}. Please use the {$user->user_type} login instead.";
+        }
+
+        // Account-level deactivation (Admin's "Deactivate" action) blocks
+        // login outright, regardless of correct credentials.
+        if ($user->status === 'Inactive') {
+            return 'This account has been deactivated. Contact your school\'s TaraBasa admin.';
+        }
+
+        // A Rejected Teacher gets a clear, specific rejection message even
+        // though their credentials are correct — per the Admin Actor Prompt.
+        if ($user->user_type === 'Teacher' && $user->teacher && $user->teacher->status === 'Rejected') {
+            return 'Your teacher registration was not approved. Contact your school\'s TaraBasa admin.';
+        }
+
+        return null;
+    }
+
+    private function redirectForUserType(User $user)
+    {
         return match ($user->user_type) {
             'Admin' => redirect()->route('admin.dashboard'),
             'Teacher' => redirect()->route('teacher.dashboard'),
@@ -244,5 +256,59 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    /**
+     * "Continue with Google" — step 1. Sends the browser to Google's own
+     * consent screen. Google Sign-In only ever logs an EXISTING account in
+     * here (see handleGoogleCallback) — it never creates one, since a
+     * brand-new Google sign-in has no way to know which role (Teacher vs
+     * Parent) the person is, and Teacher registration needs real
+     * school-verification fields Google can't supply.
+     */
+    public function redirectToGoogle(Request $request)
+    {
+        if (! config('services.google.client_id') || ! config('services.google.client_secret')) {
+            return redirect()->route('login', ['role' => $request->query('role')])
+                ->withErrors(['email' => 'Google Sign-In isn\'t set up yet. Please log in with your email and password for now.']);
+        }
+
+        // Carried across the round trip to Google so the callback can
+        // re-apply the exact same role-mismatch check the form submit does.
+        $request->session()->put('google_login_role', $request->query('role'));
+
+        return Socialite::driver('google')->redirect();
+    }
+
+    /**
+     * "Continue with Google" — step 2, after Google sends the browser back.
+     */
+    public function handleGoogleCallback(Request $request)
+    {
+        $submittedRole = $request->session()->pull('google_login_role');
+
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (Throwable $e) {
+            return redirect()->route('login', ['role' => $submittedRole])
+                ->withErrors(['email' => 'Google Sign-In didn\'t go through. Please try again, or log in with your email and password.']);
+        }
+
+        $user = User::where('email', $googleUser->getEmail())->first();
+
+        if (! $user) {
+            return redirect()->route('login', ['role' => $submittedRole])
+                ->withErrors(['email' => "No TaraBasa account found for {$googleUser->getEmail()}. Please register first."]);
+        }
+
+        if ($blockedReason = $this->reasonLoginBlocked($user, $submittedRole)) {
+            return redirect()->route('login', ['role' => $submittedRole])
+                ->withErrors(['email' => $blockedReason]);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return $this->redirectForUserType($user);
     }
 }

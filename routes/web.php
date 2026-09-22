@@ -6,6 +6,7 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookshelfController;
 use App\Http\Controllers\ClassController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\LearnerAuthController;
 use App\Http\Controllers\LearnerController;
@@ -33,6 +34,14 @@ Route::post('/register/parent', [AuthController::class, 'storeParent'])->name('r
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showRequestForm'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
+Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('password.update');
+
+Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
 // Mark-as-read is shared plumbing for both Teacher and Parent Notifications
 // screens — ownership (recipient_user_id === current user) is checked

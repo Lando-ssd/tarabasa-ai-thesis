@@ -60,4 +60,14 @@ return [
         'key' => env('ADAPTIVE_RECOMMENDER_KEY'),
     ],
 
+    // "Continue with Google" on Login. Empty by default — until real
+    // credentials are set, AuthController::redirectToGoogle() shows a
+    // friendly "not set up yet" message instead of crashing, same
+    // honest-not-configured pattern as every other external service above.
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
 ];

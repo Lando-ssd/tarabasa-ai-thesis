@@ -1,4 +1,4 @@
-@extends('layouts.auth')
+@extends('layouts.auth-login')
 @section('title', 'Sign in — TaraBasa AI')
 @section('content')
 
@@ -26,8 +26,7 @@
     </div>
   @endif
 
-  <h1>Welcome back</h1>
-  <p class="sub">Enter your details to access your dashboard.</p>
+  <h1>Log in</h1>
 
   @if ($errors->any())
     <div class="form-error-banner">
@@ -77,8 +76,17 @@
       </div>
     </div>
 
-    <button type="submit" class="submit-btn" id="submitBtn">Sign in</button>
+    <a href="{{ route('password.request') }}" class="forgot-link">Forgot password?</a>
+
+    <button type="submit" class="submit-btn" id="submitBtn">Log in</button>
   </form>
+
+  <div class="divider-label">or</div>
+
+  <a href="{{ route('auth.google.redirect', ['role' => $role]) }}" class="google-btn">
+    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.6 2.4 30.1 0 24 0 14.6 0 6.5 5.4 2.5 13.2l7.9 6.1C12.3 13 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.6c-.5 3-2.2 5.5-4.7 7.2l7.3 5.7c4.3-4 6.8-9.8 6.8-17.4z"/><path fill="#FBBC05" d="M10.4 19.3c-.5 1.5-.8 3.1-.8 4.7s.3 3.2.8 4.7l-7.9 6.1C.9 31.5 0 27.9 0 24s.9-7.5 2.5-10.8l7.9 6.1z"/><path fill="#34A853" d="M24 48c6.1 0 11.2-2 15-5.5l-7.3-5.7c-2 1.4-4.6 2.2-7.7 2.2-6.4 0-11.7-3.5-13.6-9.3l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+    Continue with Google
+  </a>
 
   @if ($role === 'teacher')
     <p class="switch-note">New here? <a href="{{ route('register.teacher') }}">Register as Teacher</a></p>
