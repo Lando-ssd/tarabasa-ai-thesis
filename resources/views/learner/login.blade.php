@@ -225,13 +225,10 @@
         <input type="hidden" name="pin" id="pin">
       </div>
 
-      <button type="submit" class="big-btn" id="submitBtn">Let's Go! 🚀</button>
+      <button type="submit" class="big-btn" id="submitBtn">Let's Go</button>
     </form>
 
-    <a href="{{ route('landing') }}" class="back-link">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Back to home
-    </a>
+    <a href="{{ route('landing') }}" class="back-link">Back to home</a>
   </div>
 </div>
 
