@@ -80,6 +80,16 @@ return [
             'channel' => env('MAIL_LOG_CHANNEL'),
         ],
 
+        // Sends genuinely AS tarabasaai.noreply@gmail.com via Gmail's own
+        // API (App\Mail\Transport\GmailApiTransport, registered in
+        // AppServiceProvider). The real fix after Amazon SES turned out to
+        // silently fail — Gmail blackholes third-party mail impersonating
+        // a gmail.com "From" address (a DMARC alignment failure), which
+        // this avoids entirely by using Gmail's own infrastructure.
+        'gmail-api' => [
+            'transport' => 'gmail-api',
+        ],
+
         'array' => [
             'transport' => 'array',
         ],

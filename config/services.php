@@ -70,4 +70,15 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    // Gmail API sending (real transactional email, replacing Amazon SES —
+    // see config/mail.php's "gmail-api" mailer). Reuses the SAME OAuth
+    // client as "Continue with Google" above (same Google Cloud project,
+    // an OAuth client isn't scope-restricted) — only the refresh token is
+    // new, captured once via /internal/gmail-authorize.
+    'gmail_send' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'refresh_token' => env('GMAIL_SEND_REFRESH_TOKEN'),
+    ],
+
 ];

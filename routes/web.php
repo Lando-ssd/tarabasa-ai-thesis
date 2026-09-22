@@ -8,6 +8,7 @@ use App\Http\Controllers\BookshelfController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\GmailAuthorizationController;
 use App\Http\Controllers\LearnerAuthController;
 use App\Http\Controllers\LearnerController;
 use App\Http\Controllers\LearnerDiagnosticController;
@@ -42,6 +43,11 @@ Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name
 
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+
+// One-time manual setup tool, not part of any user-facing flow — see
+// GmailAuthorizationController's own doc comment.
+Route::get('/internal/gmail-authorize', [GmailAuthorizationController::class, 'redirect'])->name('internal.gmail-authorize.redirect');
+Route::get('/internal/gmail-authorize/callback', [GmailAuthorizationController::class, 'callback'])->name('internal.gmail-authorize.callback');
 
 // Mark-as-read is shared plumbing for both Teacher and Parent Notifications
 // screens — ownership (recipient_user_id === current user) is checked
