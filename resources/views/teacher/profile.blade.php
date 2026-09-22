@@ -16,7 +16,7 @@
     --success:#1f9e83; --success-bg:#e9f7f3;
     --amber:#c9820b; --amber-bg:#fef6e6;
     --danger:#d64545; --danger-bg:#fdecec; --danger-border:#f3c9c9;
-    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+    --shadow-sm:0 2px 5px -1px rgba(19,31,43,.09), 0 8px 18px -14px rgba(19,31,43,.16);
   }
   *{box-sizing:border-box;} html,body{margin:0;padding:0;}
   body{
@@ -28,7 +28,7 @@
 
   .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .logo-lockup{ display:flex; align-items:center; gap:10px; }
-  .logo-badge{ width:38px;height:38px;border-radius:11px; overflow:hidden; box-shadow:0 6px 14px -5px rgba(15,95,174,0.5); }
+  .logo-badge{ width:38px;height:38px;border-radius:11px; overflow:hidden; box-shadow:0 6px 14px -5px rgba(15,95,174,0.5), inset 0 2px 0 rgba(255,255,255,.3); }
   .logo-badge img{ width:100%; height:100%; object-fit:cover; display:block; }
   .wordmark{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; }
   .wordmark span{ color:var(--owl-orange-500, #ef8d2a); }
@@ -40,6 +40,7 @@
   .avatar-chip .av{
     width:30px;height:30px;border-radius:50%; background:linear-gradient(155deg,var(--blue-500),var(--blue-700));
     display:flex;align-items:center;justify-content:center; color:#fff; font-weight:700; font-size:13px;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.25), inset 0 -2px 3px rgba(0,0,0,.2);
   }
   .avatar-chip span.name{ font-size:13.5px; font-weight:700; }
   .logout-btn{

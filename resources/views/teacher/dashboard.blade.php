@@ -19,7 +19,7 @@
     --purple:#7c5cd6; --purple-bg:#f1edfc;
     --teal:#1f9e83; --teal-bg:#e9f7f3;
     --danger:#d64545; --danger-bg:#fdecec; --danger-line:#f3c9c9;
-    --shadow-sm:0 1px 2px rgba(19,31,43,0.06);
+    --shadow-sm:0 2px 5px -1px rgba(19,31,43,.09), 0 8px 18px -14px rgba(19,31,43,.16);
     --shadow-card:0 20px 40px -24px rgba(15,60,110,0.18);
   }
   *{box-sizing:border-box;} html,body{margin:0;padding:0;}
@@ -34,7 +34,7 @@
   .logo-lockup{ display:flex; align-items:center; gap:10px; }
   .logo-badge{
     width:38px;height:38px;border-radius:11px; overflow:hidden;
-    box-shadow:0 6px 14px -5px rgba(15,95,174,0.5);
+    box-shadow:0 6px 14px -5px rgba(15,95,174,0.5), inset 0 2px 0 rgba(255,255,255,.3);
   }
   .logo-badge img{ width:100%; height:100%; object-fit:cover; display:block; }
   .wordmark{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; }
@@ -42,10 +42,10 @@
   .topbar-actions{ display:flex; align-items:center; gap:10px; }
   .icon-btn{
     position:relative; width:40px;height:40px; border-radius:12px; background:var(--surface); border:1px solid var(--line);
-    display:flex;align-items:center;justify-content:center; cursor:pointer; color:var(--slate-600); box-shadow:var(--shadow-sm);
-    text-decoration:none; transition:color .15s ease, border-color .15s ease;
+    display:flex;align-items:center;justify-content:center; cursor:pointer; color:var(--slate-600); box-shadow:0 2px 6px -2px rgba(19,31,43,.1);
+    text-decoration:none; transition:color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease;
   }
-  .icon-btn:hover{ color:var(--blue-600); border-color:var(--blue-500); }
+  .icon-btn:hover{ color:var(--blue-600); border-color:var(--blue-500); box-shadow:0 6px 14px -6px rgba(28,126,214,.35); transform:translateY(-1px); }
   .badge-dot{
     position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 4px; border-radius:999px;
     background:var(--danger); color:#fff; font-size:10.5px; font-weight:800;
@@ -60,6 +60,7 @@
   .avatar-chip .av{
     width:30px;height:30px;border-radius:50%; background:linear-gradient(155deg,var(--blue-500),var(--blue-700));
     display:flex;align-items:center;justify-content:center; color:#fff; font-weight:700; font-size:13px;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.25), inset 0 -2px 3px rgba(0,0,0,.2);
   }
   .avatar-chip span.name{ font-size:13.5px; font-weight:700; }
   .logout-btn{
