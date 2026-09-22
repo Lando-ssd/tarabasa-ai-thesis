@@ -876,6 +876,16 @@
 </head>
 <body>
 
+  <!-- A real, non-sticky anchor point at the true top of the page for
+       "Back to top" to target. #siteNav itself doesn't work for this:
+       it's position:sticky, so once the page is scrolled its own
+       bounding box already sits at top:0 in the viewport (that's the
+       whole point of "sticky") - the browser sees it as already fully
+       visible and performs no scroll at all when a link jumps to it.
+       This plain, non-positioned span has a real position in the
+       document flow, so jumping to it always genuinely scrolls. -->
+  <span id="pageTop"></span>
+
   <nav class="site-nav" id="siteNav">
     <div class="nav-inner">
       <div class="nav-logo">
@@ -1180,7 +1190,7 @@
         <strong>Every child deserves to love reading.</strong>
         <small>AI powered, teacher verified reading support for Grade 1 to 3 Filipino learners.</small>
       </div>
-      <a class="finale-top-btn" href="#siteNav">Back to top</a>
+      <a class="finale-top-btn" id="backToTopBtn" href="#pageTop">Back to top</a>
     </div>
   </footer>
 
@@ -1214,6 +1224,23 @@
   // page, foreground barely moves, which is what actually reads as "depth"
   // beyond a static layered image. Skipped entirely for reduced-motion users.
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // "Back to top" real bug fix: its href="#pageTop" is a genuine, correct
+  // fallback (a plain, non-sticky, non-fixed element genuinely at the top
+  // of the document, so a browser's native hash-jump does scroll to it) -
+  // but a real, confirmed browser quirk skips that native scroll-into-view
+  // step in specific tab-visibility states, silently doing nothing on
+  // click. Explicit window.scrollTo() has no such gate, so this makes the
+  // button's own click always drive the scroll directly, with the href
+  // staying as the real no-JS fallback.
+  const backToTopBtn = document.getElementById('backToTopBtn');
+  if (backToTopBtn) {
+    backToTopBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    });
+  }
+
   const nav = document.getElementById('siteNav');
   const parallaxEls = document.querySelectorAll('[data-parallax]');
   function onScroll() {
