@@ -769,88 +769,17 @@
       0 5px 8px -3px rgba(150,60,0,.5);
   }
   .finale-pin-badge svg{ display:block; }
-  /* No code yet? A quiet helper line under the button, pointing down to the
-     Teacher/Parent/Admin cards below (id="roleCards") - the divider text,
-     pills and footnote that used to live inside this card moved out into
-     their own cards, each with its own real routes. */
+  /* No code yet? A quiet helper line under the button - links to the
+     shared login page (the same page the header's own "Log in" opens),
+     since there's no longer a separate grown-up section on this page to
+     point down to. */
   .finale-help{
     font-family:'Inter',sans-serif; font-weight:500; font-size:14.5px; color:#f4f9fd;
     margin:28px 0 0; padding-top:18px; border-top:2px solid rgba(255,255,255,.12);
   }
   .finale-help a{ color:#fff; font-weight:700; text-underline-offset:3px; }
 
-  /* ---------- The headline: speaks to all four roles, not just the child
-     who taps "Enter my PIN" - the section's real job is routing every kind
-     of visitor (Learner, Teacher, Parent, Admin) to their own door. ---------- */
-  .finale-head{ position:relative; z-index:2; text-align:center; max-width:720px; margin:0 auto 40px; padding:0 20px; }
-  .finale-chip{
-    display:inline-flex; align-items:center; gap:8px;
-    padding:8px 18px; border-radius:999px;
-    font-family:'Inter',sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.05em; text-transform:uppercase;
-    color:var(--blue-700);
-    background:linear-gradient(180deg,#fff 0%,#eaf3fc 100%);
-    box-shadow:0 4px 0 #c5d8ee, 0 12px 16px -8px rgba(15,60,110,.32), inset 0 2px 0 #fff;
-  }
-  .finale-heading{
-    font-family:'Baloo 2',sans-serif; font-weight:800;
-    font-size:clamp(30px, 4.6vw, 46px); line-height:1.15; margin:18px 0 12px; color:var(--navy-900);
-  }
-  .finale-heading .accent{ color:var(--owl-orange-600); }
-  .finale-sub{ font-size:17.5px; line-height:1.6; font-weight:500; color:var(--slate-600); margin:0; }
-
-  /* ---------- The three adult cards: Teacher, Parent, Admin - real hook
-     copy pulled from what each role's dashboard actually does, and real
-     routes (Get started -> registration, Log in -> the shared login form
-     with ?role=). Admin has no "Get started": no self-registration, exactly
-     one seeded Admin account, matching the rest of this app. ---------- */
-  .finale-cards{
-    position:relative; z-index:2; display:grid; grid-template-columns:repeat(3, 1fr);
-    gap:24px; max-width:1080px; margin:56px auto 0; padding:0 20px;
-  }
-  .finale-role{
-    position:relative; display:flex; flex-direction:column; align-items:center; text-align:center;
-    padding:36px 26px 26px; border-radius:34px;
-    background:linear-gradient(180deg,#ffffff 0%,#f1f7fd 100%);
-    box-shadow:
-      0 30px 50px -28px rgba(6,32,72,.5),
-      0 10px 18px -10px rgba(6,32,72,.24),
-      inset 0 4px 0 #fff,
-      inset 0 -10px 18px rgba(150,180,215,.26);
-    --c1:#4aa8f5; --c2:var(--blue-500); --dark:#0f4f91; --tint:#e6f0fb; --base:#0b3d75; --accent:var(--blue-500);
-  }
-  .finale-role.parent{ --c1:#43dcb8; --c2:var(--parent-teal); --dark:#0d6653; --tint:#e2f5f0; --base:#0a4d3f; --accent:#1a8f76; }
-  .finale-role.admin{ --c1:#6b7f92; --c2:#243343; --dark:#243343; --tint:#e8edf2; --base:#0e1620; --accent:#4a5b6b; }
-  .finale-role-badge{
-    width:60px; height:60px; border-radius:50%; display:grid; place-items:center; color:#fff; margin-bottom:14px;
-    background:linear-gradient(180deg,var(--c1),var(--c2));
-    box-shadow:inset 0 4px 0 rgba(255,255,255,.5), inset 0 -6px 9px rgba(0,0,0,.24), 0 10px 14px -8px var(--base);
-  }
-  .finale-role h3{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:25px; line-height:1.1; margin:0 0 9px; color:var(--navy-900); }
-  .finale-role h3 .accent{ color:var(--accent); }
-  .finale-role .hook{ margin:0 0 15px; font-size:15.5px; line-height:1.55; font-weight:500; color:var(--slate-600); }
-  .finale-chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:0 0 20px; padding:0; list-style:none; }
-  .finale-chips li{
-    display:inline-flex; align-items:center; padding:6px 12px; border-radius:999px;
-    font-size:12.5px; font-weight:700; color:var(--dark); background:var(--tint);
-    box-shadow:inset 0 2px 0 rgba(255,255,255,.9), inset 0 -2px 4px rgba(0,0,0,.06);
-  }
-  .finale-role .spacer{ flex:1; }
-  .finale-cta{
-    display:flex; align-items:center; justify-content:center; width:100%; padding:14px 18px; border-radius:999px; text-decoration:none; color:#fff;
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; line-height:1;
-    background:linear-gradient(180deg,var(--c1) 0%,var(--c2) 100%);
-    box-shadow:0 5px 0 var(--base), 0 16px 20px -10px var(--base), inset 0 3px 0 rgba(255,255,255,.4), inset 0 -6px 10px rgba(0,0,0,.16);
-    transition:transform .18s ease, box-shadow .18s ease;
-  }
-  .finale-cta:hover{ transform:translateY(-2px); }
-  .finale-cta:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--base), 0 6px 10px -6px var(--base), inset 0 3px 0 rgba(255,255,255,.4), inset 0 -6px 10px rgba(0,0,0,.16); }
-  .finale-signin{ margin:14px 0 0; font-size:13.5px; font-weight:500; color:var(--slate-600); }
-  .finale-signin a{ color:var(--dark); font-weight:700; text-underline-offset:3px; }
-  @media (max-width:980px){
-    .finale-cards{ grid-template-columns:1fr; max-width:420px; }
-  }
-
-  .finale-pin:focus-visible, .finale-help a:focus-visible, .finale-cta:focus-visible, .finale-signin a:focus-visible, .finale-top-btn:focus-visible{ outline:3px solid #ffb04a; outline-offset:4px; }
+  .finale-pin:focus-visible, .finale-help a:focus-visible, .finale-top-btn:focus-visible{ outline:3px solid #ffb04a; outline-offset:4px; }
   /* The globe: 1000x500 artwork whose top ~40% is transparent sky, so the
      card can overlap the arc. Full width, zero margin, drawn with a "slice"
      fit so a phone (where the natural height would be tiny) gets a taller
@@ -866,25 +795,48 @@
   }
   .finale-globe-lottie{ position:absolute; inset:0; }
 
+  /* A small flock, brought in as its own layer above everything else in the
+     section (z-index higher than the card/owl/globe below it) so it genuinely
+     reads as flying past, in front of the scene, not tucked behind it. Source
+     is a real 1920x1080/9s loop of 12 gray seagulls on staggered diagonal
+     paths (confirmed from the file's own keyframes - each bird's own wings
+     morph through a real flap cycle, not just sliding across); "slice" fit
+     covers this section's own box at any width instead of leaving gaps.
+     Decorative and never blocks clicks on the card/button beneath it. */
+  .finale-seagulls{ position:absolute; inset:0; z-index:3; pointer-events:none; }
+  .finale-seagulls-lottie{ width:100%; height:100%; display:block; }
+
   /* ---------- A real close to the page: brand, tagline, and a way back to
      the top - so the scroll ends somewhere deliberate instead of trailing
-     off after the globe. ---------- */
+     off after the globe. Reference: a landing page's own footer doesn't
+     need to repeat primary nav that already lives in the header, so this
+     stays the same minimal brand+mission+one-action shape rather than
+     growing into a dense link grid - a real, common pattern for one-page
+     sites, not this app's own invention (see Orbit Media's and Eleken's
+     footer-pattern write-ups). The back-to-top control was a plain arrow
+     icon before; per direct feedback and Nielsen Norman Group's own
+     back-to-top guidance (an icon-only control can be ambiguous; a clear
+     text label communicates the action on its own), it's a plain text
+     pill now, no icon. */
   .finale-end{
     position:relative; z-index:3; color:#fff; text-align:center;
     background:linear-gradient(180deg, var(--blue-600) 0%, var(--blue-700) 100%);
     box-shadow:inset 0 4px 0 rgba(255,255,255,.14);
-    padding:38px 20px 34px;
+    padding:42px 20px 36px;
   }
-  .finale-end-inner{ max-width:1080px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:22px; flex-wrap:wrap; }
-  .finale-brand{ display:flex; align-items:center; gap:11px; }
-  .finale-brand img{ width:42px; height:42px; border-radius:13px; display:block; box-shadow:0 4px 0 rgba(0,0,0,.22), inset 0 2px 0 rgba(255,255,255,.3); }
-  .finale-brand b{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:21px; }
+  .finale-end-inner{
+    max-width:1080px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
+    padding-top:22px; border-top:1px solid rgba(255,255,255,.16);
+  }
+  .finale-brand{ display:flex; align-items:center; gap:12px; }
+  .finale-brand img{ width:44px; height:44px; border-radius:14px; display:block; box-shadow:0 4px 0 rgba(0,0,0,.22), inset 0 2px 0 rgba(255,255,255,.3); }
+  .finale-brand b{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:22px; }
   .finale-brand b span{ color:#ffb04a; }
   .finale-end-line{ flex:1 1 300px; }
   .finale-end-line strong{ display:block; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(18px,2.4vw,23px); line-height:1.3; }
-  .finale-end-line small{ display:block; margin-top:4px; font-size:14px; font-weight:500; color:#dbe9f9; }
+  .finale-end-line small{ display:block; margin-top:5px; font-size:14.5px; line-height:1.5; font-weight:500; color:#dbe9f9; }
   .finale-top-btn{
-    display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:999px; text-decoration:none;
+    display:inline-flex; align-items:center; padding:11px 22px; border-radius:999px; text-decoration:none;
     font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px; color:var(--blue-700);
     background:linear-gradient(180deg,#fff,#e8f1fb);
     box-shadow:0 4px 0 #a9c3e0, 0 10px 14px -8px rgba(0,0,0,.4), inset 0 2px 0 #fff;
@@ -893,78 +845,13 @@
   .finale-top-btn:hover{ transform:translateY(-2px); }
 
   @media (max-width:640px){
-    .finale-head{ margin-bottom:30px; }
-    .finale-heading{ font-size:clamp(26px,7vw,34px); }
     .finale-owl{ margin-bottom:-50px; }
     .finale-card{ padding:44px 22px 30px; border-radius:34px; }
     .finale-body{ font-size:17px; }
     .finale-pin{ font-size:21px; padding-right:30px; }
-    .finale-cards{ margin-top:40px; }
     .finale-globe{ margin-top:-130px; }
     .finale-end-inner{ justify-content:center; text-align:center; }
   }
-
-  /* ---------- Parent gate: a small "grownups only" math question ----------
-     Same clay language as the card above: puffy white dialog, an inset
-     answer well, and chunky pressable buttons. */
-  .gate{ position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
-  .gate[hidden]{ display:none; }
-  .gate-backdrop{ position:absolute; inset:0; background:rgba(8,24,48,.58); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
-  .gate-dialog{
-    position:relative; width:min(390px, 100%); box-sizing:border-box;
-    padding:34px 28px 28px; text-align:center;
-    background:linear-gradient(180deg, #ffffff 0%, #f1f7fd 100%);
-    border-radius:34px;
-    box-shadow:
-      0 40px 70px -26px rgba(5,24,56,.65),
-      0 10px 20px -10px rgba(5,24,56,.3),
-      inset 0 4px 0 #fff,
-      inset 0 -10px 18px rgba(150,180,215,.28);
-    animation:gatePop .28s cubic-bezier(.22,.9,.3,1.1);
-  }
-  .gate-dialog:focus{ outline:none; }
-  .gate-dialog.shake{ animation:gateShake .4s ease; }
-  @keyframes gatePop{ from{ opacity:0; transform:translateY(14px) scale(.96); } to{ opacity:1; transform:none; } }
-  @keyframes gateShake{ 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-9px); } 40%{ transform:translateX(8px); } 60%{ transform:translateX(-6px); } 80%{ transform:translateX(4px); } }
-  .gate-badge{
-    width:58px; height:58px; margin:0 auto 12px; border-radius:50%;
-    display:grid; place-items:center;
-    background:linear-gradient(180deg, #ffc36a 0%, #ef8d2a 100%);
-    box-shadow:
-      inset 0 3px 0 rgba(255,255,255,.55),
-      inset 0 -5px 8px rgba(150,60,0,.35),
-      0 9px 14px -6px rgba(150,60,0,.5);
-  }
-  .gate-badge svg{ display:block; }
-  .gate-title{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:27px; line-height:1.2; color:var(--navy-900); margin:0 0 4px; }
-  .gate-hint{ font-family:'Inter',sans-serif; font-weight:500; font-size:15px; color:var(--slate-600); margin:0; }
-  .gate-question{ display:block; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:38px; line-height:1.1; color:var(--blue-700); margin:20px 0 14px; }
-  .gate-input{
-    width:100%; box-sizing:border-box; text-align:center; padding:14px 14px;
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:30px; color:var(--navy-900);
-    border:none; border-radius:22px; background:#eaf2fb;
-    box-shadow:inset 0 5px 10px rgba(30,70,120,.2), inset 0 -2px 0 #fff;
-  }
-  .gate-input:focus{ outline:none; box-shadow:inset 0 5px 10px rgba(30,70,120,.2), inset 0 -2px 0 #fff, 0 0 0 4px rgba(28,126,214,.3); }
-  .gate-error{ min-height:22px; margin:12px 0 0; font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; color:#b42318; }
-  .gate-actions{ display:flex; gap:12px; margin-top:10px; padding-bottom:5px; }
-  .gate-actions button{
-    flex:1; padding:14px 10px; border-radius:20px; border:none; cursor:pointer;
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; line-height:1;
-    transition:transform .16s ease, box-shadow .16s ease;
-  }
-  .gate-actions button:active{ transform:translateY(4px); }
-  .gate-cancel{
-    color:var(--slate-600); background:linear-gradient(180deg, #ffffff 0%, #eaf2fb 100%);
-    box-shadow:0 5px 0 #c4d3e4, 0 12px 14px -8px rgba(30,70,120,.4), inset 0 2px 0 #fff;
-  }
-  .gate-cancel:active{ box-shadow:0 1px 0 #c4d3e4, 0 4px 8px -6px rgba(30,70,120,.4), inset 0 2px 0 #fff; }
-  .gate-ok{
-    color:#fff; background:linear-gradient(180deg, #3d95ea 0%, var(--blue-600) 100%);
-    box-shadow:0 5px 0 #0a3d73, 0 14px 18px -8px rgba(15,95,174,.6), inset 0 2px 0 rgba(255,255,255,.35), inset 0 -4px 8px rgba(3,30,70,.25);
-  }
-  .gate-ok:hover{ filter:brightness(1.06); }
-  .gate-ok:active{ box-shadow:0 1px 0 #0a3d73, 0 4px 8px -6px rgba(15,95,174,.6), inset 0 2px 0 rgba(255,255,255,.35), inset 0 -4px 8px rgba(3,30,70,.25); }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
 
@@ -983,9 +870,8 @@
     .farm-land-stage{ opacity:1; transition:none; }
     .seesaw-stage{ opacity:1; transition:none; }
     .finale-card{ opacity:1; transform:none; transition:none; }
-    .finale-pin, .finale-cta, .finale-top-btn, .gate-actions button{ transition:none; }
+    .finale-pin, .finale-top-btn{ transition:none; }
     .finale-spark{ animation:none; opacity:.9; transform:none; }
-    .gate-dialog, .gate-dialog.shake{ animation:none; }
   }
 </style>
 </head>
@@ -1246,12 +1132,6 @@
   </section>
 
   <section class="finale" id="finaleScene" aria-labelledby="finaleTitle">
-    <div class="finale-head">
-      <span class="finale-chip">Choose your path</span>
-      <h2 class="finale-heading">Four roles. One goal: a child who <span class="accent">loves reading.</span></h2>
-      <p class="finale-sub">Whether you are reading, teaching, parenting, or keeping things running, your door is right here.</p>
-    </div>
-
     <div class="finale-inner">
       <!-- The owl mascot peeking over the top of the card (drawn behind it).
            Decorative, so hidden from assistive tech. -->
@@ -1276,53 +1156,21 @@
           <span>Enter my PIN</span>
         </a>
 
-        <p class="finale-help">No code yet? <a href="#roleCards">Ask your parent</a></p>
+        <p class="finale-help">No code yet? <a href="{{ route('login') }}">Ask your parent</a></p>
       </div>
-    </div>
-
-    <!-- The three adult roles, each with its own real hook and its own real
-         routes: Get started (registration) and Log in are two separate
-         gated links now, instead of one shared pill each. Admin has no
-         registration route - matches the rest of the app (exactly one
-         seeded Admin account, no self-registration). Each link is real (so
-         it works even with scripts off); data-adult-gate is what the
-         parent-gate script below listens for, so one gate covers all five. -->
-    <div class="finale-cards" id="roleCards">
-      <article class="finale-role teacher">
-        <div class="finale-role-badge" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 3L2 8l10 5 8-4.2V15h1V8L12 3z" fill="currentColor"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5l-6 3.2-6-3.2z" fill="currentColor" opacity="0.85"/></svg></div>
-        <h3>I'm a <span class="accent">Teacher</span></h3>
-        <p class="hook">Turn any topic into reading activities in minutes, review each one, and see how every learner is doing.</p>
-        <ul class="finale-chips"><li>You approve every activity</li><li>Class insights</li></ul>
-        <div class="spacer"></div>
-        <a class="finale-cta" data-adult-gate href="{{ route('register.teacher') }}">Get started</a>
-        <p class="finale-signin">Already have an account? <a data-adult-gate href="{{ route('login', ['role' => 'teacher']) }}">Log in</a></p>
-      </article>
-
-      <article class="finale-role parent">
-        <div class="finale-role-badge" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" fill="currentColor"/><circle cx="17" cy="9" r="2.4" fill="currentColor" opacity="0.85"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="currentColor"/><path d="M14 20c.3-2.4 1.8-4.3 3.8-5.1 2 .9 3.2 2.8 3.2 5.1" fill="currentColor" opacity="0.85"/></svg></div>
-        <h3>I'm a <span class="accent">Parent</span></h3>
-        <p class="hook">Watch your child's reading grow, and get a gentle alert when they need a little extra help.</p>
-        <ul class="finale-chips"><li>Progress at a glance</li><li>Alerts that matter</li></ul>
-        <div class="spacer"></div>
-        <a class="finale-cta" data-adult-gate href="{{ route('register.parent') }}">Get started</a>
-        <p class="finale-signin">Already have an account? <a data-adult-gate href="{{ route('login', ['role' => 'parent']) }}">Log in</a></p>
-      </article>
-
-      <article class="finale-role admin">
-        <div class="finale-role-badge" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5l7-3z" fill="currentColor"/></svg></div>
-        <h3>I'm an <span class="accent">Admin</span></h3>
-        <p class="hook">Keep every classroom trusted. Review each teacher and switch accounts on or off in a few taps.</p>
-        <ul class="finale-chips"><li>Approve teachers</li><li>Manage accounts</li></ul>
-        <div class="spacer"></div>
-        <a class="finale-cta" data-adult-gate href="{{ route('login', ['role' => 'admin']) }}">Admin log in</a>
-        <p class="finale-signin">Admin accounts are set up by the team.</p>
-      </article>
     </div>
 
     <!-- The animated globe (1000x500, transparent sky above the arc): full
          width, no padding or max-width. -->
     <div class="finale-globe" aria-hidden="true">
       <div id="finaleGlobe" class="finale-globe-lottie"></div>
+    </div>
+
+    <!-- A small flock of gray seagulls, flying across the whole section on
+         their own real diagonal paths - decorative and hidden from
+         assistive tech, and never intercepts clicks (see the CSS). -->
+    <div class="finale-seagulls" aria-hidden="true">
+      <div id="finaleSeagulls" class="finale-seagulls-lottie"></div>
     </div>
   </section>
 
@@ -1333,34 +1181,9 @@
         <strong>Every child deserves to love reading.</strong>
         <small>AI powered, teacher verified reading support for Grade 1 to 3 Filipino learners.</small>
       </div>
-      <a class="finale-top-btn" href="#siteNav"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Back to top</a>
+      <a class="finale-top-btn" href="#siteNav">Back to top</a>
     </div>
   </footer>
-
-  <!-- Parent gate: shown before any adult link in the section above. A quick
-       multiplication question a young child can't answer but a grown-up can
-       in a few seconds. It's friction to stop an accidental tap, not
-       security (the links are real, and a determined child could still open
-       one in a new tab or use the header's Log in). -->
-  <div id="parentGate" class="gate" hidden>
-    <div class="gate-backdrop" data-gate-close></div>
-    <div id="gateDialog" class="gate-dialog" role="dialog" aria-modal="true" aria-labelledby="gateTitle" aria-describedby="gateHint" tabindex="-1">
-      <div class="gate-badge" aria-hidden="true">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><rect x="5" y="11" width="14" height="9.5" rx="2.6" fill="#fff"/><circle cx="12" cy="15.6" r="1.6" fill="#dd7014"/></svg>
-      </div>
-      <h3 id="gateTitle" class="gate-title">Grownups only</h3>
-      <p id="gateHint" class="gate-hint">Answer this to continue.</p>
-      <form id="gateForm" novalidate>
-        <label id="gateQuestion" class="gate-question" for="gateAnswer">What is 14 × 6?</label>
-        <input id="gateAnswer" class="gate-input" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" aria-describedby="gateError">
-        <p id="gateError" class="gate-error" role="alert"></p>
-        <div class="gate-actions">
-          <button type="button" class="gate-cancel" data-gate-close>Cancel</button>
-          <button type="submit" class="gate-ok">Continue</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
 <script>
   // Get Started dropdown: closes on outside click / Escape.
@@ -1841,99 +1664,7 @@
     }
   }
 
-  // ---------- Final section: parent gate ----------
-  // Every link marked data-adult-gate first asks a quick multiplication
-  // question (first number 12-29, second 3-9, never a multiple of ten, and
-  // never the same question twice in a row). Correct: goes to the link's real
-  // destination. Wrong: shakes and asks a NEW question, so guessing the same
-  // problem repeatedly doesn't work. This is friction for a curious child, not
-  // security: the links are real (they work without scripts), and the header's
-  // own Log in is deliberately not gated.
-  const parentGate = document.getElementById('parentGate');
-  const gateDialog = document.getElementById('gateDialog');
-  const gateForm = document.getElementById('gateForm');
-  const gateQuestion = document.getElementById('gateQuestion');
-  const gateAnswer = document.getElementById('gateAnswer');
-  const gateError = document.getElementById('gateError');
-
-  if (parentGate && gateDialog && gateForm && gateQuestion && gateAnswer && gateError) {
-    let gateExpected = 0, gateTarget = null, gateOpener = null, gateLastQuestion = '';
-
-    function gateRandInt(min, max) {
-      if (window.crypto && crypto.getRandomValues) {
-        const buf = new Uint32Array(1);
-        crypto.getRandomValues(buf);
-        return min + (buf[0] % (max - min + 1));
-      }
-      return min + Math.floor(Math.random() * (max - min + 1));
-    }
-    function newGateQuestion() {
-      let a, b, key;
-      do {
-        a = gateRandInt(12, 29);
-        b = gateRandInt(3, 9);
-        key = a + 'x' + b;
-      } while (a % 10 === 0 || key === gateLastQuestion);
-      gateLastQuestion = key;
-      gateExpected = a * b;
-      gateQuestion.textContent = 'What is ' + a + ' × ' + b + '?';
-    }
-    function openGate(link) {
-      gateOpener = link;
-      gateTarget = link.href;
-      newGateQuestion();
-      gateAnswer.value = '';
-      gateError.textContent = '';
-      parentGate.hidden = false;
-      document.body.style.overflow = 'hidden';
-      gateAnswer.focus();
-    }
-    function closeGate() {
-      parentGate.hidden = true;
-      document.body.style.overflow = '';
-      gateTarget = null;
-      if (gateOpener) gateOpener.focus();
-    }
-
-    document.querySelectorAll('[data-adult-gate]').forEach((link) => {
-      link.addEventListener('click', (e) => { e.preventDefault(); openGate(link); });
-    });
-    parentGate.querySelectorAll('[data-gate-close]').forEach((el) => el.addEventListener('click', closeGate));
-
-    gateForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const typed = gateAnswer.value.trim();
-      if (typed === '') { gateError.textContent = 'Type your answer first.'; gateAnswer.focus(); return; }
-      if (/^\d+$/.test(typed) && parseInt(typed, 10) === gateExpected) {
-        const destination = gateTarget;
-        parentGate.hidden = true;
-        document.body.style.overflow = '';
-        window.location.href = destination;
-        return;
-      }
-      gateError.textContent = 'Not quite, try this one.';
-      gateDialog.classList.remove('shake');
-      void gateDialog.offsetWidth; // restart the shake animation
-      gateDialog.classList.add('shake');
-      newGateQuestion();
-      gateAnswer.value = '';
-      gateAnswer.focus();
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (parentGate.hidden) return;
-      if (e.key === 'Escape') { e.preventDefault(); closeGate(); return; }
-      if (e.key === 'Tab') {
-        // Keep keyboard focus inside the dialog while it is open.
-        const items = Array.from(gateDialog.querySelectorAll('input, button')).filter((el) => !el.disabled);
-        const first = items[0], last = items[items.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-    });
-  }
-
-  // ---------- Final section: owl + globe ----------
+  // ---------- Final section: owl + globe + seagulls ----------
   // The owl's artwork sits in the middle of a 512x512 canvas; the animation is
   // cropped to the union of everything it paints over its whole loop
   // (x 136-375, y 102-297, measured frame by frame, plus a small margin) so
@@ -1942,17 +1673,18 @@
   const finaleScene = document.getElementById('finaleScene');
   const finaleOwlEl = document.getElementById('finaleOwl');
   const finaleGlobeEl = document.getElementById('finaleGlobe');
+  const finaleSeagullsEl = document.getElementById('finaleSeagulls');
   const finaleCard = document.getElementById('finaleCard');
 
   if (finaleScene && finaleOwlEl && finaleGlobeEl && finaleCard && window.lottie) {
-    let finaleActivated = false, finaleInView = false, finaleOwlAnim = null, finaleGlobeAnim = null;
+    let finaleActivated = false, finaleInView = false, finaleOwlAnim = null, finaleGlobeAnim = null, finaleSeagullsAnim = null;
 
     function finaleWhenReady(anim, fn) {
       if (anim.isLoaded) fn(); else anim.addEventListener('DOMLoaded', fn);
     }
     function applyFinalePlayState() {
       if (prefersReducedMotion) return;
-      [finaleOwlAnim, finaleGlobeAnim].forEach((anim) => {
+      [finaleOwlAnim, finaleGlobeAnim, finaleSeagullsAnim].forEach((anim) => {
         if (!anim) return;
         if (finaleInView) anim.play(); else anim.pause();
       });
@@ -1979,6 +1711,20 @@
       // Reduced motion: still frames (owl at rest, globe with clouds in view).
       finaleWhenReady(finaleOwlAnim, () => { finaleOwlAnim.goToAndStop(prefersReducedMotion ? 60 : 0, true); applyFinalePlayState(); });
       finaleWhenReady(finaleGlobeAnim, () => { finaleGlobeAnim.goToAndStop(prefersReducedMotion ? 500 : 300, true); applyFinalePlayState(); });
+      // The seagulls are purely decorative motion (birds mid-flight, nothing
+      // informative about any single frame), so reduced-motion skips loading
+      // them at all instead of freezing on an arbitrary frame.
+      if (finaleSeagullsEl && !prefersReducedMotion) {
+        finaleSeagullsAnim = lottie.loadAnimation({
+          container: finaleSeagullsEl,
+          renderer: 'svg',
+          loop: true,
+          autoplay: false,
+          path: '{{ asset("animations/tarabasa-seagulls.json") }}',
+          rendererSettings: { preserveAspectRatio: 'xMidYMid slice' }
+        });
+        finaleWhenReady(finaleSeagullsAnim, applyFinalePlayState);
+      }
     }
 
     if ('IntersectionObserver' in window) {
