@@ -769,57 +769,88 @@
       0 5px 8px -3px rgba(150,60,0,.5);
   }
   .finale-pin-badge svg{ display:block; }
-  /* "Or" divider: the line of text sits between two soft rules. */
-  .finale-adult{
-    display:flex; align-items:center; gap:14px;
-    font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; line-height:1.45;
-    color:#f4f9fd; margin:32px 0 16px;
+  /* No code yet? A quiet helper line under the button, pointing down to the
+     Teacher/Parent/Admin cards below (id="roleCards") - the divider text,
+     pills and footnote that used to live inside this card moved out into
+     their own cards, each with its own real routes. */
+  .finale-help{
+    font-family:'Inter',sans-serif; font-weight:500; font-size:14.5px; color:#f4f9fd;
+    margin:28px 0 0; padding-top:18px; border-top:2px solid rgba(255,255,255,.12);
   }
-  .finale-adult::before, .finale-adult::after{ content:''; flex:1 1 18px; height:3px; border-radius:3px; background:rgba(255,255,255,.2); box-shadow:inset 0 1px 0 rgba(3,24,58,.35); }
-  .finale-pills{ display:flex; flex-wrap:wrap; justify-content:center; gap:12px 10px; }
-  /* The adult pills: smaller siblings of the button, in the same clay style
-     but deep blue so the child's cream button stays the clear main action. */
-  .finale-pill{
-    display:inline-flex; align-items:center; gap:9px;
-    padding:10px 18px 10px 12px; border-radius:999px; text-decoration:none;
-    font-family:'Inter',sans-serif; font-weight:700; font-size:14px; line-height:1.2; color:#fff;
-    background:linear-gradient(180deg, #2c66a8 0%, #1c4b85 100%);
+  .finale-help a{ color:#fff; font-weight:700; text-underline-offset:3px; }
+
+  /* ---------- The headline: speaks to all four roles, not just the child
+     who taps "Enter my PIN" - the section's real job is routing every kind
+     of visitor (Learner, Teacher, Parent, Admin) to their own door. ---------- */
+  .finale-head{ position:relative; z-index:2; text-align:center; max-width:720px; margin:0 auto 40px; padding:0 20px; }
+  .finale-chip{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 18px; border-radius:999px;
+    font-family:'Inter',sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--blue-700);
+    background:linear-gradient(180deg,#fff 0%,#eaf3fc 100%);
+    box-shadow:0 4px 0 #c5d8ee, 0 12px 16px -8px rgba(15,60,110,.32), inset 0 2px 0 #fff;
+  }
+  .finale-heading{
+    font-family:'Baloo 2',sans-serif; font-weight:800;
+    font-size:clamp(30px, 4.6vw, 46px); line-height:1.15; margin:18px 0 12px; color:var(--navy-900);
+  }
+  .finale-heading .accent{ color:var(--owl-orange-600); }
+  .finale-sub{ font-size:17.5px; line-height:1.6; font-weight:500; color:var(--slate-600); margin:0; }
+
+  /* ---------- The three adult cards: Teacher, Parent, Admin - real hook
+     copy pulled from what each role's dashboard actually does, and real
+     routes (Get started -> registration, Log in -> the shared login form
+     with ?role=). Admin has no "Get started": no self-registration, exactly
+     one seeded Admin account, matching the rest of this app. ---------- */
+  .finale-cards{
+    position:relative; z-index:2; display:grid; grid-template-columns:repeat(3, 1fr);
+    gap:24px; max-width:1080px; margin:56px auto 0; padding:0 20px;
+  }
+  .finale-role{
+    position:relative; display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:36px 26px 26px; border-radius:34px;
+    background:linear-gradient(180deg,#ffffff 0%,#f1f7fd 100%);
     box-shadow:
-      0 4px 0 #0f325f,
-      0 12px 16px -8px rgba(3,20,50,.7),
-      inset 0 2px 0 rgba(255,255,255,.35),
-      inset 0 -4px 8px rgba(3,20,50,.35);
-    transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+      0 30px 50px -28px rgba(6,32,72,.5),
+      0 10px 18px -10px rgba(6,32,72,.24),
+      inset 0 4px 0 #fff,
+      inset 0 -10px 18px rgba(150,180,215,.26);
+    --c1:#4aa8f5; --c2:var(--blue-500); --dark:#0f4f91; --tint:#e6f0fb; --base:#0b3d75; --accent:var(--blue-500);
   }
-  .finale-pill:hover{
-    transform:translateY(-2px); filter:brightness(1.08);
-    box-shadow:
-      0 6px 0 #0f325f,
-      0 16px 20px -8px rgba(3,20,50,.72),
-      inset 0 2px 0 rgba(255,255,255,.35),
-      inset 0 -4px 8px rgba(3,20,50,.35);
+  .finale-role.parent{ --c1:#43dcb8; --c2:var(--parent-teal); --dark:#0d6653; --tint:#e2f5f0; --base:#0a4d3f; --accent:#1a8f76; }
+  .finale-role.admin{ --c1:#6b7f92; --c2:#243343; --dark:#243343; --tint:#e8edf2; --base:#0e1620; --accent:#4a5b6b; }
+  .finale-role-badge{
+    width:60px; height:60px; border-radius:50%; display:grid; place-items:center; color:#fff; margin-bottom:14px;
+    background:linear-gradient(180deg,var(--c1),var(--c2));
+    box-shadow:inset 0 4px 0 rgba(255,255,255,.5), inset 0 -6px 9px rgba(0,0,0,.24), 0 10px 14px -8px var(--base);
   }
-  .finale-pill:active{
-    transform:translateY(3px);
-    box-shadow:
-      0 1px 0 #0f325f,
-      0 6px 10px -6px rgba(3,20,50,.6),
-      inset 0 2px 0 rgba(255,255,255,.35),
-      inset 0 -4px 8px rgba(3,20,50,.35);
+  .finale-role h3{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:25px; line-height:1.1; margin:0 0 9px; color:var(--navy-900); }
+  .finale-role h3 .accent{ color:var(--accent); }
+  .finale-role .hook{ margin:0 0 15px; font-size:15.5px; line-height:1.55; font-weight:500; color:var(--slate-600); }
+  .finale-chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:0 0 20px; padding:0; list-style:none; }
+  .finale-chips li{
+    display:inline-flex; align-items:center; padding:6px 12px; border-radius:999px;
+    font-size:12.5px; font-weight:700; color:var(--dark); background:var(--tint);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.9), inset 0 -2px 4px rgba(0,0,0,.06);
   }
-  .finale-pill .dot{
-    flex:none; width:13px; height:13px; border-radius:50%;
-    box-shadow:inset 0 2px 0 rgba(255,255,255,.6), inset 0 -2px 3px rgba(0,0,0,.28);
+  .finale-role .spacer{ flex:1; }
+  .finale-cta{
+    display:flex; align-items:center; justify-content:center; width:100%; padding:14px 18px; border-radius:999px; text-decoration:none; color:#fff;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; line-height:1;
+    background:linear-gradient(180deg,var(--c1) 0%,var(--c2) 100%);
+    box-shadow:0 5px 0 var(--base), 0 16px 20px -10px var(--base), inset 0 3px 0 rgba(255,255,255,.4), inset 0 -6px 10px rgba(0,0,0,.16);
+    transition:transform .18s ease, box-shadow .18s ease;
   }
-  .finale-pill .dot.t{ background:#6cc0ff; }
-  .finale-pill .dot.p{ background:#43dcb8; }
-  .finale-pill .dot.a{ background:#ffcf6e; }
-  .finale-foot{
-    font-family:'Inter',sans-serif; font-weight:500; font-size:14px; color:#f4f9fd;
-    margin:24px 0 0; padding-top:18px; border-top:2px solid rgba(255,255,255,.12);
+  .finale-cta:hover{ transform:translateY(-2px); }
+  .finale-cta:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--base), 0 6px 10px -6px var(--base), inset 0 3px 0 rgba(255,255,255,.4), inset 0 -6px 10px rgba(0,0,0,.16); }
+  .finale-signin{ margin:14px 0 0; font-size:13.5px; font-weight:500; color:var(--slate-600); }
+  .finale-signin a{ color:var(--dark); font-weight:700; text-underline-offset:3px; }
+  @media (max-width:980px){
+    .finale-cards{ grid-template-columns:1fr; max-width:420px; }
   }
-  .finale-foot a{ color:#fff; font-weight:700; text-underline-offset:3px; white-space:nowrap; }
-  .finale-pin:focus-visible, .finale-pill:focus-visible, .finale-foot a:focus-visible{ outline:3px solid #ffb04a; outline-offset:4px; }
+
+  .finale-pin:focus-visible, .finale-help a:focus-visible, .finale-cta:focus-visible, .finale-signin a:focus-visible, .finale-top-btn:focus-visible{ outline:3px solid #ffb04a; outline-offset:4px; }
   /* The globe: 1000x500 artwork whose top ~40% is transparent sky, so the
      card can overlap the arc. Full width, zero margin, drawn with a "slice"
      fit so a phone (where the natural height would be tiny) gets a taller
@@ -834,13 +865,43 @@
     margin-top:-30%;
   }
   .finale-globe-lottie{ position:absolute; inset:0; }
+
+  /* ---------- A real close to the page: brand, tagline, and a way back to
+     the top - so the scroll ends somewhere deliberate instead of trailing
+     off after the globe. ---------- */
+  .finale-end{
+    position:relative; z-index:3; color:#fff; text-align:center;
+    background:linear-gradient(180deg, var(--blue-600) 0%, var(--blue-700) 100%);
+    box-shadow:inset 0 4px 0 rgba(255,255,255,.14);
+    padding:38px 20px 34px;
+  }
+  .finale-end-inner{ max-width:1080px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:22px; flex-wrap:wrap; }
+  .finale-brand{ display:flex; align-items:center; gap:11px; }
+  .finale-brand img{ width:42px; height:42px; border-radius:13px; display:block; box-shadow:0 4px 0 rgba(0,0,0,.22), inset 0 2px 0 rgba(255,255,255,.3); }
+  .finale-brand b{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:21px; }
+  .finale-brand b span{ color:#ffb04a; }
+  .finale-end-line{ flex:1 1 300px; }
+  .finale-end-line strong{ display:block; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(18px,2.4vw,23px); line-height:1.3; }
+  .finale-end-line small{ display:block; margin-top:4px; font-size:14px; font-weight:500; color:#dbe9f9; }
+  .finale-top-btn{
+    display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:999px; text-decoration:none;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px; color:var(--blue-700);
+    background:linear-gradient(180deg,#fff,#e8f1fb);
+    box-shadow:0 4px 0 #a9c3e0, 0 10px 14px -8px rgba(0,0,0,.4), inset 0 2px 0 #fff;
+    transition:transform .18s ease;
+  }
+  .finale-top-btn:hover{ transform:translateY(-2px); }
+
   @media (max-width:640px){
+    .finale-head{ margin-bottom:30px; }
+    .finale-heading{ font-size:clamp(26px,7vw,34px); }
     .finale-owl{ margin-bottom:-50px; }
     .finale-card{ padding:44px 22px 30px; border-radius:34px; }
-    .finale-adult::before, .finale-adult::after{ display:none; }
     .finale-body{ font-size:17px; }
     .finale-pin{ font-size:21px; padding-right:30px; }
+    .finale-cards{ margin-top:40px; }
     .finale-globe{ margin-top:-130px; }
+    .finale-end-inner{ justify-content:center; text-align:center; }
   }
 
   /* ---------- Parent gate: a small "grownups only" math question ----------
@@ -922,7 +983,7 @@
     .farm-land-stage{ opacity:1; transition:none; }
     .seesaw-stage{ opacity:1; transition:none; }
     .finale-card{ opacity:1; transform:none; transition:none; }
-    .finale-pin, .finale-pill, .gate-actions button{ transition:none; }
+    .finale-pin, .finale-cta, .finale-top-btn, .gate-actions button{ transition:none; }
     .finale-spark{ animation:none; opacity:.9; transform:none; }
     .gate-dialog, .gate-dialog.shake{ animation:none; }
   }
@@ -1185,6 +1246,12 @@
   </section>
 
   <section class="finale" id="finaleScene" aria-labelledby="finaleTitle">
+    <div class="finale-head">
+      <span class="finale-chip">Choose your path</span>
+      <h2 class="finale-heading">Four roles. One goal: a child who <span class="accent">loves reading.</span></h2>
+      <p class="finale-sub">Whether you are reading, teaching, parenting, or keeping things running, your door is right here.</p>
+    </div>
+
     <div class="finale-inner">
       <!-- The owl mascot peeking over the top of the card (drawn behind it).
            Decorative, so hidden from assistive tech. -->
@@ -1209,20 +1276,47 @@
           <span>Enter my PIN</span>
         </a>
 
-        <p class="finale-adult">Teacher, Parent, or Admin? Use Log in above instead</p>
-
-        <!-- The adult links. Each is a real link with its real href (so they
-             work even with scripts off); the data-adult-gate attribute is
-             what the parent-gate script listens for, so one gate covers all
-             of them. These are the same routes the old role-select section
-             used for each role. -->
-        <div class="finale-pills">
-          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'teacher']) }}"><span class="dot t" aria-hidden="true"></span>Teachers confirm their school</a>
-          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'parent']) }}"><span class="dot p" aria-hidden="true"></span>Parents add their child</a>
-          <a class="finale-pill" data-adult-gate href="{{ route('login', ['role' => 'admin']) }}"><span class="dot a" aria-hidden="true"></span>Admins approve every teacher</a>
-        </div>
-        <p class="finale-foot">New teacher at your school? <a data-adult-gate href="{{ route('register.teacher') }}">Request an account</a></p>
+        <p class="finale-help">No code yet? <a href="#roleCards">Ask your parent</a></p>
       </div>
+    </div>
+
+    <!-- The three adult roles, each with its own real hook and its own real
+         routes: Get started (registration) and Log in are two separate
+         gated links now, instead of one shared pill each. Admin has no
+         registration route - matches the rest of the app (exactly one
+         seeded Admin account, no self-registration). Each link is real (so
+         it works even with scripts off); data-adult-gate is what the
+         parent-gate script below listens for, so one gate covers all five. -->
+    <div class="finale-cards" id="roleCards">
+      <article class="finale-role teacher">
+        <div class="finale-role-badge" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 3L2 8l10 5 8-4.2V15h1V8L12 3z" fill="currentColor"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5l-6 3.2-6-3.2z" fill="currentColor" opacity="0.85"/></svg></div>
+        <h3>I'm a <span class="accent">Teacher</span></h3>
+        <p class="hook">Turn any topic into reading activities in minutes, review each one, and see how every learner is doing.</p>
+        <ul class="finale-chips"><li>You approve every activity</li><li>Class insights</li></ul>
+        <div class="spacer"></div>
+        <a class="finale-cta" data-adult-gate href="{{ route('register.teacher') }}">Get started</a>
+        <p class="finale-signin">Already have an account? <a data-adult-gate href="{{ route('login', ['role' => 'teacher']) }}">Log in</a></p>
+      </article>
+
+      <article class="finale-role parent">
+        <div class="finale-role-badge" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" fill="currentColor"/><circle cx="17" cy="9" r="2.4" fill="currentColor" opacity="0.85"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="currentColor"/><path d="M14 20c.3-2.4 1.8-4.3 3.8-5.1 2 .9 3.2 2.8 3.2 5.1" fill="currentColor" opacity="0.85"/></svg></div>
+        <h3>I'm a <span class="accent">Parent</span></h3>
+        <p class="hook">Watch your child's reading grow, and get a gentle alert when they need a little extra help.</p>
+        <ul class="finale-chips"><li>Progress at a glance</li><li>Alerts that matter</li></ul>
+        <div class="spacer"></div>
+        <a class="finale-cta" data-adult-gate href="{{ route('register.parent') }}">Get started</a>
+        <p class="finale-signin">Already have an account? <a data-adult-gate href="{{ route('login', ['role' => 'parent']) }}">Log in</a></p>
+      </article>
+
+      <article class="finale-role admin">
+        <div class="finale-role-badge" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5l7-3z" fill="currentColor"/></svg></div>
+        <h3>I'm an <span class="accent">Admin</span></h3>
+        <p class="hook">Keep every classroom trusted. Review each teacher and switch accounts on or off in a few taps.</p>
+        <ul class="finale-chips"><li>Approve teachers</li><li>Manage accounts</li></ul>
+        <div class="spacer"></div>
+        <a class="finale-cta" data-adult-gate href="{{ route('login', ['role' => 'admin']) }}">Admin log in</a>
+        <p class="finale-signin">Admin accounts are set up by the team.</p>
+      </article>
     </div>
 
     <!-- The animated globe (1000x500, transparent sky above the arc): full
@@ -1231,6 +1325,17 @@
       <div id="finaleGlobe" class="finale-globe-lottie"></div>
     </div>
   </section>
+
+  <footer class="finale-end">
+    <div class="finale-end-inner">
+      <div class="finale-brand"><img src="{{ asset('images/logo.png') }}" alt="TaraBasa AI logo"><b>TaraBasa<span>AI</span></b></div>
+      <div class="finale-end-line">
+        <strong>Every child deserves to love reading.</strong>
+        <small>AI powered, teacher verified reading support for Grade 1 to 3 Filipino learners.</small>
+      </div>
+      <a class="finale-top-btn" href="#siteNav"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Back to top</a>
+    </div>
+  </footer>
 
   <!-- Parent gate: shown before any adult link in the section above. A quick
        multiplication question a young child can't answer but a grown-up can
