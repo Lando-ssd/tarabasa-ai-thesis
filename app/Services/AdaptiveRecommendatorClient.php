@@ -63,7 +63,10 @@ class AdaptiveRecommendatorClient
         // it's still a Render free-tier service that can take well over
         // 30s (a real cold health-check start measured at ~55s during
         // testing) before it even starts processing the request.
-        set_time_limit(90);
+        //
+        // Longer than the HTTP timeout below (90s) so a slow call is caught
+        // as a ConnectionException, not killed by PHP's fatal time limit.
+        set_time_limit(120);
 
         try {
             $response = Http::withHeaders(['X-App-Key' => $key])

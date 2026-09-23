@@ -159,7 +159,7 @@ class LearnerDiagnosticService
      */
     public function recordAttempt(Learner $learner, array $state, Activity $activity, UploadedFile $audio, ReadingAiClient $readingAi): array
     {
-        $outcome = $readingAi->analyze($audio, $activity->reference_text ?? $activity->passage_text);
+        $outcome = $readingAi->analyze($audio, $activity);
 
         if ($outcome['unclear']) {
             $attempts = $this->incrementUnclearAttempts($learner);

@@ -49,7 +49,7 @@ class LearnerReadingService
 
         $outcome = $readingAi->analyze(
             $audio,
-            $activity->reference_text ?? $activity->passage_text,
+            $activity,
             $comprehension['score'] ?? null,
         );
 
@@ -89,7 +89,7 @@ class LearnerReadingService
      */
     public function recordFreeReattempt(Activity $activity, UploadedFile $audio, ReadingAiClient $readingAi): array
     {
-        $outcome = $readingAi->analyze($audio, $activity->reference_text ?? $activity->passage_text);
+        $outcome = $readingAi->analyze($audio, $activity);
 
         if ($outcome['unclear']) {
             return ['status' => 'unclear'];
