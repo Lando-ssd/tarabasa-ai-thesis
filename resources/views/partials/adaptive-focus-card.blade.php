@@ -9,10 +9,10 @@
   tokens (--line/--surface/--slate-600/--owl-orange-600) both pages
   already define.
 
-  Expects: $learner (the full Learner model — competency_states and
-  next_recommended_competency are read directly off it).
+  Expects: $learner (the full Learner model — subdomain_states and
+  next_recommended_subdomain are read directly off it).
 --}}
-@php $focus = $learner->competencyProgressSummary(); @endphp
+@php $focus = $learner->subdomainProgressSummary(); @endphp
 <div class="adaptive-card">
   <div class="adaptive-card-title">🎯 Adaptive Focus</div>
   @if (empty($focus))
