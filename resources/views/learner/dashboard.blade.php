@@ -21,7 +21,8 @@
         'flame' => asset('animations/learner/flame-icon.json'),
         'star' => asset('animations/learner/star-icon.json'),
         'flameBurst' => asset('animations/learner/flame-burst.json'),
-          'owl' => asset('animations/learner/owl-bird.json'),
+          'starBurst' => asset('animations/learner/star-burst.json'),
+        'owl' => asset('animations/learner/owl-bird.json'),
     ];
 @endphp
 
@@ -139,14 +140,13 @@
         <div class="popover points-pop" id="pointsPopover">
           <span class="popover-caret"></span>
           <div class="popover-inner">
-            <div class="pp-row">
-              <div class="pp-art" id="pointsArtLottie"></div>
-              <div class="pp-text">
-                <h4>Points</h4>
-                <p>You have {{ number_format($learner->points) }} {{ $learner->points === 1 ? 'point' : 'points' }}</p>
-                <span class="pp-note">You earn points every time you finish a reading.</span>
-                <a class="pp-link" href="{{ route('learner.activity.find') }}">Start Reading</a>
-              </div>
+            <div class="pp-body">
+              <h4>Points</h4>
+              {{-- The "Star rating" animation: five stars pop in one after another and settle lit. --}}
+              <div class="pp-stars" id="pointsArtLottie" aria-hidden="true"></div>
+              <p>You have {{ number_format($learner->points) }} {{ $learner->points === 1 ? 'point' : 'points' }}</p>
+              <span class="pp-note">You earn points every time you finish a reading.</span>
+              <a class="pp-link" href="{{ route('learner.activity.find') }}">Start Reading</a>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@
     document.querySelectorAll('.pill[aria-expanded]').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
     // reset the popover-only animations so they replay from the start next time
     if (streakBurstAnim) streakBurstAnim.goToAndStop(0, true);
-    if (pointsArtAnim) pointsArtAnim.goToAndStop(0, true);
+    restStars();
   }
   // The caret points at the pill that opened the popover, wherever the pill sits in the row.
   function placeCaret(pill, popover) {
@@ -221,8 +221,11 @@
     pointsIconAnim.goToAndStop(pointsRestFrame, true);
   });
   var streakBurstAnim = lottie.loadAnimation({ container: document.getElementById('streakBurstLottie'), renderer: 'svg', loop: false, autoplay: false, path: anim.flameBurst });
-  var pointsArtAnim = lottie.loadAnimation({ container: document.getElementById('pointsArtLottie'), renderer: 'svg', loop: false, autoplay: false, path: anim.star });
-  pointsArtAnim.addEventListener('DOMLoaded', function () { pointsArtAnim.goToAndStop(pointsArtAnim.totalFrames - 1, true); });
+  // The rating animation is a square with the star row in its middle band; 'slice' fills the wide box,
+  // cropping the empty top and bottom, so the five stars render large. It rests on its last frame (all lit).
+  var pointsArtAnim = lottie.loadAnimation({ container: document.getElementById('pointsArtLottie'), renderer: 'svg', loop: false, autoplay: false, path: anim.starBurst, rendererSettings: { preserveAspectRatio: 'xMidYMid slice' } });
+  function restStars() { if (pointsArtAnim && pointsArtAnim.totalFrames) pointsArtAnim.goToAndStop(pointsArtAnim.totalFrames - 1, true); }
+  pointsArtAnim.addEventListener('DOMLoaded', restStars);
 
   function restIcon(a, frame) { if (a && frame !== null && frame !== undefined) a.goToAndStop(frame, true); }
   function playIconOnce(a) { if (a && !reduceMotion) a.goToAndPlay(0, true); }
