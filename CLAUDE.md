@@ -5505,26 +5505,40 @@ document that `diagnostic-encourage`, `diagnostic-results` and `reading-unclear`
 with a few variables (`$mood`, `$heading`, `$message`, `$buttonLabel`, `$buttonHref`, optional
 `$dotsDone`/`$dotsTotal`, `$level`, `$newBadges`). Plain white; the user's two Lotties
 (`public/animations/learner/star-happy.json` and `star-sad.json`, 7 s loops) stand on one side, a
-cloud with the headline lines up with the star's face on the other (the glasses sit ~0.48 down the
-animation box, measured; the same padding trick as the intro), then the message and one big clay
-orange button. It matches the intro and stacks on phones.
+big bold headline on the other (warm orange with the happy star, calm blue with the sad one, a
+short rounded bar under it), then the message and one big clay orange button. It matches the
+intro and stacks on phones. **The cloud was dropped from these screens on 2026-09-24** (the user
+did not like it); the text block is centred against the star with a small top nudge
+(`0.18 * star width`). The intro screen still has its cloud.
 - **The sad star is ONLY for "we could not hear you"** (the two try again screens: "Didn't quite
   catch that!" and "Please ask a grown up for help"). It is never shown for a low score: the
   check has no visible score or pass/fail framing (Placement Diagnostic patch, Part 4.2), so a
-  child who lands on Beginning gets the same happy star as one who lands on Proficient. The cloud
-  is warm yellow with the happy star and a cool soft blue with the sad one.
+  child who lands on Beginning gets the same happy star as one who lands on Proficient.
 - **Copy and controls:** no emoji and no dashes; buttons are "Keep Going", "Start Exploring", "Try
   Again", "Back to My Dashboard" (the old "Next Passage" was wrong after a letters item). The
   level label (`MASTERY_TO_RESULT_LABEL`) lost its emoji, so the mobile API's `resultLabel` is plain
-  text too. Badges earned by the check show side by side under the level pill (badge icons
-  are still emoji, they come from `config/badges.php`). `reading-unclear` is shared with ordinary
+  text too. Badges earned by the check show side by side under the level pill (stacked full width
+  on phones). `reading-unclear` is shared with ordinary
   practice readings, so those get the same screens (the button goes to the activity instead).
+- **Badge icons, not emoji (2026-09-24).** Every badge now shows a picture of what it means, not
+  an emoji: 100 Phosphor Icons "fill" icons (MIT, licence kept in `public/icons/LICENSE-phosphor.txt`)
+  in one SVG sprite, `public/icons/badges.svg` (symbols `ph-<name>`), chosen per badge in
+  `config/badge_icons.php` (code => icon name, all 100 unique, fallback `medal`; e.g. streaks are
+  flames, speed is a rocket, accuracy a target, "Reading Check Done" a map). The partial
+  `learner/_badge-icon.blade.php` renders one (an inline `<svg><use href="...badges.svg#ph-name">`,
+  white on the orange medal for earned, grey on the grey medal for locked); it is used by
+  `_feedback-scene`, `_badge-celebration` (practice results) and, through a small JS helper, the
+  Badges page tiles and detail card. The emoji stay in `config/badges.php` only as the plain-text
+  fallback and for the mobile API. To change a badge's icon, edit `config/badge_icons.php` (the name
+  must exist as a symbol in the sprite; the sprite was built from the icons' CDN files by a one-off
+  script, so a new icon means adding its `<symbol>` to the sprite). Other emoji still exist elsewhere
+  (Practice Games level badges, Bookshelf covers, the practice results star); not part of this pass.
 - **Tested for real:** through the real app with a synthesized voice: Great job after items 1 and
   2 (dots 1 then 2 filled, the "one more short one" message), the results with the level pill and
   both first-reading badges ("First Reading Star", "Reading Check Done"), and three silent
   recordings in a row (retry, retry, then the grown up screen, zero sessions created). Layout
-  checked at 1440x900 and 375px, including a long hyphenated name in the cloud and two badges
-  (fits without scrolling). The Lottie motion itself cannot be watched in the test browser
+  checked at 375, 880, 1024, 1440 and 1920 wide, including a long hyphenated name and two badges
+  (fits without scrolling, apart from 1px on a 375x812 phone). The Lottie motion itself cannot be watched in the test browser
   (hidden tabs freeze it), so only its resting frame was seen.
 - **Not done:** `reading-results` (the practice results) and `bookshelf-reread-unclear` still use the
   older card design.

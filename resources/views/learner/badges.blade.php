@@ -12,7 +12,7 @@
     $badgeRows = collect($badges)->map(function ($b) {
         return [
             'cat' => $b['category'],
-            'emoji' => $b['emoji'],
+            'icon' => config('badge_icons.icons.'.$b['code'], config('badge_icons.fallback')),
             'name' => $b['name'],
             'desc' => $b['description'],
             'earned' => $b['earned'] ? $b['earnedAt']->format('M j') : null,
@@ -56,6 +56,9 @@
 <script>
   var BDG = @json($badgeRows);
   var BDG_CATS = @json($categoryRows);
+  // Each badge shows a picture of what it means (public/icons/badges.svg, Phosphor Icons), chosen in config/badge_icons.php.
+  var BDG_ICONS = @json(asset('icons/badges.svg'));
+  function bdgSvg(name) { return '<svg class="badge-svg" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="' + BDG_ICONS + '#ph-' + name + '"></use></svg>'; }
 
   var bdgStatus = 'all', bdgCat = 'all';
   function esc(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
@@ -66,7 +69,7 @@
     var b = BDG[i], earned = !!b.earned;
     var sub = earned ? 'Earned ' + b.earned : (b.soon ? 'Coming soon' : (b.target ? b.cur + ' of ' + b.target : 'Not yet'));
     var prog = (!earned && !b.soon && b.target) ? '<div class="bdg-prog"><i style="width:' + pct(b) + '%"></i></div>' : '';
-    return '<button type="button" class="bdg-tile ' + (earned ? 'earned' : 'locked') + '" data-i="' + i + '"><div class="bdg-icon">' + b.emoji + '</div><div class="bdg-name">' + esc(b.name) + '</div><div class="bdg-sub">' + sub + '</div>' + prog + '</button>';
+    return '<button type="button" class="bdg-tile ' + (earned ? 'earned' : 'locked') + '" data-i="' + i + '"><div class="bdg-icon">' + bdgSvg(b.icon) + '</div><div class="bdg-name">' + esc(b.name) + '</div><div class="bdg-sub">' + sub + '</div>' + prog + '</button>';
   }
 
   function renderBadges() {
@@ -97,7 +100,7 @@
   function openBadge(i) {
     var b = BDG[i], earned = !!b.earned;
     document.querySelector('#bdgModal .bdg-modal-card').className = 'bdg-modal-card ' + (earned ? 'earned' : 'locked');
-    document.getElementById('bdgModalIcon').textContent = b.emoji;
+    document.getElementById('bdgModalIcon').innerHTML = bdgSvg(b.icon);
     document.getElementById('bdgModalCat').textContent = bdgCatName(b.cat);
     document.getElementById('bdgModalName').textContent = b.name;
     document.getElementById('bdgModalDesc').textContent = b.desc;

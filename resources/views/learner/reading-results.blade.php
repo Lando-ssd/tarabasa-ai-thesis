@@ -57,7 +57,11 @@
     animation:badgePop .5s cubic-bezier(.34,1.56,.64,1);
   }
   @keyframes badgePop{ 0%{ transform:scale(0.6); opacity:0; } 70%{ transform:scale(1.06); opacity:1; } 100%{ transform:scale(1); opacity:1; } }
-  .badge-pop-emoji{ font-size:34px; line-height:1; flex-shrink:0; }
+  .badge-pop-medal{
+    flex-shrink:0; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 34% 26%,#ffd79a,#ef8d2a 62%,#d4690d); box-shadow:0 3px 0 #b4560b, inset 0 3px 0 rgba(255,255,255,.45);
+  }
+  .badge-pop-medal .badge-svg{ width:27px; height:27px; color:#fff; display:block; }
   .badge-pop-label{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#7a5400; }
   .badge-pop-name{ font-family:'Baloo 2',sans-serif; font-size:16px; font-weight:800; color:#5a3d00; }
 
