@@ -9,4 +9,9 @@
  */
 return [
     'weekly_target' => 5,
+
+    // The learners are in the Philippines. Days, weeks and the hour of the day
+    // (streak, weekly goal and chart, early bird / night owl badges) are worked
+    // out in this timezone, not the server's UTC. See App\Support\LearnerClock.
+    'timezone' => 'Asia/Manila',
 ];

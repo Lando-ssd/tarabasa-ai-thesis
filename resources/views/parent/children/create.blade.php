@@ -80,6 +80,21 @@
   .avatar-opt:hover{ transform:translateY(-2px); }
   .avatar-opt.selected{ border-color:var(--blue-500); background:var(--sky-50); box-shadow:0 0 0 3px rgba(28,126,214,0.14); }
 
+  .color-pick{ margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
+  .color-pick-label{ font:700 13px/1 'Inter',sans-serif; color:var(--navy-900); margin-bottom:10px; }
+  .color-opts{ display:flex; gap:10px; }
+  .color-opt{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:10px; padding:12px 10px; cursor:pointer;
+    border-radius:14px; border:2px solid var(--line); background:var(--bg-0); font:700 14px/1 'Inter',sans-serif; color:var(--navy-900);
+    transition:border-color .15s ease, transform .15s ease;
+  }
+  .color-opt:hover{ transform:translateY(-1px); }
+  .color-opt.selected{ border-color:var(--blue-500); background:var(--sky-50); box-shadow:0 0 0 3px rgba(28,126,214,0.14); }
+  .color-opt .swatch{ width:22px; height:22px; border-radius:50%; box-shadow:inset 0 -3px 0 rgba(0,0,0,.16); }
+  .color-opt .swatch.blue{ background:linear-gradient(180deg,#52adf8,#1c7ed6); }
+  .color-opt .swatch.pink{ background:linear-gradient(180deg,#ff9fc4,#f0629a); }
+  .color-hint{ font:500 12.5px/1.4 'Inter',sans-serif; color:var(--slate-600); margin:8px 0 0; }
+
   .avatar-mode-toggle{ display:flex; gap:6px; margin-bottom:16px; background:var(--bg-0); border:1px solid var(--line); border-radius:12px; padding:4px; }
   .mode-tab{
     flex:1; padding:9px; border:none; border-radius:9px; background:none; color:var(--slate-600);
@@ -248,6 +263,15 @@
           <div class="field-error" id="photoError" style="display:none;"></div>
         </div>
 
+        <div class="color-pick">
+          <div class="color-pick-label">Favorite color</div>
+          <div class="color-opts" id="colorOpts">
+            <button type="button" class="color-opt selected" data-color="blue"><span class="swatch blue"></span>Blue</button>
+            <button type="button" class="color-opt" data-color="pink"><span class="swatch pink"></span>Pink</button>
+          </div>
+          <p class="color-hint">This tints <span class="child-name-possessive-ref">their</span> name badge inside TaraBasa.</p>
+        </div>
+        <input type="hidden" name="theme_color" id="theme_color" value="blue">
         <input type="hidden" name="avatar_id" id="avatar_id" value="{{ $avatars[0] }}">
         <input type="file" name="avatar_photo" id="avatarPhotoRealInput" style="display:none;">
       </div>
@@ -358,6 +382,14 @@
       });
     });
   }
+
+  document.querySelectorAll('.color-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.color-opt').forEach(x => x.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('theme_color').value = el.dataset.color;
+    });
+  });
 
   document.querySelectorAll('.avatar-opt').forEach(el => {
     el.addEventListener('click', () => {

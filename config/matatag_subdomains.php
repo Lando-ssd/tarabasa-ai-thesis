@@ -48,6 +48,7 @@ return [
         'Phonics and Word Study' => [
             'label' => 'Sounding Out Words',
             'description' => 'Matching letters to their sounds and blending them into words.',
+            'start_hint' => 'Fills in after your first reading.',
         ],
         'Vocabulary and Word Knowledge' => [
             'label' => 'Word Power',
@@ -60,6 +61,7 @@ return [
         'Comprehending and Analyzing Text' => [
             'label' => 'Understanding Stories',
             'description' => 'Understanding what you read and answering questions about it.',
+            'start_hint' => 'Fills in once you read a story and answer its questions.',
         ],
     ],
 

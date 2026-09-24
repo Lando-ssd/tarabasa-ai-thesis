@@ -86,6 +86,7 @@ class LearnerController extends Controller
             'last_name' => ['required', 'string', 'max:100', 'regex:' . self::NAME_REGEX],
             'grade_level' => ['required', Rule::in(['Grade 1', 'Grade 2', 'Grade 3'])],
             'avatar_id' => ['required', Rule::in(self::AVATARS)],
+            'theme_color' => ['nullable', Rule::in(['blue', 'pink'])],
             // The cropped photo (if the Parent chose "Upload a photo" instead
             // of a preset) arrives as a real file — Cropper.js writes the
             // cropped result back into this same file input client-side, so
@@ -140,6 +141,7 @@ class LearnerController extends Controller
                 'grade_level' => $validated['grade_level'],
                 'pin' => Hash::make($validated['pin']),
                 'avatar_id' => $validated['avatar_id'],
+                'theme_color' => $validated['theme_color'] ?? 'blue',
                 'avatar_photo_path' => $photoPath,
                 'mastery_level' => $masteryLevel,
                 'learning_style' => $validated['learning_style'],

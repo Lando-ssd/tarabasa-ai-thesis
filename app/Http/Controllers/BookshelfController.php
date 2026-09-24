@@ -9,14 +9,19 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * My Bookshelf's list view now renders inline on the Dashboard (see
- * LearnerAuthController::dashboard() + Learner::bookshelfBooks()) — this
- * controller is left with only the real task-flow screens: a free/
- * unscored re-read. See LearnerReadingService::recordFreeReattempt()'s
+ * My Bookshelf: the list of books a child has finished, and the real task-flow
+ * screens for a free/unscored re-read. See LearnerReadingService::recordFreeReattempt()'s
  * own doc comment for why re-reading doesn't score.
  */
 class BookshelfController extends Controller
 {
+    public function index(Request $request): View
+    {
+        $learner = $request->user('learner');
+
+        return view('learner.bookshelf', ['learner' => $learner, 'books' => $learner->bookshelfBooks()]);
+    }
+
     /**
      * The recording screen for a free re-read — re-verifies real reading
      * history server-side (Activity::hasCompletedPracticeReadingFor()),

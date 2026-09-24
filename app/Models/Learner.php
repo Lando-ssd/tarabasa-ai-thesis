@@ -43,6 +43,7 @@ class Learner extends Model implements AuthenticatableContract
         'next_recommended_difficulty',
         'subdomain_states',
         'next_recommended_subdomain',
+        'theme_color',
         'learning_style',
         'points',
         'streak',
@@ -247,6 +248,7 @@ class Learner extends Model implements AuthenticatableContract
                     'key' => $name,
                     'label' => $labels[$name]['label'] ?? $name,
                     'description' => $labels[$name]['description'] ?? '',
+                    'startHint' => $labels[$name]['start_hint'] ?? null,
                     'proficiency' => $state['proficiency'] ?? null,
                     'difficulty' => $difficulty,
                     'difficultyWord' => $difficulty ? ($difficultyWords[$difficulty] ?? null) : null,
@@ -255,6 +257,63 @@ class Learner extends Model implements AuthenticatableContract
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * The distinct calendar days (Y-m-d) this learner finished a real Practice
+     * reading on, newest first. The one source for the day streak and for any
+     * badge or chart that cares about WHICH days someone read.
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    public function practiceReadingDays(): \Illuminate\Support\Collection
+    {
+        return ReadingSession::where('learner_id', $this->id)
+            ->where('session_type', 'Practice')
+            ->pluck('timestamp')
+            ->map(fn ($timestamp) => \App\Support\LearnerClock::local($timestamp)->toDateString())
+            ->unique()
+            ->sortDesc()
+            ->values();
+    }
+
+    /**
+     * Consecutive days with at least one real Practice reading, counting back
+     * from today. A day with no reading only breaks the streak once it is over,
+     * so someone who read yesterday still has it until the end of today.
+     *
+     * This is derived from the readings themselves and never written back: the
+     * stored `streak` column (one point per scored reading, with no calendar
+     * reset) is untouched, because "8 days in a row" must mean 8 real days.
+     */
+    public function readingDayStreak(): int
+    {
+        $days = $this->practiceReadingDays();
+
+        if ($days->isEmpty()) {
+            return 0;
+        }
+
+        $today = \App\Support\LearnerClock::now()->toDateString();
+        $yesterday = \App\Support\LearnerClock::now()->subDay()->toDateString();
+
+        if (! in_array($days->first(), [$today, $yesterday], true)) {
+            return 0;
+        }
+
+        $streak = 0;
+        $expected = \Illuminate\Support\Carbon::parse($days->first());
+
+        foreach ($days as $day) {
+            if ($day !== $expected->toDateString()) {
+                break;
+            }
+
+            $streak++;
+            $expected = $expected->subDay();
+        }
+
+        return $streak;
     }
 
     /**
@@ -272,7 +331,10 @@ class Learner extends Model implements AuthenticatableContract
     {
         return ReadingSession::where('learner_id', $this->id)
             ->where('session_type', 'Practice')
-            ->whereBetween('timestamp', [now()->startOfWeek(), now()->endOfWeek()])
+            ->whereBetween('timestamp', [
+                \App\Support\LearnerClock::toStorage(\App\Support\LearnerClock::now()->startOfWeek()),
+                \App\Support\LearnerClock::toStorage(\App\Support\LearnerClock::now()->endOfWeek()),
+            ])
             ->get();
     }
 

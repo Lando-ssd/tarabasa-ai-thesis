@@ -24,26 +24,12 @@ class LearnerBadge extends Model
     }
 
     /**
-     * Every defined badge (config/badges.php), merged with this Learner's
-     * real earned/unearned state — the one shared source both the inline
-     * "My Badges" section on the Dashboard (LearnerAuthController) and
-     * the mobile API's dashboard endpoint build from, so the two can't
-     * drift into two different answers for "which badges does this
-     * Learner have." Same shared-method pattern already established by
-     * ReadingSession::sourceSummaryForLearner().
+     * Every defined badge merged with this learner's real earned state, the
+     * one shared source for the Badges page and the mobile API. The rules
+     * live in App\Services\BadgeService.
      */
     public static function summaryFor(Learner $learner): array
     {
-        $earned = self::where('learner_id', $learner->id)->get()->keyBy('badge_code');
-
-        return collect(config('badges'))->map(function (array $def, string $code) use ($earned) {
-            $row = $earned->get($code);
-
-            return array_merge($def, [
-                'code' => $code,
-                'earned' => $row !== null,
-                'earnedAt' => $row?->earned_at,
-            ]);
-        })->values()->all();
+        return app(\App\Services\BadgeService::class)->summaryFor($learner);
     }
 }

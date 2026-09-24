@@ -1,0 +1,1092 @@
+/*
+ * Learner app shell: the redesigned Learner area (sidebar, Home, Reading,
+ * Games, Badges, Bookshelf). Ported from the approved mockup, which was built
+ * up in layers, so later rules deliberately override earlier ones; keep the
+ * order. Loaded by resources/views/layouts/learner-shell.blade.php.
+ *
+ * The page background is set per page through <html data-page="...">
+ * (home, reading, games, badges, bookshelf). The profile chip colour comes
+ * from <body data-theme="blue|pink">. The last block ("REAL APP") adapts the
+ * mockup to the live app: no mockup note bar, and a phone layout.
+ */
+  :root{
+    --blue-500:#1c7ed6; --blue-600:#0f5fae; --blue-700:#0a3d73;
+    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
+    --owl-orange-500:#ef8d2a; --owl-orange-600:#dd7014; --clay-yellow:#ffcf6e;
+    --success:#1f9e83; --success-light:#e9f7f3;
+    --line:#e7edf3; --field-bg:#f3f7fb; --surface:#ffffff; --bg:#f6faff;
+    --streak-red:#ff5b3d; --points-gold:#d9a521; --level-green:#3f8f52;
+    /* A Windows system font, per your own choice — not a web font,
+       so it only renders as Bahnschrift on a device that actually has
+       it installed (Windows ships it by default); falls back to
+       Inter/sans-serif everywhere else. */
+    --font-game:'Bahnschrift SemiCondensed','Bahnschrift','Barlow Semi Condensed',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ font-family:'Inter',sans-serif; color:var(--navy-900); background:var(--bg); }
+  .note{ text-align:center; padding:10px; background:#131f2b; color:#fff; font:700 12px/1 'Inter',sans-serif; }
+
+  .shell{ display:flex; max-width:1180px; margin:0 auto; align-items:flex-start; }
+  .main{ flex:1; min-width:0; }
+
+  /* ---- One real CSS Grid for the whole main area — the stat row and
+       the center/right-column content share the SAME two column
+       tracks, defined exactly once. That's what makes "BEGINNER"'s
+       left edge genuinely line up with the Goal/Growth cards' left
+       edge, instead of two separately-flexed rows that only lined up
+       by coincidence (and broke the moment the stat row's own content
+       got wider than a plain fixed 300px would actually fit — a real
+       overflow bug in the previous version, not just a style choice).
+       The right column is minmax(300,max-content): normally exactly
+       300px, matching the cards below, but free to grow a little wider
+       if the stat row's own content genuinely needs the room, so nothing
+       clips or overlaps. ---- */
+  .main-grid{ display:grid; grid-template-columns:1fr minmax(300px, max-content); align-items:start; column-gap:0; }
+  .topstats-empty{ }
+  .topstats-col{ padding:22px 20px 0; }
+
+  /* ---- LEFT: real sidebar, Duolingo-accurate structure (logo, then
+       stacked icon+label nav rows, active item highlighted) — rebuilt
+       from TaraBasa's own real Learner features instead of Duolingo's
+       own (Learn/Matches/Leaderboards/Quests/Shop). ---- */
+  .sidebar{
+    width:220px; flex-shrink:0; position:sticky; top:0; height:100vh;
+    padding:20px 12px; border-right:2px solid var(--line); display:flex; flex-direction:column; gap:2px;
+  }
+  .brand{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:22px; padding:6px 12px 28px; }
+  .brand span{ color:var(--owl-orange-500); }
+  .nav-item{
+    display:flex; align-items:center; gap:16px; padding:11px 14px; border-radius:16px; text-decoration:none;
+    color:var(--navy-900); font:800 13.5px/1 'Inter',sans-serif; letter-spacing:.04em; text-transform:uppercase;
+    transition:background .12s ease; margin-bottom:4px;
+  }
+  .nav-item .nav-icon{ flex-shrink:0; width:38px; height:38px; display:flex; align-items:center; justify-content:center; }
+  .nav-item .nav-icon svg, .nav-item .nav-icon img{ display:block; width:100%; height:100%; object-fit:contain; }
+  .nav-item.active{ background:#eaf3fd; color:var(--blue-600); }
+  .nav-item:not(.active):hover{ background:var(--field-bg); }
+  .sidebar-foot{ margin-top:auto; padding:14px 10px; font-size:13px; color:var(--slate-600); font-weight:700; border-top:2px solid var(--line); }
+
+  /* ---- CENTER: the path ---- */
+  .center{ min-width:0; padding:18px 26px 60px; }
+  .stat-pills{ display:flex; align-items:center; gap:24px; position:relative; }
+
+  /* ---- Plain icon + colored number, no pill background or border at
+       all — matching the real Duolingo top bar (a flag, a flame, a
+       gem, all shown as bare icon+number, never boxed) and your own
+       reference screenshot. A real imported cartoon/comic display font
+       (Fredoka, a genuinely different typeface from the rest of the
+       app — a deliberate, one-off choice for just this game-y stat
+       row, per your own reference) instead of plain UI text. Still
+       fully clickable; the hover lift is the only affordance that it
+       opens something. ---- */
+  .pill{ display:flex; align-items:center; gap:7px; background:none; border:none; padding:0; cursor:pointer; transition:transform .12s ease; }
+  .pill:hover{ transform:translateY(-1px); }
+  .pill:active{ transform:translateY(0); }
+  .pill .stat-icon-lottie{ width:46px; height:46px; flex-shrink:0; pointer-events:none; }
+  /* The flame artwork inside "Flame animation.json" isn't vertically
+     centered within its own 800x800 canvas — it sits low, which is why
+     it visually drooped below the number next to it even though both
+     spans were centered by the same flex rule. Nudging just this one
+     icon up to compensate; the star icon needed no such fix. */
+  #streakIconLottie{ transform:translateY(-6px); }
+  .pill .stat-num{ font-family:var(--font-game); font-weight:500; font-size:21px; line-height:1; }
+  .pill.streak .stat-num{ color:var(--streak-red); }
+  .pill.points .stat-num{ color:var(--points-gold); }
+  .pill.level .stat-num{ color:var(--level-green); font-size:21px; font-weight:500; text-transform:uppercase; letter-spacing:.02em; }
+  .pill-wrap{ position:relative; display:flex; align-items:center; }
+
+  /* ---- Popover header variants — the streak keeps its own colored
+       gradient band (matching the real Duolingo streak popover); the
+       level popover gets a matching blue one. Points has NO header
+       band at all (matching Duolingo's own flatter Gems popover) —
+       see .points-body below. The animated icon itself now lives only
+       in the top row (see .stat-icon-lottie), so the header here is
+       text-only, never a duplicate icon. ---- */
+  .popover-head{ display:flex; flex-direction:column; align-items:center; text-align:center; padding:20px 18px 18px; }
+  .popover-head.level-head{ background:linear-gradient(160deg,var(--blue-500),var(--blue-700)); }
+  .popover-explain{ font-family:var(--font-game); font-size:14.5px; color:var(--slate-600); font-weight:500; line-height:1.55; text-align:center; margin:0; }
+  .streak-burst-lottie{ width:76px; height:76px; margin:0 0 4px; }
+  /* Sized to the popover's own limiting dimension: the source animation
+     is a square (1080x1080), scaled to "meet" its box — so HEIGHT is
+     what actually controls how big the stars render, not width. Bumped
+     well past the original 52px while staying inside the card's own
+     240px content area (280px popover minus its own padding). */
+  .points-burst-lottie{ width:240px; height:100px; margin:8px auto 16px; }
+
+  /* ---- Level pill's popover: a plain-language 3-step ladder instead
+       of a raw number, since "Beg./Developing/Proficient" only makes
+       sense shown as a path, not a stat. ---- */
+  .level-ladder{ display:flex; flex-direction:column; gap:8px; padding:16px 18px 18px; }
+  .level-step{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:12px; background:var(--field-bg); font:600 14px/1 var(--font-game); color:var(--slate-400); }
+  .level-step .step-label{ display:flex; align-items:center; gap:10px; }
+  .level-step .step-dot{ width:22px; height:22px; border-radius:50%; background:#dfe7ee; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .level-step.current{ background:#eaf3fd; color:var(--blue-600); }
+  .level-step.current .step-dot{ background:var(--blue-500); color:#fff; }
+  .you-tag{ font-family:var(--font-game); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; background:var(--blue-500); color:#fff; padding:4px 8px; border-radius:999px; flex-shrink:0; }
+
+  /* ---- Real popover, matching Duolingo's own click-to-open pattern —
+       every stat pill in the reference (course flag, streak, gems,
+       hearts) opens one of these anchored directly under that specific
+       icon, centered rather than pinned to one side, with a small
+       speech-bubble caret pointing back up at the icon that opened it,
+       matching your own reference sketches. ---- */
+  .popover{
+    position:absolute; top:calc(100% + 14px); left:50%; transform:translateX(-50%); width:280px; z-index:10;
+    display:none;
+  }
+  .popover.open{ display:block; }
+  .popover-caret{ position:absolute; top:-6px; left:50%; transform:translateX(-50%) rotate(45deg); width:14px; height:14px; border-radius:3px 0 0 0; z-index:0; }
+  .popover-caret.caret-orange{ background:var(--streak-red); }
+  .popover-caret.caret-blue{ background:var(--blue-500); }
+  .popover-caret.caret-white{ background:#fff; }
+  .popover-inner{ position:relative; z-index:1; background:var(--surface); border-radius:18px; box-shadow:0 20px 40px -14px rgba(19,31,43,.28); overflow:hidden; }
+  .popover-head{ background:linear-gradient(160deg,var(--streak-red),#e6431f); color:#fff; padding-top:16px; }
+  .popover-head h4{ font-family:var(--font-game); font-weight:600; font-size:21px; margin:0 0 5px; }
+  .popover-head p{ font-family:var(--font-game); font-size:14px; margin:0; opacity:.92; font-weight:500; line-height:1.4; max-width:210px; }
+
+  /* ---- Day-streak row, polished to match your reference: the day
+       LETTER sits above its own dot (not below), the current/completed
+       days get a real checkmark inside a filled circle instead of just
+       a plain colored dot, and the whole strip gets its own padded
+       white shelf under the gradient header — same structural idea as
+       the reference screenshot, in TaraBasa's own colors. ---- */
+  .popover-week{ display:flex; justify-content:space-between; padding:18px 18px 20px; }
+  .popover-day{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .popover-day .day-label{ font-family:var(--font-game); font-size:13px; font-weight:600; color:var(--slate-400); }
+  .popover-day .dot{ width:28px; height:28px; border-radius:50%; background:var(--field-bg); display:flex; align-items:center; justify-content:center; }
+  .popover-day.done .dot{ background:var(--streak-red); }
+  .popover-day.done .day-label{ color:var(--streak-red); }
+
+  /* ---- Points popover body: flat white, no gradient band, matching
+       Duolingo's own Gems popover (icon lives outside/above, title and
+       count sit inline, then a short encouraging line). Real visual
+       hierarchy this time — the tagline reads as an actual headline
+       (bold, accent-colored), a thin divider genuinely separates it
+       from the supporting explanation below, and that explanation sits
+       in its own soft "info" chip instead of just floating as more
+       plain text right underneath — so the three blocks (stat, message,
+       detail) read as three distinct things, not one flat stack. ---- */
+  .points-body{ padding:22px 22px 20px; text-align:center; }
+  .points-title-row{ display:flex; align-items:baseline; justify-content:center; gap:8px; margin:0 0 3px; }
+  .points-title-row h4{ font-family:var(--font-game); font-weight:600; font-size:20px; margin:0; color:var(--navy-900); }
+  .points-count{ font-family:var(--font-game); font-size:22px; font-weight:600; color:var(--points-gold); }
+  .popover-tagline{ font-family:var(--font-game); font-size:17px; font-weight:600; color:var(--owl-orange-600); margin:0 0 12px; }
+  .popover-divider{ width:44px; height:3px; border-radius:2px; background:var(--field-bg); margin:0 auto 14px; }
+  .popover-explain{ background:var(--field-bg); border-radius:12px; padding:12px 14px; }
+
+  .unit-banner{
+    background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); color:#fff; border-radius:20px;
+    padding:16px 20px; margin-bottom:30px; box-shadow:0 4px 0 var(--blue-700);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .unit-banner .eyebrow{ font:800 11px/1 'Inter',sans-serif; letter-spacing:.08em; text-transform:uppercase; opacity:.8; margin-bottom:5px; }
+  .unit-banner h2{ font-family:'Baloo 2',sans-serif; font-size:20px; margin:0; }
+  .unit-banner .up-next-chip{ font:800 11.5px/1 'Baloo 2',sans-serif; background:var(--clay-yellow); color:#7a4a00; padding:6px 11px; border-radius:999px; flex-shrink:0; }
+
+  .path-wrap{ max-width:320px; margin:0 auto; }
+  .path-caption-wrap{ text-align:center; margin-top:16px; }
+  .path-caption{ font-size:13.5px; font-weight:700; color:var(--success); background:var(--success-light); border-radius:14px; padding:9px 14px; display:inline-block; }
+
+  /* ---- RIGHT: real TaraBasa cards, styled like Duolingo's stacked
+       white cards, but the content is Badges/Goal/Growth/Bookshelf —
+       your real existing features, not Duolingo's Leaderboards/Quests. ---- */
+  .right-col{ padding:22px 20px 44px; display:flex; flex-direction:column; gap:30px; }
+  .card{ background:var(--surface); border:2px solid var(--line); border-radius:16px; padding:18px; }
+  .card h3{ font-family:'Inter',sans-serif; font-weight:800; font-size:16px; letter-spacing:-.01em; margin:0 0 12px; display:flex; align-items:center; justify-content:space-between; }
+  .card .card-sub{ font-size:13px; color:var(--slate-600); font-weight:600; margin:2px 0 12px; line-height:1.45; }
+
+  .goal-ring-row{ display:flex; align-items:center; gap:12px; }
+  .goal-text{ font-size:13px; color:var(--slate-600); font-weight:600; line-height:1.4; }
+  .goal-text b{ color:var(--navy-900); }
+
+  .growth-bars{ display:flex; align-items:flex-end; gap:5px; height:44px; }
+  .growth-bars i{ flex:1; background:var(--owl-orange-500); border-radius:4px 4px 0 0; display:block; }
+
+  .badge-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .badge-tile{ aspect-ratio:1; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .badge-tile.earned{ background:linear-gradient(160deg,var(--clay-yellow),var(--owl-orange-500)); }
+  .badge-tile.locked{ background:var(--field-bg); opacity:.5; }
+
+  .book-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line); }
+  .book-row:first-of-type{ border-top:none; }
+  .book-cover{ width:34px; height:34px; border-radius:8px; background:var(--field-bg); flex-shrink:0; }
+  .book-info{ font-size:12.5px; font-weight:700; line-height:1.35; }
+  .book-info span{ display:block; font-weight:600; color:var(--slate-400); font-size:11px; }
+
+  /* =========================================================
+     SIDEBAR DESTINATION PAGES — Reading / Games / Badges /
+     Bookshelf each get a real page now, reusing the same tokens,
+     card language and click-to-open .detail pattern already
+     proven on the stat pills above. Home is untouched. ========= */
+  .subpage{ padding:26px 32px 60px; max-width:820px; }
+  .subpage-title{ font-family:'Baloo 2',sans-serif; font-size:28px; margin:0 0 4px; }
+  .subpage-sub{ font-size:14px; color:var(--slate-600); font-weight:600; margin:0 0 22px; }
+  .subpage-head-row{ display:flex; align-items:baseline; gap:10px; margin-bottom:20px; }
+  .subpage-head-row .subpage-title{ margin:0; }
+  .subpage-count{ font-size:14px; color:var(--slate-400); font-weight:700; }
+
+  /* ---- Reading picker ---- */
+  .option-card{ background:#fff; border:2px solid var(--line); border-radius:18px; padding:20px; margin-bottom:14px; }
+  .option-card.featured{ border-color:var(--clay-yellow); background:#fffaf0; }
+  .option-chip{ display:inline-block; background:var(--clay-yellow); color:#7a4a00; font:800 11px/1 'Inter',sans-serif; padding:6px 11px; border-radius:999px; margin-bottom:10px; }
+  .option-card h3{ font-family:'Baloo 2',sans-serif; font-size:19px; margin:0 0 8px; }
+  .option-tags{ display:flex; gap:8px; margin-bottom:14px; }
+  .tag{ font:800 11px/1 'Inter',sans-serif; padding:6px 10px; border-radius:999px; }
+  .tag-blue{ background:#eaf3fd; color:var(--blue-600); }
+  .tag-green{ background:var(--success-light); color:var(--success); }
+  .tag-diff{ background:var(--field-bg); color:var(--slate-600); }
+  .option-btn{ background:linear-gradient(160deg,var(--blue-500),var(--blue-700)); color:#fff; border:none; border-radius:12px; padding:11px 20px; font:800 13.5px/1 'Baloo 2',sans-serif; box-shadow:0 3px 0 var(--blue-700); cursor:pointer; }
+  .option-btn.outline{ background:#fff; color:var(--blue-600); border:2px solid var(--line); box-shadow:none; }
+
+  /* ---- Games hub ---- */
+  .game-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .game-card{ background:#fff; border:2px solid var(--line); border-radius:18px; padding:20px; position:relative; }
+  .game-icon-badge{ position:absolute; top:14px; right:14px; background:var(--clay-yellow); color:#7a4a00; font:800 10px/1 'Inter',sans-serif; padding:5px 9px; border-radius:999px; }
+  .game-icon{ font-size:34px; margin-bottom:8px; }
+  .game-card h3{ font-family:'Baloo 2',sans-serif; font-size:18px; margin:0 0 6px; }
+  .game-card p{ font-size:12.5px; color:var(--slate-600); font-weight:600; line-height:1.5; margin:0 0 14px; }
+
+  /* ---- Badges page — bigger tiles than the (now-removed) Home
+       preview version, each genuinely clickable. ---- */
+  .badge-grid-page{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .badge-tile-big{ background:#fff; border:2px solid var(--line); border-radius:16px; padding:18px 12px; text-align:center; cursor:pointer; transition:transform .12s ease; }
+  .badge-tile-big:hover{ transform:translateY(-2px); }
+  .badge-tile-big .bt-icon{ width:56px; height:56px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:26px; }
+  .badge-tile-big.earned .bt-icon{ background:linear-gradient(160deg,var(--clay-yellow),var(--owl-orange-500)); }
+  .badge-tile-big.locked .bt-icon{ background:var(--field-bg); filter:grayscale(1); opacity:.55; }
+  .badge-tile-big b{ display:block; font-size:12.5px; margin-bottom:3px; }
+  .badge-tile-big.locked b{ color:var(--slate-400); }
+  .badge-tile-big span{ font-size:10.5px; color:var(--slate-400); font-weight:700; }
+  .badge-tile-big.earned span{ color:var(--success); }
+
+  /* ---- Shared click-to-open detail card (badges + bookshelf) ---- */
+  .dw{ position:relative; }
+  .detail{ display:none; margin-top:10px; background:var(--field-bg); border:2px solid var(--line); border-radius:14px; padding:14px 16px; }
+  .detail.open{ display:block; }
+  .detail h4{ font-family:'Baloo 2',sans-serif; font-size:15px; margin:0 0 6px; }
+  .detail p{ font-size:12.5px; color:var(--slate-600); font-weight:600; line-height:1.5; margin:0 0 4px; }
+  .earned-tag{ display:inline-block; background:var(--success-light); color:var(--success); font-size:11px; font-weight:800; padding:4px 9px; border-radius:999px; margin-top:4px; }
+  .locked-tag{ display:inline-block; background:#eceff2; color:var(--slate-400); font-size:11px; font-weight:800; padding:4px 9px; border-radius:999px; margin-top:4px; }
+
+  /* ---- Bookshelf page ---- */
+  .book-card-page{ background:#fff; border:2px solid var(--line); border-radius:16px; padding:14px 16px; display:flex; align-items:center; gap:14px; margin-bottom:10px; }
+  .book-icon-page{ width:44px; height:44px; border-radius:10px; background:var(--field-bg); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .book-meta-page{ flex:1; min-width:0; }
+  .book-meta-page b{ font-size:14.5px; display:block; margin-bottom:3px; }
+  .book-meta-page span{ font-size:12px; color:var(--slate-400); font-weight:700; }
+  .best-pill{ display:inline-block; background:var(--success-light); color:var(--success); font-weight:800; padding:2px 8px; border-radius:999px; margin:0 4px; }
+  .again-btn{ background:var(--blue-500); color:#fff; border:none; border-radius:12px; padding:10px 16px; font:800 12.5px/1 'Baloo 2',sans-serif; cursor:pointer; flex-shrink:0; }
+  .rr-compare{ background:linear-gradient(115deg,#fff6e0,#fff0f5); border:2px solid var(--clay-yellow); border-radius:12px; padding:12px; text-align:center; margin-top:10px; }
+  .rr-compare b{ display:block; font-family:'Baloo 2',sans-serif; font-size:16px; color:var(--owl-orange-600); }
+  .rr-compare span{ font-size:11.5px; font-weight:700; color:var(--slate-600); }
+
+  /* =========================================================
+     HOME POLISH PASS — same underlying data, richer presentation.
+     Logic/content unchanged: one competency = one row, one Goal
+     number, one Growth week. Only how it's drawn changed. ========= */
+
+  /* ---- Real winding road map, matching Duolingo's own structure
+       directly: a colored section banner, then a vertical zigzag path
+       with 5 circular stage-nodes going top to bottom (Just Started
+       at the top, All Done! at the bottom) — each node carries its
+       OWN label now, the way Duolingo's own nodes work, instead of one
+       shared legend row floating above three unrelated tracks. The
+       owl sits ON her real current node; everything past it is
+       locked, matching the same real progress data as before — this
+       is a presentation change, not a data change. ---- */
+  .journey-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; }
+  .journey-head h2{ font-family:var(--font-game); font-weight:600; font-size:30px; letter-spacing:.005em; margin:0; }
+
+  .roadmap-banner{
+    position:relative; display:flex; align-items:center; justify-content:space-between; gap:18px;
+    padding:18px 22px 20px; margin:0 0 4px; border-radius:18px; color:#fff;
+    background:linear-gradient(170deg,#f6a340 0%,#ef8d2a 48%,#e07a14 100%);
+    box-shadow:0 5px 0 #b4560b, 0 16px 24px -14px rgba(173,80,10,.6), inset 0 1.5px 0 rgba(255,255,255,.38);
+  }
+  .roadmap-banner .rb-text{ min-width:0; }
+  .roadmap-banner .rb-eyebrow{ font-family:var(--font-game); font-weight:600; font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; opacity:.95; margin-bottom:4px; }
+  .roadmap-banner b{ display:block; font-family:var(--font-game); font-weight:600; font-size:28px; line-height:1.08; letter-spacing:.005em; }
+  .roadmap-banner .rb-sub{ display:block; margin-top:6px; font-family:var(--font-game); font-weight:500; font-size:16px; line-height:1.35; opacity:.96; }
+  .roadmap-diff-chip{ flex-shrink:0; white-space:nowrap; font-family:var(--font-game); font-weight:600; font-size:15px; letter-spacing:.06em; text-transform:uppercase; color:#c4600b; background:#fff; padding:10px 16px 9px; border-radius:12px; box-shadow:0 3px 0 rgba(120,52,6,.3); }
+  .roadmap-banner.locked{ color:#4a5866; background:linear-gradient(170deg,#f6f8fb,#e8edf2); box-shadow:0 5px 0 #cdd5dd, inset 0 1.5px 0 rgba(255,255,255,.85); }
+  .roadmap-banner.locked .rb-sub{ color:#6b7987; opacity:1; }
+  .roadmap-diff-chip.locked{ color:#7d8a97; box-shadow:0 3px 0 rgba(120,135,150,.28); }
+  .road-wrap{ position:relative; width:100%; max-width:620px; margin:16px auto 38px; }
+  .roadmap-svg{ width:100%; display:block; overflow:visible; }
+  .road-owl{ position:absolute; aspect-ratio:1/1; pointer-events:none; }
+  .rl{ font-family:var(--font-game); font-weight:600; font-size:20px; letter-spacing:.01em; }
+  .rl-done{ fill:#c4680f; }
+  .rl-current{ font-family:'Baloo 2',sans-serif; font-size:19px; fill:var(--navy-900); }
+  .rl-locked{ fill:var(--slate-400); }
+  .roadmap-caption{ font-size:13px; font-weight:700; color:var(--owl-orange-600); margin:2px 0 34px; text-align:center; }
+  .roadmap-caption.locked{ color:var(--slate-400); font-family:var(--font-game); font-weight:500; font-size:16px; }
+  .road-wrap + .roadmap-caption{ margin-top:-24px; }
+
+  /* ---- Goal: centered ring, real number hierarchy instead of a
+       cramped inline sentence. ---- */
+  .goal-ring-row{ display:flex; flex-direction:column; align-items:center; text-align:center; }
+  .goal-count-big{ font-family:'Baloo 2',sans-serif; font-size:17px; font-weight:800; margin-top:9px; }
+  .goal-note-small{ font-size:12px; color:var(--slate-600); font-weight:700; margin-top:3px; }
+
+  /* ---- Growth: a real header line + per-day tracks (with a "today"
+       ring), not just bare bars with no context above them. ---- */
+  .growth-note{ font-size:12px; color:var(--slate-600); font-weight:700; margin:0 0 12px; }
+  .growth-note b{ color:var(--navy-900); }
+  .growth-bars .bar-track{ flex:1; height:44px; border-radius:5px; background:var(--field-bg); position:relative; }
+  .growth-bars .bar-track.today{ box-shadow:inset 0 0 0 2px var(--owl-orange-500); }
+  .growth-bars i{ position:absolute; bottom:0; left:0; width:100%; border-radius:4px 4px 0 0; }
+  .growth-lbl{ display:flex; justify-content:space-between; margin-top:6px; }
+  .growth-lbl span{ flex:1; text-align:center; font-size:9.5px; font-weight:700; color:var(--slate-400); }
+
+  /* =========================================================
+     CLAYMORPHISM CARDS — This Week's Goal + My Growth. Puffy white
+     "clay" cards with a thick bottom edge (same idea as the pucks'
+     rim), soft inner highlight, and the game font throughout. The
+     goal is 5 chunky 3D star pucks instead of a flat ring; the week
+     is 7 glossy tube gauges instead of flat bars. ========= */
+  .clay-card{
+    background:linear-gradient(180deg,#ffffff 0%,#f6f9fc 100%);
+    border:2px solid #fff; border-radius:26px; padding:20px 16px 22px;
+    box-shadow:0 7px 0 #dbe3ec, 0 22px 34px -20px rgba(19,31,43,.38), inset 0 2px 0 rgba(255,255,255,.95), inset 0 -4px 10px rgba(170,186,204,.16);
+  }
+  .clay-card h3{ font-family:var(--font-game); font-weight:600; font-size:25px; letter-spacing:.005em; margin:0 0 12px; padding:0 4px; }
+
+  .goal-pucks{ width:100%; display:block; margin:2px 0 8px; overflow:visible; }
+  .goal-readout{ display:flex; align-items:baseline; justify-content:center; gap:8px; margin-top:2px; }
+  .goal-num{ font-family:var(--font-game); font-weight:600; font-size:52px; line-height:1; color:#f59a2f; text-shadow:0 3px 0 rgba(180,86,11,.32); }
+  .goal-of{ font-family:var(--font-game); font-weight:500; font-size:20px; color:var(--slate-600); }
+  .goal-pill{
+    width:max-content; margin:12px auto 0; padding:9px 18px 8px; border-radius:14px;
+    font-family:var(--font-game); font-weight:600; font-size:17px; letter-spacing:.03em; color:#c4600b;
+    background:linear-gradient(180deg,#fff6e8,#ffe9cc); box-shadow:0 4px 0 #f2cf9d, inset 0 1.5px 0 rgba(255,255,255,.9);
+  }
+
+  .growth-note{ font-family:var(--font-game); font-weight:500; font-size:17px; color:var(--slate-600); margin:0 4px 16px; }
+  .growth-note b{ color:#ef8d2a; font-weight:600; font-size:20px; }
+  .week-bars{ display:grid; grid-template-columns:repeat(7,1fr); gap:9px; align-items:end; }
+  .wb-col{ display:flex; flex-direction:column; align-items:stretch; }
+  .wb-track{
+    position:relative; height:116px; border-radius:16px; overflow:hidden; display:flex; align-items:flex-end;
+    background:linear-gradient(180deg,#e6ecf2,#f1f4f8);
+    box-shadow:inset 0 5px 9px rgba(110,128,150,.3), inset 0 -2px 0 #fff;
+  }
+  .wb-track.today{ box-shadow:inset 0 5px 9px rgba(110,128,150,.3), inset 0 -2px 0 #fff, 0 0 0 3px #ef8d2a; }
+  .wb-track.future{ background:#f7f9fb; box-shadow:none; border:2px dashed #d9e0e8; opacity:.75; }
+  .wb-fill{
+    position:relative; width:100%; border-radius:14px 14px 10px 10px; display:flex; align-items:flex-start; justify-content:center; padding-top:6px;
+    background:linear-gradient(90deg,#f9ab4b 0%,#ef8d2a 52%,#dc7414 100%);
+    box-shadow:inset 0 4px 0 rgba(255,255,255,.5), inset 0 -6px 0 rgba(150,66,6,.34);
+    animation:wbGrow .95s cubic-bezier(.2,.9,.3,1.15) both;
+  }
+  .wb-fill::before{ content:''; position:absolute; left:17%; top:12px; bottom:14px; width:15%; border-radius:8px; background:rgba(255,255,255,.34); }
+  .wb-fill span{ position:relative; font-family:var(--font-game); font-weight:600; font-size:17px; line-height:1; color:#fff; text-shadow:0 1.5px 0 rgba(140,58,4,.55); }
+  @keyframes wbGrow{ from{ height:6%; } }
+  .wb-day{ margin-top:11px; text-align:center; font-family:var(--font-game); font-weight:600; font-size:15px; color:var(--slate-400); padding:3px 0 2px; border-radius:10px; }
+  .wb-day.today{ color:#fff; background:linear-gradient(180deg,#f79f3a,#ef8d2a); box-shadow:0 3px 0 #b4560b; }
+  @media (prefers-reduced-motion:reduce){ .wb-fill{ animation:none; } }
+
+  /* ---- Goal gauge: a chunky claymorphism dial — raised plate, 5 engraved
+       segments (one per reading in the goal), glossy orange tube segments
+       for the readings done, and a raised center button with the count. ---- */
+  .goal-gauge{ width:100%; max-width:200px; display:block; margin:2px auto 4px; overflow:visible; }
+  .gauge-num{ font-family:var(--font-game); font-weight:600; font-size:58px; fill:#f59a2f; }
+  .gauge-num-shadow{ fill:rgba(180,86,11,.4); }
+  .gauge-of{ font-family:var(--font-game); font-weight:500; font-size:21px; fill:var(--slate-600); }
+  .goal-gauge .gseg{ animation:gsegIn .55s ease both; }
+  @keyframes gsegIn{ from{ opacity:0; } }
+  @media (prefers-reduced-motion:reduce){ .goal-gauge .gseg{ animation:none; } }
+
+  /* ---- Themed clay surfaces: no more plain white. Goal sits on soft sky
+       blue (so the orange dial pops against its complement), Growth on
+       soft mint (so the orange bars pop), each with a couple of translucent
+       clay blobs in the corners for depth. ---- */
+  .clay-card{ position:relative; overflow:hidden; }
+  .clay-card > *{ position:relative; z-index:1; }
+  .clay-card::before{ content:''; position:absolute; z-index:0; width:160px; height:160px; border-radius:50%; top:-58px; right:-48px; background:rgba(255,255,255,.42); }
+  .clay-card::after{ content:''; position:absolute; z-index:0; width:96px; height:96px; border-radius:50%; bottom:-36px; left:-28px; background:rgba(255,255,255,.3); }
+
+  .clay-card.theme-sky{
+    background:linear-gradient(170deg,#ecf5ff 0%,#d0e4fa 100%); border-color:#f7fbff;
+    box-shadow:0 7px 0 #b1cdea, 0 22px 34px -20px rgba(15,95,174,.5), inset 0 2px 0 rgba(255,255,255,.95), inset 0 -4px 10px rgba(80,130,190,.16);
+  }
+  .clay-card.theme-mint{
+    background:linear-gradient(170deg,#eafaf3 0%,#c9ecdf 100%); border-color:#f6fffb;
+    box-shadow:0 7px 0 #a4d3c1, 0 22px 34px -20px rgba(20,120,95,.46), inset 0 2px 0 rgba(255,255,255,.95), inset 0 -4px 10px rgba(50,150,120,.16);
+  }
+  .theme-sky .gauge-of{ fill:#7a6650; }
+  .theme-mint .growth-note{ color:#3f6b5d; }
+  .theme-mint .wb-track{ background:linear-gradient(180deg,#bfe3d4,#d8f1e7); box-shadow:inset 0 5px 9px rgba(30,105,82,.3), inset 0 -2px 0 rgba(255,255,255,.75); }
+  .theme-mint .wb-track.today{ box-shadow:inset 0 5px 9px rgba(30,105,82,.3), inset 0 -2px 0 rgba(255,255,255,.75), 0 0 0 3px #ef8d2a; }
+  .theme-mint .wb-track.future{ background:rgba(255,255,255,.4); box-shadow:none; border:2px dashed #9fd2bf; opacity:1; }
+  .theme-mint .wb-day{ color:#4f8070; }
+  .theme-mint .wb-day.today{ color:#fff; }
+
+  /* =========================================================
+     BADGES PAGE: 100 badges in 10 categories, filterable, with a
+     clay collection meter and a tap-for-details card. ========= */
+  .bdg-head{ display:flex; align-items:baseline; gap:14px; margin:0 0 16px; }
+  .bdg-title{ font-family:var(--font-game); font-weight:600; font-size:40px; margin:0; letter-spacing:.005em; }
+  .bdg-count{ font-family:var(--font-game); font-weight:500; font-size:22px; color:var(--slate-400); }
+  .bdg-summary{
+    background:linear-gradient(170deg,#eaf4ff,#d0e4fa); border:2px solid #f7fbff; border-radius:24px; padding:16px 20px 20px; margin-bottom:18px;
+    box-shadow:0 6px 0 #b1cdea, 0 20px 30px -20px rgba(15,95,174,.45), inset 0 2px 0 rgba(255,255,255,.95);
+  }
+  .bdg-summary-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .bdg-summary-label{ font-family:var(--font-game); font-weight:600; font-size:18px; color:#2f4d70; }
+  .bdg-summary-val{ font-family:var(--font-game); font-weight:600; font-size:24px; color:#ef8d2a; text-shadow:0 2px 0 rgba(180,86,11,.25); }
+  .bdg-meter{ height:22px; border-radius:14px; background:linear-gradient(180deg,#a9c6e6,#c3daf2); box-shadow:inset 0 4px 8px rgba(40,90,150,.35), inset 0 -2px 0 rgba(255,255,255,.7); overflow:hidden; }
+  .bdg-meter-fill{ position:relative; height:100%; min-width:22px; border-radius:14px; background:linear-gradient(90deg,#f9ab4b,#ef8d2a 55%,#dc7414); box-shadow:inset 0 3px 0 rgba(255,255,255,.5), inset 0 -4px 0 rgba(150,66,6,.32); }
+  .bdg-meter-fill::before{ content:''; position:absolute; left:10px; right:10px; top:4px; height:5px; border-radius:4px; background:rgba(255,255,255,.4); }
+
+  .bdg-filters{ display:flex; flex-wrap:wrap; gap:9px; margin-bottom:12px; }
+  .bdg-chip{
+    font-family:var(--font-game); font-weight:600; font-size:16px; color:#5b6b7a; cursor:pointer; user-select:none;
+    background:#fff; border:2px solid #fff; border-radius:14px; padding:8px 15px 7px; box-shadow:0 3px 0 #d9e1ea; transition:transform .1s ease;
+  }
+  .bdg-chip:hover{ transform:translateY(-1px); }
+  .bdg-chip.active{ color:#fff; background:linear-gradient(180deg,#f79f3a,#ef8d2a); border-color:#f9b25f; box-shadow:0 3px 0 #b4560b; }
+  .bdg-chip .n{ opacity:.75; margin-left:5px; font-weight:500; }
+  .bdg-cats .bdg-chip{ font-size:15px; padding:7px 13px 6px; }
+  .bdg-cats .bdg-chip.active{ background:linear-gradient(180deg,#2a8be4,#1c7ed6); border-color:#5aa6ec; box-shadow:0 3px 0 #0f5fae; }
+
+  .bdg-section-title{ font-family:var(--font-game); font-weight:600; font-size:24px; margin:26px 0 12px; display:flex; align-items:baseline; gap:10px; }
+  .bdg-section-title small{ font-size:16px; font-weight:500; color:var(--slate-400); }
+  .bdg-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:16px; }
+  .bdg-tile{
+    background:linear-gradient(180deg,#ffffff,#f5f8fb); border:2px solid #fff; border-radius:22px; padding:16px 10px 14px; text-align:center; cursor:pointer;
+    box-shadow:0 5px 0 #dce4ed, 0 16px 22px -16px rgba(19,31,43,.3); transition:transform .12s ease;
+  }
+  .bdg-tile:hover{ transform:translateY(-3px); }
+  .bdg-tile.earned{ background:linear-gradient(180deg,#fffaf0,#ffefd6); box-shadow:0 5px 0 #efcf9e, 0 16px 22px -16px rgba(180,86,11,.4); }
+  .bdg-icon{ width:68px; height:68px; margin:0 auto 10px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:34px; line-height:1; }
+  .bdg-tile.earned .bdg-icon{ background:radial-gradient(circle at 34% 26%,#ffd79a,#ef8d2a 62%,#d4690d); box-shadow:0 4px 0 #b4560b, inset 0 3px 0 rgba(255,255,255,.45); }
+  .bdg-tile.locked .bdg-icon{ background:radial-gradient(circle at 34% 26%,#ffffff,#dde3e8 70%,#c9d2da); box-shadow:0 4px 0 #b9c3cc, inset 0 3px 0 rgba(255,255,255,.7); filter:grayscale(1); opacity:.62; }
+  .bdg-name{ font-family:var(--font-game); font-weight:600; font-size:17px; line-height:1.15; color:var(--navy-900); }
+  .bdg-tile.locked .bdg-name{ color:#7d8a97; }
+  .bdg-sub{ font-family:var(--font-game); font-weight:500; font-size:14px; margin-top:4px; color:#3d9a7e; }
+  .bdg-tile.locked .bdg-sub{ color:#94a1ad; }
+  .bdg-prog{ height:9px; margin:9px 8px 0; border-radius:6px; background:#e4eaf0; box-shadow:inset 0 2px 3px rgba(110,128,150,.3); overflow:hidden; }
+  .bdg-prog i{ display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,#f9ab4b,#ef8d2a); box-shadow:inset 0 2px 0 rgba(255,255,255,.45); }
+
+  .bdg-modal{ position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(19,31,43,.5); }
+  .bdg-modal[hidden]{ display:none; }
+  .bdg-modal-card{
+    position:relative; width:100%; max-width:380px; text-align:center; padding:28px 26px 26px; border-radius:28px; border:2px solid #fff;
+    background:linear-gradient(170deg,#fffaf0,#ffefd6); box-shadow:0 8px 0 #efcf9e, 0 30px 50px -20px rgba(19,31,43,.55);
+  }
+  .bdg-modal-x{ position:absolute; top:12px; right:14px; width:36px; height:36px; border:none; border-radius:12px; background:#fff; color:#7d8a97; font-size:24px; line-height:1; cursor:pointer; box-shadow:0 3px 0 #e6d3b3; }
+  .bdg-modal-icon{ width:110px; height:110px; margin:0 auto 12px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:58px; line-height:1; }
+  .bdg-modal-card.earned .bdg-modal-icon{ background:radial-gradient(circle at 34% 26%,#ffd79a,#ef8d2a 62%,#d4690d); box-shadow:0 6px 0 #b4560b, inset 0 4px 0 rgba(255,255,255,.45); }
+  .bdg-modal-card.locked{ background:linear-gradient(170deg,#f8fafc,#e9eef3); box-shadow:0 8px 0 #cbd4dd, 0 30px 50px -20px rgba(19,31,43,.55); }
+  .bdg-modal-card.locked .bdg-modal-icon{ background:radial-gradient(circle at 34% 26%,#ffffff,#dde3e8 70%,#c9d2da); box-shadow:0 6px 0 #b9c3cc, inset 0 4px 0 rgba(255,255,255,.7); filter:grayscale(1); opacity:.65; }
+  .bdg-modal-cat{ display:inline-block; font-family:var(--font-game); font-weight:600; font-size:13px; letter-spacing:.09em; text-transform:uppercase; color:#c4600b; background:#fff; padding:5px 12px 4px; border-radius:10px; box-shadow:0 2px 0 #efcf9e; }
+  .bdg-modal-card.locked .bdg-modal-cat{ color:#7d8a97; box-shadow:0 2px 0 #cbd4dd; }
+  .bdg-modal-name{ font-family:var(--font-game); font-weight:600; font-size:30px; margin:12px 0 6px; }
+  .bdg-modal-desc{ font-family:var(--font-game); font-weight:500; font-size:18px; line-height:1.4; color:var(--slate-600); margin:0 0 16px; }
+  .bdg-status{ font-family:var(--font-game); font-weight:600; font-size:17px; display:inline-block; padding:9px 18px 8px; border-radius:14px; }
+  .bdg-status.earned{ color:#1f7f63; background:#dff5ec; box-shadow:0 3px 0 #b5e0d0; }
+  .bdg-status.locked{ color:#6b7987; background:#fff; box-shadow:0 3px 0 #cbd4dd; }
+  .bdg-modal-prog{ margin:0 12px 10px; }
+  .bdg-modal-prog .bdg-prog{ margin:0 0 8px; height:14px; }
+
+  /* ---- Sticky right rail: the stat row and the Goal + Growth cards now
+       live in ONE column that stays pinned while the road map scrolls
+       past, like Duolingo's right sidebar. Spacing is tightened a little
+       so the whole rail fits a normal screen height without being cut off. ---- */
+  .right-rail{ position:sticky; top:0; align-self:start; }
+  .right-rail .topstats-col{ padding-top:18px; }
+  .right-rail .right-col{ padding:14px 20px 22px; gap:22px; }
+  .right-rail .clay-card{ padding:16px 14px 18px; }
+  .right-rail .clay-card h3{ font-size:23px; margin-bottom:8px; }
+  .right-rail .goal-gauge{ max-width:186px; margin:0 auto 2px; }
+  .right-rail .goal-pill{ margin-top:8px; padding:7px 16px 6px; font-size:16px; }
+  .right-rail .growth-note{ margin-bottom:12px; }
+  .right-rail .wb-track{ height:98px; }
+  .right-rail .wb-day{ margin-top:8px; }
+  @media (max-height:800px){
+    .right-rail .goal-gauge{ max-width:150px; }
+    .right-rail .wb-track{ height:70px; }
+    .right-rail .clay-card h3{ font-size:20px; }
+    .right-rail .right-col{ gap:16px; }
+  }
+
+  /* ---- Blue instead of white: the whole right rail is now a soft blue
+       panel, the Goal card sits on a deeper sky blue, Growth on an aqua
+       blue, and the translucent corner blobs are blue-tinted instead of
+       white. The near-white surfaces are gone; the orange dial and bars
+       now pop against a complementary blue. ---- */
+  .right-rail{
+    top:12px; margin:12px 12px 12px 0; border-radius:30px; border:2px solid #f1f7ff;
+    background:linear-gradient(180deg,#e7f1fe 0%,#d3e4f8 100%);
+    box-shadow:0 7px 0 #b3cdec, 0 24px 36px -22px rgba(15,95,174,.45), inset 0 2px 0 rgba(255,255,255,.7);
+  }
+  .clay-card::before{ background:rgba(96,150,222,.16); }
+  .clay-card::after{ background:rgba(96,150,222,.12); }
+  .clay-card.theme-sky{
+    background:linear-gradient(170deg,#d7e8fd 0%,#b2cff3 100%); border-color:#c3dbf7;
+    box-shadow:0 7px 0 #86aedd, 0 22px 34px -20px rgba(15,95,174,.55), inset 0 2px 0 rgba(255,255,255,.55), inset 0 -4px 10px rgba(60,110,180,.18);
+  }
+  .clay-card.theme-mint{
+    background:linear-gradient(170deg,#d5eefa 0%,#a9daf0 100%); border-color:#bde0f2;
+    box-shadow:0 7px 0 #7db9d6, 0 22px 34px -20px rgba(10,110,150,.5), inset 0 2px 0 rgba(255,255,255,.55), inset 0 -4px 10px rgba(30,130,170,.18);
+  }
+  .theme-sky .gauge-of{ fill:#7a5a36; }
+  .theme-mint .growth-note{ color:#245677; }
+  .theme-mint .wb-track{ background:linear-gradient(180deg,#8fc7e4,#b7ddf0); box-shadow:inset 0 5px 9px rgba(15,80,120,.34), inset 0 -2px 0 rgba(255,255,255,.6); }
+  .theme-mint .wb-track.today{ box-shadow:inset 0 5px 9px rgba(15,80,120,.34), inset 0 -2px 0 rgba(255,255,255,.6), 0 0 0 3px #ef8d2a; }
+  .theme-mint .wb-track.future{ background:rgba(255,255,255,.28); box-shadow:none; border:2px dashed #6fb2d3; opacity:1; }
+  .theme-mint .wb-day{ color:#2f6f92; }
+  .theme-mint .wb-day.today{ color:#fff; }
+  .goal-pill{ background:linear-gradient(180deg,#fff3e0,#ffdcae); box-shadow:0 4px 0 #ebbb7f, inset 0 1.5px 0 rgba(255,255,255,.8); }
+
+  /* =========================================================
+     PAGES: shared game-font titles, 3D clay buttons, themed
+     cards for Reading / Games / Bookshelf, the Switch (learner
+     login) screen, and a fixed sidebar foot. ========= */
+  .note{ position:sticky; top:0; z-index:60; height:32px; padding:0; display:flex; align-items:center; justify-content:center; }
+  .sidebar{ top:32px; height:calc(100vh - 32px); }
+  .right-rail{ top:44px; }
+  .nav-item{ font-family:var(--font-game); font-weight:600; font-size:17px; letter-spacing:.07em; }
+
+  .sidebar-foot{
+    display:flex; align-items:center; gap:12px; margin:auto 2px 8px; padding:11px 14px 12px 12px; border:2px solid #fff; border-radius:20px;
+    background:linear-gradient(180deg,#ffffff,#e9f1fb); box-shadow:0 4px 0 #cbdaec, 0 12px 18px -12px rgba(15,95,174,.35);
+  }
+  .sf-avatar{ width:44px; height:44px; flex-shrink:0; border-radius:15px; display:flex; align-items:center; justify-content:center; font-family:var(--font-game); font-weight:600; font-size:24px; color:#fff; background:linear-gradient(180deg,#f8a13d,#ef8d2a); box-shadow:0 3px 0 #b4560b, inset 0 2px 0 rgba(255,255,255,.4); }
+  .sf-text{ display:flex; flex-direction:column; min-width:0; }
+  .sf-text b{ font-family:var(--font-game); font-weight:600; font-size:19px; line-height:1.1; color:var(--navy-900); }
+  .sf-text span{ font-family:var(--font-game); font-weight:500; font-size:14px; color:var(--slate-400); }
+
+  .clay-btn{ font-family:var(--font-game); font-weight:600; font-size:20px; letter-spacing:.05em; text-transform:uppercase; color:#fff; border:none; border-radius:16px; padding:13px 30px 11px; cursor:pointer; transition:transform .08s ease, box-shadow .08s ease; }
+  .clay-btn:hover{ transform:translateY(-1px); }
+  .clay-btn.orange{ background:linear-gradient(180deg,#f8a13d,#ef8d2a); box-shadow:0 5px 0 #b4560b, inset 0 2px 0 rgba(255,255,255,.4); }
+  .clay-btn.blue{ background:linear-gradient(180deg,#2f92ea,#1c7ed6); box-shadow:0 5px 0 #0f5fae, inset 0 2px 0 rgba(255,255,255,.35); }
+  .clay-btn.orange:active{ transform:translateY(3px); box-shadow:0 2px 0 #b4560b, inset 0 2px 0 rgba(255,255,255,.4); }
+  .clay-btn.blue:active{ transform:translateY(3px); box-shadow:0 2px 0 #0f5fae, inset 0 2px 0 rgba(255,255,255,.35); }
+
+  .pg-head{ display:flex; align-items:baseline; gap:14px; }
+  .pg-title{ font-family:var(--font-game); font-weight:600; font-size:42px; margin:0 0 4px; letter-spacing:.005em; }
+  .pg-count{ font-family:var(--font-game); font-weight:500; font-size:22px; color:var(--slate-400); }
+  .pg-sub{ font-family:var(--font-game); font-weight:500; font-size:20px; color:var(--slate-600); margin:0 0 26px; }
+
+  /* ---- Reading ---- */
+  .rd-grid{ display:grid; gap:28px; max-width:900px; }
+  .rd-card{ position:relative; border-radius:28px; padding:26px 28px 30px; overflow:hidden; border:2px solid #fff; }
+  .rd-featured{ background:linear-gradient(170deg,#fff4e2 0%,#ffe0b3 100%); border-color:#ffecd0; box-shadow:0 8px 0 #e6b676, 0 26px 40px -22px rgba(180,86,11,.5), inset 0 2px 0 rgba(255,255,255,.8); }
+  .rd-extra{ background:linear-gradient(170deg,#e4f0fe 0%,#c4dbf6 100%); border-color:#d3e5fa; box-shadow:0 8px 0 #93b8e2, 0 26px 40px -22px rgba(15,95,174,.5), inset 0 2px 0 rgba(255,255,255,.7); }
+  .rd-ribbon{ position:relative; z-index:1; display:inline-block; font-family:var(--font-game); font-weight:600; font-size:15px; letter-spacing:.07em; text-transform:uppercase; color:#c4600b; background:#fff; padding:7px 14px 6px; border-radius:12px; box-shadow:0 3px 0 #ebbb7f; margin-bottom:16px; }
+  .rd-main{ position:relative; z-index:1; display:flex; gap:20px; align-items:center; margin-bottom:14px; }
+  .rd-icon{ width:88px; height:88px; flex-shrink:0; border-radius:26px; display:flex; align-items:center; justify-content:center; font-size:46px; line-height:1; background:linear-gradient(180deg,#ffffff,#ffeed3); box-shadow:0 5px 0 #e6b676, inset 0 2px 0 #fff; }
+  .rd-extra .rd-icon{ background:linear-gradient(180deg,#ffffff,#d9e9fc); box-shadow:0 5px 0 #93b8e2, inset 0 2px 0 #fff; }
+  .rd-text h3{ font-family:var(--font-game); font-weight:600; font-size:34px; line-height:1.05; margin:0 0 10px; }
+  .rd-tags{ display:flex; flex-wrap:wrap; gap:8px; }
+  .rd-tag{ font-family:var(--font-game); font-weight:600; font-size:15px; padding:6px 12px 5px; border-radius:12px; background:#fff; color:#5b6b7a; box-shadow:0 2px 0 rgba(19,31,43,.1); }
+  .rd-tag.blue{ color:#0f5fae; } .rd-tag.green{ color:#1f7f63; }
+  .rd-line{ position:relative; z-index:1; font-family:var(--font-game); font-weight:500; font-size:19px; line-height:1.4; color:var(--slate-600); margin:0 0 20px; max-width:520px; }
+  .rd-card .clay-btn{ position:relative; z-index:1; }
+  .rd-owl{ position:absolute; right:-8px; bottom:-18px; width:210px; height:210px; pointer-events:none; }
+
+  /* ---- Games ---- */
+  .gm-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:28px; max-width:900px; }
+  .gm-card{ position:relative; border-radius:28px; padding:28px 28px 30px; border:2px solid #fff; overflow:hidden; }
+  .gm-sky{ background:linear-gradient(170deg,#e4f0fe 0%,#c4dbf6 100%); border-color:#d3e5fa; box-shadow:0 8px 0 #93b8e2, 0 26px 40px -22px rgba(15,95,174,.5), inset 0 2px 0 rgba(255,255,255,.7); }
+  .gm-aqua{ background:linear-gradient(170deg,#d9f1fb 0%,#abdcf1 100%); border-color:#c2e3f3; box-shadow:0 8px 0 #7db9d6, 0 26px 40px -22px rgba(10,110,150,.5), inset 0 2px 0 rgba(255,255,255,.6); }
+  .gm-ribbon{ position:absolute; top:20px; right:20px; font-family:var(--font-game); font-weight:600; font-size:14px; letter-spacing:.07em; text-transform:uppercase; color:#c4600b; background:#fff; padding:6px 12px 5px; border-radius:12px; box-shadow:0 3px 0 #ebbb7f; }
+  .gm-icon{ width:96px; height:96px; border-radius:28px; display:flex; align-items:center; justify-content:center; font-size:52px; line-height:1; margin-bottom:18px; background:linear-gradient(180deg,#ffffff,#e6f0fb); box-shadow:0 5px 0 rgba(19,31,43,.16), inset 0 2px 0 #fff; }
+  .gm-card h3{ font-family:var(--font-game); font-weight:600; font-size:34px; margin:0 0 8px; }
+  .gm-card p{ font-family:var(--font-game); font-weight:500; font-size:19px; line-height:1.4; color:#3f5568; margin:0 0 16px; }
+  .gm-meta{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .gm-chip{ font-family:var(--font-game); font-weight:600; font-size:15px; padding:6px 12px 5px; border-radius:12px; background:#fff; color:#4f6376; box-shadow:0 2px 0 rgba(19,31,43,.1); }
+  .gm-note{ max-width:900px; margin-top:28px; padding:14px 20px 13px; text-align:center; font-family:var(--font-game); font-weight:500; font-size:18px; color:var(--slate-600); background:linear-gradient(180deg,#fff,#eef4fb); border-radius:18px; box-shadow:0 4px 0 #d6e0ec; }
+
+  /* ---- Bookshelf ---- */
+  .bs-shelf{ max-width:1000px; }
+  .bs-books{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:22px; align-items:end; position:relative; z-index:1; padding:0 6px; margin-bottom:-10px; }
+  .bs-book{ position:relative; background:linear-gradient(180deg,#ffffff,#f1f6fb); border:2px solid #fff; border-radius:24px; padding:12px 12px 16px; box-shadow:0 6px 0 #d3dde9, 0 20px 28px -18px rgba(19,31,43,.4); }
+  .bs-cover{ position:relative; height:132px; border-radius:16px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; overflow:hidden; box-shadow:inset 0 3px 0 rgba(255,255,255,.4), inset 0 -5px 0 rgba(0,0,0,.14); }
+  .bs-cover::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:14px; background:rgba(0,0,0,.14); }
+  .bs-cover::after{ content:''; position:absolute; left:26px; top:10px; width:8px; height:46px; border-radius:6px; background:rgba(255,255,255,.35); }
+  .bs-blue .bs-cover{ background:linear-gradient(160deg,#7cc0ff,#2a8be4); }
+  .bs-green .bs-cover{ background:linear-gradient(160deg,#86dcb9,#1fa77f); }
+  .bs-emoji{ font-size:60px; line-height:1; filter:drop-shadow(0 4px 0 rgba(0,0,0,.18)); position:relative; z-index:1; }
+  .bs-times{ position:absolute; z-index:1; left:34px; bottom:10px; font-family:var(--font-game); font-weight:600; font-size:14px; color:#fff; background:rgba(19,31,43,.34); padding:3px 9px 2px; border-radius:9px; }
+  .bs-book h3{ font-family:var(--font-game); font-weight:600; font-size:22px; line-height:1.12; margin:0 4px 10px; min-height:50px; }
+  .bs-best{ display:flex; align-items:center; gap:8px; margin:0 4px 6px; font-family:var(--font-game); font-weight:500; font-size:15px; color:var(--slate-600); }
+  .bs-best b{ font-weight:600; font-size:18px; color:#1f7f63; }
+  .bs-tube{ flex:1; height:12px; border-radius:8px; background:#e2e9f0; box-shadow:inset 0 2px 4px rgba(110,128,150,.35); overflow:hidden; }
+  .bs-tube i{ display:block; height:100%; border-radius:8px; background:linear-gradient(90deg,#f9ab4b,#ef8d2a); box-shadow:inset 0 2px 0 rgba(255,255,255,.45); }
+  .bs-last{ font-family:var(--font-game); font-weight:500; font-size:15px; color:var(--slate-400); margin:0 4px 12px; }
+  .bs-btn{ width:100%; font-size:18px; padding:11px 10px 9px; }
+  .bs-empty{ background:rgba(255,255,255,.55); border:3px dashed #cbd7e4; box-shadow:none; text-align:center; padding-bottom:20px; }
+  .bs-empty .bs-cover{ background:transparent; box-shadow:none; border:none; }
+  .bs-empty .bs-cover::before, .bs-empty .bs-cover::after{ display:none; }
+  .bs-plus{ width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-game); font-size:40px; font-weight:600; color:#a9b8c8; background:#eef3f8; box-shadow:inset 0 3px 6px rgba(110,128,150,.25); }
+  .bs-empty h3{ color:#8a97a3; min-height:0; margin-bottom:6px; }
+  .bs-plank{ position:relative; height:24px; border-radius:12px; background:linear-gradient(180deg,#ecc083,#d29a55); box-shadow:0 7px 0 #a9722f, 0 20px 26px -14px rgba(90,50,10,.55), inset 0 3px 0 rgba(255,255,255,.4); }
+  .bs-flow{ max-width:1000px; margin-top:38px; padding:20px 24px 22px; border-radius:24px; border:2px solid #fff; background:linear-gradient(170deg,#fff4e2,#ffe4bb); box-shadow:0 6px 0 #e6b676; }
+  .bs-flow-title{ font-family:var(--font-game); font-weight:600; font-size:24px; margin-bottom:6px; color:#c4600b; }
+  .bs-flow p{ font-family:var(--font-game); font-weight:500; font-size:18px; line-height:1.4; color:var(--slate-600); margin:0 0 6px; }
+
+  /* ---- Switch: the Learner login screen ---- */
+  .sw-overlay{ position:fixed; inset:0; z-index:2000; overflow:auto; display:flex; align-items:safe center; justify-content:center; padding:28px 16px 44px; background:#ffffff; }
+  .sw-overlay[hidden]{ display:none; }
+  .sw-wrap{ width:100%; max-width:420px; text-align:center; }
+  .sw-hero{ width:100%; max-width:280px; aspect-ratio:720/500; margin:0 auto 6px; }
+  .sw-title{ font-family:var(--font-game); font-weight:600; font-size:48px; color:var(--blue-600); margin:4px 0 8px; letter-spacing:.005em; }
+  .sw-sub{ font-family:var(--font-game); font-weight:500; font-size:22px; color:var(--slate-600); margin:0 0 26px; }
+  .sw-code{
+    width:100%; font-family:var(--font-game); font-weight:600; font-size:38px; letter-spacing:.08em; text-align:center; text-transform:uppercase; color:var(--navy-900);
+    padding:16px 16px 14px; border-radius:22px; border:3px solid #dfe8f2; outline:none;
+    background:linear-gradient(180deg,#edf2f8,#f7fafd); box-shadow:inset 0 4px 8px rgba(110,128,150,.22), 0 4px 0 #dfe6ee;
+  }
+  .sw-code::placeholder{ color:#a9b6c3; }
+  .sw-code:focus{ border-color:var(--blue-500); background:#fff; box-shadow:inset 0 3px 6px rgba(28,126,214,.14), 0 0 0 5px rgba(28,126,214,.14), 0 4px 0 #b8d3f0; }
+  .sw-pins{ display:flex; justify-content:center; gap:12px; margin:22px 0 26px; }
+  .sw-pin{ width:68px; height:78px; border-radius:20px; border:3px solid #dfe8f2; display:flex; align-items:center; justify-content:center; font-family:var(--font-game); font-weight:600; font-size:38px; color:var(--navy-900); background:linear-gradient(180deg,#edf2f8,#f7fafd); box-shadow:inset 0 4px 8px rgba(110,128,150,.22), 0 4px 0 #dfe6ee; cursor:text; }
+  .sw-pin.filled{ border-color:#ef8d2a; background:#fff8ee; box-shadow:inset 0 3px 6px rgba(239,141,42,.18), 0 4px 0 #f2cf9d; }
+  .sw-pin-input{ position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
+  .sw-go{ width:100%; font-size:26px; padding:16px 20px 14px; }
+  .sw-back{ display:inline-block; margin-top:24px; font-family:var(--font-game); font-weight:600; font-size:18px; color:var(--slate-600); text-decoration:none; }
+  .sw-back:hover{ color:var(--blue-600); }
+
+  /* PAGES FIX: the sticky note bar now takes 32px, so the right rail gets
+     a safe max height (never cut off at the bottom), and the reading card's
+     owl never overlaps the text on narrower screens. */
+  .right-rail{ max-height:calc(100vh - 56px); overflow-y:auto; scrollbar-width:none; }
+  .right-rail::-webkit-scrollbar{ display:none; }
+  @media (max-height:860px){
+    .right-rail .goal-gauge{ max-width:150px; }
+    .right-rail .wb-track{ height:70px; }
+    .right-rail .clay-card h3{ font-size:20px; }
+    .right-rail .right-col{ gap:16px; }
+  }
+  .rd-line{ max-width:420px; }
+  .rd-owl{ width:190px; height:190px; right:-6px; bottom:-14px; }
+  @media (max-width:900px){
+    .rd-owl{ display:none; }
+    .rd-line{ max-width:none; }
+    .rd-icon{ width:68px; height:68px; font-size:36px; border-radius:20px; }
+    .rd-text h3{ font-size:28px; }
+    .pg-title{ font-size:34px; }
+    .sw-title{ font-size:40px; }
+  }
+  @media (max-width:480px){
+    .sw-pin{ width:58px; height:68px; }
+    .sw-code{ font-size:32px; }
+  }
+  @media (prefers-reduced-motion:reduce){ .clay-btn{ transition:none; } }
+
+  /* =========================================================
+     COLOR PASS: every plain white "glass" piece now carries a
+     real colour, still claymorphism (gradient + solid lip +
+     inner highlight). The profile chip is blue for a boy and
+     pink for a girl. ========= */
+  .note{ gap:18px; }
+  .tg{ display:inline-flex; align-items:center; gap:6px; }
+  .tg-label{ font:600 12px/1 'Inter',sans-serif; opacity:.75; margin-right:2px; }
+  .tg-btn{ font:700 12px/1 'Inter',sans-serif; color:#fff; background:transparent; border:1.5px solid rgba(255,255,255,.45); border-radius:999px; padding:5px 12px; cursor:pointer; }
+  .tg-btn.on{ background:#fff; color:#131f2b; border-color:#fff; }
+
+  /* sidebar itself: soft blue instead of flat white, active item is a clay tab */
+  .sidebar{ background:linear-gradient(180deg,#f5faff 0%,#e3eefb 100%); border-right:2px solid #d3e3f5; }
+  .nav-item.active{ background:linear-gradient(180deg,#ffffff,#d6e8fc); box-shadow:0 4px 0 #b3cdec, inset 0 2px 0 #fff; }
+  .nav-item:not(.active):hover{ background:rgba(255,255,255,.75); }
+
+  /* profile chip: girl = pink (default, Maria), boy = blue */
+  .sidebar-foot{
+    --c1:#ffdcea; --c2:#ffaccd; --edge:#ffeef5; --lip:#e0709e; --glow:rgba(224,90,140,.5);
+    --av1:#ff9fc4; --av2:#f0629a; --av-lip:#b53a70; --nm:#6b1d45; --gr:#b0547f;
+    position:relative; overflow:hidden;
+    border:2px solid var(--edge); background:linear-gradient(180deg,var(--c1),var(--c2));
+    box-shadow:0 5px 0 var(--lip), 0 14px 20px -12px var(--glow), inset 0 2px 0 rgba(255,255,255,.65);
+  }
+  body[data-theme="blue"] .sidebar-foot{
+    --c1:#d2e7ff; --c2:#96c5f6; --edge:#e8f3ff; --lip:#5a92d1; --glow:rgba(28,126,214,.5);
+    --av1:#52adf8; --av2:#1c7ed6; --av-lip:#0f5fae; --nm:#0a3d73; --gr:#3b74ad;
+  }
+  .sidebar-foot::before{ content:''; position:absolute; right:-16px; top:-20px; width:70px; height:70px; border-radius:50%; background:rgba(255,255,255,.4); }
+  .sidebar-foot::after{ content:''; position:absolute; right:22px; bottom:-26px; width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.25); }
+  .sf-avatar{ position:relative; z-index:1; background:linear-gradient(180deg,var(--av1),var(--av2)); box-shadow:0 4px 0 var(--av-lip), inset 0 2px 0 rgba(255,255,255,.45); text-shadow:0 2px 0 rgba(0,0,0,.18); }
+  .sf-text{ position:relative; z-index:1; }
+  .sf-text b{ color:var(--nm); }
+  .sf-text span{ color:var(--gr); }
+
+  /* ribbons: solid orange clay pills */
+  .rd-ribbon, .gm-ribbon{ color:#fff; background:linear-gradient(180deg,#f8a13d,#ef8d2a); box-shadow:0 3px 0 #b4560b, inset 0 1.5px 0 rgba(255,255,255,.4); text-shadow:0 1px 0 rgba(0,0,0,.15); }
+
+  /* Reading tags + icon discs */
+  .rd-tag{ background:linear-gradient(180deg,#fff0bd,#ffdb85); color:#7a4f05; box-shadow:0 3px 0 #d9a93f, inset 0 1.5px 0 rgba(255,255,255,.7); }
+  .rd-tag.blue{ background:linear-gradient(180deg,#d9ebff,#a6cbf5); color:#0a3d73; box-shadow:0 3px 0 #78a5da, inset 0 1.5px 0 rgba(255,255,255,.7); }
+  .rd-tag.green{ background:linear-gradient(180deg,#d4f6e7,#9ce0c0); color:#0f5a41; box-shadow:0 3px 0 #62b593, inset 0 1.5px 0 rgba(255,255,255,.7); }
+  .rd-tag.lilac{ background:linear-gradient(180deg,#eee2ff,#cfb8f7); color:#45237f; box-shadow:0 3px 0 #a688dc, inset 0 1.5px 0 rgba(255,255,255,.7); }
+  .rd-featured .rd-icon{ background:linear-gradient(180deg,#ffe790,#ffbf40); box-shadow:0 5px 0 #cf8d10, inset 0 2px 0 rgba(255,255,255,.6); }
+  .rd-extra .rd-icon{ background:linear-gradient(180deg,#cdf4e4,#8fdcbc); box-shadow:0 5px 0 #4dac88, inset 0 2px 0 rgba(255,255,255,.6); }
+
+  /* Games chips + icon discs + note */
+  .gm-sky .gm-icon{ background:linear-gradient(180deg,#ffe790,#ffbf40); box-shadow:0 6px 0 #cf8d10, inset 0 2px 0 rgba(255,255,255,.6); }
+  .gm-aqua .gm-icon{ background:linear-gradient(180deg,#ffd3d9,#ff98a6); box-shadow:0 6px 0 #d4566a, inset 0 2px 0 rgba(255,255,255,.55); }
+  .gm-chip{ background:linear-gradient(180deg,#fff0bd,#ffdb85); color:#7a4f05; box-shadow:0 3px 0 #d9a93f, inset 0 1.5px 0 rgba(255,255,255,.7); }
+  .gm-chip:nth-child(2){ background:linear-gradient(180deg,#d4f6e7,#9ce0c0); color:#0f5a41; box-shadow:0 3px 0 #62b593, inset 0 1.5px 0 rgba(255,255,255,.7); }
+  .gm-note{ color:#6f4a05; background:linear-gradient(180deg,#fff3c9,#ffe19a); box-shadow:0 5px 0 #d9a93f, inset 0 2px 0 rgba(255,255,255,.7); }
+
+  /* Bookshelf: each book card takes its cover's colour */
+  .bs-blue{ background:linear-gradient(180deg,#e8f2ff,#c4dbf8); box-shadow:0 6px 0 #88b0e0, 0 20px 28px -18px rgba(15,95,174,.5), inset 0 2px 0 rgba(255,255,255,.7); }
+  .bs-green{ background:linear-gradient(180deg,#e2f8ee,#b9e8d1); box-shadow:0 6px 0 #78c2a0, 0 20px 28px -18px rgba(20,120,90,.5), inset 0 2px 0 rgba(255,255,255,.7); }
+  .bs-blue .bs-tube, .bs-green .bs-tube{ background:rgba(255,255,255,.65); box-shadow:inset 0 2px 4px rgba(60,90,130,.3); }
+  .bs-blue .bs-last{ color:#4f7098; } .bs-green .bs-last{ color:#3f7f66; }
+  .bs-empty{ background:linear-gradient(180deg,rgba(255,244,214,.7),rgba(255,228,160,.5)); border-color:#e6c97f; }
+  .bs-empty .bs-plus{ background:#fff3c9; color:#c79a2c; box-shadow:inset 0 3px 6px rgba(190,140,30,.25); }
+  .bs-empty h3{ color:#9a7420; } .bs-empty .bs-last{ color:#b08a30; }
+
+  /* =========================================================
+     CLEAN PASS: the Reading / Games / Bookshelf pages, the sidebar
+     and the profile chip were too much claymorphism. Now: white
+     surfaces, one hairline border, one soft shadow, colour used
+     only where it means something (icon tint, source tag, the
+     learner chip). The thick 3D lip stays only on the main action
+     buttons, and thinner. ========= */
+
+  /* sidebar + chip */
+  .sidebar{ background:#fbfdff; border-right:1px solid #e3ebf4; }
+  .nav-item.active{ background:#eaf3fd; box-shadow:none; }
+  .sidebar-foot{
+    --tint:#fff3f8; --edge:#f6d2e2; --av1:#ff9fc4; --av2:#f0629a; --nm:#5c1a3c; --gr:#a5537b;
+    background:var(--tint); border:1.5px solid var(--edge); border-radius:18px;
+    box-shadow:0 8px 18px -12px rgba(224,90,140,.55);
+  }
+  body[data-theme="blue"] .sidebar-foot{
+    --tint:#eff6ff; --edge:#cfe2f8; --av1:#55adf8; --av2:#1c7ed6; --nm:#0a3d73; --gr:#4a78ab;
+    box-shadow:0 8px 18px -12px rgba(28,126,214,.6);
+  }
+  .sidebar-foot::before, .sidebar-foot::after{ display:none; }
+  .sf-avatar{ border-radius:13px; box-shadow:0 2px 0 rgba(0,0,0,.14); text-shadow:none; }
+
+  /* buttons: keep a little tactile depth, thinner */
+  .clay-btn{ font-size:18px; padding:12px 28px 10px; border-radius:14px; }
+  .clay-btn.orange{ box-shadow:0 3px 0 #c4650f; }
+  .clay-btn.blue{ box-shadow:0 3px 0 #0f5fae; }
+  .clay-btn.orange:active{ transform:translateY(2px); box-shadow:0 1px 0 #c4650f; }
+  .clay-btn.blue:active{ transform:translateY(2px); box-shadow:0 1px 0 #0f5fae; }
+
+  /* shared card surface */
+  .rd-card, .gm-card, .bs-book{ border:1px solid #e3ebf4; box-shadow:0 1px 2px rgba(19,31,43,.04), 0 14px 28px -20px rgba(19,31,43,.28); }
+  .rd-card, .gm-card{ border-radius:24px; }
+
+  /* Reading */
+  .rd-featured{ background:linear-gradient(180deg,#fff8ec 0%,#ffffff 55%); border-color:#f4dfbd; }
+  .rd-extra{ background:#ffffff; }
+  .rd-ribbon, .gm-ribbon{ background:#fff0d9; color:#b4560b; box-shadow:none; text-shadow:none; }
+  .rd-icon, .gm-icon{ box-shadow:none; }
+  .rd-featured .rd-icon{ background:#ffedcf; }
+  .rd-extra .rd-icon{ background:#e2f5ec; }
+  .rd-tag, .gm-chip{ background:#f0f4f8; color:#4f6376; box-shadow:none; border-radius:10px; }
+  .rd-tag.blue{ background:#e5f0ff; color:#0f5fae; }
+  .rd-tag.green{ background:#e0f5ea; color:#1a7a5a; }
+  .rd-tag.lilac, .gm-chip:nth-child(2){ background:#f0f4f8; color:#4f6376; box-shadow:none; }
+
+  /* Games */
+  .gm-sky{ background:linear-gradient(180deg,#f1f7ff 0%,#ffffff 65%); border-color:#d8e6f7; }
+  .gm-aqua{ background:linear-gradient(180deg,#f0f9fc 0%,#ffffff 65%); border-color:#d3e9f2; }
+  .gm-sky .gm-icon{ background:#ffedcf; }
+  .gm-aqua .gm-icon{ background:#ffe6ec; }
+  .gm-note{ background:#f4f8fc; border:1px solid #e3ebf4; box-shadow:none; color:#5b6b7a; font-size:17px; }
+
+  /* Bookshelf */
+  .bs-book, .bs-blue, .bs-green{ background:#ffffff; border-radius:20px; }
+  .bs-blue{ box-shadow:0 1px 2px rgba(19,31,43,.04), 0 14px 28px -20px rgba(19,31,43,.28); }
+  .bs-green{ box-shadow:0 1px 2px rgba(19,31,43,.04), 0 14px 28px -20px rgba(19,31,43,.28); }
+  .bs-cover{ box-shadow:none; }
+  .bs-cover::before{ width:10px; background:rgba(0,0,0,.1); }
+  .bs-cover::after{ display:none; }
+  .bs-emoji{ filter:drop-shadow(0 2px 3px rgba(0,0,0,.18)); }
+  .bs-times{ left:22px; background:rgba(19,31,43,.3); }
+  .bs-tube, .bs-blue .bs-tube, .bs-green .bs-tube{ height:10px; background:#e9eff5; box-shadow:none; }
+  .bs-tube i{ box-shadow:none; }
+  .bs-last, .bs-blue .bs-last, .bs-green .bs-last{ color:#8a97a3; }
+  .bs-empty{ background:#fafcfe; border:2px dashed #d5e0ec; box-shadow:none; }
+  .bs-empty .bs-plus{ background:#eef3f8; color:#a9b8c8; box-shadow:none; }
+  .bs-empty h3{ color:#8a97a3; }
+  .bs-empty .bs-last{ color:#a9b6c3; }
+  .bs-plank{ height:12px; border-radius:6px; background:linear-gradient(180deg,#e4bb7c,#cf9d57); box-shadow:0 10px 16px -10px rgba(90,50,10,.45); }
+  .bs-books{ margin-bottom:-6px; }
+  .bs-flow{ background:#fff8ed; border:1px solid #f4dfbd; box-shadow:none; }
+
+  /* Switch (learner login): quiet inputs */
+  .sw-code, .sw-pin{ border:2px solid #dfe8f2; background:#f7fafd; box-shadow:none; }
+  .sw-code:focus{ background:#fff; border-color:var(--blue-500); box-shadow:0 0 0 4px rgba(28,126,214,.15); }
+  .sw-pin.filled{ border-color:#ef8d2a; background:#fff8ee; box-shadow:none; }
+
+  /* =========================================================
+     CLAY V2: claymorphism back, but built as ONE system instead of
+     a pile of colours:
+       - one light source (top left): a soft gloss + a bright top edge
+       - one depth scale: cards 8px, discs 6px, buttons 5px
+       - raised things are tone-on-tone (a card and its icon share one hue)
+       - things that hold information are PRESSED IN (chips, meters,
+         empty slots, the note strip) so raised and pressed read apart
+       - colour has a job: blue = school, orange = do this, green = extra
+     The sidebar nav stays the clean flat selector. ========= */
+  :root{ --gloss:radial-gradient(120% 90% at 10% 0%, rgba(255,255,255,.62), rgba(255,255,255,0) 55%); }
+
+  /* ---- raised cards ---- */
+  .rd-card, .gm-card{
+    border:2px solid var(--rim); border-radius:30px;
+    background-image:var(--gloss), linear-gradient(165deg,var(--top),var(--bot));
+    box-shadow:0 8px 0 var(--lip), 0 28px 36px -20px var(--glow), inset 0 3px 0 rgba(255,255,255,.8), inset 0 -10px 18px var(--inner);
+  }
+  .rd-featured{ --top:#fff7e8; --bot:#ffe0b2; --rim:#fff1d9; --lip:#e5b26e; --glow:rgba(190,100,15,.5); --inner:rgba(232,150,55,.26); --well:#ffdba6; --wtext:#7a4808; --wshadow:rgba(185,110,30,.4); }
+  .rd-extra, .gm-sky{ --top:#ebf4ff; --bot:#c4dbf8; --rim:#deebfc; --lip:#8db3df; --glow:rgba(15,95,174,.48); --inner:rgba(60,110,185,.22); --well:#b6d0f0; --wtext:#0e4885; --wshadow:rgba(40,90,165,.4); }
+  .gm-aqua{ --top:#e3f6fc; --bot:#b0dff1; --rim:#cdeaf6; --lip:#7cb8d4; --glow:rgba(10,110,150,.48); --inner:rgba(30,130,175,.22); --well:#a3d5e9; --wtext:#0d5270; --wshadow:rgba(20,100,145,.4); }
+
+  /* ---- icon discs: same hue family as the card, puffy ---- */
+  .rd-featured .rd-icon, .rd-extra .rd-icon, .gm-sky .gm-icon, .gm-aqua .gm-icon{
+    background-image:radial-gradient(circle at 28% 22%, rgba(255,255,255,.8), rgba(255,255,255,0) 46%), linear-gradient(180deg,var(--d1),var(--d2));
+    background-color:transparent;
+    box-shadow:0 6px 0 var(--dlip), 0 16px 20px -12px rgba(0,0,0,.3), inset 0 -7px 10px rgba(0,0,0,.08);
+  }
+  .rd-featured .rd-icon, .gm-sky .gm-icon{ --d1:#ffdc92; --d2:#ffb446; --dlip:#cd8918; }
+  .rd-extra .rd-icon{ --d1:#bedafb; --d2:#82b4ee; --dlip:#5290cf; }
+  .gm-aqua .gm-icon{ --d1:#c6f2e1; --d2:#84d8b6; --dlip:#48a983; }
+
+  /* ---- ribbons: little raised orange labels ---- */
+  .rd-ribbon, .gm-ribbon{
+    color:#fff; background:linear-gradient(180deg,#f9a544,#ee8a26); border-radius:12px;
+    box-shadow:0 3px 0 #b4560b, inset 0 2px 0 rgba(255,255,255,.45); text-shadow:0 1px 0 rgba(0,0,0,.2);
+  }
+
+  /* ---- chips: pressed into the card ---- */
+  .rd-tag, .rd-tag.lilac, .gm-chip, .gm-chip:nth-child(2){
+    background:var(--well); color:var(--wtext); border-radius:12px;
+    box-shadow:inset 0 3px 5px var(--wshadow), 0 1.5px 0 rgba(255,255,255,.75);
+  }
+  .rd-tag.blue{ background:#b8d5fa; color:#0a3d73; box-shadow:inset 0 3px 5px rgba(40,90,165,.4), 0 1.5px 0 rgba(255,255,255,.75); }
+  .rd-tag.green{ background:#b6ebd0; color:#0d5a3f; box-shadow:inset 0 3px 5px rgba(30,130,95,.4), 0 1.5px 0 rgba(255,255,255,.75); }
+
+  /* ---- buttons: the one place with a real chunky press ---- */
+  .clay-btn{ font-size:19px; padding:13px 30px 11px; border-radius:16px; text-shadow:0 1px 0 rgba(0,0,0,.2); }
+  .clay-btn.orange{ background:linear-gradient(180deg,#f9a544,#ee8a26); box-shadow:0 5px 0 #b4560b, 0 14px 18px -10px rgba(180,86,11,.65), inset 0 2px 0 rgba(255,255,255,.45); }
+  .clay-btn.blue{ background:linear-gradient(180deg,#3798ee,#1c7ed6); box-shadow:0 5px 0 #0f5fae, 0 14px 18px -10px rgba(15,95,174,.65), inset 0 2px 0 rgba(255,255,255,.4); }
+  .clay-btn.orange:active{ transform:translateY(3px); box-shadow:0 2px 0 #b4560b, 0 6px 10px -6px rgba(180,86,11,.6), inset 0 2px 0 rgba(255,255,255,.4); }
+  .clay-btn.blue:active{ transform:translateY(3px); box-shadow:0 2px 0 #0f5fae, 0 6px 10px -6px rgba(15,95,174,.6), inset 0 2px 0 rgba(255,255,255,.35); }
+
+  /* ---- note strip on Games: pressed in ---- */
+  .gm-note{ background:linear-gradient(180deg,#e4ecf6,#f1f6fb); border:none; color:#5b6b7a; font-size:18px; box-shadow:inset 0 4px 8px rgba(110,128,150,.24), 0 2px 0 #ffffff; }
+
+  /* ---- profile chip: raised, pink for a girl, blue for a boy ---- */
+  .sidebar-foot{
+    --top:#ffe6f0; --bot:#ffb0cf; --rim:#fff2f7; --lip:#dc719f; --glow:rgba(220,80,135,.55); --inner:rgba(230,100,150,.24);
+    --av1:#ff9fc4; --av2:#f0629a; --av-lip:#b23a6e; --nm:#67193f; --gr:#ad4f7c;
+    border:2px solid var(--rim); border-radius:20px; background-color:transparent;
+    background-image:var(--gloss), linear-gradient(165deg,var(--top),var(--bot));
+    box-shadow:0 5px 0 var(--lip), 0 16px 22px -12px var(--glow), inset 0 2px 0 rgba(255,255,255,.8), inset 0 -6px 12px var(--inner);
+  }
+  body[data-theme="blue"] .sidebar-foot{
+    --top:#deecff; --bot:#93c3f6; --rim:#eef5ff; --lip:#5990d0; --glow:rgba(28,126,214,.55); --inner:rgba(50,110,190,.24);
+    --av1:#55adf8; --av2:#1c7ed6; --av-lip:#0f5fae; --nm:#0a3d73; --gr:#386fa8;
+  }
+  .sf-avatar{ border-radius:15px; box-shadow:0 4px 0 var(--av-lip), inset 0 2px 0 rgba(255,255,255,.45); text-shadow:0 2px 0 rgba(0,0,0,.18); }
+
+  /* ---- Bookshelf: books are raised, empty slots are pressed in ---- */
+  .bs-book{
+    border:2px solid var(--rim); border-radius:24px;
+    background-image:var(--gloss), linear-gradient(170deg,var(--top),var(--bot)); background-color:transparent;
+    box-shadow:0 7px 0 var(--lip), 0 22px 28px -18px var(--glow), inset 0 3px 0 rgba(255,255,255,.8), inset 0 -8px 14px var(--inner);
+  }
+  .bs-blue{ --top:#eef6ff; --bot:#c6dcf8; --rim:#e0edfc; --lip:#8db3df; --glow:rgba(15,95,174,.48); --inner:rgba(60,110,185,.2); }
+  .bs-green{ --top:#e9faf1; --bot:#bde8d2; --rim:#d8f3e5; --lip:#79c2a0; --glow:rgba(20,120,90,.48); --inner:rgba(40,150,110,.2); }
+  .bs-cover{
+    box-shadow:inset 0 3px 0 rgba(255,255,255,.45), inset 0 -6px 0 rgba(0,0,0,.14), 0 4px 0 rgba(0,0,0,.13);
+    outline:2px dashed rgba(255,255,255,.42); outline-offset:-9px;
+  }
+  .bs-cover::before{ width:14px; background:rgba(0,0,0,.14); }
+  .bs-cover::after{ display:block; }
+  .bs-empty .bs-cover{ outline:none; }
+  .bs-emoji{ filter:drop-shadow(0 4px 0 rgba(0,0,0,.18)); }
+  .bs-times{ left:32px; background:rgba(19,31,43,.34); }
+  .bs-tube, .bs-blue .bs-tube, .bs-green .bs-tube{ height:12px; background:rgba(255,255,255,.62); box-shadow:inset 0 3px 5px rgba(60,90,130,.32), 0 1.5px 0 rgba(255,255,255,.7); }
+  .bs-tube i{ box-shadow:inset 0 2px 0 rgba(255,255,255,.5); }
+  .bs-blue .bs-last{ color:#4b6e98; } .bs-green .bs-last{ color:#3b7c63; }
+  .bs-empty{
+    background:linear-gradient(180deg,#e6edf5,#f2f6fb); border:2px dashed #c6d3e2;
+    box-shadow:inset 0 5px 10px rgba(110,128,150,.22), 0 2px 0 #ffffff;
+  }
+  .bs-empty .bs-plus{ background:#f4f8fc; color:#a3b3c4; box-shadow:inset 0 3px 6px rgba(110,128,150,.28); }
+  .bs-empty h3{ color:#8794a2; } .bs-empty .bs-last{ color:#9aa8b6; }
+  .bs-plank{
+    height:22px; border-radius:11px;
+    background:repeating-linear-gradient(90deg,rgba(120,70,20,.07) 0 2px,rgba(120,70,20,0) 2px 52px), linear-gradient(180deg,#ecc083,#d29a55);
+    box-shadow:0 7px 0 #a9722f, 0 20px 26px -14px rgba(90,50,10,.55), inset 0 3px 0 rgba(255,255,255,.4);
+  }
+  .bs-books{ margin-bottom:-10px; }
+  .bs-flow{
+    border:2px solid #fff1d9; border-radius:24px;
+    background-image:var(--gloss), linear-gradient(170deg,#fff7e8,#ffe0b2); background-color:transparent;
+    box-shadow:0 6px 0 #e5b26e, 0 20px 26px -18px rgba(190,100,15,.45), inset 0 2px 0 rgba(255,255,255,.8), inset 0 -8px 14px rgba(232,150,55,.2);
+  }
+
+  /* ---- Switch (learner login): pressed-in fields, chunky button ---- */
+  .sw-code, .sw-pin{ border:3px solid #dfe8f2; background:linear-gradient(180deg,#edf2f8,#f7fafd); box-shadow:inset 0 4px 8px rgba(110,128,150,.22), 0 4px 0 #dfe6ee; }
+  .sw-code:focus{ background:#fff; border-color:var(--blue-500); box-shadow:inset 0 3px 6px rgba(28,126,214,.14), 0 0 0 5px rgba(28,126,214,.14), 0 4px 0 #b8d3f0; }
+  .sw-pin.filled{ border-color:#ef8d2a; background:#fff8ee; box-shadow:inset 0 3px 6px rgba(239,141,42,.18), 0 4px 0 #f2cf9d; }
+
+  /* sidebar nav stays the clean flat selector (unchanged on purpose) */
+
+  /* =========================================================
+     PAGE WASH: no page sits on plain white any more. Each one gets
+     its own blended colour, the way the stat numbers each have their
+     own colour (level green, streak red, points gold):
+       Home       sky blue with a soft mint glow
+       Reading    fresh mint with a butter glow and a sky glow
+       Games      lilac with a pink glow and an aqua glow
+       Bookshelf  honey cream with a mint glow and a sky glow
+     Badges keeps its own look. The cards on top were picked so each one
+     still stands out from its wash (peach + blue on mint, sky + aqua on
+     lilac, blue + green books on cream). ========= */
+  html{ min-height:100vh; }
+  html[data-page] body{ background:transparent; }
+  html[data-page="home"]{
+    background:
+      radial-gradient(60% 24% at 4% 6%, rgba(150,228,205,.42), rgba(150,228,205,0) 72%),
+      radial-gradient(55% 26% at 98% 62%, rgba(255,214,160,.30), rgba(255,214,160,0) 72%),
+      linear-gradient(180deg,#eaf4ff 0%,#dcebfc 100%);
+  }
+  html[data-page="reading"]{
+    background:
+      radial-gradient(55% 40% at 6% 4%, rgba(255,226,150,.60), rgba(255,226,150,0) 72%),
+      radial-gradient(55% 45% at 98% 50%, rgba(150,200,255,.40), rgba(150,200,255,0) 72%),
+      linear-gradient(180deg,#e4f6ec 0%,#d3eee1 100%);
+  }
+  html[data-page="games"]{
+    background:
+      radial-gradient(55% 40% at 96% 4%, rgba(255,172,214,.42), rgba(255,172,214,0) 72%),
+      radial-gradient(55% 45% at 4% 80%, rgba(118,212,242,.42), rgba(118,212,242,0) 72%),
+      linear-gradient(180deg,#eeeaff 0%,#dfe4fc 100%);
+  }
+  html[data-page="bookshelf"]{
+    background:
+      radial-gradient(55% 40% at 96% 6%, rgba(150,226,192,.45), rgba(150,226,192,0) 72%),
+      radial-gradient(55% 45% at 4% 84%, rgba(150,192,250,.36), rgba(150,192,250,0) 72%),
+      linear-gradient(180deg,#fff5e1 0%,#ffe8c6 100%);
+  }
+
+  /* sidebar stays the clean flat selector, just lets a hint of the wash through */
+  .sidebar{ background:rgba(255,255,255,.78); border-right:1px solid rgba(255,255,255,.9); }
+
+  /* ---- Games: icon and badge share a row; chips and Play line up across both cards ---- */
+  .gm-card{ display:flex; flex-direction:column; }
+  .gm-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; min-height:96px; }
+  .gm-head .gm-icon{ margin-bottom:0; }
+  .gm-head .gm-ribbon{ position:static; }
+  .gm-card p{ margin-bottom:20px; }
+  .gm-meta{ margin-top:auto; margin-bottom:22px; }
+  .gm-card .clay-btn{ align-self:flex-start; min-width:170px; }
+  .rd-card .clay-btn{ min-width:170px; }
+
+  /* ---- pieces retuned so they sit well on their wash ---- */
+  .gm-note{ background:linear-gradient(180deg,#d8d5f4,#e9e7fb); box-shadow:inset 0 4px 8px rgba(90,80,150,.22), 0 2px 0 rgba(255,255,255,.8); color:#4a4870; }
+  .bs-empty{ background:linear-gradient(180deg,#f0dcb8,#fbecd0); border-color:#dcc296; box-shadow:inset 0 5px 10px rgba(150,110,40,.2), 0 2px 0 rgba(255,255,255,.7); }
+  .bs-empty .bs-plus{ background:#fff6e4; color:#c9a75f; box-shadow:inset 0 3px 6px rgba(150,110,40,.25); }
+  .bs-empty h3{ color:#9c7a3e; } .bs-empty .bs-last{ color:#b09258; }
+  .bs-flow{
+    border-color:#e0edfc; color:#0f5fae;
+    background-image:var(--gloss), linear-gradient(170deg,#eef6ff,#c6dcf8);
+    box-shadow:0 6px 0 #8db3df, 0 20px 26px -18px rgba(15,95,174,.45), inset 0 2px 0 rgba(255,255,255,.8), inset 0 -8px 14px rgba(60,110,185,.2);
+  }
+  .bs-flow-title{ color:#0f5fae; }
+  .pg-sub{ color:#4a5f73; }
+
+  /* =========================================================
+     SOLID FILLS: the page backgrounds are flat colour now, no
+     gradients, and every page including Badges has one. Pastel, but
+     clearly coloured, one hue per page:
+       Home sky   Reading mint   Games lilac   Badges butter   Bookshelf peach
+     ========= */
+  html[data-page="home"]     { background:#d9e8fa; }
+  html[data-page="reading"]  { background:#c9ecd8; }
+  html[data-page="games"]    { background:#dcd6fb; }
+  html[data-page="badges"]   { background:#fbe08c; }
+  html[data-page="bookshelf"]{ background:#fdd9c5; }
+
+  /* pieces retuned to sit on their flat fill */
+  .gm-note{ background:#cdc7f3; color:#41396f; box-shadow:inset 0 4px 8px rgba(80,66,150,.24), 0 2px 0 rgba(255,255,255,.7); }
+  .bs-empty{ background:#f5cbb2; border:2px dashed #e0a488; box-shadow:inset 0 5px 10px rgba(150,70,30,.2), 0 2px 0 rgba(255,255,255,.6); }
+  .bs-empty .bs-plus{ background:#ffe9dd; color:#d29a7b; box-shadow:inset 0 3px 6px rgba(150,70,30,.22); }
+  .bs-empty h3{ color:#94563a; } .bs-empty .bs-last{ color:#ad7358; }
+  .pg-sub{ color:#3f5568; }
+
+/* =========================================================
+   REAL APP: differences from the mockup
+   ========================================================= */
+.note{ display:none; }
+.sidebar{ top:0; height:100vh; }
+.right-rail{ top:12px; max-height:calc(100vh - 24px); }
+.nav-item{ cursor:pointer; }
+button.nav-item{ width:100%; border:none; background:none; text-align:left; font-family:var(--font-game); font-weight:600; font-size:17px; letter-spacing:.07em; text-transform:uppercase; color:var(--navy-900); cursor:pointer; }
+.credits{ font:500 12px/1.4 'Inter',sans-serif; color:var(--slate-400); padding:6px 32px 28px; }
+.credits a{ color:inherit; }
+
+/* buttons and links used where the mockup had spans and divs */
+button.pill{ font:inherit; color:inherit; }
+a.clay-btn{ text-decoration:none; }
+.bs-btn{ display:block; text-align:center; }
+button.bdg-tile{ font:inherit; color:inherit; text-align:center; width:100%; cursor:pointer; }
+button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
+.sf-avatar{ overflow:hidden; }
+.sf-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+.gm-tip{ max-width:900px; margin:0 0 22px; text-align:left; }
+
+/* the badge grid cells are buttons now */
+.bdg-grid .bdg-tile{ display:block; }
+
+/* Bookshelf: equal-height books, button pinned to the bottom of each */
+.bs-books{ align-items:stretch; }
+.bs-book{ display:flex; flex-direction:column; }
+.bs-book .bs-btn{ margin-top:auto; }
+.bs-book h3{ flex:0 0 auto; }
+
+/* =========================================================
+   Tablet and phone. The mockup was desktop only.
+   Below 900px the sidebar becomes a bottom tab bar, and Home stacks: the stat
+   pills first, then the roads, then the goal and growth cards.
+   ========================================================= */
+@media (max-width:900px){
+  .shell{ display:block; }
+  .main{ padding-bottom:96px; }
+
+  .sidebar{
+    position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; height:auto; z-index:50;
+    flex-direction:row; justify-content:space-around; align-items:stretch; gap:0;
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom)); border-right:0; border-top:1px solid #dbe6f2;
+    background:rgba(255,255,255,.96); box-shadow:0 -8px 24px -14px rgba(19,31,43,.35);
+  }
+  .brand, .sidebar-foot{ display:none; }
+  .nav-form{ flex:1; display:flex; margin:0; }
+  .nav-item{
+    flex:1; flex-direction:column; justify-content:center; gap:2px; padding:6px 2px; margin:0; border-radius:14px;
+    font-size:11.5px; letter-spacing:.03em; text-align:center; min-width:0;
+  }
+  button.nav-item{ font-size:11.5px; letter-spacing:.03em; text-align:center; }
+  .nav-item .nav-icon{ width:30px; height:30px; }
+  .nav-item.active{ box-shadow:none; }
+
+  .main-grid{ display:flex; flex-direction:column; align-items:stretch; }
+  .right-rail{ display:contents; }
+  .topstats-col{ order:-2; padding:16px 18px 0; }
+  .center{ order:-1; padding:14px 18px 8px; }
+  .right-col{ order:0; padding:8px 18px 24px; display:grid; grid-template-columns:1fr; gap:18px; }
+  .stat-pills{ justify-content:flex-start; }
+
+  .subpage{ padding:20px 16px 24px; }
+  .pg-title{ font-size:34px; }
+  .roadmap-svg{ width:100%; height:auto; }
+  .credits{ padding:6px 18px 12px; }
+}
+@media (min-width:600px) and (max-width:900px){
+  .right-col{ grid-template-columns:1fr 1fr; }
+}
+@media (max-width:420px){
+  .pg-title{ font-size:30px; }
+  .rd-card, .gm-card{ padding:20px 18px 24px; }
+  .bdg-grid{ grid-template-columns:repeat(2, 1fr); }
+}

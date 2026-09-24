@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BookshelfController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\ForgotPasswordController;
@@ -110,9 +111,11 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         Route::get('/games/word-builder', [GameController::class, 'wordBuilder'])->name('games.word-builder');
         Route::get('/games/letter-match', [GameController::class, 'letterMatch'])->name('games.letter-match');
 
-        // "My Bookshelf" re-reading is still its own real task-flow screen
-        // (the list itself now renders inline on the Dashboard — see
-        // LearnerAuthController::dashboard() and Learner::bookshelfBooks()).
+        Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');
+
+        // My Bookshelf: the list is its own page again; re-reading is a real
+        // task-flow screen (free practice, never scored).
+        Route::get('/bookshelf', [BookshelfController::class, 'index'])->name('bookshelf.index');
         Route::get('/bookshelf/{activity}/reread', [BookshelfController::class, 'reread'])->name('bookshelf.reread');
         Route::post('/bookshelf/{activity}/reread', [BookshelfController::class, 'submitReread'])->name('bookshelf.reread.submit');
     });
