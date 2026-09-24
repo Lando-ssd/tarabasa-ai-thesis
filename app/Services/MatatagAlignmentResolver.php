@@ -70,7 +70,7 @@ class MatatagAlignmentResolver
             return [
                 'grade' => $grade,
                 'subdomain' => $subdomain,
-                'competency_code' => config('diagnostic.letters.competency_code'),
+                'competency_code' => config('diagnostic.ladder.letters.competency_code'),
             ];
         }
 

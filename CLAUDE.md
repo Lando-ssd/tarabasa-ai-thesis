@@ -1307,6 +1307,13 @@ final architectural decision.
 ## learner's real floor across grades (needs team/adviser review before
 ## thesis submission)
 
+**RESOLVED 2026-09-24:** see "First-login reading check follows the Parent's
+profile, not the grade" near the end of this file. The claim below that the
+generator cannot serve other-grade content was wrong (it takes a `grade` in the
+request and the app only ever sent the learner's own), and the check is now a
+ladder of curriculum content that starts where the Parent says the child is.
+Kept below as history.
+
 Flagged with the same weight as the Activity Generation conflict above
 — this is not a settled decision either, it's a stopgap forced by the
 same underlying constraint (no `curriculum_guides` content-management
@@ -1359,7 +1366,7 @@ since nothing currently saves it. Every Learner's diagnostic starts at
 Medium (the patch doc's own stated default for the non-unanimous case)
 regardless of their placement-quiz pattern — a real, disclosed
 data-availability gap, not an oversight glossed over.
-**SUPERSEDED 2026-09-24:** the wizard now stores `reading_stage` and
+**SUPERSEDED 2026-09-24 (and the cross-grade limit above is RESOLVED, see the same section):** the wizard now stores `reading_stage` and
 `placement_answers`, and the check starts where the Parent said the child is
 (see "First-login reading check follows the Parent's profile" near the end of
 this file). Children created before that only have `mastery_level`, so they use
@@ -5416,64 +5423,82 @@ her; stacked on a phone the bubbles rise straight up to her. If the owl animatio
 that 0.335 in `diagnostic-intro.blade.php`.
 The passage, encouragement and results screens still use the older card design.
 
-**First-login reading check follows the Parent's profile (2026-09-24).** The
-instructor's finding: the check must match what the Parent said at sign up (a
-Grade 1 child described as "just starting" must not be handed a paragraph), be
-letters only for a pre-reader, use the curriculum guide, and be all phonics.
+**First-login reading check follows the Parent's profile, not the grade (2026-09-24).**
+The instructor's finding: the check must match what the Parent said at sign up, be
+based on the curriculum and NOT on which grade the child is enrolled in. Some Grade 2
+children read well (they should get real reading passages, not phonics) and some
+Grade 3 children cannot read yet (they should start on letters).
 - **Stored profile.** New nullable `learners.reading_stage` (starting / letters /
   blending / sentences / independent / unsure) and `learners.placement_answers`
   (JSON `{q1,q2,q3}`), both already collected by the wizard but thrown away until
   now (`LearnerController::store()` keeps them). Children created before this have
   neither and fall back to their stored `mastery_level`
   (`config/diagnostic.php` `legacy_mastery_start`).
-- **A ladder of rungs** instead of three tiers: letters (Grade 1 ONLY), easy, medium,
-  hard. `App\Support\DiagnosticPlacement::startingRung()` starts at the LOWEST rung the
-  Parent's description and answers suggest (Grade 1: q1 "names letters" = no starts on
-  letters; "just starting" starts on letters; "knows letters and sounds" or "blending"
-  starts on easy phonics, which steps down to letters by itself if it goes badly;
-  "sentences" medium; "independent" hard; Grade 2/3 never start on letters). The
-  staircase rules are unchanged (>=90 up, <70 down, 70-89 stop, cap 3 items) and the
-  landing rung maps letters/easy -> Beginning, medium -> Developing, hard -> Proficient.
-  Rules and numbers live in `config/diagnostic.php`, verified for 8 profiles.
-- **Every reading item is phonics.** The check now generates Foundational Reading +
-  `phonics_reading` (not Reading Fluency passages), which the generator aligns to the
-  MATATAG guide for the child's grade (Grade 1 easy "The cat sat on a mat", Grade 3 hard
-  "The brave children proudly marched..."). As a bonus a bundle now takes ~7 s, not 55-105.
-  The item's own `instructions` from the generator is shown as the direction.
-- **The letters rung** (Grade 1 only, because only Grade 1's MATATAG guide has a letter
-  competency: RL1PWS-II-1 "Produce the sounds represented by letters"): six letters
-  (`S A T P I N`, or `M D O G C B` for a second visit), the child SAYS THE NAME of each
-  letter. Fixed content, not generated: two `Activity` rows (`purpose=diagnostic`,
-  `activity_type=phonics`, see `Activity::isLetterCheck()`), scored by the same
-  Reading-api `/analyze` (its `phonics` speech type) with the guide's code sent by
+- **One ladder for every child** (`config/diagnostic.php` `ladder`, applied by
+  `App\Support\DiagnosticPlacement`), seven rungs from letters up to a full passage:
+  0 `letters` (say six letter names; the curriculum's Grade 1 letter competency
+  RL1PWS-II-1, used for any child who needs it), 1-3 `phonics_easy/medium/hard`
+  (Grade 1 phonics reading: simple words, short sentences, longer sentences), 4-6
+  `passage_easy/medium/hard` (Grade 2 fluency passages of about 30, 60 and 100 words).
+  The grade in a rung is the grade of the CONTENT, never the child's. Landing rung ->
+  level: 0-2 Beginning, 3-4 Developing, 5-6 Proficient (the same split as the adaptive
+  recommender's own easy / medium / hard bands).
+- **Where it starts** (`DiagnosticPlacement::startingRung()`): the LOWEST rung the
+  Parent's description ("just starting" = letters, "knows letters and sounds" or
+  "blending" = phonics easy, "simple sentences" = phonics hard, "reads independently" =
+  passage medium) and the grade-specific yes/no answers suggest. The three questions
+  differ by grade (Grade 1: letters / sounds / blending; Grade 2: short sentences /
+  sight words / answers a question; Grade 3: paragraph / main idea / word from context),
+  so that is the one place the child's grade is read, to know WHICH questions were
+  answered. Verified for 13 profiles: Grade 3 or Grade 2 "just starting" -> letters,
+  Grade 2 "independent, all yes" -> a passage, Grade 1 all no -> letters.
+- **Staircase unchanged** (>=90 up a rung, <70 down, 70-89 stop, at most 3 items) but
+  over that ladder, so a child who cannot read can finish after ONE item on letters and
+  a strong reader after two. Only the content reachable from the start (start +/- 2
+  rungs) is generated, in parallel, with a 70 s timeout and one retry: the generator
+  sometimes never answers (seen twice in one day, 150 s each) but a retry answers in ~8 s.
+  Every reading item is real curriculum content: the generator aligns each bundle to the
+  MATATAG guide for the grade it is asked for. The item's own `instructions` is shown.
+- **This resolves the earlier PROVISIONAL "cannot find the real floor across grades"
+  gap.** That note claimed the generator cannot serve other-grade content. It can: it takes
+  a `grade` in the request, and the app had only ever sent the learner's own. A Grade 3
+  non-reader now gets Grade 1 content, exactly the AdaptiveDiagnostic_Correction patch
+  doc's stated purpose.
+- **The letters rung**: fixed content (two `Activity` rows, `purpose=diagnostic`,
+  `activity_type=phonics`, `Activity::isLetterCheck()`; `S A T P I N` then `M D O G C B`),
+  scored by Reading-api's `phonics` speech type with the guide's code sent by
   `MatatagAlignmentResolver`. Real test: Vosk heard a synthesized voice's letter names
   perfectly for these sets. **PROVISIONAL / honest limit:** Vosk hears letter NAMES, not the
   letter SOUNDS the curriculum competency names, so naming is the closest thing speech
-  recognition can check; hard letters (Y "why", Z "c", X, Q) were left out; and child voices
-  are not tested.
+  recognition can check; hard letters (Y "why", Z "c", X, Q) were left out on purpose; and
+  child voices are not tested. Rung boundaries (which content sits on which rung, the
+  level split, the placement bands) are the app's own choices, not from the curriculum.
 - **Placement score.** The adaptive recommender is initialized with a score inside the
-  landing rung's band of its own thresholds (`config/diagnostic.php` `placement_bands`,
-  copied from its `GET /config`: easy <=59, medium <=84), not the raw accuracy, which on
-  the letters rung would have said "hard" for a child who only knows letters
-  (`DiagnosticPlacement::score()`). A child who landed on letters with 100% is initialized at
-  Phonics and Word Study 29, easy (verified against the live recommender).
+  landing rung's band (`config/diagnostic.php` `ladder.*.band`, cut from the recommender's
+  own thresholds from its `GET /config`: easy <=59, medium <=84), not the raw accuracy of
+  one item (`DiagnosticPlacement::score()`). It is initialized for the child's OWN grade's
+  subdomains. Verified live: Grade 3 non-reader -> Phonics and Word Study 0, easy; Grade 1
+  landing on phonics easy at 100% -> 39, easy; Grade 2 proficient on the hardest passage
+  -> 99.85, hard.
 - **Passage screen redesign** (`learner/diagnostic-passage`): plain white; Tara's head
   (`public/animations/learner/tara-owl-head.json`, the user's "owl head" Lottie, a 5 s loop
   of looking around and blinking) peeks over the top of the panel; the panel holds the
-  direction, then either six big letter tiles or the phonics text (with the text size
-  control); clay orange mic and stop buttons matching the intro. It replaced a card whose
-  decorative blobs were accidentally `position:relative` (a `.card > *` rule overrode
-  `.clay-blob`), which left ~400px of blank space above the owl. The shared
-  `_recording-widget` takes optional `$micLabel` / `$doneLabel`.
+  direction, then either six big letter tiles or the text (with the text size control);
+  clay orange mic and stop buttons matching the intro. It replaced a card whose decorative
+  blobs were accidentally `position:relative` (a `.card > *` rule overrode `.clay-blob`),
+  which left ~400px of blank space above the owl. The shared `_recording-widget` takes
+  optional `$micLabel` / `$doneLabel`. The intro says "say your letters" when the check
+  starts on letters.
 - **Tested for real** (live Reading-api, generator and recommender, synthesized voice):
-  Grade 1 "just starting" got letters (`S A T P I N`), said correctly -> "Great job" -> easy
-  phonics "Pig in a bin."; said wrongly -> stepped DOWN to the second letters set; said
-  correctly -> capped at 3 items, finished Beginning, recommender initialized. Grade 1 who
-  knows letters, Grade 2 pre-reader and Grade 3 "independent" all started on the right rung.
-  The passage screen was checked at 1300 and 375px wide, including Extra Large text.
+  Grade 3 "just starting" -> letters, said wrongly -> finished Beginning after ONE item;
+  Grade 2 "independent, all yes" -> Grade 2 medium passage (96.3%) -> hard passage (97.83%)
+  -> Proficient; Grade 1 phonics easy said wrongly -> stepped down to the second letters
+  set -> back up to phonics easy, capped at 3 items, Beginning. The passage screen was
+  checked at 1300 and 375px wide, including Extra Large text.
 - **Not done:** the "Great job" and results screens still use the older card design; the
-  letters rung needs a real child; if the generator is asleep the whole check (even the
-  letters) waits for its bundle, because the bundle is still created up front.
+  letters rung needs a real child; a check already running in the cache when this deploys
+  finishes on its old three tiers (`LEGACY_TIERS`); the top rung is Grade 2's hardest
+  passage (about as long as Grade 3's), so it cannot tell a Grade 3 reader from a Grade 2 one.
 
 **Known limits, stated plainly:** writing the assessment's items is still a
 synchronous generator call (now ~7 to 10 s for phonics, but a cold Render service can still

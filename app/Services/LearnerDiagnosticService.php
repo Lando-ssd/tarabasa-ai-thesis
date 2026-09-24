@@ -13,10 +13,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 /**
- * The first-login reading check: an adaptive staircase that starts where the
- * Parent said the child is (see DiagnosticPlacement and config/diagnostic.php).
- * Grade 1 children can be asked for letters only; every reading item is
- * phonics. Extracted out of
+ * The first-login reading check: an adaptive staircase up a ladder of curriculum
+ * content, starting where the Parent said the CHILD is, not where their grade
+ * says they should be (see DiagnosticPlacement and config/diagnostic.php). A
+ * child who cannot read yet starts on letters at any grade; one who reads well
+ * starts on a passage. Extracted out of
  * LearnerDiagnosticController (previously `private` methods returning
  * Blade Views) for the same reason as LearnerReadingService: one real
  * implementation, called by both the web controller and the mobile API
@@ -32,14 +33,12 @@ use Illuminate\Validation\ValidationException;
  */
 class LearnerDiagnosticService
 {
-    private const TIERS = ['easy', 'medium', 'hard'];
+    // A check that was already running when the ladder replaced the three
+    // tiers has no ladder saved; it finishes on the tiers it started with.
+    private const LEGACY_TIERS = ['easy', 'medium', 'hard'];
 
-    private const TIER_TO_MASTERY = [
-        'letters' => 'Beginning',
-        'easy' => 'Beginning',
-        'medium' => 'Developing',
-        'hard' => 'Proficient',
-    ];
+    // Bump when the shape of the saved state changes.
+    private const STATE_VERSION = 2;
 
     private const MASTERY_TO_RESULT_LABEL = [
         'Beginning' => '🌱 You\'re a Rising Reader!',
@@ -60,52 +59,78 @@ class LearnerDiagnosticService
             return $existing;
         }
 
-        $competencies = config('activity_competencies.competencies');
-        $gradeNumber = (int) substr($learner->grade_level, 6);
-        $rungs = DiagnosticPlacement::rungsFor($learner);
+        $ladder = DiagnosticPlacement::ladder();
+        $start = DiagnosticPlacement::startingRung($learner);
 
-        // Every reading item in this check is phonics (Foundational Reading,
-        // Phonics Reading), which the generator aligns to the MATATAG
-        // curriculum guide for the child's grade. It used to be Reading
-        // Fluency passages, which could hand a child who cannot read yet a
-        // paragraph. Phonics bundles also come back in seconds instead of the
-        // minute or more a fluency passage took.
-        try {
-            $data = app(ActivityAiClient::class)->generateBundle([
-                'grade' => $gradeNumber,
-                'competency' => 'foundational_reading',
-                'activity_type' => 'phonics_reading',
-                'variants_per_level' => 2,
-                'topic' => null,
-            ]);
-        } catch (\RuntimeException $e) {
-            throw ValidationException::withMessages(['diagnostic' => $e->getMessage()]);
+        // Only the content this child can actually reach from where they start
+        // (at most three items, one step each), so a child who starts on
+        // letters does not wait for passages they will never be shown.
+        $reachable = DiagnosticPlacement::reachableRungs($start);
+        $groups = DiagnosticPlacement::generationGroups($reachable);
+
+        $activityIds = array_fill_keys($ladder, []);
+
+        if ($groups !== []) {
+            $competencies = config('activity_competencies.competencies');
+
+            // Every reading item is real curriculum content: the generator
+            // aligns each bundle to the MATATAG guide for the grade it is asked
+            // for. That grade is the grade of the CONTENT the rung needs (Grade 1
+            // phonics for a beginner, Grade 2 passages for a reader), never the
+            // child's own grade. The requests run at the same time, since each
+            // takes several seconds.
+            $payloads = [];
+            foreach (array_keys($groups) as $i => $groupKey) {
+                $payloads['g'.$i] = [
+                    'grade' => $groups[$groupKey]['grade'],
+                    'competency' => $groups[$groupKey]['competency'],
+                    'activity_type' => $groups[$groupKey]['activity_type'],
+                    'variants_per_level' => 2,
+                    'topic' => null,
+                ];
+            }
+
+            try {
+                // Each request normally answers in under ten seconds, so one that
+                // has not after 70 is stuck: try it again rather than have a child
+                // wait two and a half minutes for nothing (seen twice in testing).
+                $bundles = app(ActivityAiClient::class)->generateBundles($payloads, 70, 2);
+            } catch (\RuntimeException $e) {
+                throw ValidationException::withMessages(['diagnostic' => $e->getMessage()]);
+            }
+
+            foreach (array_values($groups) as $i => $group) {
+                $data = $bundles['g'.$i];
+
+                $activities = Activity::createManyFromBundle($data, [
+                    'created_by_teacher_id' => null,
+                    'grade_level' => 'Grade '.$group['grade'],
+                    'competency' => $group['competency'],
+                    'competency_label' => $data['competency_label'] ?? $competencies[$group['competency']]['label'],
+                    'activity_type' => $group['activity_type'],
+                    'purpose' => 'diagnostic',
+                ]);
+
+                foreach ($activities as $activity) {
+                    $rung = $group['tiers'][strtolower($activity->difficulty_tier)] ?? null;
+                    if ($rung !== null) {
+                        $activityIds[$rung][] = $activity->id;
+                    }
+                }
+            }
         }
 
-        $activities = Activity::createManyFromBundle($data, [
-            'created_by_teacher_id' => null,
-            'grade_level' => $learner->grade_level,
-            'competency' => 'foundational_reading',
-            'competency_label' => $data['competency_label'] ?? $competencies['foundational_reading']['label'],
-            'activity_type' => 'phonics_reading',
-            'purpose' => 'diagnostic',
-        ]);
-
-        $activityIds = ['letters' => [], 'easy' => [], 'medium' => [], 'hard' => []];
-        foreach ($activities as $activity) {
-            $activityIds[strtolower($activity->difficulty_tier)][] = $activity->id;
-        }
-
-        if (in_array(DiagnosticPlacement::LETTERS, $rungs, true)) {
-            $activityIds['letters'] = $this->letterCheckActivityIds();
+        if (in_array(DiagnosticPlacement::LETTERS, $reachable, true)) {
+            $activityIds[DiagnosticPlacement::LETTERS] = $this->letterCheckActivityIds();
         }
 
         $state = [
-            'rungs' => $rungs,
+            'version' => self::STATE_VERSION,
+            'rungs' => $ladder,
             'activity_ids' => $activityIds,
-            'variant_used' => ['letters' => 0, 'easy' => 0, 'medium' => 0, 'hard' => 0],
+            'variant_used' => array_fill_keys($ladder, 0),
             // Where the Parent said the child is, not a neutral default.
-            'current_tier' => DiagnosticPlacement::startingRung($learner),
+            'current_tier' => $start,
             'passages_done' => 0,
             'level_before' => $learner->mastery_level,
             'accuracy_history' => [],
@@ -144,7 +169,7 @@ class LearnerDiagnosticService
                 [
                     'purpose' => 'diagnostic',
                     'activity_type' => 'phonics',
-                    'grade_level' => 'Grade 1',
+                    'grade_level' => 'Grade '.config('diagnostic.ladder.letters.grade'),
                     'variant_label' => $set['label'],
                     'reference_text' => strtolower(implode(' ', $letters)),
                 ],
@@ -282,9 +307,9 @@ class LearnerDiagnosticService
     }
 
     /**
-     * >=90% moves up a tier (stop if already Hard), <70% moves down a tier
-     * (stop if already Easy), 70-89% stops right here regardless of
-     * passage count. Capped at 3 passages regardless of outcome.
+     * >=90% moves up a rung (stop if already at the top), <70% moves down a
+     * rung (stop if already at the bottom), 70-89% stops right here regardless
+     * of item count. Capped at 3 items regardless of outcome.
      */
     private function applyStaircaseStep(Learner $learner, array $state, Activity $activity, array $result): array
     {
@@ -307,7 +332,7 @@ class LearnerDiagnosticService
             'insertion_count' => $result['accuracy']['insertions'] ?? null,
             'word_feedback' => $result['accuracy']['word_feedback'] ?? null,
             'level_before' => $state['level_before'],
-            'level_after' => self::TIER_TO_MASTERY[$tier],
+            'level_after' => DiagnosticPlacement::masteryOf($tier),
             'flagged_needs_attention' => $accuracy < 70,
             'session_type' => 'Diagnostic',
             'initiated_by' => 'Parent',
@@ -316,9 +341,7 @@ class LearnerDiagnosticService
         $state['passages_done']++;
         $state['accuracy_history'][] = ['tier' => $tier, 'accuracy' => $accuracy];
 
-        // A check already in progress when the letters rung was added has no
-        // rungs saved; it keeps the three tiers it started with.
-        $rungs = $state['rungs'] ?? self::TIERS;
+        $rungs = $state['rungs'] ?? self::LEGACY_TIERS;
         $tierIndex = array_search($tier, $rungs, true);
         $tierIndex = $tierIndex === false ? 0 : $tierIndex;
         $nextTier = null;
@@ -332,7 +355,7 @@ class LearnerDiagnosticService
         $reachedCap = $state['passages_done'] >= self::MAX_PASSAGES;
 
         if ($nextTier === null || $reachedCap) {
-            return $this->finishDiagnostic($learner, $tier, $accuracy, $state['is_first_ever_reading'], $rungs);
+            return $this->finishDiagnostic($learner, $tier, $accuracy, $state['is_first_ever_reading']);
         }
 
         $state['variant_used'][$nextTier] = min($state['variant_used'][$nextTier] + 1, 1);
@@ -350,9 +373,9 @@ class LearnerDiagnosticService
         ];
     }
 
-    private function finishDiagnostic(Learner $learner, string $landedTier, float $lastAccuracy, bool $isFirstEverReading, array $rungs): array
+    private function finishDiagnostic(Learner $learner, string $landedTier, float $lastAccuracy, bool $isFirstEverReading): array
     {
-        $finalLevel = self::TIER_TO_MASTERY[$landedTier];
+        $finalLevel = DiagnosticPlacement::masteryOf($landedTier);
 
         $learner->update(['mastery_level' => $finalLevel]);
 
@@ -368,7 +391,7 @@ class LearnerDiagnosticService
         // last (which cannot tell "names every letter" from "reads sentences").
         $this->initializeAdaptiveRecommendation(
             $learner,
-            DiagnosticPlacement::score($landedTier, $lastAccuracy, in_array(DiagnosticPlacement::LETTERS, $rungs, true))
+            DiagnosticPlacement::score($landedTier, $lastAccuracy)
         );
 
         $this->clearState($learner);

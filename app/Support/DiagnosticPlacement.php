@@ -6,30 +6,26 @@ use App\Models\Activity;
 use App\Models\Learner;
 
 /**
- * Where the first-login reading check starts, and how its result is turned
- * into a starting score. The rules and numbers live in config/diagnostic.php;
- * this class only applies them.
+ * Where the first-login reading check starts, which content it needs, and how
+ * its result is turned into a level and a starting score. The rungs and the
+ * numbers live in config/diagnostic.php; this class only applies them.
  *
- * The ladder, lowest to highest: letters (Grade 1 only), easy, medium, hard.
+ * Nothing here looks at which grade the child is enrolled in, except to know
+ * which set of three yes/no questions the Parent answered (they are different
+ * questions per grade). The check is about where the child is, so a Grade 3
+ * child who cannot read starts on letters and a Grade 2 child who reads well
+ * starts on a passage.
  */
 class DiagnosticPlacement
 {
     public const LETTERS = 'letters';
 
-    private const SCALE = ['letters', 'easy', 'medium', 'hard'];
-
-    /** Grade 1 is the only grade whose curriculum has a letters competency. */
-    public static function hasLettersRung(Learner $learner): bool
-    {
-        return $learner->grade_level === 'Grade 1';
-    }
-
     /**
-     * @return list<string> The rungs this child can be tested on, lowest first.
+     * @return list<string> Every rung key, lowest first.
      */
-    public static function rungsFor(Learner $learner): array
+    public static function ladder(): array
     {
-        return self::hasLettersRung($learner) ? self::SCALE : array_slice(self::SCALE, 1);
+        return array_keys(config('diagnostic.ladder'));
     }
 
     /**
@@ -44,7 +40,7 @@ class DiagnosticPlacement
      */
     public static function startingRung(Learner $learner): string
     {
-        $hasLetters = self::hasLettersRung($learner);
+        $ladder = self::ladder();
         $signals = [];
 
         $stageMap = config('diagnostic.stage_start');
@@ -55,55 +51,128 @@ class DiagnosticPlacement
         $answers = is_array($learner->placement_answers) ? $learner->placement_answers : [];
         if (isset($answers['q1'], $answers['q2'], $answers['q3'])) {
             $yes = count(array_filter([$answers['q1'], $answers['q2'], $answers['q3']], fn ($a) => $a === 'yes'));
+            $grade = (int) substr((string) $learner->grade_level, 6);
 
-            if ($hasLetters) {
-                // Grade 1's questions: names letters / says their sounds / blends
-                // them into simple words.
-                $signals[] = match (true) {
+            $signals[] = match ($grade) {
+                // Names letters / says their sounds / blends them into simple words.
+                1 => match (true) {
                     $answers['q1'] === 'no' => 0,
                     $yes === 3 => 3,
                     $answers['q3'] === 'yes' => 2,
                     default => 1,
-                };
-            } else {
-                $signals[] = match (true) {
-                    $yes === 3 => 3,
-                    $yes === 2 => 2,
-                    default => 1,
-                };
-            }
+                },
+                // Reads short sentences alone / knows sight words / answers a question
+                // about what they read. A child who cannot read short sentences is still
+                // an early phonics reader at best; each further yes is a rung higher.
+                2 => $answers['q1'] === 'yes' ? 3 + ($yes - 1) : ($yes >= 2 ? 2 : 1),
+                // Reads a paragraph smoothly / gives the main idea / works out a word
+                // from context: a child who can do the first is already on passages.
+                default => $answers['q1'] === 'yes' ? 4 + ($yes - 1) : ($yes >= 2 ? 2 : 1),
+            };
         }
 
         $position = $signals === []
             ? (config('diagnostic.legacy_mastery_start')[$learner->mastery_level] ?? 2)
             : min($signals);
 
-        if (! $hasLetters) {
-            $position = max($position, 1);
-        }
-
-        return self::SCALE[$position];
-    }
-
-    public static function rungOf(Activity $activity): string
-    {
-        return $activity->isLetterCheck() ? self::LETTERS : strtolower((string) $activity->difficulty_tier);
+        return $ladder[max(0, min(count($ladder) - 1, $position))];
     }
 
     /**
-     * A 0 to 100 starting score in the adaptive recommender's own scale for
-     * a child who landed on $rung with $accuracy percent right there.
+     * The rungs a check starting at $start can reach: at most three items, one
+     * step per item after the first.
+     *
+     * @return list<string>
      */
-    public static function score(string $rung, float $accuracy, bool $hasLetters): float
+    public static function reachableRungs(string $start): array
     {
-        $bands = config('diagnostic.placement_bands');
+        $ladder = self::ladder();
+        $index = array_search($start, $ladder, true);
+        $index = $index === false ? 0 : $index;
+        $reach = (int) config('diagnostic.reach', 2);
+        $from = max(0, $index - $reach);
+        $to = min(count($ladder) - 1, $index + $reach);
 
-        [$low, $high] = match ($rung) {
-            self::LETTERS => $bands['letters'],
-            'easy' => $hasLetters ? $bands['easy_after_letters'] : $bands['easy'],
-            'medium' => $bands['medium'],
-            default => $bands['hard'],
-        };
+        return array_slice($ladder, $from, $to - $from + 1);
+    }
+
+    /**
+     * What the generator has to be asked for to cover these rungs. One request
+     * returns all three tiers of one (grade, competency, activity type), so
+     * rungs that share those share a request. The letters rung needs none.
+     *
+     * @param  list<string>  $rungs
+     * @return array<string, array{grade: int, competency: string, activity_type: string, tiers: array<string, string>}>
+     */
+    public static function generationGroups(array $rungs): array
+    {
+        $groups = [];
+
+        foreach ($rungs as $key) {
+            $rung = config("diagnostic.ladder.{$key}");
+            if (($rung['kind'] ?? null) !== 'generated') {
+                continue;
+            }
+
+            $groupKey = "{$rung['grade']}:{$rung['competency']}:{$rung['activity_type']}";
+            $groups[$groupKey] ??= [
+                'grade' => $rung['grade'],
+                'competency' => $rung['competency'],
+                'activity_type' => $rung['activity_type'],
+                'tiers' => [],
+            ];
+            $groups[$groupKey]['tiers'][$rung['tier']] = $key;
+        }
+
+        return $groups;
+    }
+
+    /**
+     * The rung an activity belongs to. Items made before the ladder existed
+     * (a check that was already running) were plain easy/medium/hard tiers of
+     * the child's own grade and keep that name.
+     */
+    public static function rungOf(Activity $activity): string
+    {
+        if ($activity->isLetterCheck()) {
+            return self::LETTERS;
+        }
+
+        $grade = (int) substr((string) $activity->grade_level, 6);
+        $tier = strtolower((string) $activity->difficulty_tier);
+
+        foreach (config('diagnostic.ladder') as $key => $rung) {
+            if (($rung['kind'] ?? null) === 'generated'
+                && $rung['grade'] === $grade
+                && $rung['competency'] === $activity->competency
+                && $rung['activity_type'] === $activity->activity_type
+                && $rung['tier'] === $tier) {
+                return $key;
+            }
+        }
+
+        return $tier;
+    }
+
+    /** The app's level (Beginning / Developing / Proficient) for a rung. */
+    public static function masteryOf(string $rung): string
+    {
+        return config("diagnostic.ladder.{$rung}.mastery")
+            ?? config("diagnostic.legacy_tiers.{$rung}.mastery")
+            ?? 'Developing';
+    }
+
+    /**
+     * A 0 to 100 starting score in the adaptive recommender's own scale for a
+     * child who landed on $rung with $accuracy percent right there: inside the
+     * rung's own slice of the recommender's bands, and higher the better they
+     * did there.
+     */
+    public static function score(string $rung, float $accuracy): float
+    {
+        [$low, $high] = config("diagnostic.ladder.{$rung}.band")
+            ?? config("diagnostic.legacy_tiers.{$rung}.band")
+            ?? [60, 84];
 
         $share = max(0.0, min(100.0, $accuracy)) / 100;
 

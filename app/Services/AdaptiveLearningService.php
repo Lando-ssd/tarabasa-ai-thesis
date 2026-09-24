@@ -177,7 +177,7 @@ class AdaptiveLearningService
         // The same scale the diagnostic itself uses when it finishes: the rung
         // the child was last tested on and how well they did there.
         $rung = $diagnostic->activity ? DiagnosticPlacement::rungOf($diagnostic->activity) : 'medium';
-        $score = DiagnosticPlacement::score($rung, (float) $diagnostic->accuracy_percent, DiagnosticPlacement::hasLettersRung($learner));
+        $score = DiagnosticPlacement::score($rung, (float) $diagnostic->accuracy_percent);
 
         if (! $this->initializeFromDiagnostic($learner, $score)) {
             return false;
