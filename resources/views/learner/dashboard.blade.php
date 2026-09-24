@@ -11,9 +11,9 @@
 
 @php
     $levels = [
-        'Beginning' => ['🌱', 'Beginning'],
-        'Developing' => ['🌿', 'Developing'],
-        'Proficient' => ['🌟', 'Proficient'],
+        'Beginning' => ['plant', 'Beginning'],
+        'Developing' => ['leaf', 'Developing'],
+        'Proficient' => ['star', 'Proficient'],
     ];
     $levelName = $learner->mastery_level ?? 'New';
     $goalLeft = max(0, $weeklyTarget - $weeklyCount);
@@ -31,7 +31,7 @@
 
 <div class="main-grid" id="page-home">
   <div class="center">
-    <div class="journey-head"><h2>How I'm Growing 🌱</h2></div>
+    <div class="journey-head"><h2>How I'm Growing</h2></div>
 
     @if (! $hasJourneyData || empty($journeyRows))
       <div class="roadmap-banner locked">
@@ -87,7 +87,7 @@
               <div class="lv-rows">
                 @foreach ($levels as $name => [$icon, $label])
                   <div class="lv-row {{ $levelName === $name ? 'current' : '' }}">
-                    <span class="lv-ico">{{ $icon }}</span>
+                    <span class="lv-ico">@include('learner._badge-icon', ['icon' => $icon, 'class' => 'badge-svg'])</span>
                     <span class="lv-name">{{ $label }}</span>
                     @if ($levelName === $name)<span class="lv-you">That's you</span>@endif
                   </div>
@@ -126,7 +126,7 @@
             </div>
             <div class="sp-body">
               <div class="sp-goal">
-                <div class="sp-goal-ico">{{ $dayStreak >= 7 ? '🏅' : '🔒' }}</div>
+                <div class="sp-goal-ico">@include('learner._badge-icon', ['icon' => $dayStreak >= 7 ? 'medal' : 'lock-simple', 'class' => 'badge-svg'])</div>
                 <div class="sp-goal-text">
                   <b>7 Day Streak badge</b>
                   <span>{{ $dayStreak >= 7 ? 'You earned it. Great reading habit!' : 'Read on 7 days in a row to earn it.' }}</span>
@@ -158,7 +158,7 @@
       <div class="clay-card theme-sky">
         <h3>This Week's Goal</h3>
         @include('learner._goal-gauge', ['count' => $weeklyCount, 'target' => $weeklyTarget])
-        <div class="goal-pill">{{ $weeklyMet ? 'Goal reached! 🎉' : $goalLeft.' more to go!' }}</div>
+        <div class="goal-pill">{{ $weeklyMet ? 'Goal reached!' : $goalLeft.' more to go!' }}</div>
       </div>
 
       <div class="clay-card theme-mint">

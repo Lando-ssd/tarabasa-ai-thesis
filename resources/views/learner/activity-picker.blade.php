@@ -1,6 +1,6 @@
 {{--
   Reading: what to read next. Expects $learner and $options, each option being
-  ['activity' => Activity, 'source' => 'Picked just for you! 🎯' | 'Assigned by
+  ['activity' => Activity, 'source' => 'Picked just for you' | 'Assigned by
   your Teacher' | 'Extra Practice']. The one the adaptive engine picked leads,
   as the peach card; the rest are blue cards.
 --}}
@@ -24,7 +24,7 @@
     <div class="rd-grid">
       <div class="rd-card rd-extra">
         <div class="rd-main">
-          <div class="rd-icon">📚</div>
+          <div class="rd-icon">@include('learner._badge-icon', ['icon' => 'books', 'class' => 'badge-svg'])</div>
           <div class="rd-text"><h3>No activity yet</h3></div>
         </div>
         <p class="rd-line">When your teacher gives you a story, it will show up here.</p>
@@ -46,10 +46,10 @@
         <div class="rd-card {{ $isPicked ? 'rd-featured' : 'rd-extra' }}">
           @if ($isPicked)
             <div class="rd-owl"></div>
-            <div class="rd-ribbon">🎯 Picked just for you</div>
+            <div class="rd-ribbon">@include('learner._badge-icon', ['icon' => 'target', 'class' => 'badge-svg']) Picked just for you</div>
           @endif
           <div class="rd-main">
-            <div class="rd-icon">{{ $isExtra ? '🌟' : '📘' }}</div>
+            <div class="rd-icon">@include('learner._badge-icon', ['icon' => $isExtra ? 'star' : 'book', 'class' => 'badge-svg'])</div>
             <div class="rd-text">
               <h3>{{ $activity->title }}</h3>
               <div class="rd-tags">

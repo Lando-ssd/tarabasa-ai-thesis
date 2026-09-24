@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\GamePlay;
 use App\Models\Learner;
 use App\Models\LearnerBadge;
 use App\Models\PromotionRecord;
@@ -131,6 +132,7 @@ class BadgeService
 
         $ctx = [
             'learner' => $learner,
+            'games' => GamePlay::where('learner_id', $learner->id)->orderBy('played_at')->orderBy('id')->get(),
             'all' => $all,
             'practice' => $practice,
             'local' => $practice->map(fn (ReadingSession $s) => LearnerClock::local($s->timestamp))->all(),
@@ -623,6 +625,67 @@ class BadgeService
         for ($i = 1; $i < $days->count(); $i++) {
             if (Carbon::parse($days[$i - 1])->diffInDays(Carbon::parse($days[$i])) >= 7) {
                 return $this->res($this->dayEnd($days[$i]));
+            }
+        }
+
+        return $this->res(null);
+    }
+
+    // ------------------------------------------------------------ games rules
+    // Practice Games report a finished session to game_plays (GameController::finish).
+
+    private function playsOf(array $rule, array $ctx): Collection
+    {
+        return isset($rule['game']) ? $ctx['games']->where('game', $rule['game'])->values() : $ctx['games']->values();
+    }
+
+    private function playedAt(GamePlay $play): Carbon
+    {
+        return Carbon::parse($play->played_at);
+    }
+
+    private function ruleGamePlays(array $rule, array $ctx): array
+    {
+        $plays = $this->playsOf($rule, $ctx);
+        $nth = $plays->count() >= $rule['target'] ? $plays[$rule['target'] - 1] : null;
+
+        return $this->res($nth ? $this->playedAt($nth) : null, min($plays->count(), $rule['target']), $rule['target'] > 1 ? $rule['target'] : null);
+    }
+
+    /** A session that ended on at least this level (climbing to it counts, even if the session ended right then). */
+    private function ruleGameLevel(array $rule, array $ctx): array
+    {
+        $hit = $this->playsOf($rule, $ctx)->first(fn (GamePlay $p) => $p->level_reached >= $rule['min']);
+
+        return $this->res($hit ? $this->playedAt($hit) : null);
+    }
+
+    /** A whole round played and finished at level 3 (for Letter Match: every letter of the alphabet matched). */
+    private function ruleGameTopCleared(array $rule, array $ctx): array
+    {
+        $hit = $this->playsOf($rule, $ctx)->first(fn (GamePlay $p) => $p->top_level_cleared);
+
+        return $this->res($hit ? $this->playedAt($hit) : null);
+    }
+
+    private function ruleGamePerfect(array $rule, array $ctx): array
+    {
+        $hit = $this->playsOf($rule, $ctx)->first(fn (GamePlay $p) => $p->had_perfect_round);
+
+        return $this->res($hit ? $this->playedAt($hit) : null);
+    }
+
+    /** Both games finished on the same calendar day, in the child's own timezone. */
+    private function ruleGameBothSameDay(array $rule, array $ctx): array
+    {
+        $seen = [];
+
+        foreach ($ctx['games'] as $play) {
+            $day = LearnerClock::local($play->played_at)->toDateString();
+            $seen[$day][$play->game] = true;
+
+            if (count($seen[$day]) === 2) {
+                return $this->res($this->playedAt($play));
             }
         }
 

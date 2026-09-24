@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GamePlay;
 use App\Models\PersonalWordBank;
+use App\Services\BadgeService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -13,7 +16,9 @@ use Illuminate\View\View;
  * same root cause: gemini_activity_gen's real API has no game_type/content
  * JSON concept to build that model against). No points, no scoring, no
  * ReadingSession row — a clean separation from the real reading-achievement
- * system, confirmed with the user before building.
+ * system, confirmed with the user before building. The one thing a finished
+ * session does report to the server is a `game_plays` row (see finish()), which
+ * exists only so the ten Games badges can be earned.
  *
  * Both games now have 3 internal difficulty levels, deliberately built from
  * data this app already owns (grade_level, PersonalWordBank) rather than a
@@ -143,5 +148,37 @@ class GameController extends Controller
             'startLevel' => $startLevel,
             'learnerCode' => $learner->learner_code,
         ]);
+    }
+
+    /**
+     * A game session ended (the game runs in the browser and calls this once). Records a
+     * game_plays row and returns any badges it just earned, for the "All done" screen.
+     * The numbers come from the browser, but all they can ever earn is a badge: no
+     * points, streak or level reads this table, so there is nothing to gain by faking them.
+     */
+    public function finish(Request $request, string $game): JsonResponse
+    {
+        abort_unless(in_array($game, GamePlay::GAMES, true), 404);
+
+        $data = $request->validate([
+            'level_reached' => ['required', 'integer', 'between:1,3'],
+            'top_level_cleared' => ['required', 'boolean'],
+            'had_perfect_round' => ['required', 'boolean'],
+            'rounds' => ['required', 'integer', 'between:1,3'],
+        ]);
+
+        $learner = $request->user('learner');
+
+        GamePlay::create($data + ['learner_id' => $learner->id, 'game' => $game, 'played_at' => now()]);
+
+        $newBadges = collect(app(BadgeService::class)->sync($learner->fresh()))
+            ->map(fn (array $badge) => [
+                'code' => $badge['code'],
+                'name' => $badge['name'],
+                'icon' => config('badge_icons.icons.'.$badge['code'], config('badge_icons.fallback')),
+            ])
+            ->values();
+
+        return response()->json(['newBadges' => $newBadges]);
     }
 }

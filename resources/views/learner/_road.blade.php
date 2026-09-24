@@ -27,7 +27,7 @@
 
 <div class="roadmap-banner {{ $started ? '' : 'locked' }}">
   <div class="rb-text">
-    @if ($row['isUpNext'])<div class="rb-eyebrow">⭐ Up Next</div>@endif
+    @if ($row['isUpNext'])<div class="rb-eyebrow">@include('learner._badge-icon', ['icon' => 'star', 'class' => 'badge-svg']) Up Next</div>@endif
     <b>{{ $row['label'] }}</b>
     <span class="rb-sub">{{ $row['description'] }}</span>
   </div>

@@ -5381,11 +5381,10 @@ Bahnschrift (Windows only) with Barlow Semi Condensed as the web-font fallback.
   what a learner has earned, and WHEN, from real reading history (rules per
   `rule.type`), so it is idempotent and also awards badges a learner had already
   earned before they existed (recorded quietly; only badges earned by the reading
-  that just finished are celebrated, capped at 4). 90 are earnable today; the 10
-  Games badges have `rule => null` and show "Coming soon" because Practice Games
-  are client-side and never report a finished game to the server (adding that
-  needs a small write path). The user chose "all 100, most locked" over showing
-  only the real 6.
+  that just finished are celebrated, capped at 4). All 100 are earnable: the 10
+  Games badges were `rule => null` ("Coming soon") until Practice Games got a small
+  write path (see "The rest of the Learner end" near the end of this file). The user
+  chose "all 100, most locked" over showing only the real 6.
 - The mobile API's `/api/learner/dashboard` now returns `competencyProgress`
   (per subdomain) and all 100 badges.
 
@@ -5540,8 +5539,8 @@ did not like it); the text block is centred against the star with a small top nu
   checked at 375, 880, 1024, 1440 and 1920 wide, including a long hyphenated name and two badges
   (fits without scrolling, apart from 1px on a 375x812 phone). The Lottie motion itself cannot be watched in the test browser
   (hidden tabs freeze it), so only its resting frame was seen.
-- **Not done:** `reading-results` (the practice results) and `bookshelf-reread-unclear` still use the
-  older card design.
+- **Not done (since done, see "The rest of the Learner end" below):** `reading-results` and
+  `bookshelf-reread-unclear` now use this same design too.
 
 **Known limits, stated plainly:** writing the assessment's items is still a
 synchronous generator call (now ~7 to 10 s for phonics, but a cold Render service can still
@@ -5550,6 +5549,70 @@ Vosk scores words, so names and homophones (sea/see, its/it's) can be marked
 wrong. Two old teacher-edited test activities (#2, #6) had a stale
 `reference_text` (edited before the recompute fix) and were repaired in the LOCAL
 database only; production may have similar rows.
+
+## The rest of the Learner end, finished (2026-09-24, later the same day)
+
+The user asked what was left so the whole Learner end could be finished in one day. Every
+Learner screen except the login and the first-login intro now shares one look: plain white page,
+a light blue panel with a lip, the game face (`--font-game`) for words, clay orange buttons, Tara
+the owl or the happy/sad star as the character, no emoji, no dashes in copy.
+
+- **Reading screens share one scene.** New `learner/_reading-scene.blade.php` (a full document) is
+  used by `diagnostic-passage`, `activity-found` and `bookshelf-reread`, which are now thin
+  `@include`s. Tara's head (`tara-owl-head.json`) peeks over a light blue panel holding the direction,
+  the text size control and the passage (or the six letter tiles for the letters rung); the mic and stop
+  buttons and the shared `_recording-widget` sit under it. Optional slots: `$eyebrow` (activity title,
+  "Passage 2"), progress dots (the reading check), `$pill` ("Free practice"), `$quizQuestions` (the
+  comprehension quiz, moved into the scene with its script: choices as big tiles that turn orange when
+  picked), `$backHref`. The quiz hook (`window.tarabasaBeforeSubmit`) is unchanged.
+- **Results use the star scene.** `reading-results` and `bookshelf-reread-results` now `@include`
+  `_feedback-scene` with new optional slots: `$subline` (a line under the headline), `$pill`, `$stats`
+  (number tiles with a Phosphor icon each: accuracy, words a minute, words to practice, points, streak)
+  and `$details` (a view shown under the star: the new `_reading-review.blade.php`, the word by word
+  look, its legend, words said that are not in the passage, and the comprehension recap). The star is
+  ALWAYS the happy one on a result (never a sad face for a low score). A level that moved says "Level
+  up! You are now Developing" (or "Your level is now ..." if it went down); a level that stayed the
+  same says nothing. `bookshelf-reread-unclear` uses the sad star scene like `reading-unclear`. The
+  review's classes are prefixed `rv-` on purpose (an unprefixed name once collided with another rule).
+  The old `_badge-celebration` partial is gone (nothing used it any more).
+- **Practice Games look the same.** New `games/_game-look.blade.php` (shared CSS) and
+  `games/_game-finish.blade.php` (two small JS helpers). Word Builder and Letter Match keep only their
+  own tiles, slots and cards. Level badges use icons (plant, leaf, tree; puzzle piece, trophy) instead
+  of emoji; copy lost its dashes ("You finished at Level 3. Great climbing!"). Letter Match uses up to 6
+  columns on a tablet or bigger so a whole board fits without scrolling (18 cards is 3 rows of 6); Word
+  Builder's answer slots shrink on a phone to keep a six letter word on one line.
+- **The ten Games badges are real.** Practice Games are still free play (no points, streak or level),
+  but a finished session now reports itself once to `POST /learner/games/{game}/finish`
+  (`GameController::finish`, throttled), which writes a `game_plays` row (new table and `GamePlay`
+  model: game, level_reached, top_level_cleared, had_perfect_round, rounds, played_at) and returns any
+  badges it earned for the "All done" screen. The numbers come from the browser, but they can only earn
+  a badge (nothing else reads the table), so there is nothing to gain by faking them. `BadgeService`
+  gained five rules over it (`game_plays`, `game_level`, `game_top_cleared`, `game_perfect`,
+  `game_both_same_day`) and `config/badges.php` gives each Games badge its rule. Meanings, so they are not
+  guessed later: `level_reached` is the level the session ENDED on (climbing to level 3 after the last
+  round counts as reaching it); `top_level_cleared` is a whole round finished at level 3 (for Letter
+  Match that is the whole alphabet); `had_perfect_round` is a round with no wrong taps or pairs; "Practice
+  Party" is both games on the same local day (Asia/Manila). A Grade 3 child STARTS at level 3, so Word
+  Builder Pro and Memory Master can come on their first game; that is accepted. The celebration is capped
+  at 4 badges (a fifth is still recorded and shows on the Badges page).
+- **Emoji replaced by icons** on Home (the level popover, the 7 day streak card), the Games hub (titles,
+  icon tiles, "Recommended" ribbons), Bookshelf covers, the Reading picker (book, star, target) and the
+  road banner ("Up Next"), using the same Phosphor sprite (`public/icons/badges.svg`, now 106 symbols;
+  add a `<symbol id="ph-name">` to use another icon). The picker label no longer carries an emoji
+  (`LearnerAuthService`: "Picked just for you"). The stylesheet's icon rules are at the bottom of
+  `public/css/learner-app.css`.
+- **Left as it was on purpose:** the Learner login (its own owl and WebGL background, which the user
+  asked for), the first-login intro (still has its cloud), and the tab titles ("... | TaraBasa AI" on the
+  new screens, older ones still use an em dash there).
+- **Tested for real:** a genuine scored reading (synthesized voice, live Reading-api) rendered the new
+  result end to end (60% accuracy, points, streak, a real "Welcome Back" badge, the word review with a
+  real "heard hang" and "heard out"); the quiz step, the reading screen and re-read screen were checked
+  in the browser; both games were played to the end (perfect play) and the server recorded the plays and
+  awarded Word Builder Rookie and Pro, then Letter Match Rookie, Memory Master, Lucky Match, Alphabet Ace
+  (and Practice Party silently, past the cap of 4). Layouts were checked at 375 and 1280 to 1440 wide. The
+  test data on the flagship learner (Miguel) was removed afterward. The Lottie motion cannot be watched in
+  the test browser (hidden tabs freeze it), so only resting frames were seen; a real child with a real
+  microphone has still not tried any of it.
 
 ## The user's working style
 

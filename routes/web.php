@@ -110,6 +110,7 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         Route::get('/games', [GameController::class, 'index'])->name('games.index');
         Route::get('/games/word-builder', [GameController::class, 'wordBuilder'])->name('games.word-builder');
         Route::get('/games/letter-match', [GameController::class, 'letterMatch'])->name('games.letter-match');
+        Route::post('/games/{game}/finish', [GameController::class, 'finish'])->middleware('throttle:30,1')->name('games.finish');
 
         Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');
 

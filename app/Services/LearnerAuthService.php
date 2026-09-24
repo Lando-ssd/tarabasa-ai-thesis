@@ -153,7 +153,7 @@ class LearnerAuthService
         }
 
         $recommended = $options->get($matchIndex);
-        $recommended['source'] = 'Picked just for you! 🎯';
+        $recommended['source'] = 'Picked just for you';
 
         return collect([$recommended])
             ->concat($options->reject(fn ($option, int $i) => $i === $matchIndex)->values());

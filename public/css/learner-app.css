@@ -1258,3 +1258,29 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
    goal and growth cards sit straight on the page, like Duolingo's right column.
    ========================================================= */
 .right-rail{ background:none; border:0; box-shadow:none; border-radius:0; }
+
+/* =========================================================
+   Icons instead of emoji (Phosphor, see resources/views/learner/_badge-icon.blade.php).
+   Each sits in the same place the emoji did, and takes its colour from `color`.
+   ========================================================= */
+.lv-ico{ display:flex; width:30px; height:30px; align-items:center; justify-content:center; color:#5b6b7a; }
+.lv-ico .badge-svg{ width:28px; height:28px; display:block; }
+.lv-row.current .lv-ico{ color:var(--blue-500); }
+
+.sp-goal-ico{ display:flex; width:48px; height:48px; align-items:center; justify-content:center; color:#dd7014; }
+.sp-goal-ico .badge-svg{ width:46px; height:46px; display:block; }
+
+.gm-icon .badge-svg{ width:54px; height:54px; display:block; }
+.gm-sky .gm-icon{ color:#e8891d; }
+.gm-aqua .gm-icon{ color:#1f8f6f; }
+.gm-ribbon .badge-svg, .rd-ribbon .badge-svg, .rb-eyebrow .badge-svg{
+  width:1.05em; height:1.05em; display:inline-block; vertical-align:-.16em; margin-right:.3em;
+}
+
+.rd-icon .badge-svg{ width:44px; height:44px; display:block; }
+.rd-featured .rd-icon{ color:#e8891d; }
+.rd-extra .rd-icon{ color:#1f9e83; }
+@media (max-width:640px){ .rd-icon .badge-svg{ width:34px; height:34px; } }
+
+.bs-emoji{ display:flex; align-items:center; justify-content:center; color:#ffffff; }
+.bs-emoji .badge-svg{ width:62px; height:62px; display:block; }

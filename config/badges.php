@@ -8,9 +8,9 @@
  *
  * `rule` says how a badge is earned, worked out from real reading history by
  * App\Services\BadgeService (see its rule methods for what each `type` checks).
- * A badge with `rule => null` cannot be earned yet: the ten Games badges need
- * Practice Games to report a finished game to the server, and they don't (games
- * are client-side by design). They show as locked, and say "Coming soon".
+ * A badge with `rule => null` cannot be earned (none today). The ten Games badges are
+ * earned from `game_plays`, a row Practice Games write when a session ends (the games
+ * run in the browser and stay free play: no points, streak or level).
  */
 return [
     'categories' => [
@@ -592,70 +592,70 @@ return [
             'name' => 'Word Builder Rookie',
             'description' => 'Finish your first Word Builder game.',
             'emoji' => '🔤',
-            'rule' => null,
+            'rule' => ['type' => 'game_plays', 'game' => 'word-builder', 'target' => 1],
         ],
         'game_word_builder_pro' => [
             'category' => 'game',
             'name' => 'Word Builder Pro',
             'description' => 'Reach Level 3 in Word Builder.',
             'emoji' => '🧱',
-            'rule' => null,
+            'rule' => ['type' => 'game_level', 'game' => 'word-builder', 'min' => 3],
         ],
         'game_master_builder' => [
             'category' => 'game',
             'name' => 'Master Builder',
             'description' => 'Finish 10 Word Builder games.',
             'emoji' => '🏗️',
-            'rule' => null,
+            'rule' => ['type' => 'game_plays', 'game' => 'word-builder', 'target' => 10],
         ],
         'game_letter_match_rookie' => [
             'category' => 'game',
             'name' => 'Letter Match Rookie',
             'description' => 'Finish your first Letter Match game.',
             'emoji' => '🃏',
-            'rule' => null,
+            'rule' => ['type' => 'game_plays', 'game' => 'letter-match', 'target' => 1],
         ],
         'game_memory_master' => [
             'category' => 'game',
             'name' => 'Memory Master',
             'description' => 'Reach Level 3 in Letter Match.',
             'emoji' => '🎴',
-            'rule' => null,
+            'rule' => ['type' => 'game_level', 'game' => 'letter-match', 'min' => 3],
         ],
         'game_game_on' => [
             'category' => 'game',
             'name' => 'Game On',
             'description' => 'Play 5 practice games.',
             'emoji' => '🎮',
-            'rule' => null,
+            'rule' => ['type' => 'game_plays', 'target' => 5],
         ],
         'game_game_champion' => [
             'category' => 'game',
             'name' => 'Game Champion',
             'description' => 'Play 25 practice games.',
             'emoji' => '🕹️',
-            'rule' => null,
+            'rule' => ['type' => 'game_plays', 'target' => 25],
         ],
         'game_lucky_match' => [
             'category' => 'game',
             'name' => 'Lucky Match',
             'description' => 'Clear a Letter Match round with no mistakes.',
             'emoji' => '🎲',
-            'rule' => null,
+            'rule' => ['type' => 'game_perfect', 'game' => 'letter-match'],
         ],
         'game_alphabet_ace' => [
             'category' => 'game',
             'name' => 'Alphabet Ace',
             'description' => 'Match the whole alphabet in Letter Match.',
             'emoji' => '🔠',
-            'rule' => null,
+            'rule' => ['type' => 'game_top_cleared', 'game' => 'letter-match'],
         ],
         'game_practice_party' => [
             'category' => 'game',
             'name' => 'Practice Party',
             'description' => 'Play both games on the same day.',
             'emoji' => '🥳',
-            'rule' => null,
+            'rule' => ['type' => 'game_both_same_day'],
         ],
         'special_reading_check_done' => [
             'category' => 'special',

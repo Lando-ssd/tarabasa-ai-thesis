@@ -9,7 +9,7 @@
 @section('page', 'bookshelf')
 
 @php
-    $covers = [['bs-blue', '📘'], ['bs-green', '📗']];
+    $covers = [['bs-blue', 'book'], ['bs-green', 'book-open']];
     // Always show a couple of empty slots so the shelf looks like it has room to grow.
     $emptySlots = $books->isEmpty() ? 4 : 2;
 @endphp
@@ -25,9 +25,9 @@
   <div class="bs-shelf">
     <div class="bs-books">
       @foreach ($books as $i => $book)
-        @php [$tone, $emoji] = $covers[$i % 2]; @endphp
+        @php [$tone, $coverIcon] = $covers[$i % 2]; @endphp
         <div class="bs-book {{ $tone }}">
-          <div class="bs-cover"><span class="bs-emoji">{{ $emoji }}</span><span class="bs-times">Read {{ $book['timesRead'] }} {{ $book['timesRead'] === 1 ? 'time' : 'times' }}</span></div>
+          <div class="bs-cover"><span class="bs-emoji">@include('learner._badge-icon', ['icon' => $coverIcon, 'class' => 'badge-svg'])</span><span class="bs-times">Read {{ $book['timesRead'] }} {{ $book['timesRead'] === 1 ? 'time' : 'times' }}</span></div>
           <h3>{{ $book['activity']->title }}</h3>
           <div class="bs-best"><span>Best</span><div class="bs-tube"><i style="width:{{ min(100, (int) round($book['bestAccuracy'])) }}%"></i></div><b>{{ (int) round($book['bestAccuracy']) }}%</b></div>
           <div class="bs-last">Last read {{ \App\Support\LearnerClock::local($book['mostRecentDate'])->format('M j') }}</div>

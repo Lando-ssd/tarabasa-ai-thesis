@@ -1,137 +1,71 @@
+{{--
+  Word Builder: put scrambled letters in the right order to spell real words. Free play:
+  no points, no streak, no level (see GameController). The look is shared with Letter
+  Match in games/_game-look; only the tiles and slots are styled here.
+--}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Word Builder — TaraBasa AI</title>
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>Word Builder | TaraBasa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+@include('learner.games._game-look')
 <style>
-  :root{
-    --sky-100:#dcedff;
-    --blue-500:#1c7ed6; --blue-700:#0a3d73;
-    --navy-900:#131f2b; --slate-600:#5b6b7a;
-    --owl-orange-500:#ef8d2a; --owl-orange-600:#dd7014; --clay-yellow:#ffcf6e;
-    --teal:#2bb89c; --success:#1f9e83; --success-bg:#e9f7f3;
-    --danger:#d64545;
-    --leaf-green:#4caf7d; --leaf-green-light:#c9ecd9; --petal-pink:#ff9ec4;
-    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
-  }
-  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
-  body{
-    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
-    background: radial-gradient(1200px 700px at 90% -10%, var(--sky-100), transparent 55%),
-                radial-gradient(900px 600px at 0% 100%, #ffe9c9, transparent 50%), var(--bg-0);
-    background-attachment:fixed;
-    display:flex; align-items:safe center; justify-content:center; padding:24px;
-  }
-  .wrap{ width:100%; max-width:480px; }
-  @media (min-width:700px){ .wrap{ max-width:640px; } }
+  :root{ --leaf-green:#4caf7d; --petal-pink:#ff9ec4; }
+  .level-badge{ --lv-bg:#d8f2e4; --lv-ink:#1a6e4f; --lv-lip:#a7dcc0; }
 
-  .top-bar{ display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
-  .level-badge{
-    display:inline-flex; align-items:center; gap:5px; font:800 12.5px/1 'Baloo 2',sans-serif; color:#1a6e4f;
-    background:var(--leaf-green-light); border:1.5px solid var(--leaf-green); border-radius:999px; padding:5px 12px;
-  }
-  .attempt-label{ font:700 12px/1 'Inter',sans-serif; color:var(--slate-600); }
-
-  .progress-wrap{ margin-bottom:16px; }
-  .progress-label{ text-align:center; font:800 12.5px/1 'Baloo 2',sans-serif; color:var(--slate-600); margin-bottom:8px; letter-spacing:.02em; }
-  .progress-dots{ display:flex; gap:8px; justify-content:center; }
-  .pdot{ width:10px;height:10px;border-radius:50%; background:var(--line); }
-  .pdot.done{ background:var(--teal); }
-  .pdot.current{ background:var(--owl-orange-500); transform:scale(1.3); }
-
-  .card{
-    position:relative; overflow:hidden;
-    background:linear-gradient(180deg, #fbfff9, var(--surface) 40%); border-radius:30px; padding:32px 28px; text-align:center;
-    box-shadow:0 30px 60px -28px rgba(15,60,110,0.25);
-  }
-  /* "Garden" theme accents — simple claymorphism leaf/flower shapes, the
-     same soft-gradient-blob technique already used everywhere else in
-     this app, just shaped like garden motifs instead of plain circles. */
+  /* "Garden" accents: simple leaf and flower shapes tucked into the corners of the panel. */
   .garden-accent{ position:absolute; pointer-events:none; z-index:0; opacity:.85; }
   .garden-accent.leaf-tl{ top:-10px; left:-14px; width:86px; transform:rotate(-18deg); }
   .garden-accent.leaf-br{ bottom:-16px; right:-18px; width:100px; transform:rotate(160deg); }
   .garden-accent.petal-tr{ top:14px; right:22px; width:34px; }
   .garden-accent.petal-bl{ bottom:60px; left:16px; width:26px; }
-  .card > *{ position:relative; z-index:1; }
-  .clay-blob{ position:absolute; border-radius:50%; pointer-events:none; z-index:0; }
-  .clay-blob.b1{ width:150px;height:150px; top:-60px; right:-50px; background:radial-gradient(circle, rgba(255,207,110,0.28), transparent 70%); }
-  .clay-blob.b2{ width:120px;height:120px; bottom:-40px; left:-40px; background:radial-gradient(circle, rgba(28,126,214,0.1), transparent 70%); }
 
-  .mascot{
-    width:88px;height:88px;border-radius:26px; margin:0 auto 12px; padding:11px;
-    background:linear-gradient(155deg, var(--clay-yellow), var(--owl-orange-600));
-    display:flex;align-items:center;justify-content:center; box-shadow:0 16px 28px -12px rgba(221,112,20,0.5);
-    animation:bob 2.4s ease-in-out infinite;
-  }
-  @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
-  h1{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:0 0 18px; }
-
-  .slots{ display:flex; gap:9px; justify-content:center; flex-wrap:wrap; margin-bottom:28px; }
+  .slots{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:30px; }
   .slot{
-    width:52px; height:60px; border-radius:14px; background:var(--bg-0);
-    box-shadow:inset 0 3px 6px rgba(19,31,43,0.12), inset 0 -1px 0 rgba(255,255,255,0.6);
+    width:54px; height:64px; border-radius:16px; background:#ffffff; border:2px solid var(--panel-line);
+    box-shadow:inset 0 4px 0 rgba(19,31,43,.06);
     display:flex; align-items:center; justify-content:center;
-    font-family:'Baloo 2',sans-serif; font-size:27px; font-weight:800; color:var(--success);
-    text-transform:uppercase; transition:transform .2s cubic-bezier(.34,1.56,.64,1), background .15s ease;
+    font:700 38px/1 var(--font-game); color:var(--success); text-transform:uppercase;
+    transition:transform .2s cubic-bezier(.34,1.56,.64,1), background .15s ease;
   }
-  .slot.filled{
-    background:linear-gradient(155deg, var(--success-bg), #cdeee2);
-    box-shadow:inset 0 2px 4px rgba(31,158,131,0.15), 0 4px 8px -4px rgba(31,158,131,0.35);
-    animation:slotPop .3s cubic-bezier(.34,1.56,.64,1);
-  }
-  @keyframes slotPop{ 0%{ transform:scale(0.7); } 60%{ transform:scale(1.12); } 100%{ transform:scale(1); } }
+  .slot.filled{ background:var(--success-bg); border-color:#a9dccd; animation:slotPop .3s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes slotPop{ 0%{ transform:scale(.7); } 60%{ transform:scale(1.12); } 100%{ transform:scale(1); } }
 
   .tiles{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:8px; }
   .tile{
-    width:62px; height:66px; border-radius:18px; border:none;
-    background:linear-gradient(155deg, #ffffff, #eaf1fb);
-    font-family:'Baloo 2',sans-serif; font-size:29px; font-weight:800; color:var(--navy-900); text-transform:uppercase;
-    cursor:pointer; box-shadow:0 10px 20px -12px rgba(19,31,43,0.3), inset 0 -3px 0 rgba(19,31,43,0.07), inset 0 2px 0 rgba(255,255,255,0.8);
-    transition:transform .15s ease, box-shadow .15s ease, opacity .2s ease;
+    width:64px; height:70px; border-radius:18px; cursor:pointer; background:#ffffff; border:2px solid var(--panel-line);
+    font:700 40px/1 var(--font-game); color:var(--navy-900); text-transform:uppercase;
+    box-shadow:0 6px 0 var(--lip); transition:transform .08s ease, box-shadow .08s ease, opacity .2s ease;
   }
-  .tile:hover:not(:disabled){ transform:translateY(-3px) scale(1.04); box-shadow:0 16px 24px -12px rgba(239,141,42,0.5), inset 0 -3px 0 rgba(19,31,43,0.07), inset 0 2px 0 rgba(255,255,255,0.8); }
-  .tile:active:not(:disabled){ transform:scale(0.92); }
+  .tile:hover:not(:disabled){ transform:translateY(-2px); border-color:var(--owl-orange-500); }
+  .tile:active:not(:disabled){ transform:translateY(4px); box-shadow:0 2px 0 var(--lip); }
   .tile:disabled{ opacity:0; pointer-events:none; }
+  .tile:focus-visible{ outline:4px solid var(--blue-500); outline-offset:3px; }
   .tile.correct-tap{ animation:tileBounce .4s cubic-bezier(.34,1.56,.64,1); }
   @keyframes tileBounce{ 0%{ transform:scale(1); } 40%{ transform:scale(1.25) translateY(-8px) rotate(-4deg); } 100%{ transform:scale(1); } }
-  .tile.wrong-tap{ animation:tileShake .35s ease; box-shadow:0 10px 20px -12px rgba(214,69,69,0.5), inset 0 0 0 2.5px var(--danger); }
+  .tile.wrong-tap{ animation:tileShake .35s ease; border-color:var(--danger); box-shadow:0 6px 0 #efb1b1; }
   @keyframes tileShake{ 0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-7px); } 75%{ transform:translateX(7px); } }
-
-  .celebrate{ display:none; }
-  .celebrate.show{ display:block; animation:pop .5s cubic-bezier(.34,1.56,.64,1); }
-  @keyframes pop{ 0%{ transform:scale(0); } 70%{ transform:scale(1.15); } 100%{ transform:scale(1); } }
-  .celebrate-mascot{
-    width:88px;height:88px;border-radius:26px; margin:0 auto 8px; padding:11px;
-    background:linear-gradient(155deg, var(--clay-yellow), var(--owl-orange-600));
-    display:flex;align-items:center;justify-content:center; box-shadow:0 16px 28px -12px rgba(221,112,20,0.5);
+  /* On a phone the answer slots shrink to keep a whole word (up to six letters) on one line. */
+  @media (max-width:520px){
+    .slots{ flex-wrap:nowrap; gap:8px; }
+    .slot{ flex:1 1 0; min-width:0; max-width:54px; height:60px; font-size:32px; }
+    .tiles{ gap:10px; }
   }
-  .celebrate-text{ font-family:'Baloo 2',sans-serif; font-size:20px; font-weight:700; color:var(--success); }
-  .level-up-text{ font-family:'Baloo 2',sans-serif; font-size:15px; font-weight:700; color:var(--owl-orange-600); margin-top:6px; }
-
-  .big-btn{
-    display:block; width:100%; padding:17px; border:none; border-radius:18px; font:800 15px/1 'Baloo 2',sans-serif;
-    cursor:pointer; background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); color:#fff;
-    text-decoration:none; box-sizing:border-box; box-shadow:0 16px 26px -12px rgba(15,95,174,0.5);
-    transition:transform .2s cubic-bezier(.34,1.56,.64,1); margin-top:8px;
+  @media (min-width:700px){
+    .slot{ width:60px; height:70px; font-size:42px; }
+    .tile{ width:72px; height:78px; font-size:44px; }
   }
-  .big-btn:hover{ transform:translateY(-2px) scale(1.02); }
-  .big-btn:active{ transform:scale(0.97); }
-  .back-link{
-    display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:var(--slate-600);
-    text-decoration:none; margin-top:16px;
-  }
-  .back-link:hover{ color:var(--blue-600); }
-  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="top-bar">
-    <span class="level-badge" id="levelBadge">🌱 Level 1</span>
+    <span class="level-badge" id="levelBadge"></span>
     <span class="attempt-label" id="attemptLabel">Round 1 of 3</span>
   </div>
   <div class="progress-wrap">
@@ -144,8 +78,6 @@
     <svg class="garden-accent leaf-br" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><path d="M30 2C46 2 58 14 58 30C42 30 30 18 30 2Z" fill="var(--leaf-green)" opacity=".3"/></svg>
     <svg class="garden-accent petal-tr" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="12" r="8" fill="var(--petal-pink)" opacity=".55"/><circle cx="11" cy="24" r="8" fill="var(--petal-pink)" opacity=".55"/><circle cx="29" cy="24" r="8" fill="var(--petal-pink)" opacity=".55"/><circle cx="20" cy="22" r="6" fill="var(--clay-yellow)" opacity=".8"/></svg>
     <svg class="garden-accent petal-bl" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="12" r="8" fill="var(--clay-yellow)" opacity=".55"/><circle cx="11" cy="24" r="8" fill="var(--clay-yellow)" opacity=".55"/><circle cx="29" cy="24" r="8" fill="var(--clay-yellow)" opacity=".55"/><circle cx="20" cy="22" r="6" fill="var(--petal-pink)" opacity=".7"/></svg>
-    <div class="clay-blob b1"></div>
-    <div class="clay-blob b2"></div>
 
     <div id="playArea">
       <div class="mascot">@include('learner.games._owl-mascot', ['id' => 'wbOwlMain'])</div>
@@ -157,24 +89,23 @@
     <div class="celebrate" id="celebrate">
       <div class="celebrate-mascot">@include('learner.games._owl-mascot', ['id' => 'wbOwlCelebrate'])</div>
       <p class="celebrate-text" id="celebrateText">Great job!</p>
-      <p class="level-up-text" id="levelUpText" style="display:none;">⭐ Level up!</p>
+      <p class="level-up-text" id="levelUpText" style="display:none;">@include('learner._badge-icon', ['icon' => 'star']) Level up!</p>
     </div>
 
     <div class="celebrate" id="roundComplete">
       <div class="celebrate-mascot">@include('learner.games._owl-mascot', ['id' => 'wbOwlRoundComplete'])</div>
       <h1>All done!</h1>
-      <p id="roundCompleteSummary" style="font-size:16px;font-weight:600;color:var(--slate-600);margin-bottom:20px;">Nice work!</p>
+      <p class="round-summary" id="roundCompleteSummary">Nice work!</p>
+      <div class="gm-newbadges" id="newBadges"></div>
       <a href="{{ route('learner.games.word-builder') }}" class="big-btn">Play Again</a>
     </div>
 
-    <a href="{{ route('learner.dashboard') }}" class="back-link" id="backLink" onclick="saveProgress()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Back to My Dashboard
-    </a>
+    <a href="{{ route('learner.dashboard') }}" class="back-link" id="backLink" onclick="saveProgress()">Back to My Dashboard</a>
   </div>
 </div>
 
 @include('learner.games._game-sounds')
+@include('learner.games._game-finish', ['game' => 'word-builder'])
 
 <script>
   const LEVELS = @json($levels);
@@ -190,6 +121,8 @@
   let used = [];
   let spelled = '';
   let wrongTapsThisAttempt = 0;
+  let topLevelCleared = false;   // a whole round finished at level 3
+  let hadPerfectRound = false;   // a round with no wrong taps
 
   const levelBadge = document.getElementById('levelBadge');
   const attemptLabel = document.getElementById('attemptLabel');
@@ -205,7 +138,7 @@
   const roundCompleteSummary = document.getElementById('roundCompleteSummary');
   const backLink = document.getElementById('backLink');
 
-  const LEVEL_EMOJI = { 1: '🌱', 2: '🌿', 3: '🌳' };
+  const LEVEL_ICON = { 1: 'plant', 2: 'leaf', 3: 'tree' };
 
   // Resume-in-progress support — this game's entire state already lives
   // only in these JS variables (the server sends the word pools once, up
@@ -224,7 +157,7 @@
   function saveProgress() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        currentLevel, attemptCount, leveledUpDuringSession,
+        currentLevel, attemptCount, leveledUpDuringSession, topLevelCleared, hadPerfectRound,
         roundWords, wordIndex, letters, used, spelled, wrongTapsThisAttempt,
       }));
     } catch (e) { /* resume is a convenience, never allowed to break play */ }
@@ -258,6 +191,8 @@
     currentLevel = saved.currentLevel;
     attemptCount = saved.attemptCount;
     leveledUpDuringSession = saved.leveledUpDuringSession;
+    topLevelCleared = !!saved.topLevelCleared;
+    hadPerfectRound = !!saved.hadPerfectRound;
     roundWords = saved.roundWords;
     wordIndex = saved.wordIndex;
     letters = saved.letters;
@@ -296,8 +231,12 @@
     return shuffle(picked);
   }
 
+  function setLevelBadge() {
+    levelBadge.innerHTML = window.tarabasaBadgeSvg(LEVEL_ICON[currentLevel] || 'plant') + '<span>Level ' + currentLevel + '</span>';
+  }
+
   function updateTopBar() {
-    levelBadge.textContent = (LEVEL_EMOJI[currentLevel] || '🌱') + ' Level ' + currentLevel;
+    setLevelBadge();
     attemptLabel.textContent = 'Round ' + (attemptCount + 1) + ' of ' + MAX_ATTEMPTS;
   }
 
@@ -402,7 +341,7 @@
 
   function wordComplete() {
     playArea.style.display = 'none';
-    celebrateText.textContent = '"' + roundWords[wordIndex].toUpperCase() + '" — you got it!';
+    celebrateText.textContent = 'You spelled "' + roundWords[wordIndex].toUpperCase() + '"!';
     levelUpText.style.display = 'none';
     document.getElementById('wbOwlCelebrate').classList.add('is-celebrating');
     window.tarabasaPlaySfx('levelComplete', 0.5);
@@ -423,6 +362,8 @@
 
   function finishAttempt() {
     const wasAtCeiling = currentLevel >= 3;
+    if (wasAtCeiling) topLevelCleared = true;
+    if (wrongTapsThisAttempt === 0) hadPerfectRound = true;
     const leveledUp = wrongTapsThisAttempt <= WRONG_THRESHOLD && currentLevel < 3;
     if (leveledUp) {
       currentLevel++;
@@ -465,14 +406,22 @@
 
   function finishSession(justLeveledUp) {
     clearProgress();
-    levelBadge.textContent = (LEVEL_EMOJI[currentLevel] || '🌱') + ' Level ' + currentLevel;
+    setLevelBadge();
     attemptLabel.textContent = 'Complete!';
     playArea.style.display = 'none';
     document.getElementById('wbOwlRoundComplete').classList.add('is-celebrating');
     window.tarabasaPlaySfx('levelComplete', 0.6);
-    roundCompleteSummary.textContent = 'You finished at Level ' + currentLevel + (justLeveledUp ? ' — great climbing!' : '. Nice work!');
+    roundCompleteSummary.textContent = 'You finished at Level ' + currentLevel + (justLeveledUp ? '. Great climbing!' : '. Nice work!');
     roundComplete.classList.add('show');
     backLink.style.display = 'none';
+
+    // Tell the server the session ended so the Games badges can be earned (fire and forget).
+    window.tarabasaReportGame({
+      level_reached: currentLevel,
+      top_level_cleared: topLevelCleared,
+      had_perfect_round: hadPerfectRound,
+      rounds: Math.max(1, Math.min(3, attemptCount))
+    }, document.getElementById('newBadges'));
   }
 
   resumeOrStart();
