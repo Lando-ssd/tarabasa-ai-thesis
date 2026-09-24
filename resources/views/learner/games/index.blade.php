@@ -12,7 +12,7 @@
 @php $pick = $recommendedGame['game'] ?? null; @endphp
 
 @section('content')
-<div class="subpage" id="page-games" style="max-width:none;">
+<div class="subpage" id="page-games">
   <h1 class="pg-title">Practice Games 🎮</h1>
   <p class="pg-sub">Free play. No points, just for fun!</p>
 

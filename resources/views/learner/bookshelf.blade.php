@@ -15,7 +15,7 @@
 @endphp
 
 @section('content')
-<div class="subpage" id="page-bookshelf" style="max-width:none;">
+<div class="subpage" id="page-bookshelf">
   <div class="pg-head">
     <h1 class="pg-title">My Bookshelf</h1>
     <span class="pg-count">{{ $books->count() }} {{ $books->count() === 1 ? 'book' : 'books' }}</span>

@@ -16,7 +16,7 @@
 @endphp
 
 @section('content')
-<div class="subpage" id="page-reading" style="max-width:none;">
+<div class="subpage" id="page-reading">
   <h1 class="pg-title">What Should I Read?</h1>
 
   @if ($options->isEmpty())

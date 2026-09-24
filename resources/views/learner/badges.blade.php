@@ -26,7 +26,7 @@
 @endphp
 
 @section('content')
-<div class="subpage" id="page-badges" style="max-width:none;">
+<div class="subpage" id="page-badges">
   <div class="bdg-head"><h1 class="bdg-title">My Badges</h1><span class="bdg-count" id="bdgCount"></span></div>
 
   <div class="bdg-summary">
