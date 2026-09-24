@@ -5290,6 +5290,102 @@ Committed on this branch but **not pushed** — per this project's
 standing rule, waiting for the user's own explicit "push it now"
 before this goes anywhere near Railway.
 
+## Teammate services moved to new contracts + the redesigned Learner app built for real (2026-09-24)
+
+An audit of the real app (prompted by "make sure the learner logic is still
+there") found the teammate's services had changed under us. The mockup-only UI
+work had touched no logic; these were upstream breaks.
+
+**Reading-api v4.0.0 — every reading was unscoreable (fixed, live-verified).**
+`/analyze` now REQUIRES `grade`, `subdomain`, `competency_code`,
+`activity_type`, `difficulty` (plus optional `activity_id`, `attempt_number`).
+The app sent none, got a 422, and `ReadingAiClient` read EVERY 422 as "unclear
+audio", so no learner could be scored and a new learner could never finish the
+first-login assessment. Fixed: `analyze()` now takes the `Activity` and sends the
+context; only 422s whose `detail` mentions audio/silence count as "unclear"
+(`isUnclearAudio()`); a bad request now falls through to the logged error path.
+Also fixed in all three AI clients: `set_time_limit()` was equal to the HTTP
+timeout, so PHP's uncatchable "Maximum execution time" fatal fired before the
+friendly `ConnectionException` (a raw 500 on the diagnostic intro); the PHP
+limit is now longer than the HTTP timeout.
+
+**Adaptive_Recommendator v2.0.0 — re-integrated.** v2 is keyed by MATATAG
+SUBDOMAIN (state, `assessment_scores`, `completed_activity`, nested
+`performance.measurements`, `completed_subdomain_update`) and its models are
+strict (`extra=forbid`), so the v1 payload 422'd (swallowed and logged), which
+left every learner with no adaptive state. New `AdaptiveLearningService` holds
+all use (initialize after the diagnostic, record after each scored practice
+reading); `MatatagAlignmentResolver` is the single answer to "which subdomain and
+competency code does this activity count toward?" (shared with Reading-api).
+State lives in NEW columns (`learners.subdomain_states`,
+`next_recommended_subdomain`, `reading_sessions.adaptive_subdomain`); the v1
+columns are left untouched (its README says not to copy old scores across).
+Learners who finished the diagnostic while it was broken are initialized from
+that diagnostic on their next scored reading. A promoted learner's state is
+reconciled to their new grade's subdomains before each call. Verified LIVE:
+state and recommendations match the engine's own formulas exactly (EMA
+88 -> 82.6 -> 85.42, confidence 0.6 -> 0.68 -> 0.76) and an audio-quality-flagged
+attempt leaves state unchanged.
+
+**⚠️ PROVISIONAL, NOT FINAL — coverage gap (`config/matatag_subdomains.php`).**
+The generator (v3.1) tags only a GROUPED competency, and the engine scores
+specific evidence per subdomain: oral word accuracy -> Phonics and Word Study
+(and Vocabulary for sight/word reading); answered comprehension items ->
+Comprehending and Analyzing Text; Phonological Awareness and Book and Print
+Knowledge need backend-scored tasks the app has NO activities for. So today:
+foundational + fluency activities count toward Phonics and Word Study,
+comprehension quizzes toward Comprehending and Analyzing Text, the diagnostic's
+accuracy initializes Phonics and Word Study. The recommender always recommends
+unassessed subdomains first (Phonological Awareness), which the app cannot
+serve, so `Learner::focusSubdomain()` falls back to the weakest MEASURED
+practiceable subdomain (never a dead end for the child). Needs the generator to
+tag activities per subdomain, and rhyming/matching-style activities, before the
+team can call this final.
+
+**The redesigned Learner app is built for real.** Shared shell
+(`layouts/learner-shell`, `learner/_sidebar`, `public/css/learner-app.css`, ported
+from the approved mockup, which was built in layers, so its later rules override
+earlier ones; keep the order). Pages: Home, Reading (the picker), Games, Badges
+(new route `/learner/badges`), Bookshelf (new route `/learner/bookshelf`); the
+focused task screens (recording, assessment, the two games) stay outside the
+shell. Each page sets `<html data-page>` for its flat background colour (Home sky,
+Reading mint, Games lilac, Badges gold, Bookshelf peach); the profile chip tints
+from `<body data-theme="blue|pink">` = `learners.theme_color`, chosen by the Parent
+in the child wizard (existing learners default to blue). Below 900px the sidebar is
+a bottom tab bar and Home stacks. "Switch" is a POST to `learner.logout` -> the
+Learner login. Sidebar icons are Icons8 free-tier: they REQUIRE an attribution link
+(a small "Icons by Icons8" line is on Home); do not drop it. `--font-game` is
+Bahnschrift (Windows only) with Barlow Semi Condensed as the web-font fallback.
+- **Real day streak** (`Learner::readingDayStreak()`): consecutive days with a
+  real Practice reading, derived and never written back. The stored `streak`
+  column (+1 per scored reading, no calendar reset) is untouched and no longer
+  shown as "days in a row".
+- **Timezone:** days/weeks/hours go through `App\Support\LearnerClock`
+  (`config/reading_goals.php` `timezone` = Asia/Manila) instead of the server's
+  UTC (`config/app.php` is still UTC and was deliberately not changed); this
+  also shifts the weekly goal/growth week boundaries to the child's own week.
+- **Badges: 100 definitions** (`config/badges.php`, ten categories). The old
+  6-badge config shape is gone (`config('badges.badges')`). `BadgeService` derives
+  what a learner has earned, and WHEN, from real reading history (rules per
+  `rule.type`), so it is idempotent and also awards badges a learner had already
+  earned before they existed (recorded quietly; only badges earned by the reading
+  that just finished are celebrated, capped at 4). 90 are earnable today; the 10
+  Games badges have `rule => null` and show "Coming soon" because Practice Games
+  are client-side and never report a finished game to the server (adding that
+  needs a small write path). The user chose "all 100, most locked" over showing
+  only the real 6.
+- The mobile API's `/api/learner/dashboard` now returns `competencyProgress`
+  (per subdomain) and all 100 badges.
+
+**Known limits, stated plainly:** the assessment intro page still generates a
+Gemini bundle synchronously (~105 s warm; can pass the 150 s limit when the
+Render service is cold), and the fix above only turns a crash into a friendly
+retry. A real child/microphone test has not happened (synthesized voices only).
+Vosk scores words, so names and homophones (sea/see, its/it's) can be marked
+wrong. Two old teacher-edited test activities (#2, #6) had a stale
+`reference_text` (edited before the recompute fix) and were repaired in the LOCAL
+database only; production may have similar rows.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
