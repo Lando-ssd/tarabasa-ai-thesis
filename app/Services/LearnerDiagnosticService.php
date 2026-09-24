@@ -6,13 +6,17 @@ use App\Models\Activity;
 use App\Models\Learner;
 use App\Models\Notification;
 use App\Models\ReadingSession;
+use App\Support\DiagnosticPlacement;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 /**
- * The first-login diagnostic staircase — extracted out of
+ * The first-login reading check: an adaptive staircase that starts where the
+ * Parent said the child is (see DiagnosticPlacement and config/diagnostic.php).
+ * Grade 1 children can be asked for letters only; every reading item is
+ * phonics. Extracted out of
  * LearnerDiagnosticController (previously `private` methods returning
  * Blade Views) for the same reason as LearnerReadingService: one real
  * implementation, called by both the web controller and the mobile API
@@ -31,6 +35,7 @@ class LearnerDiagnosticService
     private const TIERS = ['easy', 'medium', 'hard'];
 
     private const TIER_TO_MASTERY = [
+        'letters' => 'Beginning',
         'easy' => 'Beginning',
         'medium' => 'Developing',
         'hard' => 'Proficient',
@@ -57,12 +62,19 @@ class LearnerDiagnosticService
 
         $competencies = config('activity_competencies.competencies');
         $gradeNumber = (int) substr($learner->grade_level, 6);
+        $rungs = DiagnosticPlacement::rungsFor($learner);
 
+        // Every reading item in this check is phonics (Foundational Reading,
+        // Phonics Reading), which the generator aligns to the MATATAG
+        // curriculum guide for the child's grade. It used to be Reading
+        // Fluency passages, which could hand a child who cannot read yet a
+        // paragraph. Phonics bundles also come back in seconds instead of the
+        // minute or more a fluency passage took.
         try {
             $data = app(ActivityAiClient::class)->generateBundle([
                 'grade' => $gradeNumber,
-                'competency' => 'reading_fluency',
-                'activity_type' => 'passage_reading',
+                'competency' => 'foundational_reading',
+                'activity_type' => 'phonics_reading',
                 'variants_per_level' => 2,
                 'topic' => null,
             ]);
@@ -73,21 +85,27 @@ class LearnerDiagnosticService
         $activities = Activity::createManyFromBundle($data, [
             'created_by_teacher_id' => null,
             'grade_level' => $learner->grade_level,
-            'competency' => 'reading_fluency',
-            'competency_label' => $data['competency_label'] ?? $competencies['reading_fluency']['label'],
-            'activity_type' => 'passage_reading',
+            'competency' => 'foundational_reading',
+            'competency_label' => $data['competency_label'] ?? $competencies['foundational_reading']['label'],
+            'activity_type' => 'phonics_reading',
             'purpose' => 'diagnostic',
         ]);
 
-        $activityIds = ['easy' => [], 'medium' => [], 'hard' => []];
+        $activityIds = ['letters' => [], 'easy' => [], 'medium' => [], 'hard' => []];
         foreach ($activities as $activity) {
             $activityIds[strtolower($activity->difficulty_tier)][] = $activity->id;
         }
 
+        if (in_array(DiagnosticPlacement::LETTERS, $rungs, true)) {
+            $activityIds['letters'] = $this->letterCheckActivityIds();
+        }
+
         $state = [
+            'rungs' => $rungs,
             'activity_ids' => $activityIds,
-            'variant_used' => ['easy' => 0, 'medium' => 0, 'hard' => 0],
-            'current_tier' => 'medium',
+            'variant_used' => ['letters' => 0, 'easy' => 0, 'medium' => 0, 'hard' => 0],
+            // Where the Parent said the child is, not a neutral default.
+            'current_tier' => DiagnosticPlacement::startingRung($learner),
             'passages_done' => 0,
             'level_before' => $learner->mastery_level,
             'accuracy_history' => [],
@@ -105,6 +123,90 @@ class LearnerDiagnosticService
         $this->putState($learner, $state);
 
         return $state;
+    }
+
+    /**
+     * The two letter rows of the letters rung, made once and shared by every
+     * child (they are fixed content, not generated per learner). Looked up by
+     * their exact letters, so changing config/diagnostic.php makes new rows
+     * instead of silently showing the old letters.
+     *
+     * @return list<int>
+     */
+    private function letterCheckActivityIds(): array
+    {
+        $ids = [];
+
+        foreach (config('diagnostic.letters.sets') as $set) {
+            $letters = $set['letters'];
+
+            $activity = Activity::firstOrCreate(
+                [
+                    'purpose' => 'diagnostic',
+                    'activity_type' => 'phonics',
+                    'grade_level' => 'Grade 1',
+                    'variant_label' => $set['label'],
+                    'reference_text' => strtolower(implode(' ', $letters)),
+                ],
+                [
+                    'created_by_teacher_id' => null,
+                    'competency' => 'foundational_reading',
+                    'competency_label' => 'Foundational Reading',
+                    'difficulty_tier' => 'Easy',
+                    'bundle_title' => 'Letter Check',
+                    'title' => 'Letter Check '.$set['label'],
+                    'instructions' => 'Say the name of each letter.',
+                    'passage_text' => implode(' ', $letters),
+                    'word_count' => count($letters),
+                    'target_skills' => ['Naming letters'],
+                    'reading_features' => ['Single letters'],
+                    'follow_up_questions' => [],
+                    'status' => 'Draft',
+                ]
+            );
+
+            $ids[] = $activity->id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * What the passage screen shows for the current item, so a row of letters
+     * and a phonics passage are told apart in one place (the web screen and
+     * the mobile API both use it).
+     *
+     * @return array{kind: string, label: string, prompt: string, micLabel: string, doneLabel: string, letters: list<array{upper: string, lower: string}>}
+     */
+    public function presentation(Activity $activity): array
+    {
+        if ($activity->isLetterCheck()) {
+            return [
+                'kind' => 'letters',
+                'label' => 'Letters',
+                'prompt' => 'Say the name of each letter.',
+                'micLabel' => 'Tap the mic, then say each letter out loud!',
+                'doneLabel' => "I'm done!",
+                'letters' => collect(explode(' ', trim((string) $activity->passage_text)))
+                    ->filter()
+                    ->map(fn (string $letter) => ['upper' => strtoupper($letter), 'lower' => strtolower($letter)])
+                    ->values()
+                    ->all(),
+            ];
+        }
+
+        $direction = trim((string) $activity->instructions);
+
+        return [
+            'kind' => 'passage',
+            'label' => 'Passage',
+            // The generator writes the direction that fits the item ("Read the
+            // short words out loud."), so use it rather than a generic line.
+            'prompt' => $direction !== '' ? $direction : 'Read this out loud.',
+            'micLabel' => 'Tap the mic, then read the words above out loud!',
+            'doneLabel' => "I'm done reading!",
+            'letters' => [],
+        ];
     }
 
     public function currentActivityId(array $state): int
@@ -214,19 +316,23 @@ class LearnerDiagnosticService
         $state['passages_done']++;
         $state['accuracy_history'][] = ['tier' => $tier, 'accuracy' => $accuracy];
 
-        $tierIndex = array_search($tier, self::TIERS, true);
+        // A check already in progress when the letters rung was added has no
+        // rungs saved; it keeps the three tiers it started with.
+        $rungs = $state['rungs'] ?? self::TIERS;
+        $tierIndex = array_search($tier, $rungs, true);
+        $tierIndex = $tierIndex === false ? 0 : $tierIndex;
         $nextTier = null;
 
         if ($accuracy >= 90) {
-            $nextTier = $tierIndex < count(self::TIERS) - 1 ? self::TIERS[$tierIndex + 1] : null;
+            $nextTier = $rungs[$tierIndex + 1] ?? null;
         } elseif ($accuracy < 70) {
-            $nextTier = $tierIndex > 0 ? self::TIERS[$tierIndex - 1] : null;
+            $nextTier = $tierIndex > 0 ? $rungs[$tierIndex - 1] : null;
         }
 
         $reachedCap = $state['passages_done'] >= self::MAX_PASSAGES;
 
         if ($nextTier === null || $reachedCap) {
-            return $this->finishDiagnostic($learner, $tier, $accuracy, $state['is_first_ever_reading']);
+            return $this->finishDiagnostic($learner, $tier, $accuracy, $state['is_first_ever_reading'], $rungs);
         }
 
         $state['variant_used'][$nextTier] = min($state['variant_used'][$nextTier] + 1, 1);
@@ -244,7 +350,7 @@ class LearnerDiagnosticService
         ];
     }
 
-    private function finishDiagnostic(Learner $learner, string $landedTier, float $lastAccuracy, bool $isFirstEverReading): array
+    private function finishDiagnostic(Learner $learner, string $landedTier, float $lastAccuracy, bool $isFirstEverReading, array $rungs): array
     {
         $finalLevel = self::TIER_TO_MASTERY[$landedTier];
 
@@ -257,7 +363,13 @@ class LearnerDiagnosticService
             includeTeacher: false
         );
 
-        $this->initializeAdaptiveRecommendation($learner, $lastAccuracy);
+        // Where the child landed and how well they did there, in the adaptive
+        // recommender's own scale, not the raw accuracy of whichever item was
+        // last (which cannot tell "names every letter" from "reads sentences").
+        $this->initializeAdaptiveRecommendation(
+            $learner,
+            DiagnosticPlacement::score($landedTier, $lastAccuracy, in_array(DiagnosticPlacement::LETTERS, $rungs, true))
+        );
 
         $this->clearState($learner);
 
@@ -280,9 +392,9 @@ class LearnerDiagnosticService
         ];
     }
 
-    private function initializeAdaptiveRecommendation(Learner $learner, float $lastAccuracy): void
+    private function initializeAdaptiveRecommendation(Learner $learner, float $placementScore): void
     {
-        app(AdaptiveLearningService::class)->initializeFromDiagnostic($learner, $lastAccuracy);
+        app(AdaptiveLearningService::class)->initializeFromDiagnostic($learner, $placementScore);
     }
 
     private function putState(Learner $learner, array $state): void

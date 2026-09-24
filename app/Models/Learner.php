@@ -45,6 +45,8 @@ class Learner extends Model implements AuthenticatableContract
         'next_recommended_subdomain',
         'theme_color',
         'learning_style',
+        'reading_stage',
+        'placement_answers',
         'points',
         'streak',
         'status',
@@ -67,6 +69,8 @@ class Learner extends Model implements AuthenticatableContract
             // this state at all.
             'competency_states' => 'array',
             'subdomain_states' => 'array',
+            // The Parent's own answers at sign up; see DiagnosticPlacement.
+            'placement_answers' => 'array',
         ];
     }
 

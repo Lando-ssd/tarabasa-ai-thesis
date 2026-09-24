@@ -5,16 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Services\LearnerDiagnosticService;
 use App\Services\ReadingAiClient;
+use App\Support\DiagnosticPlacement;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
  * Sprint 4 Slice 4 — the first-login diagnostic
  * (TaraBasaAI_PlacementDiagnostic_Addition.txt +
- * TaraBasaAI_AdaptiveDiagnostic_Correction.txt). PROVISIONAL scope cuts
+ * TaraBasaAI_AdaptiveDiagnostic_Correction.txt). PROVISIONAL scope cut
  * recorded prominently in CLAUDE.md: the staircase adapts WITHIN the
- * Learner's own grade only, and every Learner starts at Medium regardless
- * of their Parent placement-quiz pattern.
+ * Learner's own grade only. It starts where the Parent said the child is
+ * (config/diagnostic.php): Grade 1 pre-readers are asked for letters only,
+ * and every reading item is phonics.
  *
  * A thin Blade-rendering wrapper — the actual staircase logic (bundle
  * generation, scoring, mastery-level finalization, Adaptive_Recommendator
@@ -37,7 +39,14 @@ class LearnerDiagnosticController extends Controller
      */
     public function show(Request $request): View
     {
-        return view('learner.diagnostic-intro', ['learner' => $request->user('learner')]);
+        $learner = $request->user('learner');
+
+        return view('learner.diagnostic-intro', [
+            'learner' => $learner,
+            // A child the Parent described as just starting is asked for
+            // letters, not reading, so the welcome should not promise reading.
+            'startsWithLetters' => DiagnosticPlacement::startingRung($learner) === DiagnosticPlacement::LETTERS,
+        ]);
     }
 
     /**
@@ -56,6 +65,8 @@ class LearnerDiagnosticController extends Controller
             'learner' => $learner,
             'passageNumber' => $state['passages_done'] + 1,
             'maxPassages' => 3,
+            // Letters row or phonics passage, with the wording that fits it.
+            'present' => $service->presentation($activity),
         ]);
     }
 

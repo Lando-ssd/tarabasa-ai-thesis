@@ -25,12 +25,17 @@ class LearnerDiagnosticApiController extends Controller
         $state = $service->ensureBundleGenerated($learner);
 
         $activity = Activity::findOrFail($service->currentActivityId($state));
+        $present = $service->presentation($activity);
 
         return response()->json([
             'activity' => [
                 'id' => $activity->id,
                 'title' => $activity->title,
                 'passageText' => $activity->passage_text,
+                // 'letters' (say each letter's name) or 'passage' (read the phonics text).
+                'kind' => $present['kind'],
+                'prompt' => $present['prompt'],
+                'letters' => $present['letters'],
             ],
             'passageNumber' => $state['passages_done'] + 1,
             'maxPassages' => 3,

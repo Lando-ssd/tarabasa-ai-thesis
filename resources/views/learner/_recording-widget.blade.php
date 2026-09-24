@@ -41,6 +41,8 @@
   backward-compatible, opt-in extension point, not a behavior change.
 
   Expects: $recordAction (string) — the form's target URL.
+  Optional: $micLabel (the line under the mic) and $doneLabel (the stop button's
+  text), for screens whose task isn't reading a passage, e.g. naming letters.
 --}}
 <style>
   /* Scoped here (not the including page) since this is the shared
@@ -69,7 +71,7 @@
     <button type="button" class="mic-btn" id="micBtn">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="white"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg>
     </button>
-    <span class="mic-label">Tap the mic, then read the words above out loud!</span>
+    <span class="mic-label">{{ $micLabel ?? 'Tap the mic, then read the words above out loud!' }}</span>
   </div>
 </div>
 
@@ -81,7 +83,7 @@
     <span class="mic-label">Listening...</span>
     <span class="timer-label" id="timerLabel">0:00</span>
   </div>
-  <button type="button" class="big-btn" id="doneBtn">I'm done reading!</button>
+  <button type="button" class="big-btn" id="doneBtn">{{ $doneLabel ?? "I'm done reading!" }}</button>
 </div>
 
 <div class="step" id="stepChecking">

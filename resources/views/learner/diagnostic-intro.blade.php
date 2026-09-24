@@ -116,7 +116,13 @@
         <span class="dx-bubble b2" aria-hidden="true"></span>
       </div>
 
-      <p class="dx-msg">Tara the owl wants to hear you read! There are no wrong answers. Just do your best.</p>
+      <p class="dx-msg">
+        @if ($startsWithLetters ?? false)
+          Tara the owl wants to hear you say your letters! There are no wrong answers. Just do your best.
+        @else
+          Tara the owl wants to hear you read! There are no wrong answers. Just do your best.
+        @endif
+      </p>
 
       @if ($errors->has('diagnostic'))
         <p class="dx-note" role="alert">Tara could not find your story just now. Please tap the button to try again.</p>

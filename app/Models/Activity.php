@@ -64,6 +64,17 @@ class Activity extends Model
     }
 
     /**
+     * The first-login check's letters rung: a row of six letters the child
+     * names aloud. Not something the generator makes, so it has its own
+     * activity type ('phonics', one of Reading-api's speech types) that the
+     * app uses for nothing else; see config/diagnostic.php.
+     */
+    public function isLetterCheck(): bool
+    {
+        return $this->purpose === 'diagnostic' && $this->activity_type === 'phonics';
+    }
+
+    /**
      * Shared by ActivityController (Teacher-authored) and
      * LearnerDiagnosticController (system-generated diagnostic passages)
      * — both create real Activity rows from the exact same

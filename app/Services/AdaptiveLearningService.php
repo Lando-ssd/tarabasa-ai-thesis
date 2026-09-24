@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Activity;
 use App\Models\Learner;
 use App\Models\ReadingSession;
+use App\Support\DiagnosticPlacement;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -44,9 +45,11 @@ class AdaptiveLearningService
 
     /**
      * Called once when the first-login diagnostic finishes. The diagnostic is
-     * an oral passage reading, so its accuracy is the starting estimate for
-     * the subdomain that oral accuracy counts under. Every other subdomain
-     * starts unassessed, exactly as the recommender's own README specifies.
+     * an oral reading check, so its result is the starting estimate for the
+     * subdomain that oral accuracy counts under. $accuracy is that result as a
+     * placement score (DiagnosticPlacement::score), in the recommender's own
+     * scale, not the raw percentage of one item. Every other subdomain starts
+     * unassessed, exactly as the recommender's own README specifies.
      */
     public function initializeFromDiagnostic(Learner $learner, float $accuracy): bool
     {
@@ -167,7 +170,16 @@ class AdaptiveLearningService
             ->orderByDesc('id')
             ->first();
 
-        if ($diagnostic === null || ! $this->initializeFromDiagnostic($learner, (float) $diagnostic->accuracy_percent)) {
+        if ($diagnostic === null) {
+            return false;
+        }
+
+        // The same scale the diagnostic itself uses when it finishes: the rung
+        // the child was last tested on and how well they did there.
+        $rung = $diagnostic->activity ? DiagnosticPlacement::rungOf($diagnostic->activity) : 'medium';
+        $score = DiagnosticPlacement::score($rung, (float) $diagnostic->accuracy_percent, DiagnosticPlacement::hasLettersRung($learner));
+
+        if (! $this->initializeFromDiagnostic($learner, $score)) {
             return false;
         }
 

@@ -1,130 +1,174 @@
+{{--
+  One item of the first-login reading check: either a row of six letters the
+  child names aloud (Grade 1 children whose Parent said they are just starting)
+  or a short phonics passage to read. Plain white screen; Tara peeks over the
+  top of the panel and looks around while the child reads.
+
+  $present comes from LearnerDiagnosticService::presentation(): the kind
+  ('letters' or 'passage'), the direction to show, the mic and done wording and,
+  for letters, the letters themselves.
+--}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Let's Read Together — TaraBasa AI</title>
+<title>Let's Read Together | TaraBasa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-{{-- Lexend is used ONLY for the passage text a child actually reads
-     aloud — every other UI element stays Baloo 2/Inter. --}}
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet">
+{{-- Lexend is used ONLY for the words and letters a child actually reads
+     aloud. The game face (Barlow Semi Condensed when Bahnschrift is missing)
+     carries the directions and buttons, as on the intro screen. --}}
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
 <style>
   :root{
-    --sky-100:#dcedff;
     --blue-500:#1c7ed6; --blue-700:#0a3d73;
     --navy-900:#131f2b; --slate-600:#5b6b7a;
     --owl-orange-500:#ef8d2a; --owl-orange-600:#dd7014; --clay-yellow:#ffcf6e;
     --teal:#2bb89c;
-    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
+    --line:#dbe7f3; --surface:#ffffff; --bg-0:#f5f9ff;
+    --panel:#f1f7ff; --panel-line:#d3e3f4; --lip:#c3d8ee;
     --amber:#c9820b; --amber-bg:#fef6e6;
-    --danger:#d64545; --danger-bg:#fdecec;
-    /* Same responsive base as activity-found.blade.php — the +/-
-       control multiplies this via calc(), so its steps stay
+    --danger:#d64545;
+    --font-game:'Bahnschrift SemiCondensed','Bahnschrift','Barlow Semi Condensed',sans-serif;
+    /* The text-size control multiplies this with calc(), so its steps stay
        proportional at every breakpoint. */
     --passage-font-base:23px;
+    --peek-w:210px;
   }
-  @media (min-width:700px){ :root{ --passage-font-base:26px; } }
-  @media (min-width:1024px){ :root{ --passage-font-base:28px; } }
-  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
+  @media (min-width:700px){ :root{ --passage-font-base:26px; --peek-w:250px; } }
+  @media (min-width:1024px){ :root{ --passage-font-base:28px; --peek-w:290px; } }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#ffffff; }
   body{
     min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
-    background: radial-gradient(1200px 700px at 90% -10%, var(--sky-100), transparent 55%),
-                radial-gradient(900px 600px at 0% 100%, #ffe9c9, transparent 50%), var(--bg-0);
-    background-attachment:fixed;
-    display:flex; align-items:safe center; justify-content:center; padding:24px;
+    display:flex; align-items:safe center; justify-content:center; padding:24px 20px 40px;
   }
-  /* Responsive layout — same three-tier treatment as activity-found.
-     blade.php (the other Learner reading screen), so the diagnostic
-     doesn't feel like a lesser, mobile-only experience on a bigger
-     screen either. */
   .wrap{ width:100%; max-width:460px; }
   @media (min-width:700px){ .wrap{ max-width:640px; } }
   @media (min-width:1024px){ .wrap{ max-width:780px; } }
 
-  .progress-wrap{ margin-bottom:16px; }
-  .progress-label{ text-align:center; font:800 12.5px/1 'Baloo 2',sans-serif; color:var(--slate-600); margin-bottom:8px; letter-spacing:.02em; }
-  @media (min-width:700px){ .progress-label{ font-size:14px; } }
-  .progress-dots{ display:flex; gap:8px; justify-content:center; }
-  .pdot{ width:10px;height:10px;border-radius:50%; background:var(--line); }
-  @media (min-width:700px){ .pdot{ width:12px; height:12px; } }
+  /* ---- progress ---- */
+  .progress-wrap{ margin-bottom:14px; }
+  .progress-label{ text-align:center; font:700 18px/1 var(--font-game); letter-spacing:.06em; text-transform:uppercase; color:var(--slate-600); margin-bottom:10px; }
+  @media (min-width:700px){ .progress-label{ font-size:20px; } }
+  .progress-dots{ display:flex; gap:10px; justify-content:center; }
+  .pdot{ width:12px; height:12px; border-radius:50%; background:var(--line); }
+  @media (min-width:700px){ .pdot{ width:14px; height:14px; } }
   .pdot.done{ background:var(--teal); }
   .pdot.current{ background:var(--owl-orange-500); transform:scale(1.3); }
 
-  .card{
-    position:relative; overflow:hidden;
-    background:var(--surface); border-radius:30px; padding:32px 28px; text-align:center;
-    box-shadow:0 30px 60px -28px rgba(15,60,110,0.25);
+  /* ---- Tara, peeking over the top of the panel ---- */
+  .peek{ position:relative; z-index:0; width:var(--peek-w); aspect-ratio:700 / 458; margin:0 auto calc(var(--peek-w) * -0.13); }
+  #taraHead{ position:absolute; inset:0; }
+
+  /* ---- the panel that holds the words or letters ---- */
+  .panel{
+    position:relative; z-index:1; background:var(--panel); border:2px solid var(--panel-line); border-radius:30px;
+    box-shadow:0 8px 0 var(--lip); padding:30px 22px 26px;
   }
-  @media (min-width:700px){ .card{ padding:44px 48px; border-radius:34px; } }
-  @media (min-width:1024px){ .card{ padding:56px 64px; border-radius:38px; } }
-  .clay-blob{ position:absolute; border-radius:50%; pointer-events:none; z-index:0; }
-  .clay-blob.b1{ width:150px;height:150px; top:-60px; right:-50px; background:radial-gradient(circle, rgba(255,207,110,0.35), transparent 70%); }
-  .clay-blob.b2{ width:120px;height:120px; bottom:-40px; left:-40px; background:radial-gradient(circle, rgba(28,126,214,0.12), transparent 70%); }
-  .card > *{ position:relative; z-index:1; }
-  .mascot{
-    width:72px;height:72px;border-radius:24px; margin:0 auto 14px; font-size:36px;
-    background:linear-gradient(155deg, var(--clay-yellow), var(--owl-orange-600));
-    display:flex;align-items:center;justify-content:center; box-shadow:0 16px 28px -12px rgba(221,112,20,0.5);
+  @media (min-width:700px){ .panel{ padding:38px 36px 32px; border-radius:34px; } }
+
+  .panel-head{ display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:18px; text-align:center; }
+  .prompt{ margin:0; font:600 22px/1.25 var(--font-game); color:#2f455b; }
+  @media (min-width:700px){
+    .prompt{ font-size:26px; }
+    .panel-head.has-control{ flex-direction:row; justify-content:space-between; text-align:left; gap:20px; }
   }
-  @media (min-width:700px){ .mascot{ width:92px; height:92px; font-size:46px; border-radius:28px; } }
+  .panel-head .font-control{ margin:0; }
+
   .passage-card{
-    background:var(--bg-0); border:2px solid var(--line); border-radius:22px; padding:22px; margin-bottom:22px;
+    background:#ffffff; border:2px solid var(--panel-line); border-radius:22px; padding:20px 22px;
     font-family:'Lexend',sans-serif; font-size:var(--passage-font-base); font-weight:500; line-height:1.7; color:var(--navy-900);
     text-align:left; overflow-wrap:break-word; word-break:break-word; transition:font-size .15s ease;
   }
-  @media (min-width:700px){ .passage-card{ padding:28px 32px; border-radius:26px; } }
+  @media (min-width:700px){ .passage-card{ padding:26px 30px; border-radius:26px; } }
 
+  /* ---- the letters rung: six big tiles, in reading order ---- */
+  .letters{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin:0; padding:0; list-style:none; }
+  @media (min-width:700px){ .letters{ grid-template-columns:repeat(6, 1fr); gap:12px; } }
+  .letter{
+    background:#ffffff; border:2px solid var(--panel-line); border-radius:22px; box-shadow:0 5px 0 var(--lip);
+    padding:16px 4px 14px; text-align:center; font-family:'Lexend',sans-serif; line-height:1; white-space:nowrap;
+  }
+  .letter .up{ font-size:56px; font-weight:700; color:var(--navy-900); }
+  .letter .low{ font-size:38px; font-weight:500; color:var(--blue-500); margin-left:2px; }
+  @media (min-width:700px){ .letter .up{ font-size:46px; } .letter .low{ font-size:32px; } }
+  @media (min-width:1024px){ .letter .up{ font-size:54px; } .letter .low{ font-size:38px; } }
+
+  /* ---- the recording controls (classes the shared widget expects) ---- */
+  .rec-area{ margin-top:34px; }
   .step{ display:none; }
   .step.active{ display:block; }
 
-  .mic-zone{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:14px; }
+  .mic-zone{ display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:14px; }
   .mic-btn{
-    width:84px;height:84px;border-radius:50%; border:none; cursor:pointer;
-    background:linear-gradient(155deg, #ff8a65, var(--owl-orange-600)); box-shadow:0 16px 28px -12px rgba(221,112,20,0.55);
-    display:flex;align-items:center;justify-content:center; transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+    width:96px; height:96px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(180deg,#f9a544,#ee8a26);
+    box-shadow:0 7px 0 #b4560b, 0 18px 24px -10px rgba(180,86,11,.65), inset 0 2px 0 rgba(255,255,255,.45);
+    display:flex; align-items:center; justify-content:center; transition:transform .08s ease, box-shadow .08s ease;
   }
-  @media (min-width:700px){ .mic-btn{ width:108px; height:108px; } .mic-btn svg{ width:38px; height:38px; } }
-  .mic-btn:hover{ transform:scale(1.05); }
-  .mic-btn.listening{ animation:pulse 1s ease-in-out infinite; background:linear-gradient(155deg, #ff6b6b, var(--danger)); }
-  @keyframes pulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(214,69,69,0.4);} 50%{ box-shadow:0 0 0 16px rgba(214,69,69,0);} }
-  .mic-label{ font-size:17px; font-weight:700; color:var(--slate-600); }
-  @media (min-width:700px){ .mic-label{ font-size:19px; } }
-  .timer-label{ font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:700; color:var(--navy-900); }
-  @media (min-width:700px){ .timer-label{ font-size:26px; } }
+  .mic-btn svg{ width:36px; height:36px; }
+  @media (min-width:700px){ .mic-btn{ width:112px; height:112px; } .mic-btn svg{ width:42px; height:42px; } }
+  .mic-btn:hover{ transform:translateY(-1px); }
+  .mic-btn:active{ transform:translateY(4px); box-shadow:0 3px 0 #b4560b, 0 8px 12px -6px rgba(180,86,11,.6), inset 0 2px 0 rgba(255,255,255,.4); }
+  .mic-btn:focus-visible, .big-btn:focus-visible{ outline:4px solid var(--blue-500); outline-offset:4px; }
+  .mic-btn.listening{
+    cursor:default; background:linear-gradient(180deg,#ff7d6d,#e0483a);
+    animation:micRing 1.2s ease-out infinite;
+  }
+  .mic-btn.listening:hover{ transform:none; }
+  @keyframes micRing{
+    0%{ box-shadow:0 7px 0 #a92b20, 0 0 0 0 rgba(224,72,58,.45), inset 0 2px 0 rgba(255,255,255,.4); }
+    70%{ box-shadow:0 7px 0 #a92b20, 0 0 0 20px rgba(224,72,58,0), inset 0 2px 0 rgba(255,255,255,.4); }
+    100%{ box-shadow:0 7px 0 #a92b20, 0 0 0 0 rgba(224,72,58,0), inset 0 2px 0 rgba(255,255,255,.4); }
+  }
+  .mic-label{ margin:0; font:600 21px/1.3 var(--font-game); color:#3f566d; text-align:center; }
+  @media (min-width:700px){ .mic-label{ font-size:24px; } }
+  .timer-label{ font:700 28px/1 var(--font-game); color:var(--navy-900); }
+  @media (min-width:700px){ .timer-label{ font-size:32px; } }
   .timer-label.warn{ color:var(--danger); }
 
   .loading-spin{
-    width:44px;height:44px;border-radius:50%; margin:0 auto 12px; border:4px solid var(--line); border-top-color:var(--owl-orange-500);
-    animation:spin 0.9s linear infinite;
+    width:48px; height:48px; border-radius:50%; margin:0 auto 12px; border:5px solid var(--line); border-top-color:var(--owl-orange-500);
+    animation:spin .9s linear infinite;
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
+  #stepChecking{ text-align:center; }
 
   .note-banner{
     display:flex; gap:10px; text-align:left; border-radius:16px; padding:14px 16px; margin-bottom:14px;
-    font-size:15px; font-weight:500; line-height:1.5;
+    font:600 18px/1.4 var(--font-game);
   }
   .note-banner.amber{ background:var(--amber-bg); border:1px solid var(--amber); color:var(--navy-900); }
 
   .big-btn{
-    display:block; width:100%; padding:16px; border:none; border-radius:18px; font:800 15px/1 'Baloo 2',sans-serif;
-    cursor:pointer; background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); color:#fff;
-    text-decoration:none; box-sizing:border-box; box-shadow:0 16px 26px -12px rgba(15,95,174,0.5);
-    transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+    display:block; width:100%; max-width:420px; margin:0 auto; padding:17px 24px 15px; border:none; border-radius:20px;
+    font:600 24px/1.1 var(--font-game); letter-spacing:.06em; text-transform:uppercase; text-align:center; color:#fff; cursor:pointer;
+    background:linear-gradient(180deg,#f9a544,#ee8a26); text-shadow:0 1px 0 rgba(0,0,0,.2);
+    box-shadow:0 6px 0 #b4560b, 0 16px 22px -10px rgba(180,86,11,.6), inset 0 2px 0 rgba(255,255,255,.45);
+    transition:transform .08s ease, box-shadow .08s ease;
   }
-  @media (min-width:700px){ .big-btn{ padding:19px; font-size:17px; border-radius:20px; } }
-  .big-btn:hover{ transform:translateY(-2px) scale(1.02); }
+  .big-btn:hover{ transform:translateY(-1px); }
+  .big-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 #b4560b, 0 6px 10px -6px rgba(180,86,11,.6), inset 0 2px 0 rgba(255,255,255,.4); }
+
+  @media (prefers-reduced-motion:reduce){
+    .mic-btn, .big-btn, .passage-card{ transition:none; }
+    .mic-btn.listening{ animation:none; }
+    .loading-spin{ animation-duration:2.4s; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  {{-- Part 4.5: simple visual progress so the child knows there's a
-       clear end in sight. Three dots always shown (the actual staircase
-       may stop after 1 or 2) rather than a false "of N" count, since the
-       real total isn't known ahead of time. --}}
+  {{-- Part 4.5: simple visual progress so the child knows there's a clear end in
+       sight. Three dots always shown (the check may stop after 1 or 2) rather
+       than a false "of N" count, since the real total isn't known ahead of time. --}}
   <div class="progress-wrap">
-    <div class="progress-label">Passage {{ $passageNumber }}</div>
+    <div class="progress-label">{{ $present['kind'] === 'letters' ? 'Letters' : 'Passage '.$passageNumber }}</div>
     <div class="progress-dots">
       @for ($i = 1; $i <= $maxPassages; $i++)
         <div class="pdot {{ $i < $passageNumber ? 'done' : ($i === $passageNumber ? 'current' : '') }}"></div>
@@ -132,16 +176,49 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="clay-blob b1"></div>
-    <div class="clay-blob b2"></div>
-    <div class="mascot">🦉</div>
+  <div class="peek"><div id="taraHead" role="img" aria-label="Tara the owl, looking at the words"></div></div>
 
-    @include('learner._reading-font-control', ['initialStep' => $learner->effectiveReadingFontStep()])
-    <div class="passage-card">{{ $activity->passage_text }}</div>
+  <div class="panel">
+    @if ($present['kind'] === 'letters')
+      <div class="panel-head">
+        <p class="prompt">{{ $present['prompt'] }}</p>
+      </div>
+      <ul class="letters" aria-label="Letters to name">
+        @foreach ($present['letters'] as $letter)
+          <li class="letter" aria-label="Letter {{ $letter['upper'] }}"><span class="up">{{ $letter['upper'] }}</span><span class="low">{{ $letter['lower'] }}</span></li>
+        @endforeach
+      </ul>
+    @else
+      <div class="panel-head has-control">
+        <p class="prompt">{{ $present['prompt'] }}</p>
+        @include('learner._reading-font-control', ['initialStep' => $learner->effectiveReadingFontStep()])
+      </div>
+      <div class="passage-card">{{ $activity->passage_text }}</div>
+    @endif
+  </div>
 
-    @include('learner._recording-widget', ['recordAction' => route('learner.diagnostic.record')])
+  <div class="rec-area">
+    @include('learner._recording-widget', [
+      'recordAction' => route('learner.diagnostic.record'),
+      'micLabel' => $present['micLabel'],
+      'doneLabel' => $present['doneLabel'],
+    ])
   </div>
 </div>
+
+<script>
+  // Tara's head: a five second loop of looking around and blinking. With
+  // reduced motion she just holds still on the first frame.
+  (function () {
+    try {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var head = lottie.loadAnimation({
+        container: document.getElementById('taraHead'), renderer: 'svg', loop: true, autoplay: !reduce,
+        path: @json(asset('animations/learner/tara-owl-head.json'))
+      });
+      if (reduce) { head.addEventListener('DOMLoaded', function () { head.goToAndStop(0, true); }); }
+    } catch (e) { /* the page works without her */ }
+  })();
+</script>
 </body>
 </html>

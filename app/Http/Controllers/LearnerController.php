@@ -131,7 +131,15 @@ class LearnerController extends Controller
             ? $request->file('avatar_photo')->store('avatars', 'public')
             : null;
 
-        $learner = DB::transaction(function () use ($validated, $masteryLevel, $parent, $photoPath) {
+        // Kept as given, so the first-login reading check can start where the
+        // Parent said the child is instead of at a neutral default.
+        $placementAnswers = [
+            'q1' => $validated['q1'],
+            'q2' => $validated['q2'],
+            'q3' => $validated['q3'],
+        ];
+
+        $learner = DB::transaction(function () use ($validated, $masteryLevel, $parent, $photoPath, $placementAnswers) {
             $learner = Learner::create([
                 'learner_code' => Learner::generateUniqueCode(),
                 'class_id' => null,
@@ -145,6 +153,8 @@ class LearnerController extends Controller
                 'avatar_photo_path' => $photoPath,
                 'mastery_level' => $masteryLevel,
                 'learning_style' => $validated['learning_style'],
+                'reading_stage' => $validated['reading_stage'],
+                'placement_answers' => $placementAnswers,
                 'status' => 'Active',
             ]);
 

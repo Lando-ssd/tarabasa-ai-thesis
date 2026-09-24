@@ -64,6 +64,16 @@ class MatatagAlignmentResolver
         $competency = (string) $activity->competency;
         $subdomain = $this->subdomainFor($activity) ?? 'Comprehending and Analyzing Text';
 
+        // The first-login letters rung is not a generated activity, so there
+        // is nothing to look up: it is the curriculum's own letter competency.
+        if ($activity->isLetterCheck()) {
+            return [
+                'grade' => $grade,
+                'subdomain' => $subdomain,
+                'competency_code' => config('diagnostic.letters.competency_code'),
+            ];
+        }
+
         $records = $this->recordsFor($grade, $competency);
 
         // Prefer an official record in the same subdomain. When the curriculum

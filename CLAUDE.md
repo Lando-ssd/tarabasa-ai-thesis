@@ -1359,6 +1359,11 @@ since nothing currently saves it. Every Learner's diagnostic starts at
 Medium (the patch doc's own stated default for the non-unanimous case)
 regardless of their placement-quiz pattern — a real, disclosed
 data-availability gap, not an oversight glossed over.
+**SUPERSEDED 2026-09-24:** the wizard now stores `reading_stage` and
+`placement_answers`, and the check starts where the Parent said the child is
+(see "First-login reading check follows the Parent's profile" near the end of
+this file). Children created before that only have `mastery_level`, so they use
+the legacy fallback there.
 
 ## Known deviations from the manuscript / actor prompts
 
@@ -5400,8 +5405,8 @@ full-screen scene: Tara the owl (`public/animations/learner/tara-owl-intro.json`
 Together, {name}!", the message and a big "I'm Ready" clay button on the other; it
 stacks on phones. No emoji or arrows on the button and no dashes in the copy.
 `LearnerDiagnosticController::show()` NO LONGER generates the reading passages;
-`passage()` (the button) already did, so the ~55-105 s Gemini wait now happens after
-the button is pressed, on the intro screen with a "Getting your story ready" state,
+`passage()` (the button) already did, so the Gemini wait (about 7 to 10 s now that the
+items are phonics; it used to be 55-105 s) happens after the button is pressed, on the intro screen with a "Getting your story ready" state,
 instead of a blank white page before the welcome could appear. If generation fails,
 Laravel sends the child back to the intro, which shows a friendly "try again" note.
 The page background is plain white. On a wide screen the cloud is lined up with Tara's head: the two columns
@@ -5411,9 +5416,68 @@ her; stacked on a phone the bubbles rise straight up to her. If the owl animatio
 that 0.335 in `diagnostic-intro.blade.php`.
 The passage, encouragement and results screens still use the older card design.
 
-**Known limits, stated plainly:** writing the assessment's passages is still a
-synchronous Gemini call (~55-105 s warm; can pass the 150 s limit when the Render
-service is cold), and the fix above only turns a crash into a friendly retry. A real child/microphone test has not happened (synthesized voices only).
+**First-login reading check follows the Parent's profile (2026-09-24).** The
+instructor's finding: the check must match what the Parent said at sign up (a
+Grade 1 child described as "just starting" must not be handed a paragraph), be
+letters only for a pre-reader, use the curriculum guide, and be all phonics.
+- **Stored profile.** New nullable `learners.reading_stage` (starting / letters /
+  blending / sentences / independent / unsure) and `learners.placement_answers`
+  (JSON `{q1,q2,q3}`), both already collected by the wizard but thrown away until
+  now (`LearnerController::store()` keeps them). Children created before this have
+  neither and fall back to their stored `mastery_level`
+  (`config/diagnostic.php` `legacy_mastery_start`).
+- **A ladder of rungs** instead of three tiers: letters (Grade 1 ONLY), easy, medium,
+  hard. `App\Support\DiagnosticPlacement::startingRung()` starts at the LOWEST rung the
+  Parent's description and answers suggest (Grade 1: q1 "names letters" = no starts on
+  letters; "just starting" starts on letters; "knows letters and sounds" or "blending"
+  starts on easy phonics, which steps down to letters by itself if it goes badly;
+  "sentences" medium; "independent" hard; Grade 2/3 never start on letters). The
+  staircase rules are unchanged (>=90 up, <70 down, 70-89 stop, cap 3 items) and the
+  landing rung maps letters/easy -> Beginning, medium -> Developing, hard -> Proficient.
+  Rules and numbers live in `config/diagnostic.php`, verified for 8 profiles.
+- **Every reading item is phonics.** The check now generates Foundational Reading +
+  `phonics_reading` (not Reading Fluency passages), which the generator aligns to the
+  MATATAG guide for the child's grade (Grade 1 easy "The cat sat on a mat", Grade 3 hard
+  "The brave children proudly marched..."). As a bonus a bundle now takes ~7 s, not 55-105.
+  The item's own `instructions` from the generator is shown as the direction.
+- **The letters rung** (Grade 1 only, because only Grade 1's MATATAG guide has a letter
+  competency: RL1PWS-II-1 "Produce the sounds represented by letters"): six letters
+  (`S A T P I N`, or `M D O G C B` for a second visit), the child SAYS THE NAME of each
+  letter. Fixed content, not generated: two `Activity` rows (`purpose=diagnostic`,
+  `activity_type=phonics`, see `Activity::isLetterCheck()`), scored by the same
+  Reading-api `/analyze` (its `phonics` speech type) with the guide's code sent by
+  `MatatagAlignmentResolver`. Real test: Vosk heard a synthesized voice's letter names
+  perfectly for these sets. **PROVISIONAL / honest limit:** Vosk hears letter NAMES, not the
+  letter SOUNDS the curriculum competency names, so naming is the closest thing speech
+  recognition can check; hard letters (Y "why", Z "c", X, Q) were left out; and child voices
+  are not tested.
+- **Placement score.** The adaptive recommender is initialized with a score inside the
+  landing rung's band of its own thresholds (`config/diagnostic.php` `placement_bands`,
+  copied from its `GET /config`: easy <=59, medium <=84), not the raw accuracy, which on
+  the letters rung would have said "hard" for a child who only knows letters
+  (`DiagnosticPlacement::score()`). A child who landed on letters with 100% is initialized at
+  Phonics and Word Study 29, easy (verified against the live recommender).
+- **Passage screen redesign** (`learner/diagnostic-passage`): plain white; Tara's head
+  (`public/animations/learner/tara-owl-head.json`, the user's "owl head" Lottie, a 5 s loop
+  of looking around and blinking) peeks over the top of the panel; the panel holds the
+  direction, then either six big letter tiles or the phonics text (with the text size
+  control); clay orange mic and stop buttons matching the intro. It replaced a card whose
+  decorative blobs were accidentally `position:relative` (a `.card > *` rule overrode
+  `.clay-blob`), which left ~400px of blank space above the owl. The shared
+  `_recording-widget` takes optional `$micLabel` / `$doneLabel`.
+- **Tested for real** (live Reading-api, generator and recommender, synthesized voice):
+  Grade 1 "just starting" got letters (`S A T P I N`), said correctly -> "Great job" -> easy
+  phonics "Pig in a bin."; said wrongly -> stepped DOWN to the second letters set; said
+  correctly -> capped at 3 items, finished Beginning, recommender initialized. Grade 1 who
+  knows letters, Grade 2 pre-reader and Grade 3 "independent" all started on the right rung.
+  The passage screen was checked at 1300 and 375px wide, including Extra Large text.
+- **Not done:** the "Great job" and results screens still use the older card design; the
+  letters rung needs a real child; if the generator is asleep the whole check (even the
+  letters) waits for its bundle, because the bundle is still created up front.
+
+**Known limits, stated plainly:** writing the assessment's items is still a
+synchronous generator call (now ~7 to 10 s for phonics, but a cold Render service can still
+pass the 150 s limit, seen once on 2026-09-24), and the fix above only turns a crash into a friendly retry. A real child/microphone test has not happened (synthesized voices only).
 Vosk scores words, so names and homophones (sea/see, its/it's) can be marked
 wrong. Two old teacher-edited test activities (#2, #6) had a stale
 `reference_text` (edited before the recompute fix) and were repaired in the LOCAL
