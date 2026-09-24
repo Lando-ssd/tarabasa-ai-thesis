@@ -378,7 +378,7 @@ class LearnerReadingService
     private function notifyForSession(Learner $learner, Activity $activity, ReadingSession $session): void
     {
         $accuracy = round($session->accuracy_percent);
-        $summary = "{$learner->first_name} read \"{$activity->title}\" — {$accuracy}% accuracy";
+        $summary = "{$learner->first_name} read \"{$activity->title}\" with {$accuracy}% accuracy";
         if ($session->level_before !== $session->level_after) {
             $summary .= ", and moved to {$session->level_after}!";
         } else {
@@ -391,7 +391,7 @@ class LearnerReadingService
             Notification::notifyForLearner(
                 $learner,
                 Notification::TYPE_NEEDS_ATTENTION,
-                "{$learner->first_name} needs attention — their session on \"{$activity->title}\" scored {$accuracy}% and was flagged for extra support."
+                "{$learner->first_name} needs attention. Their session on \"{$activity->title}\" scored {$accuracy}% and was flagged for extra support."
             );
         }
     }

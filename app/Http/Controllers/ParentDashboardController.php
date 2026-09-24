@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Learner;
-use App\Models\Notification;
 use App\Models\ReadingSession;
+use App\Support\ChildSummary;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -53,9 +53,7 @@ class ParentDashboardController extends Controller
             'flaggedByLearner' => $flaggedByLearner,
             'selectedLearner' => $selectedLearner,
             'childData' => $childData,
-            'unreadNotifications' => Notification::where('recipient_user_id', $request->user()->id)
-                ->where('is_read', false)
-                ->count(),
+            'summary' => $selectedLearner ? ChildSummary::for($selectedLearner) : null,
         ]);
     }
 

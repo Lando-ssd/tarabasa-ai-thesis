@@ -6,6 +6,7 @@ use App\Models\Learner;
 use App\Models\ReadingSession;
 use App\Models\SchoolClass;
 use App\Models\Teacher;
+use App\Support\ChildSummary;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -97,6 +98,7 @@ class AnalyticsController extends Controller
             'learners' => $learners,
             'selectedLearner' => $selectedLearner,
             'learnerStats' => $learnerStats,
+            'summary' => $selectedLearner ? ChildSummary::for($selectedLearner) : null,
         ]);
     }
 

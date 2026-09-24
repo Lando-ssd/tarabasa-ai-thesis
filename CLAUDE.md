@@ -5614,6 +5614,45 @@ the owl or the happy/sad star as the character, no emoji, no dashes in copy.
   the test browser (hidden tabs freeze it), so only resting frames were seen; a real child with a real
   microphone has still not tried any of it.
 
+## Parent end redesigned (2026-09-24, after the Learner end)
+
+The user asked to move on to the other roles, chose "same family, calmer" for the look, and asked for
+a preview to approve first. The approval mock was an Artifact (a working Parent app with sample data);
+the user then said to build it and push, and polish later. Built for the Parent only so far; Teacher and
+Admin are next and follow the same pattern.
+
+- **A left menu bar, like the Learner Home.** New `layouts/parent-shell.blade.php` with `parent/_sidebar`
+  (Home, Children, Progress, Activities, Alerts with an unread count, Profile, Log out, and a "Hi, Carla"
+  chip) and `parent/_tabbar` (a five tab bottom bar on a phone; Profile and Log out are reached from the
+  avatar at the top and the bottom of the Profile page). Home, Progress and Activities keep the picked child
+  through `?learner_id=`. The unread count comes from a view composer in `AppServiceProvider`
+  (`$navUnread`), so no controller passes it. Styles: `public/css/parent-app.css` (cache busted by content
+  hash); icons are the Phosphor sprite (`public/icons/badges.svg`, now 123 symbols) through
+  `learner._badge-icon`. Class names are the ones in the approved mock.
+- **Six pages moved into it, actions unchanged:** `parent/dashboard` (Home), `parent/children/index`,
+  `parent/progress`, `parent/repository` (called Activities in the menu), `parent/notifications` (Alerts) and
+  `parent/profile`. Every form, route and rule is as before (unlock and rate, mark read, profile and password
+  update). Shared pieces: `_avatar` (the child's chosen glyph, or the first letter, with a photo on top that hides
+  itself if the file is gone), `_child-chips`, `_goal-card`, `_badges-card`, `_source-cards`.
+- **Not moved yet:** the add-a-child steps (`parent/children/create`, `created`) and `link` are still standalone
+  focused screens with the older look, and the Parent registration and login pages. The Teacher and Admin
+  screens still use the older look too.
+- **Numbers now match the child's.** New `App\Support\ChildSummary::for($learner)` gives the day streak
+  (`Learner::readingDayStreak()`), this week's readings against the weekly goal, and the badges earned (it calls
+  `BadgeService::sync`, the same call the child's own Badges page makes, so a parent GET can record badges the
+  child's history already earned). Parent Home and Progress now show "Days in a row" from that, not the old stored
+  `streak` counter (one per scored reading, never resets), plus a weekly goal card and a badges card that are new.
+  "WCPM" is now "Words a minute". The Children page also shows the real day streak per child. **Still on the old
+  counter:** the Teacher screens, if they show streak anywhere; check when they are redone.
+- **Copy:** no emoji and no dashes. The notification texts made by `LearnerReadingService` lost their em dashes
+  ("read X with 90% accuracy", "needs attention. Their session..."); alerts saved before this keep the old text.
+  The children's avatar pictures (the glyph each child chose) are data, not decoration, and stay.
+- **Tested for real** in the browser as Carla Domingo (8 real children): all six pages with real data, the child
+  chips, the accuracy chart, the paid unlock confirm and a real paid unlock (Sofia, 25 pesos) and a real 4 star
+  rating (both saved, then removed), marking an alert read (the count dropped), saving the profile ("Profile
+  updated."), and a phone width (bottom bar). Empty states for a parent with no children were rendered for all
+  five list pages. Not tested: the add-a-child steps after coming back from them, a real photo avatar.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and
