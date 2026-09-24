@@ -5404,6 +5404,11 @@ stacks on phones. No emoji or arrows on the button and no dashes in the copy.
 the button is pressed, on the intro screen with a "Getting your story ready" state,
 instead of a blank white page before the welcome could appear. If generation fails,
 Laravel sends the child back to the intro, which shows a friendly "try again" note.
+The page background is plain white. On a wide screen the cloud is lined up with Tara's head: the two columns
+are top aligned and `.dx-talk` gets a top padding worked out from the owl and cloud sizes (her eyes sit about
+0.34 of the way down the animation box, measured from the Lottie), with the bubble trail running left toward
+her; stacked on a phone the bubbles rise straight up to her. If the owl animation is ever swapped, re-measure
+that 0.335 in `diagnostic-intro.blade.php`.
 The passage, encouragement and results screens still use the older card design.
 
 **Known limits, stated plainly:** writing the assessment's passages is still a

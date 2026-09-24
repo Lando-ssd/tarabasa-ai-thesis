@@ -21,19 +21,31 @@
 <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
 <link rel="stylesheet" href="{{ asset('css/learner-app.css') }}?v={{ substr(md5_file(public_path('css/learner-app.css')), 0, 12) }}">
 <style>
-  html[data-page="diagnostic"]{ background:#d3e6fb; }
+  html[data-page="diagnostic"]{ background:#ffffff; }
   body{ background:transparent; }
 
-  .dx{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px clamp(20px, 5vw, 72px); }
-  .dx-stage{ width:100%; max-width:1280px; display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); align-items:center; gap:clamp(20px, 4vw, 72px); }
+  /* The scene's sizes, worked out once so the cloud can line up with Tara's head. Both columns are
+     equal, so the owl is as wide as a column (up to 620px) and the cloud as wide as a column (up to 600px). */
+  .dx{
+    --padx:clamp(20px, 5vw, 72px);
+    --gap:clamp(20px, 4vw, 72px);
+    --col:calc((min(1280px, 100vw - 2 * var(--padx)) - var(--gap)) / 2);
+    --owlw:min(620px, 80vh, var(--col));
+    --cloudw:min(600px, var(--col));
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px var(--padx);
+  }
+  .dx-stage{ width:100%; max-width:1280px; display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); align-items:start; gap:var(--gap); }
 
   /* ---- Tara ---- */
-  .dx-owl-wrap{ position:relative; width:100%; max-width:min(620px, 80vh); aspect-ratio:1; margin:0 auto; }
+  .dx-owl-wrap{ position:relative; width:100%; max-width:var(--owlw); aspect-ratio:1; margin:0 auto; }
   .dx-owl{ position:absolute; inset:0; }
   .dx-ground{ position:absolute; left:26%; right:26%; bottom:11%; height:4.5%; border-radius:50%; background:rgba(19,64,110,.18); filter:blur(7px); }
 
   /* ---- the thought cloud, its trail of bubbles, the message and the button ---- */
-  .dx-talk{ display:flex; flex-direction:column; align-items:flex-start; min-width:0; }
+  /* Tara's head sits about a third of the way down her box, so the top padding drops the cloud until its
+     middle is level with her head (a cloud is 9:16 of its own width, so half of that is .28125). */
+  .dx-talk{ display:flex; flex-direction:column; align-items:flex-start; min-width:0; padding-top:clamp(8px, 1.6vw, 26px); }
+  @supports (width:min(1px, 2px)){ .dx-talk{ padding-top:max(0px, calc(0.335 * var(--owlw) - 0.28125 * var(--cloudw))); } }
   .dx-cloud{ position:relative; width:100%; max-width:600px; aspect-ratio:640 / 360; margin-bottom:34px; }
   .dx-cloud-shape{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; filter:drop-shadow(0 9px 0 #e3b53a) drop-shadow(0 26px 28px rgba(19,64,110,.2)); }
   .dx-cloud h1{
@@ -41,8 +53,9 @@
     font-family:var(--font-game); font-weight:700; font-size:clamp(32px, 3.5vw, 54px); line-height:1.08; color:#2d2308;
   }
   .dx-bubble{ position:absolute; border-radius:50%; background:#ffe08a; box-shadow:0 5px 0 #e3b53a; }
-  .dx-bubble.b1{ width:6.2%; aspect-ratio:1; left:-3%; bottom:-6%; }
-  .dx-bubble.b2{ width:3.6%; aspect-ratio:1; left:-8.5%; bottom:-15%; }
+  /* the trail of small bubbles runs from the cloud's left side straight toward Tara's head */
+  .dx-bubble.b1{ width:6.2%; aspect-ratio:1; left:-2%; top:50%; }
+  .dx-bubble.b2{ width:3.6%; aspect-ratio:1; left:-8.5%; top:54%; }
 
   .dx-msg{ font-family:var(--font-game); font-weight:500; font-size:clamp(21px, 2vw, 30px); line-height:1.38; color:#2f455b; max-width:540px; margin:0 0 30px; }
 
@@ -61,15 +74,16 @@
     .dx{ align-items:flex-start; padding:20px 20px 32px; }
     .dx-stage{ grid-template-columns:1fr; gap:0; }
     .dx-owl-wrap{ max-width:min(74vw, 40vh, 380px); }
-    .dx-talk{ align-items:center; text-align:center; }
+    .dx-talk{ align-items:center; text-align:center; padding-top:0; }
     .dx-cloud{ max-width:460px; margin:6px auto 24px; }
-    .dx-bubble.b1{ left:33%; top:-8%; bottom:auto; width:6.5%; }
-    .dx-bubble.b2{ left:29%; top:-15.5%; bottom:auto; width:3.8%; }
+    /* stacked: the cloud sits under Tara, so the bubbles rise straight up toward her */
+    .dx-bubble.b1{ left:46.5%; top:-8%; width:6.5%; }
+    .dx-bubble.b2{ left:44%; top:-15.5%; width:3.8%; }
     .dx-msg{ margin-left:auto; margin-right:auto; }
     .dx-go{ width:100%; max-width:460px; padding:20px 24px 18px; }
     .dx-note{ text-align:left; }
   }
-  @media (max-height:640px) and (min-width:861px){ .dx-owl-wrap{ max-width:min(620px, 70vh); } }
+  @media (max-height:640px) and (min-width:861px){ .dx{ --owlw:min(620px, 70vh, var(--col)); } }
   @media (prefers-reduced-motion:reduce){ .dx-dots::after{ animation:none; content:'...'; } }
 </style>
 </head>
