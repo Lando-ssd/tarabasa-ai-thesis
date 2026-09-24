@@ -26,7 +26,7 @@ class LearnerAuthController extends Controller
      * LearnerGrowthController when Journey/Badges/Bookshelf/Goals/Growth
      * all moved from separate rail-navigated pages onto one collaged
      * Dashboard. Nothing here is fabricated: every number still comes
-     * straight from Learner::competencyProgressSummary(); this only lays
+     * straight from Learner::subdomainProgressSummary(); this only lays
      * it out as a path instead of a bar, with a real "you are here"
      * marker placed by linear interpolation between two of these points.
      */
@@ -94,15 +94,15 @@ class LearnerAuthController extends Controller
         $badges = LearnerBadge::summaryFor($learner);
 
         // The hero tile's "picked for you" copy — real data only.
-        // firstWhere returns null when competency_states doesn't exist yet
+        // firstWhere returns null when subdomain_states doesn't exist yet
         // or nothing is currently flagged next, and the view renders an
         // honest generic invitation instead of a fabricated reason.
-        $upNextCompetency = collect($learner->competencyProgressSummary())
+        $upNextCompetency = collect($learner->subdomainProgressSummary())
             ->firstWhere('isUpNext', true);
 
         // Journey ("How I'm Growing") — real winding-path rows, now
         // rendered inline instead of behind its own rail-navigated page.
-        $journeyRows = collect($learner->competencyProgressSummary())->map(function (array $item) {
+        $journeyRows = collect($learner->subdomainProgressSummary())->map(function (array $item) {
             $item['track'] = $this->buildJourneyTrack($item['proficiency']);
 
             return $item;
@@ -133,7 +133,7 @@ class LearnerAuthController extends Controller
             'totalBadgeCount' => count($badges),
             'upNextCompetency' => $upNextCompetency,
             'journeyRows' => $journeyRows,
-            'hasJourneyData' => $learner->competency_states !== null,
+            'hasJourneyData' => $learner->subdomain_states !== null,
             'weeklyCount' => $weeklyCount,
             'weeklyTarget' => $weeklyTarget,
             'weeklyPercent' => $weeklyTarget > 0 ? min(100, round($weeklyCount / $weeklyTarget * 100)) : 0,

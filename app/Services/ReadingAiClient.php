@@ -6,7 +6,6 @@ use App\Models\Activity;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -19,20 +18,6 @@ use Illuminate\Validation\ValidationException;
  */
 class ReadingAiClient
 {
-    /** Reading-api v4's own valid MATATAG subdomains per grade (its SUBDOMAINS_BY_GRADE). */
-    private const SUBDOMAINS_BY_GRADE = [
-        1 => ['Book and Print Knowledge', 'Comprehending and Analyzing Text', 'Phonics and Word Study', 'Phonological Awareness', 'Vocabulary and Word Knowledge'],
-        2 => ['Comprehending and Analyzing Text', 'Phonics and Word Study', 'Phonological Awareness', 'Vocabulary and Word Knowledge'],
-        3 => ['Comprehending and Analyzing Text', 'Phonics and Word Study', 'Vocabulary and Word Knowledge'],
-    ];
-
-    /** Used only when the generator's alignment lookup is unavailable; valid for every grade. */
-    private const FALLBACK_SUBDOMAIN = [
-        'foundational_reading' => 'Phonics and Word Study',
-        'reading_fluency' => 'Comprehending and Analyzing Text',
-        'reading_comprehension' => 'Comprehending and Analyzing Text',
-    ];
-
     /**
      * Returns ['unclear' => true] when the audio genuinely couldn't be
      * scored — either Reading-api's own real silent-audio rejection (a
@@ -72,7 +57,7 @@ class ReadingAiClient
         // old code read as "unclear audio", so no learner could be scored.
         // Difficulty is activity-demand metadata only: it never changes the
         // accuracy or WCPM formulas (Reading-api's own stated policy).
-        $context = $this->activityContext($activity);
+        $context = app(MatatagAlignmentResolver::class)->contextFor($activity);
         $fields = [
             'grade' => $context['grade'],
             'subdomain' => $context['subdomain'],
@@ -146,48 +131,6 @@ class ReadingAiClient
         $detail = $response->json('detail');
 
         return is_string($detail) && preg_match('/\baudio\b|speech-like|silent/i', $detail) === 1;
-    }
-
-    /**
-     * Grade + MATATAG subdomain + competency code for an activity, in the
-     * shape Reading-api v4 validates. The real code/subdomain come from the
-     * generator's own curriculum alignment for this grade + grouped
-     * competency (cached a day, since it is fixed curriculum data). If the
-     * generator can't be reached, a valid default subdomain is used so a
-     * reading is never blocked by this lookup; that fallback is cached only
-     * briefly so the real values are picked up as soon as they're available.
-     * Reading-api only echoes this context back. It does not change the
-     * accuracy, WCPM or prosody numbers.
-     *
-     * @return array{grade: int, subdomain: string, competency_code: string}
-     */
-    private function activityContext(Activity $activity): array
-    {
-        $grade = (int) substr((string) $activity->grade_level, 6);
-        $competency = (string) $activity->competency;
-        $cacheKey = "matatag_alignment:{$grade}:{$competency}";
-
-        $cached = Cache::get($cacheKey);
-        if (is_array($cached)) {
-            return ['grade' => $grade] + $cached;
-        }
-
-        $record = app(ActivityAiClient::class)->alignmentRecord($grade, $competency);
-
-        if ($record !== null && in_array($record['subdomain'], self::SUBDOMAINS_BY_GRADE[$grade] ?? [], true)) {
-            $resolved = ['subdomain' => $record['subdomain'], 'competency_code' => $record['code']];
-            Cache::put($cacheKey, $resolved, now()->addDay());
-
-            return ['grade' => $grade] + $resolved;
-        }
-
-        $fallback = [
-            'subdomain' => self::FALLBACK_SUBDOMAIN[$competency] ?? 'Comprehending and Analyzing Text',
-            'competency_code' => 'UNMAPPED',
-        ];
-        Cache::put($cacheKey, $fallback, now()->addMinutes(5));
-
-        return ['grade' => $grade] + $fallback;
     }
 
     /**

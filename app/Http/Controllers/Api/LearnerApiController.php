@@ -65,7 +65,7 @@ class LearnerApiController extends Controller
 
         return response()->json([
             'learner' => $this->learnerPayload($learner),
-            'competencyProgress' => $learner->competencyProgressSummary(),
+            'competencyProgress' => $learner->subdomainProgressSummary(),
             'badges' => LearnerBadge::summaryFor($learner),
         ]);
     }

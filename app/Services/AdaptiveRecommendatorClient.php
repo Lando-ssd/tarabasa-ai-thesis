@@ -11,11 +11,12 @@ use Illuminate\Support\Facades\Log;
  * Real integration with the teammate's deployed Adaptive_Recommendator
  * service (github.com/BldZeuz/Adaptive_Recommendator) — a completely
  * stateless, deterministic (no LLM) decision service: it computes which
- * competency/difficulty a Learner should practice next, but stores no
+ * MATATAG subdomain/difficulty a Learner should practice next (v2; v1 was keyed by the
+ * three grouped competencies and is no longer accepted), but stores no
  * student data itself at all (confirmed by reading its real source
  * directly, not just its README). This app is the "main backend" it
  * expects to hold state — every call here must carry the Learner's full
- * current competency state and recent history, and the response's
+ * current per-subdomain state and recent history, and the response's
  * updated state must be persisted back onto the Learner for next time.
  *
  * Both endpoints require the same X-App-Key header pattern already used
@@ -30,7 +31,7 @@ class AdaptiveRecommendatorClient
     /**
      * Called once, right after the first-login diagnostic confirms a
      * Learner's starting level. Returns the decoded InitializeResponse —
-     * ['student_id', 'grade', 'competency_states', 'next_recommendation'].
+     * ['student_id', 'grade', 'subdomain_states', 'next_recommendation', 'policy_version'].
      */
     public function initialize(array $payload): array
     {
@@ -40,7 +41,7 @@ class AdaptiveRecommendatorClient
     /**
      * Called after every real scored Practice reading. Returns the
      * decoded RecommendResponse — ['student_id', 'grade',
-     * 'completed_competency_update', 'updated_state', 'next_recommendation'].
+     * 'completed_subdomain_update', 'updated_state', 'next_recommendation', 'policy_version'].
      */
     public function recommend(array $payload): array
     {

@@ -128,19 +128,24 @@ class LearnerAuthService
      */
     private function applyAdaptiveRecommendation(Learner $learner, Collection $options): Collection
     {
-        if (! $learner->next_recommended_competency) {
+        $focus = $learner->focusSubdomain();
+
+        if (! $focus) {
             return $options;
         }
 
-        $matchIndex = $options->search(function (array $option) use ($learner) {
+        $focusDifficulty = $learner->focusDifficulty();
+        $alignment = app(MatatagAlignmentResolver::class);
+
+        $matchIndex = $options->search(function (array $option) use ($alignment, $focus, $focusDifficulty) {
             $activity = $option['activity'];
 
-            if ($activity->competency !== $learner->next_recommended_competency) {
+            if ($alignment->subdomainFor($activity) !== $focus) {
                 return false;
             }
 
-            return $learner->next_recommended_difficulty === null
-                || strtolower($activity->difficulty_tier) === $learner->next_recommended_difficulty;
+            return $focusDifficulty === null
+                || strtolower($activity->difficulty_tier) === $focusDifficulty;
         });
 
         if ($matchIndex === false) {

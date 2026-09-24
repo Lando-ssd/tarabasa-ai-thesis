@@ -65,7 +65,7 @@ class GameController extends Controller
         $learner = $request->user('learner');
 
         return view('learner.games.index', [
-            'hasCompetencyData' => $learner->competency_states !== null,
+            'hasCompetencyData' => $learner->subdomain_states !== null,
             'recommendedGame' => $learner->recommendedGameFocus(),
         ]);
     }

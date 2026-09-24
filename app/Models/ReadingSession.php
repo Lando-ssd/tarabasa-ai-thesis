@@ -25,6 +25,7 @@ class ReadingSession extends Model
         'insertion_count',
         'word_feedback',
         'adaptive_attempt_score',
+        'adaptive_subdomain',
         'level_before',
         'level_after',
         'flagged_needs_attention',

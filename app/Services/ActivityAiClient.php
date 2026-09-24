@@ -68,22 +68,22 @@ class ActivityAiClient
     }
 
     /**
-     * The first real MATATAG curriculum record (its official code and
-     * subdomain) the generator maps a grade + grouped competency onto,
-     * from the generator's own GET /matatag/alignment. Reading-api v4
-     * requires both on every /analyze call (it validates the subdomain
-     * against the grade and echoes both back as the activity context).
+     * The real MATATAG curriculum records (official code + subdomain) the
+     * generator maps a grade + grouped competency onto, from the
+     * generator's own GET /matatag/alignment. Reading-api v4 and the
+     * adaptive recommender both need a valid subdomain and a competency
+     * code for every activity.
      *
      * Returns null on ANY problem (not configured, unreachable, unexpected
-     * shape) — never throws — because a reading must never be blocked
-     * just because this lookup failed; the caller falls back to a valid
-     * default instead. Short timeout for the same reason: this is a quick
-     * lookup, not a generation, and a cold Render service shouldn't stall
-     * a child who is waiting on their results.
+     * shape) and never throws, because a reading must never be blocked just
+     * because this lookup failed; the caller falls back to a valid default.
+     * Short timeout for the same reason: this is a quick lookup, not a
+     * generation, and a cold Render service shouldn't stall a child who is
+     * waiting on their results.
      *
-     * @return array{code: string, subdomain: string}|null
+     * @return list<array{code: string, subdomain: string}>|null
      */
-    public function alignmentRecord(int $grade, string $competency): ?array
+    public function alignmentRecords(int $grade, string $competency): ?array
     {
         $url = config('services.activity_ai.url');
         $key = config('services.activity_ai.key');
@@ -108,13 +108,13 @@ class ActivityAiClient
             return null;
         }
 
-        $record = $response->json('records.0');
+        $records = collect($response->json('records', []))
+            ->filter(fn ($record) => is_array($record) && ! empty($record['code']) && ! empty($record['subdomain']))
+            ->map(fn (array $record) => ['code' => (string) $record['code'], 'subdomain' => (string) $record['subdomain']])
+            ->values()
+            ->all();
 
-        if (! is_array($record) || empty($record['code']) || empty($record['subdomain'])) {
-            return null;
-        }
-
-        return ['code' => (string) $record['code'], 'subdomain' => (string) $record['subdomain']];
+        return $records === [] ? null : $records;
     }
 
     /**

@@ -207,7 +207,7 @@ class LearnerReadingService
             'streak' => $learner->streak + 1,
         ]);
 
-        $this->updateAdaptiveRecommendation($learner, $activity, $session, $accuracy, $speedScore, $prosodyScore, $comprehensionScore);
+        app(AdaptiveLearningService::class)->recordAttempt($learner, $activity, $session, $result, $comprehensionScore);
 
         $this->notifyForSession($learner, $activity, $session);
 
@@ -338,66 +338,6 @@ class LearnerReadingService
         $maxLen = max(strlen($reference), strlen($spoken));
 
         return $maxLen > 0 && (1 - (levenshtein($reference, $spoken) / $maxLen)) >= 0.5;
-    }
-
-    private function updateAdaptiveRecommendation(Learner $learner, Activity $activity, ReadingSession $session, float $accuracy, ?float $speedScore, ?float $prosodyScore, ?float $comprehensionScore = null): void
-    {
-        if ($learner->competency_states === null || ! $activity->competency || ! $activity->difficulty_tier) {
-            return;
-        }
-
-        try {
-            $response = app(AdaptiveRecommendatorClient::class)->recommend([
-                'student_id' => $learner->id,
-                'grade' => (int) substr($learner->grade_level, 6),
-                'completed_activity' => [
-                    'activity_id' => $activity->id,
-                    'bundle_id' => $activity->generation_id,
-                    'competency' => $activity->competency,
-                    'difficulty' => strtolower($activity->difficulty_tier),
-                ],
-                'performance' => [
-                    'accuracy_score' => $accuracy,
-                    'speed_score' => $speedScore,
-                    'prosody_score' => $prosodyScore,
-                    'comprehension_score' => $comprehensionScore,
-                ],
-                'current_state' => $learner->competency_states,
-                'recent_history' => $this->buildAdaptiveRecentHistory($learner),
-            ]);
-        } catch (\RuntimeException $e) {
-            Log::warning('Adaptive Recommendator call failed, continuing without a recommendation', ['error' => $e->getMessage()]);
-
-            return;
-        }
-
-        $session->update(['adaptive_attempt_score' => $response['completed_competency_update']['attempt_score'] ?? null]);
-
-        $learner->update([
-            'competency_states' => $response['updated_state'],
-            'next_recommended_competency' => $response['next_recommendation']['competency'] ?? null,
-            'next_recommended_difficulty' => $response['next_recommendation']['difficulty'] ?? null,
-        ]);
-    }
-
-    private function buildAdaptiveRecentHistory(Learner $learner): array
-    {
-        return ReadingSession::where('learner_id', $learner->id)
-            ->whereNotNull('adaptive_attempt_score')
-            ->with('activity')
-            ->orderBy('timestamp')
-            ->get()
-            ->filter(fn (ReadingSession $s) => $s->activity?->competency && $s->activity?->difficulty_tier)
-            ->map(fn (ReadingSession $s) => [
-                'competency' => $s->activity->competency,
-                'difficulty' => strtolower($s->activity->difficulty_tier),
-                'score' => $s->adaptive_attempt_score,
-                'activity_id' => $s->activity_id,
-            ])
-            ->values()
-            ->take(-10)
-            ->values()
-            ->all();
     }
 
     private function adjustMasteryLevel(?string $currentLevel, float $accuracy): string

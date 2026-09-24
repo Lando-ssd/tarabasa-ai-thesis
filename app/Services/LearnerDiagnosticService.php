@@ -282,26 +282,7 @@ class LearnerDiagnosticService
 
     private function initializeAdaptiveRecommendation(Learner $learner, float $lastAccuracy): void
     {
-        try {
-            $response = app(AdaptiveRecommendatorClient::class)->initialize([
-                'student_id' => $learner->id,
-                'grade' => (int) substr($learner->grade_level, 6),
-                'assessment_scores' => [
-                    'reading_fluency' => $lastAccuracy,
-                ],
-                'last_competency' => 'reading_fluency',
-            ]);
-        } catch (\RuntimeException $e) {
-            Log::warning('Adaptive Recommendator initialize() failed, continuing without a recommendation', ['error' => $e->getMessage()]);
-
-            return;
-        }
-
-        $learner->update([
-            'competency_states' => $response['competency_states'],
-            'next_recommended_competency' => $response['next_recommendation']['competency'] ?? null,
-            'next_recommended_difficulty' => $response['next_recommendation']['difficulty'] ?? null,
-        ]);
+        app(AdaptiveLearningService::class)->initializeFromDiagnostic($learner, $lastAccuracy);
     }
 
     private function putState(Learner $learner, array $state): void
