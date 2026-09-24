@@ -1243,3 +1243,6 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
   .pp-art{ width:78px; height:78px; }
 }
 .lv-you{ white-space:nowrap; }
+
+/* the pill that opened a popover gets the soft highlight Duolingo gives it, without moving anything */
+.pill[aria-expanded="true"]{ background:rgba(255,255,255,.85); border-radius:14px; box-shadow:0 0 0 7px rgba(255,255,255,.85); }
