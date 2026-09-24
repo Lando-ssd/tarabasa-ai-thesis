@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Barlow+Semi+Condensed:wght@500;600;700&family=Fredoka:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
-<link rel="stylesheet" href="{{ asset('css/learner-app.css') }}?v={{ filemtime(public_path('css/learner-app.css')) }}">
+<link rel="stylesheet" href="{{ asset('css/learner-app.css') }}?v={{ substr(md5_file(public_path('css/learner-app.css')), 0, 12) }}">
 @stack('head')
 </head>
 <body data-theme="{{ $learner->theme_color === 'pink' ? 'pink' : 'blue' }}">

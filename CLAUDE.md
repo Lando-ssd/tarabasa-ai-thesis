@@ -5377,6 +5377,23 @@ Bahnschrift (Windows only) with Barlow Semi Condensed as the web-font fallback.
 - The mobile API's `/api/learner/dashboard` now returns `competencyProgress`
   (per subdomain) and all 100 badges.
 
+**Layout and popovers (follow-up, same day).** Desktop layout copies Duolingo's:
+the sidebar is a full-height column on the left edge with a visible divider, and
+the path plus the stats/goal/growth column sit together as ONE block centred in
+the space to its right (`public/css/learner-app.css`, "DESKTOP COMPOSITION";
+sizes step up at 1200 / 1500 / 1800px; the tablet/phone layout starts at 1000px).
+The three stat popovers (level, streak, points) are Duolingo-style white cards as
+wide as the stat row, rendered as SIBLINGS of the pills inside `.stat-pills` so the
+rail can't clip them (the rail must not set `overflow`; only `.right-col` scrolls).
+The stylesheet's `?v=` is now a CONTENT hash (`md5_file`), not `filemtime`: on
+Railway the mtime did not change between deploys, so browsers kept a stale cached
+copy of the CSS after a deploy.
+**Uploaded photos do not survive a redeploy:** child avatar photos are written to
+`storage/app/public` on Railway's ephemeral disk, so after a deploy the file is
+gone and the image is broken (seen on the live site). The sidebar now falls back to
+the child's initial, but the photo itself is lost until Railway gets a persistent
+volume or the app stores uploads in cloud storage (a deployment decision, not made).
+
 **Known limits, stated plainly:** the assessment intro page still generates a
 Gemini bundle synchronously (~105 s warm; can pass the 150 s limit when the
 Render service is cold), and the fix above only turns a crash into a friendly

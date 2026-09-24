@@ -21,8 +21,7 @@
         'flame' => asset('animations/learner/flame-icon.json'),
         'star' => asset('animations/learner/star-icon.json'),
         'flameBurst' => asset('animations/learner/flame-burst.json'),
-        'starBurst' => asset('animations/learner/star-burst.json'),
-        'owl' => asset('animations/learner/owl-bird.json'),
+          'owl' => asset('animations/learner/owl-bird.json'),
     ];
 @endphp
 
@@ -58,23 +57,6 @@
           <button type="button" class="pill level" id="levelPill" aria-haspopup="true" aria-expanded="false">
             <span class="stat-num">{{ $levelName }}</span>
           </button>
-          <div class="popover" id="levelPopover">
-            <span class="popover-caret caret-blue"></span>
-            <div class="popover-inner">
-              <div class="popover-head level-head">
-                <h4>Your Reading Level</h4>
-                <p>This grows as your real reading accuracy improves.</p>
-              </div>
-              <div class="level-ladder">
-                @foreach ($levels as $name => [$icon, $label])
-                  <div class="level-step {{ $levelName === $name ? 'current' : '' }}">
-                    <span class="step-label"><span class="step-dot">{{ $icon }}</span> {{ $label }}</span>
-                    @if ($levelName === $name)<span class="you-tag">That's you</span>@endif
-                  </div>
-                @endforeach
-              </div>
-            </div>
-          </div>
         </div>
 
         {{-- Two files, two jobs: the small row icon is a real button (still until tapped, pops once);
@@ -84,11 +66,41 @@
             <span class="stat-icon-lottie" id="streakIconLottie"></span>
             <span class="stat-num">{{ $dayStreak }}</span>
           </button>
-          <div class="popover" id="streakPopover">
-            <span class="popover-caret caret-orange"></span>
-            <div class="popover-inner">
-              <div class="popover-head">
-                <div class="streak-burst-lottie" id="streakBurstLottie"></div>
+        </div>
+
+        <div class="pill-wrap">
+          <button type="button" class="pill points" id="pointsPill" aria-haspopup="true" aria-expanded="false">
+            <span class="stat-icon-lottie" id="pointsIconLottie"></span>
+            <span class="stat-num">{{ number_format($learner->points) }}</span>
+          </button>
+        </div>
+
+        {{-- The popovers are siblings of the pills, not children, so each can be as wide as the whole
+             row (like Duolingo's) and open over the cards below without anything clipping them. --}}
+        <div class="popover level-pop" id="levelPopover">
+          <span class="popover-caret"></span>
+          <div class="popover-inner">
+            <div class="lv-body">
+              <h4>Your Reading Level</h4>
+              <p class="lv-sub">This grows as your real reading accuracy improves.</p>
+              <div class="lv-rows">
+                @foreach ($levels as $name => [$icon, $label])
+                  <div class="lv-row {{ $levelName === $name ? 'current' : '' }}">
+                    <span class="lv-ico">{{ $icon }}</span>
+                    <span class="lv-name">{{ $label }}</span>
+                    @if ($levelName === $name)<span class="lv-you">That's you</span>@endif
+                  </div>
+                @endforeach
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="popover streak-pop" id="streakPopover">
+          <span class="popover-caret"></span>
+          <div class="popover-inner">
+            <div class="sp-head">
+              <div class="sp-copy">
                 @if ($dayStreak > 0)
                   <h4>{{ $dayStreak }} day streak</h4>
                   <p>You've read on {{ $dayStreak }} {{ $dayStreak === 1 ? 'day' : 'days' }} in a row. Keep it going!</p>
@@ -97,36 +109,43 @@
                   <p>Read today to start your streak. Read again tomorrow to keep it going!</p>
                 @endif
               </div>
-              <div class="popover-week">
+              <div class="streak-burst-lottie" id="streakBurstLottie"></div>
+              <div class="sp-week">
                 @foreach ($streakWeek as $day)
-                  <div class="popover-day {{ $day['done'] ? 'done' : '' }}">
-                    <span class="day-label">{{ $day['label'] }}</span>
-                    <span class="dot">
+                  <div class="sp-day {{ $day['done'] ? 'done' : '' }}">
+                    <span class="sp-day-label">{{ $day['label'] }}</span>
+                    <span class="sp-dot">
                       @if ($day['done'])
-                        <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5l3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <svg width="16" height="13" viewBox="0 0 12 10" fill="none"><path d="M1 5l3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                       @endif
                     </span>
                   </div>
                 @endforeach
               </div>
             </div>
+            <div class="sp-body">
+              <div class="sp-goal">
+                <div class="sp-goal-ico">{{ $dayStreak >= 7 ? '🏅' : '🔒' }}</div>
+                <div class="sp-goal-text">
+                  <b>7 Day Streak badge</b>
+                  <span>{{ $dayStreak >= 7 ? 'You earned it. Great reading habit!' : 'Read on 7 days in a row to earn it.' }}</span>
+                </div>
+              </div>
+              <a class="clay-btn blue sp-btn" href="{{ route('learner.badges.index') }}">View Badges</a>
+            </div>
           </div>
         </div>
 
-        <div class="pill-wrap">
-          <button type="button" class="pill points" id="pointsPill" aria-haspopup="true" aria-expanded="false">
-            <span class="stat-icon-lottie" id="pointsIconLottie"></span>
-            <span class="stat-num">{{ number_format($learner->points) }}</span>
-          </button>
-          <div class="popover" id="pointsPopover">
-            <span class="popover-caret caret-white"></span>
-            <div class="popover-inner">
-              <div class="popover-body points-body">
-                <div class="points-title-row"><h4>Points</h4><span class="points-count">{{ number_format($learner->points) }}</span></div>
-                <div class="points-burst-lottie" id="pointsBurstLottie"></div>
-                <p class="popover-tagline">Keep on reading!</p>
-                <div class="popover-divider"></div>
-                <p class="popover-explain">You earn points every time you finish reading. The more you practice, the more your total grows.</p>
+        <div class="popover points-pop" id="pointsPopover">
+          <span class="popover-caret"></span>
+          <div class="popover-inner">
+            <div class="pp-row">
+              <div class="pp-art" id="pointsArtLottie"></div>
+              <div class="pp-text">
+                <h4>Points</h4>
+                <p>You have {{ number_format($learner->points) }} {{ $learner->points === 1 ? 'point' : 'points' }}</p>
+                <span class="pp-note">You earn points every time you finish a reading.</span>
+                <a class="pp-link" href="{{ route('learner.activity.find') }}">Start Reading</a>
               </div>
             </div>
           </div>
@@ -175,12 +194,19 @@
     document.querySelectorAll('.pill[aria-expanded]').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
     // reset the popover-only animations so they replay from the start next time
     if (streakBurstAnim) streakBurstAnim.goToAndStop(0, true);
-    if (pointsBurstAnim) pointsBurstAnim.goToAndStop(0, true);
+    if (pointsArtAnim) pointsArtAnim.goToAndStop(0, true);
+  }
+  // The caret points at the pill that opened the popover, wherever the pill sits in the row.
+  function placeCaret(pill, popover) {
+    var row = pill.closest('.stat-pills').getBoundingClientRect();
+    var box = pill.getBoundingClientRect();
+    popover.style.setProperty('--caret', Math.round(box.left + box.width / 2 - row.left + 10) + 'px');
   }
   function togglePopover(pill, popover) {
     var wasOpen = popover.classList.contains('open');
     closeAllPopovers();
     popover.classList.toggle('open', !wasOpen);
+    if (!wasOpen) placeCaret(pill, popover);
     pill.setAttribute('aria-expanded', wasOpen ? 'false' : 'true');
     return !wasOpen;
   }
@@ -195,7 +221,8 @@
     pointsIconAnim.goToAndStop(pointsRestFrame, true);
   });
   var streakBurstAnim = lottie.loadAnimation({ container: document.getElementById('streakBurstLottie'), renderer: 'svg', loop: false, autoplay: false, path: anim.flameBurst });
-  var pointsBurstAnim = lottie.loadAnimation({ container: document.getElementById('pointsBurstLottie'), renderer: 'svg', loop: false, autoplay: false, path: anim.starBurst });
+  var pointsArtAnim = lottie.loadAnimation({ container: document.getElementById('pointsArtLottie'), renderer: 'svg', loop: false, autoplay: false, path: anim.star });
+  pointsArtAnim.addEventListener('DOMLoaded', function () { pointsArtAnim.goToAndStop(pointsArtAnim.totalFrames - 1, true); });
 
   function restIcon(a, frame) { if (a && frame !== null && frame !== undefined) a.goToAndStop(frame, true); }
   function playIconOnce(a) { if (a && !reduceMotion) a.goToAndPlay(0, true); }
@@ -212,10 +239,10 @@
   document.getElementById('pointsPill').addEventListener('click', function () {
     var opened = togglePopover(this, document.getElementById('pointsPopover'));
     restIcon(streakIconAnim, streakRestFrame); playIconOnce(pointsIconAnim);
-    if (opened && pointsBurstAnim && !reduceMotion) pointsBurstAnim.goToAndPlay(0, true);
+    if (opened && pointsArtAnim && !reduceMotion) pointsArtAnim.goToAndPlay(0, true);
   });
   document.addEventListener('click', function (e) {
-    if (!e.target.closest('.pill-wrap')) {
+    if (!e.target.closest('.pill-wrap') && !e.target.closest('.popover')) {
       closeAllPopovers();
       restIcon(streakIconAnim, streakRestFrame); restIcon(pointsIconAnim, pointsRestFrame);
     }

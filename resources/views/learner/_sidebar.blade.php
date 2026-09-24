@@ -55,12 +55,15 @@
 
   <div class="sidebar-foot">
     <div class="sf-avatar">
-      @if ($learner->avatar_photo_path)
-        <img src="{{ Storage::url($learner->avatar_photo_path) }}" alt="">
-      @elseif ($glyph !== '' && mb_strlen($glyph) <= 4)
+      {{-- The letter (or emoji) is always there; a photo sits on top of it and hides itself if the file is gone
+           (uploads live on the server's disk, which a redeploy can wipe). --}}
+      @if ($glyph !== '' && mb_strlen($glyph) <= 4)
         {{ $glyph }}
       @else
         {{ $initial }}
+      @endif
+      @if ($learner->avatar_photo_path)
+        <img src="{{ Storage::url($learner->avatar_photo_path) }}" alt="" onerror="this.style.display='none'">
       @endif
     </div>
     <div class="sf-text"><b>Hi, {{ $learner->first_name }}!</b><span>{{ $learner->grade_level }}</span></div>

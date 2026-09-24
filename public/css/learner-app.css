@@ -1164,3 +1164,82 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
   .rd-card, .gm-card{ padding:20px 18px 24px; }
   .bdg-grid{ grid-template-columns:repeat(2, 1fr); }
 }
+
+/* =========================================================
+   STAT POPOVERS, after Duolingo's own: a white bordered card per pill, as wide as
+   the whole stat row, with a caret pointing at the pill that opened it. They are
+   siblings of the pills so nothing in the rail clips them, and they open over the
+   cards below. The rail itself no longer scrolls (that is what clipped the old
+   ones); only the goal and growth cards scroll on a short screen.
+   ========================================================= */
+.right-rail{ overflow:visible; max-height:none; }
+.right-rail .right-col{ max-height:calc(100vh - 160px); overflow-y:auto; scrollbar-width:none; }
+.right-rail .right-col::-webkit-scrollbar{ display:none; }
+
+.stat-pills{ position:relative; }
+.stat-pills > .popover{ display:none; position:absolute; top:calc(100% + 18px); left:-10px; right:-10px; width:auto; transform:none; z-index:80; }
+.stat-pills > .popover.open{ display:block; }
+.stat-pills > .popover .popover-caret{ top:-9px; left:var(--caret, 50%); width:18px; height:18px; background:#fff; border:2px solid #d3e0ef; border-right:0; border-bottom:0; border-radius:5px 0 0 0; }
+.stat-pills > .popover .popover-inner{ background:#fff; border:2px solid #d3e0ef; border-radius:24px; box-shadow:0 26px 50px -18px rgba(19,31,43,.45); overflow:hidden; }
+.stat-pills > .popover h4{ font-family:var(--font-game); font-weight:700; font-size:30px; line-height:1.05; margin:0; color:var(--navy-900); }
+
+/* ---- Level: title, then bordered rows (like Duolingo's Hearts) ---- */
+.lv-body{ padding:24px 24px 24px; text-align:center; }
+.lv-sub{ font-family:var(--font-game); font-weight:500; font-size:18px; line-height:1.4; color:var(--slate-600); margin:8px 0 18px; }
+.lv-rows{ display:flex; flex-direction:column; gap:12px; text-align:left; }
+.lv-row{ display:flex; align-items:center; gap:14px; padding:14px 18px; border:2px solid #dfe8f1; border-radius:18px; font-family:var(--font-game); font-weight:600; font-size:19px; letter-spacing:.06em; text-transform:uppercase; color:#5b6b7a; background:#fff; box-shadow:0 3px 0 #e6edf4; }
+.lv-ico{ font-size:26px; line-height:1; }
+.lv-name{ flex:1; }
+.lv-row.current{ border-color:#7fbdf3; background:#eaf4ff; color:var(--blue-600); box-shadow:0 3px 0 #a9d2f7; }
+.lv-you{ font-size:13.5px; letter-spacing:.08em; color:#fff; background:var(--blue-500); border-radius:999px; padding:6px 12px 5px; }
+
+/* ---- Streak: orange header with the week in a white card, then the next goal (like Duolingo's) ---- */
+.stat-pills > .streak-pop .popover-caret{ background:#ff9a1a; border-color:#ff9a1a; }
+.stat-pills > .streak-pop .popover-inner{ border-color:#ff9a1a; }
+.sp-head{ position:relative; background:linear-gradient(175deg,#ffa62b,#ff8a00); color:#fff; padding:24px 24px 26px; }
+.sp-copy{ max-width:64%; }
+.stat-pills > .streak-pop .sp-copy h4{ color:#fff; font-size:32px; }
+.sp-copy p{ font-family:var(--font-game); font-weight:500; font-size:19px; line-height:1.35; margin:8px 0 0; opacity:.96; }
+.sp-head .streak-burst-lottie{ position:absolute; right:18px; top:12px; width:110px; height:110px; margin:0; }
+.sp-week{ display:flex; justify-content:space-between; gap:4px; margin-top:22px; padding:16px 14px 14px; background:#fff; border-radius:18px; box-shadow:0 3px 0 rgba(0,0,0,.08); }
+.sp-day{ display:flex; flex-direction:column; align-items:center; gap:8px; flex:1; }
+.sp-day-label{ font-family:var(--font-game); font-weight:600; font-size:17px; color:#8a97a3; }
+.sp-dot{ width:38px; height:38px; border-radius:50%; background:#e7ecf1; display:flex; align-items:center; justify-content:center; }
+.sp-day.done .sp-dot{ background:#ff9a1a; box-shadow:0 3px 0 #d97706; }
+.sp-day.done .sp-day-label{ color:#e07a00; }
+.sp-body{ padding:20px 22px 22px; }
+.sp-goal{ display:flex; align-items:center; gap:16px; padding:16px 18px; border:2px solid #dfe8f1; border-radius:18px; margin-bottom:16px; }
+.sp-goal-ico{ font-size:42px; line-height:1; flex-shrink:0; }
+.sp-goal-text b{ display:block; font-family:var(--font-game); font-weight:700; font-size:21px; color:var(--navy-900); margin-bottom:4px; }
+.sp-goal-text span{ font-family:var(--font-game); font-weight:500; font-size:18px; line-height:1.35; color:var(--slate-600); }
+.sp-btn{ display:block; width:100%; text-align:center; font-size:19px; letter-spacing:.06em; }
+
+/* ---- Points: art on the left, title and text on the right (like Duolingo's Gems) ---- */
+.pp-row{ display:flex; align-items:center; gap:22px; padding:24px 26px; }
+.pp-art{ width:96px; height:96px; flex-shrink:0; }
+.pp-text h4{ margin-bottom:6px; }
+.pp-text p{ font-family:var(--font-game); font-weight:600; font-size:21px; color:var(--points-gold); margin:0 0 6px; }
+.pp-note{ display:block; font-family:var(--font-game); font-weight:500; font-size:17px; line-height:1.35; color:var(--slate-600); margin-bottom:10px; }
+.pp-link{ font-family:var(--font-game); font-weight:700; font-size:18px; letter-spacing:.08em; text-transform:uppercase; color:var(--blue-500); text-decoration:none; }
+.pp-link:hover{ color:var(--blue-700); }
+
+/* a profile photo sits on top of the letter and hides itself if the file is gone */
+.sf-avatar{ position:relative; }
+.sf-avatar img{ position:absolute; inset:0; }
+
+@media (max-width:1000px){
+  .right-rail .right-col{ max-height:none; overflow:visible; }
+  .stat-pills > .popover{ left:-6px; right:-6px; }
+  .stat-pills > .popover h4{ font-size:26px; }
+  .sp-copy{ max-width:58%; }
+  .sp-head .streak-burst-lottie{ width:92px; height:92px; }
+}
+@media (max-width:420px){
+  .sp-week{ padding:14px 8px 12px; gap:2px; }
+  .sp-dot{ width:33px; height:33px; }
+  .sp-day-label{ font-size:15px; }
+  .sp-copy{ max-width:56%; }
+  .pp-row{ padding:20px 18px; gap:16px; }
+  .pp-art{ width:78px; height:78px; }
+}
+.lv-you{ white-space:nowrap; }
