@@ -27,14 +27,17 @@ class LearnerDiagnosticController extends Controller
     /**
      * Intro screen — Part 4.1: never use the word "test," frame this as
      * "Let's Read Together."
+     *
+     * This no longer writes the reading passages itself. That is a real
+     * Gemini call of 55 to 105 seconds, and doing it here meant a new
+     * learner stared at a blank page for a minute before the welcome could
+     * even appear. passage() (the "I'm Ready" button) already calls
+     * ensureBundleGenerated(), so the wait now happens there, on the intro
+     * screen with a loading state. What gets generated is unchanged.
      */
-    public function show(Request $request, LearnerDiagnosticService $service): View
+    public function show(Request $request): View
     {
-        $learner = $request->user('learner');
-
-        $service->ensureBundleGenerated($learner);
-
-        return view('learner.diagnostic-intro', ['learner' => $learner]);
+        return view('learner.diagnostic-intro', ['learner' => $request->user('learner')]);
     }
 
     /**

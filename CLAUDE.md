@@ -5394,10 +5394,21 @@ gone and the image is broken (seen on the live site). The sidebar now falls back
 the child's initial, but the photo itself is lost until Railway gets a persistent
 volume or the app stores uploads in cloud storage (a deployment decision, not made).
 
-**Known limits, stated plainly:** the assessment intro page still generates a
-Gemini bundle synchronously (~105 s warm; can pass the 150 s limit when the
-Render service is cold), and the fix above only turns a crash into a friendly
-retry. A real child/microphone test has not happened (synthesized voices only).
+**First-login assessment intro (redesigned).** `learner/diagnostic-intro` is now a
+full-screen scene: Tara the owl (`public/animations/learner/tara-owl-intro.json`, a
+2 s jump-and-wave loop, owl only) on one side; a thought cloud saying "Let's Read
+Together, {name}!", the message and a big "I'm Ready" clay button on the other; it
+stacks on phones. No emoji or arrows on the button and no dashes in the copy.
+`LearnerDiagnosticController::show()` NO LONGER generates the reading passages;
+`passage()` (the button) already did, so the ~55-105 s Gemini wait now happens after
+the button is pressed, on the intro screen with a "Getting your story ready" state,
+instead of a blank white page before the welcome could appear. If generation fails,
+Laravel sends the child back to the intro, which shows a friendly "try again" note.
+The passage, encouragement and results screens still use the older card design.
+
+**Known limits, stated plainly:** writing the assessment's passages is still a
+synchronous Gemini call (~55-105 s warm; can pass the 150 s limit when the Render
+service is cold), and the fix above only turns a crash into a friendly retry. A real child/microphone test has not happened (synthesized voices only).
 Vosk scores words, so names and homophones (sea/see, its/it's) can be marked
 wrong. Two old teacher-edited test activities (#2, #6) had a stale
 `reference_text` (edited before the recompute fix) and were repaired in the LOCAL
