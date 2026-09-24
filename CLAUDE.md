@@ -5701,8 +5701,9 @@ that; all seven Teacher screens were rebuilt.
   nothing. One credit per click, only on success. **The service sleeps when idle (free hosting) and a
   generation takes about 60 to 130 s:** the first two real attempts of the day hit exactly 150 s with no
   answer, so the Generate window now wakes it as it opens (`ActivityAiClient::wake()`, called through
-  `GET /teacher/activities/warm`) and the wait is 210 s (`ActivityController::GENERATE_TIMEOUT`). A timeout
-  reopens the window with a friendly message, keeps everything typed and costs no credit. There is no feedback endpoint, so what a teacher moved
+  `GET /teacher/activities/warm`). **SUPERSEDED 2026-09-25:** the 210 s wait (`GENERATE_TIMEOUT`) is gone; the
+  request is written in the background (see "Generate activities runs in the background" below), so no web
+  request waits on the AI any more. There is no feedback endpoint, so what a teacher moved
   earlier is sent as a short note in `teacher_notes` (`Activity::calibrationNote`), capped so the teacher's
   own notes always fit; only the teacher's own words are saved on the activity.
 - **Tested.** `tests/Feature/TeacherRedesignTest.php` (16 tests: every screen for an Active and a Pending
@@ -5719,6 +5720,46 @@ that; all seven Teacher screens were rebuilt.
   screen is not supported (the list and the Move to menu are the touch path). The find box only searches the
   school year being shown. The Admin dashboard and the last Parent screens (add a child, link, sign up,
   login) are still on the older look.
+
+## Generate activities runs in the background (2026-09-25)
+
+The user reported generation problems on the live site. Measured against the live service: it always
+writes all three levels one after another and takes about 80 to 122 seconds even for ONE text per
+level (9 texts also took 122 s), plus up to a minute more when the free Render service has been
+asleep. Holding a web request open that long is fragile (the browser, the host's proxy and PHP all
+give up), and the 210 s wait added earlier failed for cold starts and big requests. So the request is
+now saved and written in the background.
+
+- **How it works.** `POST /teacher/activities/generate` validates, checks credits and that no other
+  request is active, saves an `activity_generations` row (`Queued`) and dispatches
+  `App\Jobs\GenerateActivitiesJob`, then redirects at once. The job (`Running` -> `Done`/`Failed`) calls
+  the generator (800 s wait), saves only the levels asked for, and charges ONE credit only when the
+  activities are saved (in a transaction); a failure costs nothing and says "Nothing was charged."
+  `App\Models\ActivityGeneration` holds the states and the two safety rules below.
+- **The Activities page follows it.** `teacher/activities/_generation.blade.php` is a notice at the top
+  (blue while writing with a live timer, green when done, red when failed with Try again and Dismiss). It
+  survives leaving the page and coming back; `public/js/teacher-app.js` polls
+  `GET /teacher/activities/generations/{id}` every 4 s, and when it is done shows a toast and refreshes the
+  board in place. `POST .../dismiss` (Got it / Dismiss) sets `acknowledged_at`. The window's wait estimate
+  ("About 2 minutes") comes from `ActivityGeneration::estimateSeconds()` (90 s + 20 s per extra text in a level).
+- **Worker.** `docker/entrypoint.sh` starts `php artisan queue:work` in a restart loop next to
+  `artisan serve` (queue connection is the default `database`; the `jobs` table already existed;
+  `retry_after` is now 960 so a long job is never taken twice). The job is `$tries = 1`.
+- **Safety rules.** (1) A request nobody picked up within 45 s (worker not running) is written by the page
+  that is watching it (`dispatchSync`); an atomic `Queued -> Running` claim means it can never run twice.
+  (2) A request `Queued`/`Running` for more than 20 minutes is closed as `Failed`, so a lost one never
+  blocks the teacher. If `QUEUE_CONNECTION=sync` is set, the job simply runs inside the request like before.
+- **No credits is no longer a dead end.** The Generate window says how many approved activities are not
+  shared yet and has a Share one button straight to the approved list (sharing earns 2 credits).
+- **Tested.** `tests/Feature/ActivityGenerationBackgroundTest.php` (13 tests) plus a real run through the
+  browser with a real worker and the live generator: the click returned in seconds, the worker took the job
+  within 1 s, the notice survived leaving and returning, a second request was refused with a plain message,
+  it finished in 2m 2s, saved one draft (8 words, inside the Grade 1 Medium range), charged exactly one
+  credit (3 -> 2), and the page turned green, toasted and refreshed the board by itself.
+- **Not confirmed on Railway yet:** that the worker process starts inside the container (check the deploy
+  logs for the worker's RUNNING/DONE lines after a first generation). If it does not, the watching page
+  still writes the request after 45 s, so nothing is lost. Also ask BldZeuz for a `levels` option so the
+  unrequested levels are not written for nothing.
 
 ## The user's working style
 

@@ -22,7 +22,18 @@
       @if ($out)
         <div class="alert amber" style="padding:10px 14px;margin-bottom:12px">
           <span class="alert-ico" style="width:34px;height:34px;font-size:19px;background:#c9820b">@include('learner._badge-icon', ['icon' => 'sparkle', 'class' => 'ico'])</span>
-          <div><b style="font-size:19px">No free credits left</b><span class="d">{{ $teacher->status === 'Active' ? 'Share an approved activity to the repository to earn 2 more.' : 'More free credits unlock once your school verification is approved.' }}</span></div>
+          <div>
+            <b style="font-size:19px">No free credits left</b>
+            <span class="d">
+              @if ($teacher->status !== 'Active')More free credits unlock once your school verification is approved.
+              @elseif ($shareable > 0)You have {{ $shareable }} approved {{ $shareable === 1 ? 'activity' : 'activities' }} not shared yet. Sharing one to the Repository earns you 2 more credits.
+              @else Approve a draft and share it to the Repository to earn 2 more credits.
+              @endif
+            </span>
+          </div>
+          @if ($teacher->status === 'Active' && $shareable > 0)
+            <a class="btn small" href="{{ route('teacher.activities.index', ['view' => 'list', 'status' => 'Approved']) }}">Share one</a>
+          @endif
         </div>
       @endif
 
@@ -75,11 +86,12 @@
                 </div>
               </div>
             @endforeach
-            <div class="gen-total"><b data-gen-total>9</b> <span data-gen-total-word>activities</span> will be added to To review.</div>
+            <div class="gen-total"><b data-gen-total>9</b> <span data-gen-total-word>activities</span> will be added to To review. <span class="gen-time" data-gen-time></span></div>
+            <p class="note" style="margin:6px 0 0">The AI writes all three levels one after another, so the wait follows the biggest number you pick, not the total. It writes in the background, so you can keep working.</p>
             <p class="note" style="margin:6px 0 0">Levels come from how familiar the words are and how long the text is. After it is written, you check each one and move it to the level you think is right.</p>
           </div>
         </div>
-        <div class="busy" id="genBusy" hidden><span class="spin"></span><span><b>The AI is writing your lesson.</b> This usually takes a minute or two, and longer if the AI service has been asleep. Please keep this window open.</span></div>
+        <div class="busy" id="genBusy" hidden><span class="spin"></span><span><b>Sending your request to the AI.</b> Your activities are written in the background. This window closes, and their progress shows at the top of Activities.</span></div>
       </form>
     </div>
     <footer class="win-foot">
@@ -89,5 +101,5 @@
     </footer>
   </div>
 </dialog>
-@php $genData = ['competencies' => $competencies, 'typeLabels' => $typeLabels, 'bands' => $bands, 'have' => $have, 'max' => $maxPerLevel]; @endphp
+@php $genData = ['competencies' => $competencies, 'typeLabels' => $typeLabels, 'bands' => $bands, 'have' => $have, 'max' => $maxPerLevel, 'baseSeconds' => \App\Models\ActivityGeneration::BASE_SECONDS, 'extraSeconds' => \App\Models\ActivityGeneration::EXTRA_SECONDS_PER_TEXT]; @endphp
 <script type="application/json" id="genData">@json($genData)</script>

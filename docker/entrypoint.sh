@@ -25,4 +25,18 @@ php artisan migrate --force
 # proved easy to lose by accident once.
 export PHP_CLI_SERVER_WORKERS=4
 
+# The background worker. Writing activities with the AI takes one to several minutes, far longer
+# than a web request should be held open, so "Generate activities" saves the request and this
+# worker writes it (GenerateActivitiesJob). The loop starts it again if it ever stops (it also
+# restarts itself every 30 minutes, to keep its memory small). If it is not running for any
+# reason, the Activities page that is watching the request writes it itself after 45 seconds.
+# --timeout must be longer than the job's own limit (880), and --tries=1 because a request must
+# never be written and charged twice.
+(
+    while true; do
+        php artisan queue:work --sleep=2 --tries=1 --timeout=900 --max-time=1800 || true
+        sleep 2
+    done
+) &
+
 exec php artisan serve --host=0.0.0.0 --port="${PORT:-8080}"

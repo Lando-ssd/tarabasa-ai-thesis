@@ -289,6 +289,67 @@
   });
 
   /* =====================================================
+     The "Generate activities" notice. A request is written in the background (it takes a minute
+     to several minutes), so this follows it: it asks how far it has got every few seconds, shows
+     the time so far, and when it ends says how, and refreshes the board.
+     ===================================================== */
+  var gs = $('#genStatus');
+  if (gs) {
+    var gsStarted = parseInt(gs.getAttribute('data-started') || '0', 10);
+    var gsSprite = gs.getAttribute('data-sprite') || '';
+    var gsTimer = null, gsClock = null;
+    var gsFmt = function (sec) { sec = Math.max(0, sec); var m = Math.floor(sec / 60), s = sec % 60; return m + ':' + (s < 10 ? '0' : '') + s; };
+    var gsTick = function () { var el = $('[data-gs-elapsed]', gs); if (el) { el.textContent = gsFmt(Math.floor(Date.now() / 1000) - gsStarted); } };
+    var gsIcon = function (name) {
+      $('[data-gs-ico]', gs).innerHTML = name === 'spin'
+        ? '<span class="spin light"></span>'
+        : '<svg class="ico" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="' + gsSprite + '#ph-' + name + '"></use></svg>';
+    };
+    var gsShow = function (kind, title, text) {
+      gs.classList.toggle('blue', kind === 'work'); gs.classList.toggle('green', kind === 'done');
+      $('[data-gs-title]', gs).textContent = title;
+      $('[data-gs-text]', gs).textContent = text;
+      $('[data-gs-elapsed]', gs).hidden = kind !== 'work';
+      $('[data-gs-retry]', gs).hidden = kind !== 'fail';
+      var d = $('[data-gs-dismiss]', gs); d.hidden = kind === 'work'; d.textContent = kind === 'done' ? 'Got it' : 'Dismiss';
+      gsIcon(kind === 'work' ? 'spin' : (kind === 'done' ? 'check' : 'x'));
+    };
+    var gsStop = function () { clearTimeout(gsTimer); clearInterval(gsClock); };
+
+    var gsApply = function (s) {
+      if (s.startedAt) { gsStarted = s.startedAt; }
+      gs.setAttribute('data-state', s.status);
+      if (s.active) { return true; }
+      gsStop();
+      if (s.status === 'Done') {
+        gsShow('done', 'Your activities are ready', s.message || 'Your activities were added to To review.');
+        toast(s.message || 'Your activities are ready.');
+        if (TB.loadActivities) { TB.loadActivities({}); }
+      } else {
+        gsShow('fail', 'The AI could not finish', s.message || 'Nothing was charged. Please try again.');
+      }
+      return false;
+    };
+
+    var gsPoll = function () {
+      fetch(gs.getAttribute('data-url'), { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) { throw new Error('bad'); } return r.json(); })
+        .then(function (s) { if (gsApply(s)) { gsTimer = setTimeout(gsPoll, 4000); } })
+        .catch(function () { gsTimer = setTimeout(gsPoll, 8000); });
+    };
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('[data-gs-dismiss]') || !gs.contains(e.target)) { return; }
+      post(gs.getAttribute('data-dismiss-url'), {});
+      gs.hidden = true;
+    });
+
+    if (gs.getAttribute('data-state') === 'Queued' || gs.getAttribute('data-state') === 'Running') {
+      gsTick(); gsClock = setInterval(gsTick, 1000); gsPoll();
+    }
+  }
+
+  /* =====================================================
      Generate window: how many of each level
      ===================================================== */
   var gen = $('#genDlg');
@@ -326,6 +387,13 @@
       });
       $('[data-gen-total]', gen).textContent = total;
       $('[data-gen-total-word]', gen).textContent = total === 1 ? 'activity' : 'activities';
+      // The AI writes every level one after another and most of the wait is a fixed cost per
+      // request, so it follows the largest number asked for in any one level, not the total.
+      var most = Math.max(n.Easy, n.Medium, n.Hard), est = $('[data-gen-time]', gen);
+      if (est) {
+        var secs = (GD.baseSeconds || 90) + (GD.extraSeconds || 20) * Math.max(0, most - 1), mins = Math.max(1, Math.ceil(secs / 60));
+        est.textContent = total ? 'About ' + mins + (mins === 1 ? ' minute' : ' minutes') : '';
+      }
       var go = $('#genGo'); if (go && !go.hasAttribute('data-locked')) { go.disabled = total === 0; $('#genGoText').textContent = total ? 'Generate ' + total : 'Choose at least one'; }
     };
 
@@ -341,7 +409,7 @@
     });
     var form = $('#genForm');
     form.addEventListener('submit', function () {
-      $('#genBusy').hidden = false; $('#genGo').disabled = true; $('#genGoText').textContent = 'Writing';
+      $('#genBusy').hidden = false; $('#genGo').disabled = true; $('#genGoText').textContent = 'Sending';
       $$('[data-gen-cancel]', gen).forEach(function (b) { b.disabled = true; });
     });
     fillTypes();

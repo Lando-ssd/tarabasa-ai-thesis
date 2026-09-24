@@ -162,6 +162,11 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
     // Wakes the generator (it sleeps when idle) as the Generate window opens.
     Route::get('/activities/warm', [ActivityController::class, 'warm'])->name('activities.warm');
+    // A "Generate activities" request is written in the background: the Activities page asks how
+    // far it has got, and dismisses the notice once the teacher has seen how it ended. Read and
+    // acknowledge only, so no 'teacher.active' guard (the request itself needs no approval).
+    Route::get('/activities/generations/{generation}', [ActivityController::class, 'generationStatus'])->name('activities.generation');
+    Route::post('/activities/generations/{generation}/dismiss', [ActivityController::class, 'dismissGeneration'])->name('activities.generation.dismiss');
     // One activity's window (fetched when a card opens): read-only, so no 'teacher.active' guard.
     Route::get('/activities/{activity}/window', [ActivityController::class, 'window'])->name('activities.window');
     // Drag and drop / "Move to": put a Draft in a level (approving it), re-level an Approved

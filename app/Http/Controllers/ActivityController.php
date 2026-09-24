@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateActivitiesJob;
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
+use App\Models\ActivityGeneration;
 use App\Models\Learner;
 use App\Models\OpenRepositoryListing;
 use App\Models\SchoolClass;
@@ -12,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -23,12 +26,6 @@ class ActivityController extends Controller
     private const TRAY = 4;
 
     private const PER_PAGE = 7;
-
-    /**
-     * Seconds we wait for the generator. It writes the levels one after another (a minute or more)
-     * and its free hosting can add a cold start on top, so 150 was too tight in practice.
-     */
-    private const GENERATE_TIMEOUT = 210;
 
     /** Approved cards shown in each level column before "See all". */
     private const COLUMN = 5;
@@ -47,15 +44,14 @@ class ActivityController extends Controller
      * middleware: a Pending Teacher can use their 2 free credits, per Step 3. Only "touching real
      * students" actions are gated by Active status.
      *
-     * Calls the real, deployed gemini_activity_gen service. Credits are checked BEFORE calling
-     * (Step 7.1) and decremented by exactly 1 only on a successful generation (Step 7.6), so a
+     * The Teacher chooses how many of EACH level (0 to 5). The request is saved and written in the
+     * background (GenerateActivitiesJob), because the real gemini_activity_gen service takes a
+     * minute to several minutes and always writes all three levels: too long to hold a web
+     * request open. The Activities page follows its progress. Credits are checked BEFORE (Step
+     * 7.1) and decremented by exactly 1 only when the activities have been saved (Step 7.6), so a
      * failed or timed-out call never costs a credit.
-     *
-     * The Teacher chooses how many of EACH level (0 to 5). The service can only be asked for one
-     * `variants_per_level` for all three levels and always writes all three, so we ask for the
-     * largest number wanted and keep only what was asked for (see Activity::createManyFromBundle).
      */
-    public function generate(Request $request, ActivityAiClient $activityAi): RedirectResponse
+    public function generate(Request $request): RedirectResponse
     {
         $teacher = $request->user()->teacher;
 
@@ -101,43 +97,86 @@ class ActivityController extends Controller
             ]);
         }
 
-        // What the Teacher has re-leveled before goes to the generator as part of the notes it
-        // already accepts, so it can calibrate. Only the Teacher's own words are saved.
-        $notesForAi = $this->notesWithCalibration(
-            $validated['teacher_notes'] ?? null,
-            Activity::calibrationNote($teacher->id, $validated['grade_level'], $validated['activity_type']),
-        );
-
-        try {
-            $data = $activityAi->generateBundle([
-                'grade' => (int) substr($validated['grade_level'], 6),
-                'competency' => $validated['competency'],
-                'activity_type' => $validated['activity_type'],
-                'variants_per_level' => max($wanted),
-                'topic' => $validated['topic'] ?? null,
-                'teacher_notes' => $notesForAi,
-            ], self::GENERATE_TIMEOUT);
-        } catch (\RuntimeException $e) {
-            throw ValidationException::withMessages(['generate' => $e->getMessage()]);
+        // One at a time: a second request now could spend a credit the first one still needs.
+        if (ActivityGeneration::activeFor($teacher->id)) {
+            throw ValidationException::withMessages([
+                'generate' => 'Your last request is still being written. It shows at the top of Activities. Wait for it to finish, then ask for more.',
+            ]);
         }
 
-        $created = Activity::createManyFromBundle($data, [
-            'created_by_teacher_id' => $teacher->id,
+        $generation = ActivityGeneration::create([
+            'teacher_id' => $teacher->id,
+            'status' => ActivityGeneration::QUEUED,
             'grade_level' => $validated['grade_level'],
             'competency' => $validated['competency'],
-            'competency_label' => $data['competency_label'] ?? $competencies[$validated['competency']]['label'],
             'activity_type' => $validated['activity_type'],
             'topic' => $validated['topic'] ?? null,
             'teacher_notes' => $validated['teacher_notes'] ?? null,
-        ], $wanted);
+            'levels' => $wanted,
+        ]);
 
-        $teacher->decrement('free_generation_credits_remaining');
+        // Normally this only queues the work and returns at once. If the queue is set to run
+        // inline (QUEUE_CONNECTION=sync), it runs here and the result is known right away.
+        try {
+            GenerateActivitiesJob::dispatch($generation->id);
+        } catch (\Throwable $e) {
+            Log::error('Could not run the activity generation', ['generation' => $generation->id, 'error' => $e->getMessage()]);
+        }
 
-        $summary = collect($wanted)->filter()->map(fn (int $n, string $tier) => "{$n} {$tier}")->implode(', ');
+        $generation->refresh();
+
+        if ($generation->status === ActivityGeneration::FAILED) {
+            $generation->update(['acknowledged_at' => now()]);
+
+            throw ValidationException::withMessages(['generate' => $generation->message]);
+        }
+
+        if ($generation->status === ActivityGeneration::DONE) {
+            $generation->update(['acknowledged_at' => now()]);
+
+            return redirect()->route('teacher.activities.index', ['view' => 'board'])->with('status', $generation->message);
+        }
+
+        $total = $generation->total();
 
         return redirect()
             ->route('teacher.activities.index', ['view' => 'board'])
-            ->with('status', $created->count().' '.Str::plural('draft', $created->count())." added to To review: {$summary}.");
+            ->with('status', 'The AI is writing your '.$total.' '.Str::plural('activity', $total).'. You can keep working. They appear in To review when they are ready.');
+    }
+
+    /**
+     * Where a "Generate activities" request has got to. The Activities page asks every few
+     * seconds. If the background worker has not picked the request up (it should within seconds),
+     * this page writes it itself, so a request can never sit waiting forever.
+     */
+    public function generationStatus(Request $request, ActivityGeneration $generation): JsonResponse
+    {
+        abort_if($generation->teacher_id !== $request->user()->teacher->id, 403);
+
+        if (
+            $generation->status === ActivityGeneration::QUEUED
+            && $generation->created_at->lt(now()->subSeconds(ActivityGeneration::PICKUP_WAIT_SECONDS))
+        ) {
+            ignore_user_abort(true);
+            GenerateActivitiesJob::dispatchSync($generation->id);
+        }
+
+        // A request lost for good (the server restarted while it was writing) is closed here.
+        ActivityGeneration::activeFor($generation->teacher_id);
+
+        return response()->json($generation->refresh()->toStatus());
+    }
+
+    /** The teacher has seen how a request ended: the notice on Activities can go away. */
+    public function dismissGeneration(Request $request, ActivityGeneration $generation): JsonResponse
+    {
+        abort_if($generation->teacher_id !== $request->user()->teacher->id, 403);
+
+        if (! $generation->isActive()) {
+            $generation->update(['acknowledged_at' => now()]);
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     /**
@@ -187,6 +226,9 @@ class ActivityController extends Controller
             'levelInfo' => config('activity_levels.info'),
             'maxPerLevel' => (int) config('activity_levels.max_per_level'),
             'have' => $this->haveCounts($activities),
+            'generation' => ActivityGeneration::noticeFor($teacher->id),
+            // Approved activities not yet shared: what earns a teacher with no credits more.
+            'shareable' => $activities->where('status', 'Approved')->where('shared_to_repository', false)->count(),
             'openGenerate' => $request->boolean('generate') || old('form') === 'generate',
         ]);
     }
@@ -438,21 +480,6 @@ class ActivityController extends Controller
         }
 
         return back()->with('status', $message);
-    }
-
-    /** The teacher's own notes first, then the calibration note, kept inside the service's limit. */
-    private function notesWithCalibration(?string $notes, ?string $calibration): ?string
-    {
-        $notes = trim((string) $notes);
-
-        if ($calibration !== null) {
-            $room = 1000 - strlen($notes) - ($notes === '' ? 0 : 1);
-            $calibration = $room > 40 ? Str::limit($calibration, $room, '') : null;
-        }
-
-        $combined = trim($notes.($notes !== '' && $calibration ? "\n" : '').($calibration ?? ''));
-
-        return $combined === '' ? null : $combined;
     }
 
     /**

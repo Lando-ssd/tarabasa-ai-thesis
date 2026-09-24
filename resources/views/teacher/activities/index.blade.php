@@ -23,6 +23,10 @@
   </div>
 </div>
 
+@if ($generation)
+  @include('teacher.activities._generation')
+@endif
+
 @if ($locked)
   <div class="alert amber" style="padding:10px 16px">
     <span class="alert-ico" style="width:36px;height:36px;font-size:20px">@include('learner._badge-icon', ['icon' => 'lock-simple', 'class' => 'ico'])</span>
