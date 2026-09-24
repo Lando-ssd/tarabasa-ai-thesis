@@ -1046,38 +1046,40 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
 .bs-book h3{ flex:0 0 auto; }
 
 /* =========================================================
-   FULL-WIDTH DESKTOP. The mockup capped the whole app at 1180px and centred it,
-   so on a big monitor the sidebar floated in from the left edge and the goal and
-   growth cards from the right. Now the sidebar is flush left, the rail is flush
-   right, and the middle takes whatever is left, with the road map, banner and
-   type scaling up to use it. Phones and tablets are handled by the block below.
+   DESKTOP COMPOSITION, after Duolingo's own layout: the sidebar is a full-height
+   column on the left edge with a visible divider, and the path and the
+   stats / goal / growth column sit next to each other as ONE block, centred in the
+   space to the right of the sidebar. Everything scales up on bigger screens.
+   Phones and tablets use the block below.
    ========================================================= */
-@media (min-width:901px){
-  :root{ --road-w:640px; }
+.nav-item{ border:2px solid transparent; }
+@media (min-width:1001px){
+  :root{ --center-w:560px; --rail-w:320px; --col-gap:28px; }
   .shell{ max-width:none; margin:0; }
-  .main-grid{ grid-template-columns:minmax(0,1fr) 340px; }
-  .center{ padding:22px clamp(24px,3vw,64px) 60px; }
-  .journey-head, .roadmap-banner, .road-wrap, .roadmap-caption{ max-width:var(--road-w); margin-left:auto; margin-right:auto; }
+  .sidebar{ border-right:2px solid #c9dcf0; background:rgba(255,255,255,.88); }
+  .nav-item.active{ border-color:#b3d3f4; }
+  .main-grid{ grid-template-columns:minmax(0,var(--center-w)) var(--rail-w); justify-content:center; column-gap:var(--col-gap); }
+  .center{ padding:22px 0 60px; }
+  .journey-head, .roadmap-banner, .road-wrap, .roadmap-caption{ max-width:none; margin-left:0; margin-right:0; }
   .road-wrap{ margin-top:16px; margin-bottom:38px; }
+  .right-rail{ margin:12px 0; }
   .subpage{ max-width:1100px; margin:0 auto; }
   .subpage .rd-grid, .subpage .gm-grid, .subpage .gm-note, .subpage .bs-shelf, .subpage .bs-flow{ max-width:none; }
 }
 @media (min-width:1200px){
-  :root{ --road-w:740px; }
-  .main-grid{ grid-template-columns:minmax(0,1fr) 380px; }
+  :root{ --center-w:660px; --rail-w:370px; --col-gap:40px; }
 }
 @media (min-width:1500px){
-  :root{ --road-w:840px; }
-  .sidebar{ width:264px; padding:26px 16px; }
-  .brand{ font-size:29px; padding:8px 14px 36px; }
-  .nav-item, button.nav-item{ font-size:19.5px; padding:13px 16px; gap:18px; margin-bottom:6px; }
+  :root{ --center-w:740px; --rail-w:420px; --col-gap:52px; }
+  .sidebar{ width:284px; padding:26px 16px; }
+  .brand{ font-size:32px; padding:8px 14px 38px; }
+  .nav-item, button.nav-item{ font-size:20px; padding:13px 16px; gap:18px; margin-bottom:7px; }
   .nav-item .nav-icon{ width:46px; height:46px; }
   .sidebar-foot{ padding:14px 16px 15px 14px; gap:14px; }
   .sf-avatar{ width:54px; height:54px; font-size:28px; border-radius:17px; }
   .sf-text b{ font-size:23px; }
   .sf-text span{ font-size:16px; }
 
-  .main-grid{ grid-template-columns:minmax(0,1fr) 440px; }
   .journey-head h2{ font-size:40px; }
   .roadmap-banner{ padding:26px 32px 28px; border-radius:22px; }
   .roadmap-banner b{ font-size:38px; }
@@ -1085,8 +1087,7 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
   .roadmap-banner .rb-eyebrow{ font-size:14px; }
   .roadmap-diff-chip{ font-size:19px; padding:13px 22px 12px; }
   .right-rail .topstats-col{ padding-top:24px; }
-  .pill .stat-num{ font-size:28px; }
-  .pill.level .stat-num{ font-size:28px; }
+  .pill .stat-num, .pill.level .stat-num{ font-size:28px; }
   .pill .stat-icon-lottie{ width:58px; height:58px; }
   .stat-pills{ gap:30px; }
 }
@@ -1107,10 +1108,11 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
   .subpage .rd-grid .rd-featured{ grid-column:1 / -1; }
 }
 @media (min-width:1800px){
-  :root{ --road-w:920px; }
-  .sidebar{ width:284px; }
-  .nav-item, button.nav-item{ font-size:21px; }
-  .main-grid{ grid-template-columns:minmax(0,1fr) 500px; }
+  :root{ --center-w:820px; --rail-w:460px; --col-gap:60px; }
+  .sidebar{ width:316px; padding:30px 20px; }
+  .brand{ font-size:36px; }
+  .nav-item, button.nav-item{ font-size:22px; padding:15px 18px; }
+  .nav-item .nav-icon{ width:52px; height:52px; }
   .journey-head h2{ font-size:44px; }
   .roadmap-banner b{ font-size:42px; }
   .roadmap-banner .rb-sub{ font-size:22px; }
@@ -1119,10 +1121,10 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
 
 /* =========================================================
    Tablet and phone. The mockup was desktop only.
-   Below 900px the sidebar becomes a bottom tab bar, and Home stacks: the stat
+   Up to 1000px the sidebar becomes a bottom tab bar, and Home stacks: the stat
    pills first, then the roads, then the goal and growth cards.
    ========================================================= */
-@media (max-width:900px){
+@media (max-width:1000px){
   .shell{ display:block; }
   .main{ padding-bottom:96px; }
 
@@ -1154,7 +1156,7 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
   .roadmap-svg{ width:100%; height:auto; }
   .credits{ padding:6px 18px 12px; }
 }
-@media (min-width:600px) and (max-width:900px){
+@media (min-width:600px) and (max-width:1000px){
   .right-col{ grid-template-columns:1fr 1fr; }
 }
 @media (max-width:420px){
