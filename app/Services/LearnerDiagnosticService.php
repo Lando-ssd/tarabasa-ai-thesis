@@ -40,10 +40,11 @@ class LearnerDiagnosticService
     // Bump when the shape of the saved state changes.
     private const STATE_VERSION = 2;
 
+    // Warm and non-numeric. No emoji: the result screens no longer use them as decoration.
     private const MASTERY_TO_RESULT_LABEL = [
-        'Beginning' => '🌱 You\'re a Rising Reader!',
-        'Developing' => '🌿 You\'re a Growing Reader!',
-        'Proficient' => '🌟 You\'re a Super Reader!',
+        'Beginning' => 'You\'re a Rising Reader!',
+        'Developing' => 'You\'re a Growing Reader!',
+        'Proficient' => 'You\'re a Super Reader!',
     ];
 
     private const MAX_PASSAGES = 3;

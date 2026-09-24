@@ -5421,7 +5421,7 @@ are top aligned and `.dx-talk` gets a top padding worked out from the owl and cl
 0.34 of the way down the animation box, measured from the Lottie), with the bubble trail running left toward
 her; stacked on a phone the bubbles rise straight up to her. If the owl animation is ever swapped, re-measure
 that 0.335 in `diagnostic-intro.blade.php`.
-The passage, encouragement and results screens still use the older card design.
+The passage, Great job, results and try again screens are redesigned too (see below).
 
 **First-login reading check follows the Parent's profile, not the grade (2026-09-24).**
 The instructor's finding: the check must match what the Parent said at sign up, be
@@ -5495,10 +5495,39 @@ Grade 3 children cannot read yet (they should start on letters).
   -> Proficient; Grade 1 phonics easy said wrongly -> stepped down to the second letters
   set -> back up to phonics easy, capped at 3 items, Beginning. The passage screen was
   checked at 1300 and 375px wide, including Extra Large text.
-- **Not done:** the "Great job" and results screens still use the older card design; the
-  letters rung needs a real child; a check already running in the cache when this deploys
+- **Not done:** the letters rung needs a real child; a check already running in the cache when this deploys
   finishes on its old three tiers (`LEGACY_TIERS`); the top rung is Grade 2's hardest
   passage (about as long as Grade 3's), so it cannot tell a Grade 3 reader from a Grade 2 one.
+
+**Feedback screens redesigned: Great job, results, try again (2026-09-24).** The screens shown
+after each reading item now share one design in `learner/_feedback-scene.blade.php`, a full
+document that `diagnostic-encourage`, `diagnostic-results` and `reading-unclear` each `@include`
+with a few variables (`$mood`, `$heading`, `$message`, `$buttonLabel`, `$buttonHref`, optional
+`$dotsDone`/`$dotsTotal`, `$level`, `$newBadges`). Plain white; the user's two Lotties
+(`public/animations/learner/star-happy.json` and `star-sad.json`, 7 s loops) stand on one side, a
+cloud with the headline lines up with the star's face on the other (the glasses sit ~0.48 down the
+animation box, measured; the same padding trick as the intro), then the message and one big clay
+orange button. It matches the intro and stacks on phones.
+- **The sad star is ONLY for "we could not hear you"** (the two try again screens: "Didn't quite
+  catch that!" and "Please ask a grown up for help"). It is never shown for a low score: the
+  check has no visible score or pass/fail framing (Placement Diagnostic patch, Part 4.2), so a
+  child who lands on Beginning gets the same happy star as one who lands on Proficient. The cloud
+  is warm yellow with the happy star and a cool soft blue with the sad one.
+- **Copy and controls:** no emoji and no dashes; buttons are "Keep Going", "Start Exploring", "Try
+  Again", "Back to My Dashboard" (the old "Next Passage" was wrong after a letters item). The
+  level label (`MASTERY_TO_RESULT_LABEL`) lost its emoji, so the mobile API's `resultLabel` is plain
+  text too. Badges earned by the check show side by side under the level pill (badge icons
+  are still emoji, they come from `config/badges.php`). `reading-unclear` is shared with ordinary
+  practice readings, so those get the same screens (the button goes to the activity instead).
+- **Tested for real:** through the real app with a synthesized voice: Great job after items 1 and
+  2 (dots 1 then 2 filled, the "one more short one" message), the results with the level pill and
+  both first-reading badges ("First Reading Star", "Reading Check Done"), and three silent
+  recordings in a row (retry, retry, then the grown up screen, zero sessions created). Layout
+  checked at 1440x900 and 375px, including a long hyphenated name in the cloud and two badges
+  (fits without scrolling). The Lottie motion itself cannot be watched in the test browser
+  (hidden tabs freeze it), so only its resting frame was seen.
+- **Not done:** `reading-results` (the practice results) and `bookshelf-reread-unclear` still use the
+  older card design.
 
 **Known limits, stated plainly:** writing the assessment's items is still a
 synchronous generator call (now ~7 to 10 s for phonics, but a cold Render service can still
