@@ -1217,8 +1217,8 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
 /* ---- Points: title, the five-star rating row, then "You have N points", a note and a link ---- */
 .pp-body{ padding:24px 26px 24px; }
 .pp-body h4{ margin:0; }
-/* the box clips the animation, so the big star that pops in never covers the text around it */
-.pp-stars{ width:100%; max-width:340px; aspect-ratio:2.4 / 1; margin:6px auto 8px; overflow:hidden; pointer-events:none; }
+/* a small box, cropped to the star row: the five stars sit on the text's left edge, ~27px each */
+.pp-stars{ width:168px; aspect-ratio:808 / 310; margin:-4px 0 -2px -6px; overflow:hidden; pointer-events:none; }
 .pp-stars svg{ display:block; }
 .pp-body p{ font-family:var(--font-game); font-weight:600; font-size:22px; color:var(--points-gold); margin:0 0 6px; }
 .pp-note{ display:block; font-family:var(--font-game); font-weight:500; font-size:17px; line-height:1.35; color:var(--slate-600); margin-bottom:12px; }
@@ -1247,3 +1247,10 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
 
 /* the pill that opened a popover gets the soft highlight Duolingo gives it, without moving anything */
 .pill[aria-expanded="true"]{ background:rgba(255,255,255,.85); border-radius:14px; box-shadow:0 0 0 7px rgba(255,255,255,.85); }
+
+
+/* =========================================================
+   No panel behind the stats and cards. The level / streak / points row and the
+   goal and growth cards sit straight on the page, like Duolingo's right column.
+   ========================================================= */
+.right-rail{ background:none; border:0; box-shadow:none; border-radius:0; }

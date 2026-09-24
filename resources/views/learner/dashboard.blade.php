@@ -221,10 +221,14 @@
     pointsIconAnim.goToAndStop(pointsRestFrame, true);
   });
   var streakBurstAnim = lottie.loadAnimation({ container: document.getElementById('streakBurstLottie'), renderer: 'svg', loop: false, autoplay: false, path: anim.flameBurst });
-  // The rating animation is a square with the star row in its middle band; 'slice' fills the wide box,
-  // cropping the empty top and bottom, so the five stars render large. It rests on its last frame (all lit).
-  var pointsArtAnim = lottie.loadAnimation({ container: document.getElementById('pointsArtLottie'), renderer: 'svg', loop: false, autoplay: false, path: anim.starBurst, rendererSettings: { preserveAspectRatio: 'xMidYMid slice' } });
+  // The rating animation is a 1080 square with the star row across its middle. The view box crops it to
+  // just the row (with a little room for the stars' overshoot as they fan out), so the row fills a small
+  // box and lines up with the text. It plays from frame 24 (one small star that splits into five, skipping
+  // the big star that pops in first) and rests on the last frame, all five lit.
+  var STAR_FIRST = 24;
+  var pointsArtAnim = lottie.loadAnimation({ container: document.getElementById('pointsArtLottie'), renderer: 'svg', loop: false, autoplay: false, path: anim.starBurst, rendererSettings: { viewBoxSize: '140 385 808 310', preserveAspectRatio: 'xMinYMid meet' } });
   function restStars() { if (pointsArtAnim && pointsArtAnim.totalFrames) pointsArtAnim.goToAndStop(pointsArtAnim.totalFrames - 1, true); }
+  function playStars() { if (pointsArtAnim && pointsArtAnim.totalFrames) pointsArtAnim.playSegments([STAR_FIRST, pointsArtAnim.totalFrames - 1], true); }
   pointsArtAnim.addEventListener('DOMLoaded', restStars);
 
   function restIcon(a, frame) { if (a && frame !== null && frame !== undefined) a.goToAndStop(frame, true); }
@@ -242,7 +246,7 @@
   document.getElementById('pointsPill').addEventListener('click', function () {
     var opened = togglePopover(this, document.getElementById('pointsPopover'));
     restIcon(streakIconAnim, streakRestFrame); playIconOnce(pointsIconAnim);
-    if (opened && pointsArtAnim && !reduceMotion) pointsArtAnim.goToAndPlay(0, true);
+    if (opened && !reduceMotion) playStars();
   });
   document.addEventListener('click', function (e) {
     if (!e.target.closest('.pill-wrap') && !e.target.closest('.popover')) {
