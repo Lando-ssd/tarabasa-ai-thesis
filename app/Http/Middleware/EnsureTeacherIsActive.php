@@ -25,6 +25,12 @@ class EnsureTeacherIsActive
         $teacher = $request->user()?->teacher;
 
         if (! $teacher || $teacher->status !== 'Active') {
+            // Drag and drop on the Activities board calls the server in the background and
+            // needs an answer it can show, not a redirect page.
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Locked until your school verification is approved.'], 403);
+            }
+
             return back()->with('classError', 'Your school verification is still pending. Once approved, you\'ll be able to create classes and add students.');
         }
 

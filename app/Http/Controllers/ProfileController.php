@@ -53,8 +53,8 @@ class ProfileController extends Controller
             'last_name' => ['required', 'string', 'max:255', 'regex:'.self::NAME_REGEX],
             'contact_number' => ['nullable', 'string', 'max:30'],
         ], [
-            'first_name.regex' => 'First name may only contain letters, spaces, hyphens, and apostrophes — no numbers.',
-            'last_name.regex' => 'Last name may only contain letters, spaces, hyphens, and apostrophes — no numbers.',
+            'first_name.regex' => 'First name may only contain letters, spaces, hyphens, and apostrophes, no numbers.',
+            'last_name.regex' => 'Last name may only contain letters, spaces, hyphens, and apostrophes, no numbers.',
         ]);
 
         $user->update($validated);

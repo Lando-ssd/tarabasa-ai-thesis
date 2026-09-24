@@ -1,366 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Activities — TaraBasa AI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --sky-50:#eef6ff; --sky-100:#dcedff;
-    --blue-500:#1c7ed6; --blue-600:#0f5fae; --blue-700:#0a3d73;
-    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
-    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
-    --success:#1f9e83; --success-bg:#e9f7f3;
-    --danger:#d64545; --danger-bg:#fdecec;
-    --amber:#c9820b; --amber-bg:#fef6e6;
-    --purple:#7c5cd6; --purple-bg:#f1edfc;
-    --shadow-sm:0 2px 5px -1px rgba(19,31,43,.09), 0 8px 18px -14px rgba(19,31,43,.16);
-  }
-  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
-  body{
-    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
-    background: radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%), var(--bg-0);
-    background-attachment:fixed;
-  }
-  .shell{ max-width:820px; margin:0 auto; padding:22px 24px 64px; }
+{{--
+  Activities: a review board where new drafts wait in "To review" and are dragged into the level
+  they belong to (Easy, Medium or Hard), and a list of every activity. The AI can only guess how
+  hard a text is (from how familiar the words are and how long it is), so the teacher decides.
 
-  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-  .logo-lockup{ display:flex; align-items:center; gap:10px; }
-  .logo-badge{ width:38px;height:38px;border-radius:11px; overflow:hidden; box-shadow:0 6px 14px -5px rgba(15,95,174,0.5), inset 0 2px 0 rgba(255,255,255,.3); }
-  .logo-badge img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .wordmark{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; }
-  .wordmark span{ color:var(--blue-500); }
-  .topbar-actions{ display:flex; align-items:center; gap:10px; }
-  .avatar-chip{
-    display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
-    padding:5px 12px 5px 5px; border-radius:999px; box-shadow:var(--shadow-sm);
-    text-decoration:none; color:inherit; transition:border-color .15s ease, box-shadow .15s ease;
-  }
-  .avatar-chip:hover{ border-color:var(--blue-500); box-shadow:var(--shadow-card, 0 8px 18px -8px rgba(15,95,174,0.35)); }
-  .avatar-chip .av{
-    width:30px;height:30px;border-radius:50%; background:linear-gradient(155deg,var(--blue-500),var(--blue-700));
-    display:flex;align-items:center;justify-content:center; color:#fff; font-weight:700; font-size:13px;
-    box-shadow:inset 0 2px 0 rgba(255,255,255,.25), inset 0 -2px 3px rgba(0,0,0,.2);
-  }
-  .avatar-chip span.name{ font-size:13.5px; font-weight:700; }
-  .logout-btn{
-    background:var(--surface); border:1px solid var(--line); color:var(--slate-600); font:700 13px/1 'Inter',sans-serif;
-    padding:10px 16px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow-sm);
-    transition:color .15s ease, border-color .15s ease;
-  }
-  .logout-btn:hover{ color:var(--danger); border-color:var(--danger); }
+  The board or list is #actMain, rendered by _main and refreshed in place when filters change or
+  a card is dropped. Generate lives here, in a window. Everything else (read, edit, reject,
+  assign, share) is the activity's own window, fetched when a card opens.
+--}}
+@extends('layouts.teacher-shell')
 
-  .back-link{
-    display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--slate-600);
-    text-decoration:none; margin:18px 0 6px;
-  }
-  .back-link:hover{ color:var(--blue-600); }
-  .head-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px; }
-  h1{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:0; }
-  .generate-link{
-    display:inline-flex; align-items:center; gap:7px; background:linear-gradient(155deg,var(--blue-500),var(--blue-600));
-    color:#fff; font:700 13.5px/1 'Inter',sans-serif; padding:11px 18px; border-radius:12px; text-decoration:none;
-  }
+@section('title', 'Activities | TaraBasa AI')
 
-  .flash{ font-weight:700; font-size:13px; border-radius:14px; padding:12px 16px; margin-bottom:18px; }
-  .flash.success{ background:var(--success-bg); border:1px solid var(--success); color:var(--success); }
-  .flash.error{ background:var(--danger-bg); border:1px solid var(--danger); color:var(--danger); }
-
-  .lock-banner{
-    display:flex; gap:14px; background:var(--amber-bg); border:1px solid var(--amber); border-radius:18px;
-    padding:16px 18px; margin-bottom:20px; font-size:12.5px; color:var(--navy-900); font-weight:500; line-height:1.5;
-  }
-
-  .section-title{ font-family:'Baloo 2',sans-serif; font-size:15.5px; font-weight:700; margin:26px 0 12px; }
-  .section-title:first-of-type{ margin-top:0; }
-
-  /* Sticky search + filter toolbar — pinned to the viewport top so a
-     Teacher scanning a long list never loses access to either while
-     scrolling. Solid background (not the page's radial-gradient) so
-     content scrolling underneath doesn't show through. */
-  .controls-sticky{
-    position:sticky; top:0; z-index:20; background:var(--bg-0);
-    padding:14px 0 12px; margin-bottom:4px; border-bottom:1px solid var(--line);
-  }
-  .search-row{ position:relative; margin-bottom:12px; }
-  .search-row svg{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--slate-400); pointer-events:none; }
-  #activity-search{
-    width:100%; font:500 14px/1 'Inter',sans-serif; padding:12px 14px 12px 40px; border:1.5px solid var(--line);
-    border-radius:12px; background:var(--surface); color:var(--navy-900); outline:none;
-    transition:border-color .15s ease, box-shadow .15s ease;
-  }
-  #activity-search::placeholder{ color:var(--slate-400); font-weight:500; }
-  #activity-search:focus{ border-color:var(--blue-500); box-shadow:0 0 0 4px rgba(15,95,174,0.12); }
-  .no-match-note{ display:none; color:var(--slate-600); font-size:13.5px; font-weight:500; padding:10px 2px 0; }
-
-  /* Same filter-chip pattern already established in Notifications and
-     Repository — reused verbatim, not reinvented, driven client-side
-     here (button, not <a>) so it composes instantly with the search
-     box above instead of a server round trip. */
-  .filters{ display:flex; gap:9px; flex-wrap:wrap; }
-  .filter-chip{
-    padding:8px 15px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface);
-    font-size:13px; font-weight:700; color:var(--slate-600); cursor:pointer; text-decoration:none;
-    transition:border-color .15s ease, color .15s ease, background .15s ease; font-family:inherit;
-  }
-  .filter-chip.active{ border-color:var(--blue-500); background:var(--sky-50); color:var(--blue-600); }
-
-  .activity-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow-sm); margin-bottom:10px; }
-  .card-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
-  .card-head-main{ flex:1; min-width:220px; }
-  .tag-row{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
-  .tag{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; }
-  .tag.status-draft{ background:var(--sky-50); color:var(--blue-600); }
-  .tag.status-approved{ background:var(--success-bg); color:var(--success); }
-  .tag.status-rejected{ background:var(--danger-bg); color:var(--danger); }
-  .tag.type{ background:var(--purple-bg); color:var(--purple); }
-  .tag.diff{ background:var(--bg-0); color:var(--slate-600); border:1px solid var(--line); }
-
-  .act-title{ font-family:'Baloo 2',sans-serif; font-size:16px; font-weight:700; margin:0 0 2px; }
-  .act-meta{ font-size:12.5px; color:var(--slate-600); font-weight:600; margin:0; }
-  .act-passage{
-    font-size:13px; color:var(--navy-900); font-weight:500; line-height:1.55; background:var(--bg-0);
-    border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:10px; white-space:pre-wrap;
-  }
-
-  .actions{ display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0; }
-  .card-head .actions{ padding-top:1px; }
-  .actions button, .actions a{
-    padding:8px 14px; border-radius:10px; font:700 12.5px/1 'Inter',sans-serif; cursor:pointer; text-decoration:none;
-    transition:transform .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease;
-    white-space:nowrap;
-  }
-  .actions button:hover, .actions a:hover{ transform:translateY(-1px); }
-  .actions button:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
-  .btn-approve{ background:var(--success); color:#fff; border:none; }
-  .btn-approve:hover{ background:#188a72; }
-  .btn-edit{ background:var(--surface); color:var(--navy-900); border:1.5px solid var(--line); }
-  .btn-edit:hover{ border-color:var(--blue-500); color:var(--blue-600); }
-  .btn-reject{ background:var(--danger-bg); color:var(--danger); border:1px solid transparent; }
-  .btn-reject:hover{ background:var(--danger); color:#fff; }
-  .muted-note{ font-size:12px; color:var(--slate-400); font-weight:600; align-self:center; }
-
-  .edit-form{ display:none; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line); }
-  .edit-form.show{ display:block; }
-  .edit-form label{ font-size:12px; font-weight:700; display:block; margin-bottom:5px; }
-  .edit-form input, .edit-form textarea{
-    width:100%; font:500 13.5px/1.5 'Inter',sans-serif; padding:10px 12px; border:1.5px solid var(--line); border-radius:10px;
-    background:var(--bg-0); color:var(--navy-900); outline:none; margin-bottom:10px; box-sizing:border-box;
-  }
-  .edit-form textarea{ min-height:90px; resize:vertical; }
-
-  .empty-note{ text-align:center; padding:30px 20px; color:var(--slate-600); font-size:13.5px; font-weight:500; background:var(--surface); border:1px dashed var(--line); border-radius:14px; }
-
-  .btn-assign{ background:var(--blue-600); color:#fff; border:none; }
-  .btn-assign:hover{ background:var(--blue-700); }
-  .assigned-to{ font-size:12px; color:var(--slate-600); font-weight:600; margin:0 0 10px; }
-  .assigned-to b{ color:var(--navy-900); }
-  .assign-target-row{ display:flex; gap:14px; margin-bottom:10px; }
-  .assign-target-row label{ display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:700; margin-bottom:0; }
-  .assign-field{ display:none; }
-  .assign-field.show{ display:block; }
-</style>
-</head>
-<body>
-<div class="shell">
-  <div class="topbar">
-    <div class="logo-lockup">
-      <div class="logo-badge"><img src="{{ asset('images/logo.png') }}" alt="TaraBasa AI logo"></div>
-      <span class="wordmark">TaraBasa<span>AI</span></span>
-    </div>
-    <div class="topbar-actions">
-      <a href="{{ route('teacher.profile.edit') }}" class="avatar-chip" aria-label="My Profile">
-        <span class="av">{{ strtoupper(substr($teacher->user->first_name, 0, 1)) }}</span>
-        <span class="name">{{ $teacher->user->first_name }}</span>
-      </a>
-      <form method="POST" action="{{ route('logout') }}">
-        @csrf
-        <button type="submit" class="logout-btn">Log out</button>
-      </form>
-    </div>
+@section('content')
+<div class="head">
+  <div>
+    <h1>Activities</h1>
+    <p class="sub">Drag each new draft into the level it belongs to, or use the list.</p>
   </div>
-
-  <a href="{{ route('teacher.dashboard') }}" class="back-link">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    Dashboard
-  </a>
-
-  <div class="head-row">
-    <h1>My Activities</h1>
-    <a href="{{ route('teacher.activities.create') }}" class="generate-link">Generate Activity</a>
-  </div>
-
-  @if (session('status'))
-    <div class="flash success">{{ session('status') }}</div>
-  @endif
-  @if ($errors->any())
-    <div class="flash error">{{ $errors->first() }}</div>
-  @endif
-
-  @if ($teacher->status !== 'Active')
-    <div class="lock-banner">
-      Approve/Edit/Reject are locked until your school verification is approved. You can still see your generated Drafts below.
-    </div>
-  @endif
-
-  <div class="controls-sticky">
-    @if ($drafts->count() + $approved->count() + $rejected->count() > 5)
-      <div class="search-row">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <input type="search" id="activity-search" placeholder="Search by title, grade, competency, or topic&hellip;" autocomplete="off">
-      </div>
-    @endif
-
-    {{-- Same filter-chip look already used in Notifications/Repository.
-         Defaults to Drafts — the one actionable state — so a Teacher
-         with a long history isn't scrolling past everything they've
-         already resolved just to reach what needs attention. --}}
-    <div class="filters">
-      <button type="button" class="filter-chip active" data-filter="draft">Awaiting Review ({{ $drafts->count() }})</button>
-      <button type="button" class="filter-chip" data-filter="approved">Approved ({{ $approved->count() }})</button>
-      <button type="button" class="filter-chip" data-filter="rejected">Rejected ({{ $rejected->count() }})</button>
-    </div>
-    <p class="no-match-note" id="activity-no-match">No activities match "<span></span>".</p>
-  </div>
-
-  <div data-status-section="draft">
-    @forelse ($drafts as $activity)
-      @include('teacher.activities._card', ['activity' => $activity, 'activityTypeLabels' => $activityTypeLabels, 'teacher' => $teacher])
-    @empty
-      <div class="empty-note">No drafts waiting — generate a new activity to see it here.</div>
-    @endforelse
-  </div>
-
-  <div data-status-section="approved" hidden>
-    @forelse ($approved as $activity)
-      @include('teacher.activities._card', [
-        'activity' => $activity,
-        'activityTypeLabels' => $activityTypeLabels,
-        'teacher' => $teacher,
-        'assignLearners' => $assignLearners,
-        'assignClasses' => $assignClasses,
-        'assignGroupTags' => $assignGroupTags,
-      ])
-    @empty
-      <div class="empty-note">Nothing approved yet.</div>
-    @endforelse
-  </div>
-
-  <div data-status-section="rejected" hidden>
-    @forelse ($rejected as $activity)
-      @include('teacher.activities._card', ['activity' => $activity, 'activityTypeLabels' => $activityTypeLabels, 'teacher' => $teacher])
-    @empty
-      <div class="empty-note">Nothing rejected.</div>
-    @endforelse
+  <div class="head-actions">
+    <span class="credit">@include('learner._badge-icon', ['icon' => 'sparkle', 'class' => 'ico']) {{ $teacher->free_generation_credits_remaining }} free {{ $teacher->free_generation_credits_remaining === 1 ? 'credit' : 'credits' }}</span>
+    <button type="button" class="btn" data-open="genDlg">@include('learner._badge-icon', ['icon' => 'sparkle', 'class' => 'ico']) Generate activities</button>
   </div>
 </div>
 
-<script>
-  document.querySelectorAll('[data-toggle-edit]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.getElementById(btn.dataset.toggleEdit)?.classList.toggle('show');
-    });
-  });
+@if ($locked)
+  <div class="alert amber" style="padding:10px 16px">
+    <span class="alert-ico" style="width:36px;height:36px;font-size:20px">@include('learner._badge-icon', ['icon' => 'lock-simple', 'class' => 'ico'])</span>
+    <div><b style="font-size:19px">Sorting, editing, rejecting and assigning are locked</b><span class="d">They unlock when your school verification is approved. You can still generate and read your drafts.</span></div>
+  </div>
+@endif
 
-  // Assign forms: only the radio-selected target field is shown AND
-  // enabled — a disabled <select> doesn't submit, so the server always
-  // sees exactly one of the three assign_* fields populated.
-  document.querySelectorAll('.assign-target-row:not(.share-target-row)').forEach(function (row) {
-    const form = row.closest('form');
-    const fields = form.querySelectorAll('.assign-field');
-    function sync() {
-      const checked = row.querySelector('input[type="radio"]:checked').value;
-      fields.forEach(function (field) {
-        const active = field.dataset.for === checked;
-        field.classList.toggle('show', active);
-        field.disabled = !active;
-      });
-    }
-    row.querySelectorAll('input[type="radio"]').forEach(function (radio) {
-      radio.addEventListener('change', sync);
-    });
-    sync();
-  });
+<div class="toolbar">
+  <div class="search">
+    @include('learner._badge-icon', ['icon' => 'magnifying-glass', 'class' => 'ico'])
+    <label class="sr" for="actQ">Search activities</label>
+    <input type="search" id="actQ" placeholder="Search by title, grade, skill or topic" autocomplete="off" value="{{ $q }}">
+  </div>
+  <select id="actGrade" class="mini wide" aria-label="Grade">
+    @foreach (['All' => 'All grades', 'Grade 1' => 'Grade 1', 'Grade 2' => 'Grade 2', 'Grade 3' => 'Grade 3'] as $value => $label)
+      <option value="{{ $value }}" @selected($grade === $value)>{{ $label }}</option>
+    @endforeach
+  </select>
+  <div class="chips viewchips" role="group" aria-label="View">
+    <button type="button" class="chip plain" data-load='{"view":"board","page":0,"tray":0}' aria-pressed="{{ $view === 'board' ? 'true' : 'false' }}">@include('learner._badge-icon', ['icon' => 'squares-four', 'class' => 'ico']) Board</button>
+    <button type="button" class="chip plain" data-load='{"view":"list","page":0,"tray":0}' aria-pressed="{{ $view === 'list' ? 'true' : 'false' }}">@include('learner._badge-icon', ['icon' => 'list-bullets', 'class' => 'ico']) List</button>
+  </div>
+</div>
 
-  // Share to Repository: the price field only matters (and only submits
-  // meaningfully) when "Paid" is picked — disabled otherwise so the
-  // server never sees a stray price value alongside price_type=Free.
-  document.querySelectorAll('[data-share-radio]').forEach(function (radio) {
-    radio.addEventListener('change', function () {
-      const formId = radio.dataset.shareRadio;
-      const priceField = document.getElementById('price-' + formId);
-      const isPaid = document.querySelector('input[data-share-radio="' + formId + '"][value="Paid"]').checked;
-      priceField.disabled = !isPaid;
-      if (isPaid) priceField.focus();
-    });
-  });
+<div id="actMain" data-url="{{ route('teacher.activities.index') }}">@include('teacher.activities._main')</div>
+<script type="application/json" id="actState">@json($state)</script>
+@endsection
 
-  // Real (not fake) loading state on every Approve/Reject/Save/Assign
-  // form — disables the clicked button so the in-flight request can't be
-  // double-submitted, same pattern used on Class Management.
-  document.querySelectorAll('.activity-card form').forEach(function (form) {
-    form.addEventListener('submit', function (e) {
-      const btn = e.submitter || form.querySelector('button[type="submit"]');
-      if (!btn) return;
-      btn.disabled = true;
-      btn.dataset.originalText = btn.textContent;
-      btn.textContent = '…';
-    });
-  });
-
-  // Status filter tabs + client-side search, composed together: only
-  // one status section is ever in the DOM's visible flow at a time (the
-  // active filter), and search narrows further within it — no server
-  // round trip for either, consistent with this app's convention of
-  // favoring plain page interactions over JS/AJAX except where it
-  // clearly helps a long real list stay scannable.
-  const statusSections = Array.from(document.querySelectorAll('[data-status-section]'));
-  const filterChips = Array.from(document.querySelectorAll('.filter-chip[data-filter]'));
-  const activitySearch = document.getElementById('activity-search');
-  const noMatchNote = document.getElementById('activity-no-match');
-  let activeFilter = 'draft';
-
-  function applyVisibility() {
-    const q = activitySearch ? activitySearch.value.trim().toLowerCase() : '';
-    let anyVisibleInActiveSection = false;
-    let activeSectionHasCards = false;
-
-    statusSections.forEach(function (section) {
-      const isActive = section.dataset.statusSection === activeFilter;
-      section.hidden = !isActive;
-      if (!isActive) return;
-
-      const cards = Array.from(section.querySelectorAll('.activity-card'));
-      activeSectionHasCards = cards.length > 0;
-      cards.forEach(function (card) {
-        const match = !q || card.dataset.search.includes(q);
-        card.style.display = match ? '' : 'none';
-        if (match) anyVisibleInActiveSection = true;
-      });
-    });
-
-    if (noMatchNote) {
-      noMatchNote.style.display = (q && activeSectionHasCards && !anyVisibleInActiveSection) ? 'block' : 'none';
-      noMatchNote.querySelector('span').textContent = q;
-    }
-  }
-
-  filterChips.forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      activeFilter = chip.dataset.filter;
-      filterChips.forEach(function (c) { c.classList.toggle('active', c === chip); });
-      applyVisibility();
-    });
-  });
-
-  if (activitySearch) {
-    activitySearch.addEventListener('input', applyVisibility);
-  }
-
-  applyVisibility();
-</script>
-</body>
-</html>
+@push('dialogs')
+  @include('teacher.activities._generate')
+@endpush

@@ -5653,6 +5653,73 @@ Admin are next and follow the same pattern.
   updated."), and a phone width (bottom bar). Empty states for a parent with no children were rendered for all
   five list pages. Not tested: the add-a-child steps after coming back from them, a real photo avatar.
 
+## Teacher end redesigned + activity levels (2026-09-24, after the Parent end)
+
+The user relayed instructor and teacher feedback (see the `activity-generation-instructor-notes` and
+`teacher-ui-modals-no-scrolling` memories): teachers want a window for every action and no scrolling to
+find a class or anything else; the instructor wants class cards that show their activities, level
+validation by drag and drop, and generation that lets a teacher ask for only the levels they need. The
+approval preview was an Artifact (a working Teacher mock, v2) and was built into the real app only after
+that; all seven Teacher screens were rebuilt.
+
+- **Shell.** `layouts/teacher-shell` + `teacher/_sidebar` + `teacher/_tabbar` (a 5 tab bottom bar on a
+  phone; Promotions, Profile and Log out are in a "More" sheet behind the avatar). Styles
+  `public/css/teacher-app.css`, behavior `public/js/teacher-app.js` (both cache-busted by content hash).
+  `$navUnread` / `$navClaim` come from a view composer (`AppServiceProvider`, `App\Support\TeacherNav`).
+  New icons were added to the shared sprite `public/icons/badges.svg` (now 151 symbols).
+- **Windows, not inline forms.** Every action opens in a native `<dialog class="win">` (a bottom sheet
+  under 900px). A window can hold several views (`.win-view[data-view]`, switched by `data-goto`), so the
+  teacher stays in one window. Windows that belong to the page are server rendered (one per class, the
+  Generate window, confirmations) and pushed onto the layout's `dialogs` stack; an activity's window is
+  fetched as an HTML fragment (`GET /teacher/activities/{id}/window`) into `#dlg`. A form that fails
+  validation reopens its own window and view (`old('form')`, `old('target_class_id')`, `old('view')`).
+  Each screen is sized so a 1280x820 laptop window holds it (verified by measuring every screen).
+- **Classes.** Cards say "N activities assigned" (assigned to the class, or to a group tag the class
+  carries; `ClassController::activitiesByClass`). A find box searches classes and learners by typing. The
+  class window has Learners, Activities, Assign (dropdown of approved activities, level chips, preview),
+  Add learner, Edit and one view per learner. **Learner codes: teachers type only the last 5 characters**
+  (`TB-` is fixed; a pasted whole code still works). This is our reading of a teammate's note "last 5
+  sequence for id"; the user has not confirmed it. New route `POST /teacher/classes/{class}/assign-activity`.
+- **Activities.** A review board: drafts wait in "To review" (4 at a time) and are dragged into Easy,
+  Medium or Hard (which approves them there) or onto Reject; approved cards drag between levels; every card
+  has a "Move to" menu (touch, keyboard); a phone gets the list. The board and list are one fragment
+  (`teacher/activities/_main`, refreshed in place with `?fragment=1`). Routes: `activities.place`
+  (level or reject), `activities.restore` (also what Undo calls), `activities.window`; the old Generate page
+  redirects to `?generate=1`. `EnsureTeacherIsActive` answers JSON 403 to background calls.
+- **Levels are the teacher's call.** `activities.ai_difficulty_tier` (new migration) keeps the level the AI
+  suggested; `difficulty_tier` is the level the teacher placed it in (what the Learner side matches on).
+  Each activity's window has a "Why this level" box: what the level means, the word count against the
+  usual range for that grade and activity type, the features the AI used, and a note that the levels are
+  this app's own (familiar words and word length, not official DepEd scores). The ranges are the
+  generator's own `READING_LENGTH_BANDS`, mirrored in `config/activity_levels.php`.
+- **Generate.** A window on the Activities screen: grade, skill, activity type as dropdowns, then a counter
+  (0 to 5) for EACH level, with that level's word range and how many the teacher already has. The generator
+  (gemini_activity_gen v3.1.0, checked live 2026-09-24) always writes all three levels one after another
+  and has no level option (and rejects unknown fields), so the app asks for the largest count wanted and
+  keeps only what was asked for (`Activity::createManyFromBundle($data, $base, $wanted)`); a request costs
+  the same time either way. **Ask BldZeuz to add a `levels` option** so the other levels are not written for
+  nothing. One credit per click, only on success. **The service sleeps when idle (free hosting) and a
+  generation takes about 60 to 130 s:** the first two real attempts of the day hit exactly 150 s with no
+  answer, so the Generate window now wakes it as it opens (`ActivityAiClient::wake()`, called through
+  `GET /teacher/activities/warm`) and the wait is 210 s (`ActivityController::GENERATE_TIMEOUT`). A timeout
+  reopens the window with a friendly message, keeps everything typed and costs no credit. There is no feedback endpoint, so what a teacher moved
+  earlier is sent as a short note in `teacher_notes` (`Activity::calibrationNote`), capped so the teacher's
+  own notes always fit; only the teacher's own words are saved on the activity.
+- **Tested.** `tests/Feature/TeacherRedesignTest.php` (16 tests: every screen for an Active and a Pending
+  teacher, place/restore/undo, the level filter on generation with `Http::fake`, calibration note, class
+  assignment (direct and through a group), last-5 codes, class create/edit and the past-year lock,
+  release/claim, menu counts, role checks). Also driven in a browser against the real dev database and the
+  live generator: real drag and drop, the Move to menu, reject and Undo, edit and approve, assign from an
+  activity and from a class, add a learner by its last 5 characters, the error paths, New class, the
+  past-year lock (screen and 403), Analytics with 18 real sessions, release and claim (checked in the
+  database), alerts, profile and both password directions, the Pending state (screens and a direct 403), the
+  phone layout, and one real generation through the app (Medium only, 1 activity, 10 words inside the
+  Grade 1 Medium range, 1 credit used).
+- **Not done / honest limits.** A real teacher and real learners have not used it. Dragging on a touch
+  screen is not supported (the list and the Move to menu are the touch path). The find box only searches the
+  school year being shown. The Admin dashboard and the last Parent screens (add a child, link, sign up,
+  login) are still on the older look.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

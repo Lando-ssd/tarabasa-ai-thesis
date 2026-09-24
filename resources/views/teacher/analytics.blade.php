@@ -1,264 +1,235 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TaraBasa AI — Analytics</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --sky-50:#eef6ff; --sky-100:#dcedff;
-    --blue-500:#1c7ed6; --blue-600:#0f5fae; --blue-700:#0a3d73;
-    --navy-900:#131f2b; --slate-600:#5b6b7a; --slate-400:#8a97a3;
-    --owl-orange-500:#ef8d2a; --owl-orange-600:#dd7014;
-    --line:#e3ebf2; --surface:#ffffff; --bg-0:#f6faff;
-    --success:#1f9e83; --success-bg:#e9f7f3;
-    --amber:#c9820b;
-    --shadow-sm:0 2px 5px -1px rgba(19,31,43,.09), 0 8px 18px -14px rgba(19,31,43,.16);
-  }
-  *{box-sizing:border-box;} html,body{margin:0;padding:0;}
-  body{
-    min-height:100vh; font-family:'Inter',sans-serif; color:var(--navy-900);
-    background: radial-gradient(1100px 500px at 90% -10%, var(--sky-100), transparent 55%), var(--bg-0);
-    background-attachment:fixed;
-  }
-  .shell{ max-width:820px; margin:0 auto; padding:22px 24px 64px; }
+{{--
+  Teacher Analytics (Actor Prompt Step 10): one learner at a time, or one group. Teacher-assigned
+  and parent-started readings are always two separate numbers, never combined. A one-time
+  placement test is not practice, so diagnostic sessions are left out everywhere here.
 
-  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-  .logo-lockup{ display:flex; align-items:center; gap:10px; }
-  .logo-badge{ width:38px;height:38px;border-radius:11px; overflow:hidden; box-shadow:0 6px 14px -5px rgba(15,95,174,0.5), inset 0 2px 0 rgba(255,255,255,.3); }
-  .logo-badge img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .wordmark{ font-family:'Baloo 2',sans-serif; font-weight:700; font-size:18px; }
-  .wordmark span{ color:var(--owl-orange-500); }
-  .topbar-actions{ display:flex; align-items:center; gap:10px; }
-  .avatar-chip{
-    display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
-    padding:5px 12px 5px 5px; border-radius:999px; box-shadow:var(--shadow-sm);
-    text-decoration:none; color:inherit; transition:border-color .15s ease, box-shadow .15s ease;
-  }
-  .avatar-chip:hover{ border-color:var(--blue-500); box-shadow:var(--shadow-card, 0 8px 18px -8px rgba(15,95,174,0.35)); }
-  .avatar-chip .av{
-    width:30px;height:30px;border-radius:50%; background:linear-gradient(155deg,var(--blue-500),var(--blue-700));
-    display:flex;align-items:center;justify-content:center; color:#fff; font-weight:700; font-size:13px;
-    box-shadow:inset 0 2px 0 rgba(255,255,255,.25), inset 0 -2px 3px rgba(0,0,0,.2);
-  }
-  .avatar-chip span.name{ font-size:13.5px; font-weight:700; }
-  .logout-btn{
-    background:var(--surface); border:1px solid var(--line); color:var(--slate-600); font:700 13px/1 'Inter',sans-serif;
-    padding:10px 16px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow-sm);
-    transition:color .15s ease, border-color .15s ease;
-  }
-  .logout-btn:hover{ color:var(--danger, #d64545); border-color:var(--danger, #d64545); }
+  Fits one laptop window: the learner card, three summary cards, the trend and the four newest
+  sessions. "Change learner" opens a search window (class chips, then type), "See all" opens the
+  rest. The days in a row and this week's readings are the same numbers the child sees.
+--}}
+@extends('layouts.teacher-shell')
 
-  .back-link{
-    display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700; color:var(--slate-600);
-    text-decoration:none; margin:18px 0 6px;
-  }
-  .back-link:hover{ color:var(--blue-600); }
+@section('title', 'Analytics | TaraBasa AI')
 
-  h1{ font-family:'Baloo 2',sans-serif; font-size:25px; font-weight:700; margin:0 0 16px; }
+@php
+    $noLearners = $learners->isEmpty() && $groupTags->isEmpty();
+    $pct = fn ($v) => $v === null ? 'not yet' : $v.'%';
+    $scoreClass = fn ($v) => $v >= 80 ? 'good' : ($v >= 65 ? 'mid' : 'low');
+    $mastery = fn ($l) => $l->mastery_level ?? 'New';
+    $pill = fn ($l) => '<span class="pill '.($l->mastery_level ? 'lv-'.strtolower($l->mastery_level) : '').'">'.e($mastery($l)).'</span>';
+@endphp
 
-  .mode-tabs{ display:flex; gap:8px; margin-bottom:16px; }
-  .mode-tab{
-    padding:9px 16px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface);
-    font:700 13px/1 'Inter',sans-serif; color:var(--slate-600); cursor:pointer; text-decoration:none;
-    transition:border-color .15s ease, color .15s ease;
-  }
-  .mode-tab:not(.active):hover{ border-color:var(--blue-500); color:var(--blue-600); }
-  .mode-tab.active{ background:var(--navy-900); color:var(--bg-0); border-color:var(--navy-900); }
+@section('content')
+<div class="head">
+  <div>
+    <h1>Analytics</h1>
+    <p class="sub">How your learners are reading, one learner or one group at a time.</p>
+  </div>
+  <div class="chips" role="group" aria-label="View">
+    <a class="chip plain" href="{{ route('teacher.analytics.index', ['mode' => 'learner']) }}" aria-pressed="{{ $mode === 'learner' ? 'true' : 'false' }}">By learner</a>
+    <a class="chip plain" href="{{ route('teacher.analytics.index', ['mode' => 'group']) }}" aria-pressed="{{ $mode === 'group' ? 'true' : 'false' }}">By group</a>
+  </div>
+</div>
 
-  select.picker{
-    width:100%; font:600 14px/1 'Inter',sans-serif; padding:12px 14px; border:1.5px solid var(--line); border-radius:12px;
-    background:var(--surface); color:var(--navy-900); margin-bottom:20px; appearance:none;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%235b6b7a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat; background-position:right 14px center; padding-right:38px;
-  }
-
-  .stat-cards{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:22px; }
-  .stat-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px 18px; box-shadow:var(--shadow-sm); }
-  .stat-card .lbl{ font-size:12.5px; color:var(--slate-600); font-weight:700; }
-  .stat-card .val{ font-family:'Baloo 2',sans-serif; font-size:24px; font-weight:700; margin:2px 0; }
-  .stat-card .sub{ font-size:12px; color:var(--slate-400); font-weight:600; }
-
-  .adaptive-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px 18px; box-shadow:var(--shadow-sm); margin-bottom:20px; }
-  .adaptive-card-title{ font-family:'Baloo 2',sans-serif; font-size:14.5px; font-weight:700; margin-bottom:8px; }
-  .adaptive-headline{ font-size:13px; color:var(--navy-900); font-weight:500; margin:0 0 10px; }
-  .adaptive-empty{ font-size:13px; color:var(--slate-600); font-weight:500; margin:0; }
-  .adaptive-chips{ display:flex; gap:7px; flex-wrap:wrap; }
-  .adaptive-chip{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--bg-0); border:1px solid var(--line); color:var(--slate-600); }
-  .adaptive-chip.active{ background:#fff3e2; border-color:var(--owl-orange-500); color:var(--owl-orange-600); }
-
-  .chart-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:20px; box-shadow:var(--shadow-sm); margin-bottom:20px; }
-  .chart-title{ font-family:'Baloo 2',sans-serif; font-size:15px; font-weight:700; margin-bottom:14px; }
-  svg.chart{ width:100%; height:auto; }
-
-  .history-list{ background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:var(--shadow-sm); }
-  .history-row{ display:flex; align-items:center; gap:12px; padding:13px 16px; border-top:1px solid var(--line); }
-  .history-row:first-child{ border-top:none; }
-  .hr-info{ flex:1; min-width:0; }
-  .hr-info .nm{ font-size:13.5px; font-weight:700; }
-  .hr-info .mt{ font-size:12px; color:var(--slate-600); font-weight:500; }
-  .hr-source{ font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:999px; background:var(--sky-50); color:var(--blue-600); flex-shrink:0; }
-  .hr-score{ font-weight:800; font-size:14px; flex-shrink:0; }
-
-  .group-row{
-    display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--line); border-radius:14px;
-    padding:12px 16px; margin-bottom:8px; box-shadow:var(--shadow-sm);
-  }
-  .group-row .av{ width:36px;height:36px;border-radius:11px; font-size:17px; background:linear-gradient(155deg,#ffcf6e,var(--owl-orange-600)); display:flex;align-items:center;justify-content:center; flex-shrink:0; overflow:hidden; }
-  .group-row .av img{ width:100%; height:100%; object-fit:cover; }
-
-  .empty-note{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:28px 20px; text-align:center; color:var(--slate-600); font-weight:600; font-size:13.5px; box-shadow:var(--shadow-sm); }
-</style>
-</head>
-<body>
-<div class="shell">
-  <div class="topbar">
-    <div class="logo-lockup">
-      <div class="logo-badge"><img src="{{ asset('images/logo.png') }}" alt="TaraBasa AI logo"></div>
-      <span class="wordmark">TaraBasa<span>AI</span></span>
-    </div>
-    <div class="topbar-actions">
-      <a href="{{ route('teacher.profile.edit') }}" class="avatar-chip" aria-label="My Profile">
-        <span class="av">{{ strtoupper(substr($teacher->user->first_name, 0, 1)) }}</span>
-        <span class="name">{{ $teacher->user->first_name }}</span>
-      </a>
-      <form method="POST" action="{{ route('logout') }}">
-        @csrf
-        <button type="submit" class="logout-btn">Log out</button>
-      </form>
-    </div>
+@if ($noLearners)
+  <div class="card empty-hero">
+    <div class="empty-ico">@include('learner._badge-icon', ['icon' => 'chart-line-up', 'class' => 'ico'])</div>
+    <h2>No learners yet</h2>
+    <p>Once you have joined learners into your classes, their reading progress shows up here.</p>
   </div>
 
-  <a href="{{ route('teacher.dashboard') }}" class="back-link">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    Dashboard
-  </a>
-
-  <h1>Analytics</h1>
-
-  <div class="mode-tabs">
-    <a href="{{ route('teacher.analytics.index', ['mode' => 'learner']) }}" class="mode-tab {{ $mode === 'learner' ? 'active' : '' }}">By Learner</a>
-    <a href="{{ route('teacher.analytics.index', ['mode' => 'group']) }}" class="mode-tab {{ $mode === 'group' ? 'active' : '' }}">By Group</a>
-  </div>
-
-  @if ($learners->isEmpty() && $groupTags->isEmpty())
-    <div class="empty-note">
-      No learners yet. Once you've joined learners into your classes, their reading progress will show up here.
-    </div>
-  @elseif ($mode === 'learner')
-    @if ($learners->isEmpty())
-      <div class="empty-note">You don't have any learners yet.</div>
-    @else
-      <form method="GET" action="{{ route('teacher.analytics.index') }}" id="learnerForm">
-        <input type="hidden" name="mode" value="learner">
-        <select name="learner_id" class="picker" onchange="document.getElementById('learnerForm').submit()">
-          @foreach ($learners as $learner)
-            <option value="{{ $learner->id }}" @selected($learner->id === $selectedLearner->id)>{{ $learner->first_name }} {{ $learner->last_name }} — {{ $learner->grade_level }}</option>
-          @endforeach
-        </select>
-      </form>
-
-      <div class="stat-cards">
-        <div class="stat-card">
-          <div class="lbl">Teacher-Assigned</div>
-          <div class="val">{{ $learnerStats['source_summary']['Teacher']['count'] }} session{{ $learnerStats['source_summary']['Teacher']['count'] === 1 ? '' : 's' }}</div>
-          <div class="sub">Avg accuracy: {{ $learnerStats['source_summary']['Teacher']['avg_accuracy'] !== null ? $learnerStats['source_summary']['Teacher']['avg_accuracy'] . '%' : '—' }}</div>
-        </div>
-        <div class="stat-card">
-          <div class="lbl">Parent-Initiated</div>
-          <div class="val">{{ $learnerStats['source_summary']['Parent']['count'] }} session{{ $learnerStats['source_summary']['Parent']['count'] === 1 ? '' : 's' }}</div>
-          <div class="sub">Avg accuracy: {{ $learnerStats['source_summary']['Parent']['avg_accuracy'] !== null ? $learnerStats['source_summary']['Parent']['avg_accuracy'] . '%' : '—' }}</div>
-        </div>
-      </div>
-
-      @include('partials.adaptive-focus-card', ['learner' => $selectedLearner])
-
-      @if ($learnerStats['chart_points']->isEmpty())
-        <div class="empty-note">No reading sessions yet for {{ $selectedLearner->first_name }}.</div>
-      @else
-        <div class="chart-card">
-          <div class="chart-title">Accuracy Trend</div>
-          <svg class="chart" viewBox="0 0 400 160">
-            <line x1="30" y1="10" x2="30" y2="140" stroke="#e3ebf2" stroke-width="1.5"/>
-            <line x1="30" y1="140" x2="380" y2="140" stroke="#e3ebf2" stroke-width="1.5"/>
-            <text x="10" y="15" font-size="10" fill="#8a97a3">100</text>
-            <text x="10" y="80" font-size="10" fill="#8a97a3">50</text>
-            <text x="10" y="144" font-size="10" fill="#8a97a3">0</text>
-            @if ($learnerStats['chart_points']->count() > 1)
-              <polyline points="{{ $learnerStats['polyline'] }}" fill="none" stroke="#1f9e83" stroke-width="2.5"/>
-            @endif
-            @foreach ($learnerStats['chart_points'] as $point)
-              <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="4" fill="#1f9e83"/>
-              <text x="{{ $point['x'] - 5 }}" y="155" font-size="10" fill="#8a97a3">{{ $point['label'] }}</text>
-            @endforeach
-          </svg>
-        </div>
-
-        <div class="chart-title" style="margin-bottom:10px;">Session History</div>
-        <div class="history-list">
-          @foreach ($learnerStats['history'] as $session)
-            <div class="history-row">
-              <div class="hr-info">
-                <div class="nm">{{ $session->activity->title ?? 'Reading Activity' }}</div>
-                <div class="mt">{{ $session->level_before ?? '—' }} → {{ $session->level_after ?? '—' }} · {{ $session->timestamp->format('M j, g:i A') }}</div>
-              </div>
-              <span class="hr-source">{{ $session->initiated_by }}</span>
-              <span class="hr-score" style="color:{{ $session->accuracy_percent >= 80 ? 'var(--success)' : 'var(--amber)' }};">{{ round($session->accuracy_percent) }}%</span>
-            </div>
-          @endforeach
-        </div>
-      @endif
-    @endif
+@elseif ($mode === 'learner')
+  @if ($learners->isEmpty())
+    <div class="card empty-hero"><div class="empty-ico">@include('learner._badge-icon', ['icon' => 'chart-line-up', 'class' => 'ico'])</div><h2>You don't have any learners yet</h2><p>Add a learner to a class and their progress appears here.</p></div>
   @else
-    @if ($groupTags->isEmpty())
-      <div class="empty-note">You don't have any Group tags set up on your classes yet.</div>
-    @else
-      <form method="GET" action="{{ route('teacher.analytics.index') }}" id="groupForm">
-        <input type="hidden" name="mode" value="group">
-        <select name="group_tag" class="picker" onchange="document.getElementById('groupForm').submit()">
-          @foreach ($groupTags as $tag)
-            <option value="{{ $tag }}" @selected($tag === $selectedGroupTag)>{{ $tag }}</option>
-          @endforeach
-        </select>
-      </form>
+    @php
+        $l = $selectedLearner;
+        $history = $learnerStats['history'];
+        $recent = $history->take(4);
+        $points = $history->reverse()->take(-12)->map(fn ($s) => (int) round($s->accuracy_percent ?? 0))->values();
+        $focus = $l->subdomainProgressSummary();
+        $upNext = collect($focus)->firstWhere('isUpNext', true);
+        $src = $learnerStats['source_summary'];
+    @endphp
 
-      <div class="stat-cards">
-        <div class="stat-card">
-          <div class="lbl">Teacher-Assigned</div>
-          <div class="val">{{ $groupStats['source_summary']['Teacher']['count'] }} session{{ $groupStats['source_summary']['Teacher']['count'] === 1 ? '' : 's' }}</div>
-          <div class="sub">Across group</div>
+    <div class="card who">
+      @include('teacher._avatar', ['learner' => $l, 'class' => 'av big'])
+      <div class="info">
+        <h2>{{ $l->first_name }} {{ $l->last_name }}</h2>
+        <div class="meta">{{ $l->grade_level }} · {{ $l->schoolClass->name ?? 'No class' }} · {{ $l->learner_code }}</div>
+        <div style="margin-top:8px">{!! $pill($l) !!}</div>
+      </div>
+      <div class="nums">
+        <div><b>{{ $summary['dayStreak'] }}</b><span>Days in a row</span></div>
+        <div><b>{{ $summary['weeklyCount'] }} of {{ $summary['weeklyTarget'] }}</b><span>This week</span></div>
+      </div>
+      <button type="button" class="btn small ghost" data-open="pickDlg">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']) Change learner</button>
+    </div>
+
+    <div class="g3">
+      @foreach ([['Assigned by you', 'Teacher'], ['Started by a parent', 'Parent']] as [$label, $key])
+        <div class="card src">
+          <span class="label">{{ $label }}</span>
+          <div class="value">{{ $src[$key]['count'] }} {{ $src[$key]['count'] === 1 ? 'session' : 'sessions' }}</div>
+          <div class="avg">Average score: {{ $pct($src[$key]['avg_accuracy'] ?? null) }}</div>
         </div>
-        <div class="stat-card">
-          <div class="lbl">Parent-Initiated</div>
-          <div class="val">{{ $groupStats['source_summary']['Parent']['count'] }} session{{ $groupStats['source_summary']['Parent']['count'] === 1 ? '' : 's' }}</div>
-          <div class="sub">Across group</div>
+      @endforeach
+      <div class="card adaptive">
+        <div class="eyebrow">@include('learner._badge-icon', ['icon' => 'target', 'class' => 'ico']) Adaptive focus</div>
+        @if (empty($focus))
+          <p class="headline">{{ $l->first_name }} has not finished the first reading check yet.</p>
+        @else
+          <p class="headline">@if ($upNext)Now practicing: <b>{{ $upNext['label'] }}</b>@if ($upNext['difficultyWord']) ({{ $upNext['difficultyWord'] }})@endif @else No specific focus right now.@endif</p>
+          <div class="skill-chips">@foreach ($focus as $item)<span class="skill {{ $item['isUpNext'] ? 'on' : '' }}">{{ $item['label'] }}</span>@endforeach</div>
+        @endif
+      </div>
+    </div>
+
+    @if ($history->isEmpty())
+      <div class="card empty-hero" style="margin-top:14px">
+        <div class="empty-ico">@include('learner._badge-icon', ['icon' => 'chart-line-up', 'class' => 'ico'])</div>
+        <h2>No reading sessions yet</h2>
+        <p>{{ $l->first_name }} has not finished a practice reading. Their accuracy trend appears here after the first one.</p>
+      </div>
+    @else
+      @php
+          $W = 560; $H = 176; $Lm = 40; $Rm = 14; $Tm = 14; $Bm = 30; $iw = $W - $Lm - $Rm; $ih = $H - $Tm - $Bm; $n = $points->count();
+          $x = fn ($i) => $Lm + ($n === 1 ? $iw / 2 : ($iw * $i) / ($n - 1));
+          $y = fn ($v) => $Tm + $ih - ($ih * $v) / 100;
+          $line = $points->map(fn ($v, $i) => round($x($i), 1).','.round($y($v), 1))->implode(' ');
+      @endphp
+      <div class="split">
+        <div class="card">
+          <p class="card-title">Accuracy trend</p>
+          <p class="card-sub">Each dot is one reading, oldest to newest.</p>
+          <div class="chart-wrap">
+            <svg viewBox="0 0 {{ $W }} {{ $H }}" role="img" aria-label="Accuracy trend, {{ $n }} readings, latest {{ $points->last() }} percent">
+              @foreach ([0, 25, 50, 75, 100] as $g)
+                <line x1="{{ $Lm }}" x2="{{ $W - $Rm }}" y1="{{ $y($g) }}" y2="{{ $y($g) }}" stroke="#e6eef6" stroke-width="1.5"/>
+                <text x="{{ $Lm - 8 }}" y="{{ $y($g) + 4 }}" text-anchor="end">{{ $g }}</text>
+              @endforeach
+              @if ($n > 1)
+                <path d="M{{ round($x(0), 1) }},{{ $y(0) }} L{{ str_replace(' ', ' L', $line) }} L{{ round($x($n - 1), 1) }},{{ $y(0) }} Z" fill="#1f9e83" opacity=".1"/>
+                <polyline points="{{ $line }}" fill="none" stroke="#1f9e83" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+              @endif
+              @foreach ($points as $i => $v)
+                <circle cx="{{ round($x($i), 1) }}" cy="{{ round($y($v), 1) }}" r="{{ $i === $n - 1 ? 6 : 4 }}" fill="#fff" stroke="#1f9e83" stroke-width="3"/>
+                @if ($i % 2 === 0 || $i === $n - 1)<text x="{{ round($x($i), 1) }}" y="{{ $H - 8 }}" text-anchor="middle">#{{ $i + 1 }}</text>@endif
+              @endforeach
+            </svg>
+          </div>
+        </div>
+        <div class="card">
+          <p class="card-title">Recent sessions</p>
+          <p class="card-sub">{{ $history->count() }} {{ $history->count() === 1 ? 'reading' : 'readings' }} in total.</p>
+          @foreach ($recent as $s)
+            @include('teacher._session-row', ['s' => $s])
+          @endforeach
+          @if ($history->count() > 4)
+            <div style="margin-top:10px"><button type="button" class="link" data-open="sessDlg">See all {{ $history->count() }}</button></div>
+          @endif
         </div>
       </div>
-
-      @if ($groupStats['learner_rows']->isEmpty())
-        <div class="empty-note">No learners are currently in this group.</div>
-      @else
-        @foreach ($groupStats['learner_rows'] as $row)
-          <div class="group-row">
-            <span class="av">
-              @if ($row['learner']->avatar_photo_path)
-                <img src="{{ Storage::url($row['learner']->avatar_photo_path) }}" alt="{{ $row['learner']->first_name }}">
-              @else
-                {{ $row['learner']->avatar_id }}
-              @endif
-            </span>
-            <div class="hr-info">
-              <div class="nm">{{ $row['learner']->first_name }} {{ $row['learner']->last_name }}</div>
-              <div class="mt">{{ $row['learner']->mastery_level ?? 'New' }} · {{ $row['session_count'] }} session{{ $row['session_count'] === 1 ? '' : 's' }}</div>
-            </div>
-          </div>
-        @endforeach
-      @endif
     @endif
   @endif
-</div>
-</body>
-</html>
+
+@else
+  {{-- ---------- by group ---------- --}}
+  @if ($groupTags->isEmpty())
+    <div class="card empty-hero"><div class="empty-ico">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico'])</div><h2>No groups yet</h2><p>Give a class a group tag (edit the class) and its readings can be looked at together here.</p></div>
+  @else
+    @php $rows = $groupStats['learner_rows']; $gsrc = $groupStats['source_summary']; @endphp
+    <div class="chips" style="margin-bottom:16px" role="group" aria-label="Group">
+      @foreach ($groupTags as $tag)
+        <a class="chip plain" href="{{ route('teacher.analytics.index', ['mode' => 'group', 'group_tag' => $tag]) }}" aria-pressed="{{ $tag === $selectedGroupTag ? 'true' : 'false' }}">{{ $tag }}</a>
+      @endforeach
+    </div>
+    <div class="g2">
+      @foreach ([['Assigned by you', 'Teacher'], ['Started by a parent', 'Parent']] as [$label, $key])
+        <div class="card src">
+          <span class="label">{{ $label }}</span>
+          <div class="value">{{ $gsrc[$key]['count'] }} {{ $gsrc[$key]['count'] === 1 ? 'session' : 'sessions' }}</div>
+          <div class="avg">Across the group · Average score: {{ $pct($gsrc[$key]['avg_accuracy']) }}</div>
+        </div>
+      @endforeach
+    </div>
+    @if ($rows->isEmpty())
+      <div class="card empty-hero"><div class="empty-ico">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico'])</div><h2>No learners in this group</h2><p>Learners appear here once they are in a class that carries this tag.</p></div>
+    @else
+      <div class="head" style="margin-bottom:10px">
+        <div><h3>Who needs help first</h3><p class="note" style="margin:0">{{ $rows->count() }} {{ $rows->count() === 1 ? 'learner' : 'learners' }} in this group, lowest level first.</p></div>
+        @if ($rows->count() > 8)<button type="button" class="btn small ghost" data-open="grpDlg">See all {{ $rows->count() }}</button>@endif
+      </div>
+      <div class="lgrid">
+        @foreach ($rows->take(8) as $row)
+          @include('teacher._group-row', ['row' => $row])
+        @endforeach
+      </div>
+    @endif
+  @endif
+@endif
+@endsection
+
+@if (! $noLearners)
+  @push('dialogs')
+    @if ($mode === 'learner' && $learners->isNotEmpty())
+      {{-- Change learner: class chips, then type to search every class. --}}
+      <dialog id="pickDlg" class="win" aria-label="Choose a learner">
+        <div class="win-in">
+          <header class="win-head">
+            <div class="win-titles"><h2>Choose a learner</h2><p class="win-meta">Pick a class, or type a name.</p></div>
+            <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+          </header>
+          <div class="win-body" data-class-picker="#pickList" data-default="{{ $selectedLearner->class_id }}">
+            <div class="toolbar"><div class="search">@include('learner._badge-icon', ['icon' => 'magnifying-glass', 'class' => 'ico'])<label class="sr" for="pickQ">Search learners</label><input type="search" id="pickQ" placeholder="Find a learner" autocomplete="off"></div></div>
+            <div class="chips" style="margin-bottom:12px">
+              @foreach ($pickerClasses as $pc)
+                <button type="button" class="chip plain" data-class-chip="{{ $pc->id }}" aria-pressed="false">{{ $pc->name }}@if ($pc->school_year !== \App\Models\SchoolClass::currentSchoolYear()) ({{ $pc->school_year }})@endif<span class="n">{{ $learners->where('class_id', $pc->id)->count() }}</span></button>
+              @endforeach
+              <span class="note" data-searching hidden style="align-self:center">Searching all your classes</span>
+            </div>
+            <div class="lgrid" id="pickList">
+              @foreach ($learners as $pl)
+                <a class="lrow" href="{{ route('teacher.analytics.index', ['mode' => 'learner', 'learner_id' => $pl->id]) }}" data-class="{{ $pl->class_id }}" data-search="{{ strtolower($pl->first_name.' '.$pl->last_name.' '.$pl->learner_code) }}" hidden>
+                  @include('teacher._avatar', ['learner' => $pl])
+                  <span class="lname"><b>{{ $pl->first_name }} {{ $pl->last_name }}</b><small>{{ $pl->schoolClass->name ?? '' }} · {{ $pl->learner_code }}</small></span>
+                  {!! $pill($pl) !!}
+                </a>
+              @endforeach
+            </div>
+            <p class="note" data-empty hidden>No learner matches.</p>
+          </div>
+        </div>
+      </dialog>
+
+      @if (isset($history) && $history->count() > 4)
+        <dialog id="sessDlg" class="win" aria-label="All sessions">
+          <div class="win-in mid">
+            <header class="win-head">
+              <div class="win-titles"><h2>All sessions</h2><p class="win-meta">{{ $selectedLearner->first_name }} {{ $selectedLearner->last_name }} · {{ $history->count() }} readings</p></div>
+              <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+            </header>
+            <div class="win-body">@foreach ($history as $s)@include('teacher._session-row', ['s' => $s])@endforeach</div>
+            <footer class="win-foot"><button type="button" class="btn ghost small" data-close>Close</button></footer>
+          </div>
+        </dialog>
+      @endif
+    @endif
+
+    @if ($mode === 'group' && isset($rows) && $rows->count() > 8)
+      <dialog id="grpDlg" class="win" aria-label="{{ $selectedGroupTag }}">
+        <div class="win-in">
+          <header class="win-head">
+            <div class="win-titles"><h2>{{ $selectedGroupTag }}</h2><p class="win-meta">{{ $rows->count() }} learners in this group, lowest level first.</p></div>
+            <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+          </header>
+          <div class="win-body">
+            <div class="toolbar"><div class="search">@include('learner._badge-icon', ['icon' => 'magnifying-glass', 'class' => 'ico'])<label class="sr" for="grpQ">Search this group</label><input type="search" id="grpQ" placeholder="Find a learner in this group" autocomplete="off" data-filter="#grpList"></div></div>
+            <div class="lgrid" id="grpList">@foreach ($rows as $row)@include('teacher._group-row', ['row' => $row, 'searchable' => true])@endforeach</div>
+            <p class="note" data-empty hidden>No learner matches.</p>
+          </div>
+        </div>
+      </dialog>
+    @endif
+  @endpush
+@endif

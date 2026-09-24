@@ -69,7 +69,36 @@ class ActivityAiClient
             throw new \RuntimeException($this->friendlyApiError($response));
         }
 
-        return $response->json();
+        $json = $response->json();
+
+        if (! is_array($json)) {
+            Log::error('Activity AI answered with something unreadable', ['body' => substr($response->body(), 0, 300)]);
+
+            throw new \RuntimeException('The activity generator sent back something unreadable. Please try again.');
+        }
+
+        return $json;
+    }
+
+    /**
+     * Wake the generator if it is asleep. Its free hosting sleeps when idle and a cold start can
+     * take a minute, which on top of a generation can pass the wait we allow. The Generate window
+     * calls this the moment it opens, so the service is waking while the teacher fills the form.
+     * Never throws and never waits long: the answer does not matter, only that the request lands.
+     */
+    public function wake(): void
+    {
+        $url = config('services.activity_ai.url');
+
+        if (! $url) {
+            return;
+        }
+
+        try {
+            Http::timeout(3)->get(rtrim($url, '/').'/health');
+        } catch (\Throwable $e) {
+            // Expected while it is still waking: the request reached it, which is the point.
+        }
     }
 
     /**

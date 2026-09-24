@@ -148,6 +148,8 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     Route::post('/classes', [ClassController::class, 'store'])->middleware('teacher.active')->name('classes.store');
     Route::put('/classes/{class}', [ClassController::class, 'update'])->middleware('teacher.active')->name('classes.update');
     Route::post('/classes/{class}/join-learner', [ClassController::class, 'joinLearner'])->middleware('teacher.active')->name('classes.join-learner');
+    // Assign an Approved activity to a whole class, from the class window.
+    Route::post('/classes/{class}/assign-activity', [ClassController::class, 'assignActivity'])->middleware('teacher.active')->name('classes.assign-activity');
 
     // Activity Generation — Teacher Actor Prompt Step 7. Generate has NO
     // 'teacher.active' guard: a Pending Teacher can use their 2 free
@@ -158,6 +160,14 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     Route::get('/activities/generate', [ActivityController::class, 'create'])->name('activities.create');
     Route::post('/activities/generate', [ActivityController::class, 'generate'])->name('activities.generate');
     Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
+    // Wakes the generator (it sleeps when idle) as the Generate window opens.
+    Route::get('/activities/warm', [ActivityController::class, 'warm'])->name('activities.warm');
+    // One activity's window (fetched when a card opens): read-only, so no 'teacher.active' guard.
+    Route::get('/activities/{activity}/window', [ActivityController::class, 'window'])->name('activities.window');
+    // Drag and drop / "Move to": put a Draft in a level (approving it), re-level an Approved
+    // one, or reject a Draft. Restore brings a rejected one back (and is what Undo calls).
+    Route::post('/activities/{activity}/place', [ActivityController::class, 'place'])->middleware('teacher.active')->name('activities.place');
+    Route::post('/activities/{activity}/restore', [ActivityController::class, 'restore'])->middleware('teacher.active')->name('activities.restore');
     Route::post('/activities/{activity}/approve', [ActivityController::class, 'approve'])->middleware('teacher.active')->name('activities.approve');
     Route::put('/activities/{activity}', [ActivityController::class, 'update'])->middleware('teacher.active')->name('activities.update');
     Route::post('/activities/{activity}/reject', [ActivityController::class, 'reject'])->middleware('teacher.active')->name('activities.reject');

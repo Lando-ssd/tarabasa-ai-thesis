@@ -18,6 +18,7 @@ class Activity extends Model
         'activity_type',
         'purpose',
         'difficulty_tier',
+        'ai_difficulty_tier',
         'variant_label',
         'topic',
         'teacher_notes',
@@ -63,6 +64,74 @@ class Activity extends Model
         return $this->hasMany(ReadingSession::class);
     }
 
+    /** Counts words the way the generator does, so an edited text still gets a comparable count. */
+    public static function countWords(string $text): int
+    {
+        return preg_match_all("/[A-Za-z]+(?:['’-][A-Za-z]+)?/u", $text);
+    }
+
+    public function typeLabel(): string
+    {
+        return config('activity_competencies.activity_type_labels.'.$this->activity_type, $this->activity_type);
+    }
+
+    public function gradeNumber(): int
+    {
+        return (int) substr($this->grade_level, 6);
+    }
+
+    /** [min, max] words the generator writes for this activity's grade, type and level, or null. */
+    public function levelBand(?string $tier = null): ?array
+    {
+        $tier = strtolower($tier ?? $this->difficulty_tier);
+
+        return config("activity_levels.bands.{$this->activity_type}.{$this->gradeNumber()}.{$tier}");
+    }
+
+    /** Whether the text's length sits inside the usual range for the level it is in (null: unknown). */
+    public function lengthFitsLevel(): ?bool
+    {
+        $band = $this->levelBand();
+
+        return ($band && $this->word_count) ? ($this->word_count >= $band[0] && $this->word_count <= $band[1]) : null;
+    }
+
+    /** The Teacher put it in a different level than the AI suggested. */
+    public function movedByTeacher(): bool
+    {
+        return $this->ai_difficulty_tier !== null && $this->ai_difficulty_tier !== $this->difficulty_tier;
+    }
+
+    /**
+     * A short note for the generator about how this Teacher has re-leveled earlier activities of
+     * the same grade and activity type, so it can calibrate. The generator has no feedback
+     * endpoint; its `teacher_notes` field is the one channel it reads. Null when nothing moved.
+     */
+    public static function calibrationNote(int $teacherId, string $gradeLevel, string $activityType): ?string
+    {
+        $moved = self::where('created_by_teacher_id', $teacherId)
+            ->where('grade_level', $gradeLevel)
+            ->where('activity_type', $activityType)
+            ->where('status', 'Approved')
+            ->whereNotNull('ai_difficulty_tier')
+            ->whereColumn('ai_difficulty_tier', '!=', 'difficulty_tier')
+            ->latest('id')
+            ->limit(30)
+            ->get(['ai_difficulty_tier', 'difficulty_tier']);
+
+        if ($moved->isEmpty()) {
+            return null;
+        }
+
+        $parts = $moved->groupBy(fn (self $a) => $a->ai_difficulty_tier.'>'.$a->difficulty_tier)
+            ->map(fn ($group, $key) => [explode('>', $key), $group->count()])
+            ->map(fn (array $row) => "{$row[1]} text".($row[1] === 1 ? '' : 's')." the AI called {$row[0][0]} placed in {$row[0][1]} by the teacher")
+            ->values()
+            ->implode('; ');
+
+        return "Teacher calibration from earlier texts for this grade and activity type: {$parts}. Match the teacher's sense of difficulty.";
+    }
+
     /**
      * The first-login check's letters rung: a row of six letters the child
      * names aloud. Not something the generator makes, so it has its own
@@ -82,17 +151,26 @@ class Activity extends Model
      * fixed attributes (teacher/topic vs. none/purpose=diagnostic).
      * $baseAttributes must already include a resolved competency_label.
      */
-    public static function createManyFromBundle(array $bundleData, array $baseAttributes): \Illuminate\Support\Collection
+    public static function createManyFromBundle(array $bundleData, array $baseAttributes, ?array $wanted = null): \Illuminate\Support\Collection
     {
         $generationId = $bundleData['generation_id'] ?? (string) \Illuminate\Support\Str::uuid();
         $created = collect();
 
         foreach (['easy' => 'Easy', 'medium' => 'Medium', 'hard' => 'Hard'] as $apiKey => $tierLabel) {
-            foreach ($bundleData['levels'][$apiKey] ?? [] as $variant) {
+            $variants = $bundleData['levels'][$apiKey] ?? [];
+
+            // The generator always writes all three levels. A Teacher who only asked for some
+            // of them (or fewer of a level) keeps just those; $wanted is ['Easy' => n, ...].
+            if ($wanted !== null) {
+                $variants = array_slice($variants, 0, (int) ($wanted[$tierLabel] ?? 0));
+            }
+
+            foreach ($variants as $variant) {
                 $created->push(self::create(array_merge($baseAttributes, [
                     'generation_id' => $generationId,
                     'bundle_title' => $bundleData['bundle_title'] ?? null,
                     'difficulty_tier' => $tierLabel,
+                    'ai_difficulty_tier' => $tierLabel,
                     'variant_label' => $variant['variant_label'] ?? null,
                     'title' => $variant['title'] ?? $bundleData['bundle_title'] ?? 'Untitled Activity',
                     'instructions' => $variant['instructions'] ?? '',

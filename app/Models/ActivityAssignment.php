@@ -16,7 +16,12 @@ class ActivityAssignment extends Model
         'assigned_by_teacher_id',
     ];
 
-    public function activity(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    protected function casts(): array
+    {
+        return ['assigned_at' => 'datetime'];
+    }
+
+    public function activity():\Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Activity::class);
     }

@@ -31,6 +31,7 @@ class AnalyticsController extends Controller
         $classIds = SchoolClass::where('teacher_id', $teacher->id)->pluck('id');
 
         $learners = Learner::whereIn('class_id', $classIds)
+            ->with('schoolClass')
             ->orderBy('first_name')
             ->get();
 
@@ -69,6 +70,9 @@ class AnalyticsController extends Controller
             'learnerStats' => $learnerStats,
             'selectedGroupTag' => $selectedGroupTag,
             'groupStats' => $groupStats,
+            // The same day streak and weekly goal the child sees on their own Home.
+            'summary' => $selectedLearner ? ChildSummary::for($selectedLearner) : null,
+            'pickerClasses' => SchoolClass::whereIn('id', $classIds)->orderByDesc('school_year')->orderBy('name')->get(),
         ]);
     }
 
@@ -160,14 +164,26 @@ class AnalyticsController extends Controller
             ->where('session_type', '!=', 'Diagnostic')
             ->get();
 
-        $sourceSummary = collect(['Teacher', 'Parent'])->mapWithKeys(fn (string $source) => [
-            $source => ['count' => $sessions->where('initiated_by', $source)->count()],
-        ]);
+        $sourceSummary = collect(['Teacher', 'Parent'])->mapWithKeys(function (string $source) use ($sessions) {
+            $rows = $sessions->where('initiated_by', $source);
+            $avg = $rows->avg('accuracy_percent');
 
-        $learnerRows = $learners->map(fn (Learner $learner) => [
-            'learner' => $learner,
-            'session_count' => $sessions->where('learner_id', $learner->id)->count(),
-        ]);
+            return [$source => ['count' => $rows->count(), 'avg_accuracy' => $avg === null ? null : (int) round($avg)]];
+        });
+
+        // Who needs help first: lowest level first, then lowest average score.
+        $rank = ['Beginning' => 0, 'Developing' => 1, 'Proficient' => 2];
+
+        $learnerRows = $learners->map(function (Learner $learner) use ($sessions) {
+            $own = $sessions->where('learner_id', $learner->id);
+            $avg = $own->avg('accuracy_percent');
+
+            return [
+                'learner' => $learner,
+                'session_count' => $own->count(),
+                'avg_accuracy' => $avg === null ? null : (int) round($avg),
+            ];
+        })->sortBy(fn (array $row) => [$rank[$row['learner']->mastery_level] ?? 0, $row['avg_accuracy'] ?? 0])->values();
 
         return [
             'source_summary' => $sourceSummary,

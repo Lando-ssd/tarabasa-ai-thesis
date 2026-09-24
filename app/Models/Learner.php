@@ -123,14 +123,14 @@ class Learner extends Model implements AuthenticatableContract
             ->values();
 
         if ($claimed->isEmpty()) {
-            return ['headline' => 'New to the system — no prior grade history.', 'chain' => []];
+            return ['headline' => 'New to the system. No prior grade history.', 'chain' => []];
         }
 
         $latest = $claimed->last();
-        $headline = "Promoted from a previous class — now in {$latest->next_grade} since {$latest->claimed_at->format('M Y')}.";
+        $headline = "Promoted from a previous class, now in {$latest->next_grade} since {$latest->claimed_at->format('M Y')}.";
 
         $chain = $claimed->count() > 1
-            ? $claimed->map(fn (PromotionRecord $r) => "{$r->releasedFromGrade()} → {$r->next_grade} (claimed {$r->claimed_at->format('M Y')})")->all()
+            ? $claimed->map(fn (PromotionRecord $r) => "{$r->releasedFromGrade()} to {$r->next_grade} (claimed {$r->claimed_at->format('M Y')})")->all()
             : [];
 
         return ['headline' => $headline, 'chain' => $chain];
@@ -154,7 +154,7 @@ class Learner extends Model implements AuthenticatableContract
         $startedAt = $sessions->first()->level_before ?? 'New';
         $currentlyAt = $sessions->last()->level_after ?? ($this->mastery_level ?? 'New');
 
-        return "Proficiency: started at {$startedAt} → currently {$currentlyAt}";
+        return "Started at {$startedAt}, now {$currentlyAt}.";
     }
 
     /**
@@ -272,8 +272,13 @@ class Learner extends Model implements AuthenticatableContract
      */
     public function practiceReadingDays(): \Illuminate\Support\Collection
     {
-        return ReadingSession::where('learner_id', $this->id)
-            ->where('session_type', 'Practice')
+        // A roster that already loaded each learner's sessions (Class Management) reuses them
+        // instead of asking the database once per learner.
+        $sessions = $this->relationLoaded('readingSessions')
+            ? $this->readingSessions->where('session_type', 'Practice')
+            : ReadingSession::where('learner_id', $this->id)->where('session_type', 'Practice')->get();
+
+        return $sessions
             ->pluck('timestamp')
             ->map(fn ($timestamp) => \App\Support\LearnerClock::local($timestamp)->toDateString())
             ->unique()
