@@ -81,6 +81,21 @@
         <div class="block" style="margin-top:14px"><span class="eyebrow">Assigned to</span>
           <p>@forelse ($a->assignments as $as)<b>{{ $label($as) }}</b>{{ $loop->last ? '' : ', ' }}@empty Nobody yet.@endforelse</p>
         </div>
+        @php $notInBundle = $teacherBundles->reject(fn ($b) => $a->bundles->contains('id', $b->id)); @endphp
+        <div class="block" style="margin-top:14px"><span class="eyebrow">Bundles</span>
+          <p>@forelse ($a->bundles as $b)<b>{{ $b->name }}</b>{{ $loop->last ? '' : ', ' }}@empty Not in a bundle yet.@endforelse</p>
+          @unless ($locked)
+            @if ($notInBundle->isNotEmpty())
+              <form method="POST" action="{{ route('teacher.activities.bundles.add', $a) }}" style="display:flex;gap:8px;margin-top:8px" data-busy="Adding">
+                @csrf
+                <select name="bundle_id" class="mini wide" required><option value="">Add to bundle</option>@foreach ($notInBundle as $b)<option value="{{ $b->id }}">{{ $b->name }}</option>@endforeach</select>
+                <button type="submit" class="btn small ghost">Add</button>
+              </form>
+            @elseif ($teacherBundles->isEmpty())
+              <p class="note" style="margin:6px 0 0">Create a bundle from the Activities board to add this to one.</p>
+            @endif
+          @endunless
+        </div>
         @if ($a->shared_to_repository && $a->repositoryListing)
           @php $ratings = $a->repositoryListing->ratings; $avg = $ratings->isNotEmpty() ? round($ratings->avg('rating'), 1) : null; @endphp
           <div class="block"><span class="eyebrow">Repository</span>

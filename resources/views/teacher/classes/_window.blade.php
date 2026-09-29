@@ -18,6 +18,7 @@
     $isTarget = (string) old('target_class_id') === (string) $c->id;
     if ($isTarget) { $auto = true; $startView = old('view', 'learners'); }
     $nLearners = $c->learners->count();
+    $nBundles = $c->bundles->count();
     $meta = $c->section.' · SY '.$c->school_year.' · '.$nLearners.' '.($nLearners === 1 ? 'learner' : 'learners');
     $level = fn ($l) => $l->mastery_level ?? 'New';
     $levelPill = fn ($l) => '<span class="pill '.($l->mastery_level ? 'lv-'.strtolower($l->mastery_level) : '').'">'.e($level($l)).'</span>';
@@ -35,7 +36,7 @@
         </div>
         <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
       </header>
-      <div class="win-tabs">@include('teacher.classes._tabs', ['active' => 'learners', 'nLearners' => $nLearners, 'nActs' => $acts->count()])</div>
+      <div class="win-tabs">@include('teacher.classes._tabs', ['active' => 'learners', 'nLearners' => $nLearners, 'nActs' => $acts->count(), 'nBundles' => $nBundles])</div>
       <div class="win-body">
         <div class="toolbar">
           <div class="search">
@@ -82,7 +83,7 @@
         </div>
         <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
       </header>
-      <div class="win-tabs">@include('teacher.classes._tabs', ['active' => 'acts', 'nLearners' => $nLearners, 'nActs' => $acts->count()])</div>
+      <div class="win-tabs">@include('teacher.classes._tabs', ['active' => 'acts', 'nLearners' => $nLearners, 'nActs' => $acts->count(), 'nBundles' => $nBundles])</div>
       <div class="win-body">
         <div class="toolbar">
           <span class="note" style="flex:1">{{ $acts->isEmpty() ? '' : $acts->count().' '.($acts->count() === 1 ? 'activity' : 'activities').' for this class.' }}</span>
@@ -103,11 +104,66 @@
               <div class="arow static">
                 <div class="atitle"><b>{{ $a->title }}</b><span>{{ $a->grade_level }} · {{ $a->typeLabel() }} · {{ $a->word_count }} words</span></div>
                 <span class="pill t-{{ strtolower($a->difficulty_tier) }}">{{ $a->difficulty_tier }}</span>
-                <span class="astate">{{ $row['via'] === 'class' ? 'Given to this class' : 'Through group '.$row['tag'] }}@if ($row['on']) · {{ $row['on']->format('M j') }}@endif</span>
+                <span class="astate">{{ match ($row['via']) { 'class' => 'Given to this class', 'bundle' => 'Through bundle '.$row['tag'], default => 'Through group '.$row['tag'] } }}@if ($row['on']) · {{ $row['on']->format('M j') }}@endif</span>
               </div>
             @endforeach
           </div>
         @endif
+      </div>
+      <footer class="win-foot"><button type="button" class="btn ghost small" data-close>Close</button></footer>
+    </section>
+
+    {{-- ---------- bundles ---------- --}}
+    <section class="win-view" data-view="bundles" @if ($startView !== 'bundles') hidden @endif>
+      <header class="win-head">
+        <div class="win-titles">
+          <div class="tags"><span class="pill">{{ $c->grade_level }}</span>@if ($past)<span class="pill amber">Read only</span>@endif</div>
+          <h2>{{ $c->name }}</h2>
+          <p class="win-meta">{{ $meta }}</p>
+        </div>
+        <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+      </header>
+      <div class="win-tabs">@include('teacher.classes._tabs', ['active' => 'bundles', 'nLearners' => $nLearners, 'nActs' => $acts->count(), 'nBundles' => $nBundles])</div>
+      <div class="win-body">
+        <p class="note" style="margin:0 0 14px">Every approved activity in an assigned bundle reaches this class. Add more to a bundle any time from the Activities board — it reaches this class right away.</p>
+        @if ($c->bundles->isEmpty())
+          <div class="card empty-hero" style="box-shadow:none">
+            <div class="empty-ico">@include('learner._badge-icon', ['icon' => 'folders', 'class' => 'ico'])</div>
+            <h2>No bundles assigned</h2>
+            <p>{{ $past ? 'Nothing was assigned to this class in that school year.' : 'Assign one of your bundles below.' }}</p>
+          </div>
+        @else
+          <div class="alist">
+            @foreach ($c->bundles as $b)
+              <div class="arow static">
+                <div class="atitle"><b>{{ $b->name }}</b><span>{{ $b->activities->count() }} {{ $b->activities->count() === 1 ? 'activity' : 'activities' }}</span></div>
+                @unless ($past)
+                  <form method="POST" action="{{ route('teacher.classes.bundles.remove', [$c, $b]) }}" data-busy="Removing">
+                    @csrf
+                    <button type="submit" class="btn small ghost">Un-assign</button>
+                  </form>
+                @endunless
+              </div>
+            @endforeach
+          </div>
+        @endif
+        @unless ($past)
+          @php $unassigned = $teacherBundles->reject(fn ($b) => $c->bundles->contains('id', $b->id)); @endphp
+          @if ($errors->has('bundle_id') && $isTarget && old('view') === 'bundles')<div class="form-error-banner" role="alert">{{ $errors->first('bundle_id') }}</div>@endif
+          @if ($unassigned->isNotEmpty())
+            <form method="POST" action="{{ route('teacher.classes.bundles.assign', $c) }}" style="display:flex;gap:8px;margin-top:16px" data-busy="Assigning">
+              @csrf
+              <input type="hidden" name="form" value="class"><input type="hidden" name="target_class_id" value="{{ $c->id }}"><input type="hidden" name="view" value="bundles">
+              <select name="bundle_id" class="mini wide" required>
+                <option value="">Assign a bundle</option>
+                @foreach ($unassigned as $b)<option value="{{ $b->id }}">{{ $b->name }} ({{ $b->activities_count }})</option>@endforeach
+              </select>
+              <button type="submit" class="btn small">Assign</button>
+            </form>
+          @elseif ($teacherBundles->isEmpty())
+            <p class="note" style="margin-top:16px">You have no bundles yet. Create one from the Activities board.</p>
+          @endif
+        @endunless
       </div>
       <footer class="win-foot"><button type="button" class="btn ghost small" data-close>Close</button></footer>
     </section>

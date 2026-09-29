@@ -331,6 +331,20 @@ select.mini.wide{ min-width:140px; padding:10px 34px 9px 14px; font-size:15px; b
 .toast-btn{ margin-left:14px; padding:5px 12px 3px; border-radius:10px; border:2px solid rgba(255,255,255,.55); background:none; color:#fff; font:600 16px/1 var(--font-game); cursor:pointer; letter-spacing:.05em; }
 
 /* ---------- phones: the menu bar becomes a bottom bar, windows become sheets ---------- */
+/* ---------- Bundles: named folders of approved activities, on the Activities board ---------- */
+.bundles{ margin-top:18px; background:#f6fafe; border:2px solid var(--line); border-radius:20px; padding:14px 16px; }
+.bundles-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+.bundle-tray{ display:flex; flex-direction:column; gap:4px; align-items:flex-start; text-align:left; min-width:170px; max-width:240px; padding:12px 14px; border-radius:16px; background:#fff; border:2px solid var(--line); box-shadow:0 3px 0 var(--lip); cursor:pointer; transition:border-color .12s ease, background .12s ease; }
+.bundle-tray:hover{ border-color:var(--blue-line); }
+.bundle-tray.over{ border-color:var(--blue); background:var(--blue-bg); }
+.bundle-tray .bundle-name{ display:flex; align-items:center; gap:6px; font:700 18px/1.15 var(--font-game); }
+.bundle-tray .bundle-name .ico{ font-size:18px; color:var(--blue); }
+.bundle-tray .bundle-meta{ color:var(--muted); font-size:13px; }
+.bundle-tray .bundle-classes{ color:var(--blue-ink); font-size:12.5px; }
+.bundle-tray .bundle-classes.none{ color:var(--soft); }
+.bundle-tray.new{ align-items:center; justify-content:center; flex-direction:row; gap:8px; color:var(--blue-ink); font:600 16px/1 var(--font-game); border-style:dashed; background:none; box-shadow:none; }
+.bundle-tray.new .ico{ font-size:18px; }
+
 @media (max-width:900px){
   .shell{ grid-template-columns:1fr; }
   .sidebar{ display:none; }

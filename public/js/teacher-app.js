@@ -208,11 +208,21 @@
       });
     };
 
+    // Adding an activity to a bundle: dragging it onto a bundle tray, or the tray's own
+    // "Add to bundle" isn't a thing on the board (that lives in the activity's own window) — only
+    // drag and drop reaches a bundle from here. Only an Approved card may join one.
+    var addToBundle = function (url, activityId) {
+      return post(url, { activity_id: activityId }).then(function (r) {
+        toast((r.json && r.json.message) || (r.ok ? 'Added to the bundle.' : 'That could not be done.'));
+        return load({});
+      });
+    };
+
     var dragged = null;
     document.addEventListener('dragstart', function (e) {
       var c = e.target.closest ? e.target.closest('.bcard[draggable="true"]') : null;
       if (!c) { return; }
-      dragged = { url: c.getAttribute('data-place-url'), status: c.getAttribute('data-status') };
+      dragged = { url: c.getAttribute('data-place-url'), status: c.getAttribute('data-status'), activityId: c.getAttribute('data-activity-id') };
       try { e.dataTransfer.setData('text/plain', dragged.url); e.dataTransfer.effectAllowed = 'move'; } catch (x) { /* fine */ }
       c.classList.add('drag');
     });
@@ -222,6 +232,7 @@
       if (!z || !dragged) { return; }
       var to = z.getAttribute('data-drop');
       if (to === 'tray' || (to === 'reject' && dragged.status !== 'Draft')) { return; }
+      if (to.indexOf('bundle-') === 0 && dragged.status !== 'Approved') { return; }
       e.preventDefault();
       $$('.over').forEach(function (n) { if (n !== z) { n.classList.remove('over'); } });
       z.classList.add('over');
@@ -232,7 +243,8 @@
       e.preventDefault();
       var d = dragged; dragged = null; $$('.over').forEach(function (n) { n.classList.remove('over'); });
       var to = z.getAttribute('data-drop');
-      if (to !== 'tray') { place(d.url, { level: to }); }
+      if (to.indexOf('bundle-') === 0) { addToBundle(z.getAttribute('data-add-url'), d.activityId); }
+      else if (to !== 'tray') { place(d.url, { level: to }); }
     });
     document.addEventListener('change', function (e) {
       var s = e.target;

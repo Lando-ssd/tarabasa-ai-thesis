@@ -5761,6 +5761,91 @@ now saved and written in the background.
   still writes the request after 45 s, so nothing is lost. Also ask BldZeuz for a `levels` option so the
   unrequested levels are not written for nothing.
 
+## Activity Bundles (2026-09-29) — plus a check that the three teammate APIs are still the same
+
+The user relayed another instructor note (in Cebuano): create a named bundle ("Bundle 1", "Bundle 2"),
+drop activities into it, then assign the bundle to a class; an activity dropped into a bundle that is
+already assigned to a class should reach it directly, no extra step. The same message asked to confirm
+the three teammate services (`gemini_activity_gen`, `Reading-api`, `Adaptive_Recommendator`) are on their
+current contracts.
+
+**The three services are unchanged.** Cloned all three straight from GitHub and confirmed their real
+version strings still match what this app already integrates against: `gemini_activity_gen` 3.1.0 (no
+`levels` option added yet, no subdomain tagging added — the two provisional gaps recorded elsewhere in
+this file are still open), `Reading-api` 4.0.0, `Adaptive_Recommendator` 2.0.0. Nothing to fix here; the
+2026-09-24 integration pass already covers the live services as they stand today.
+
+**A new, separate concept from `activities.bundle_title`.** That column is `gemini_activity_gen`'s own
+"bundle" — one generation call's batch of Easy/Medium/Hard levels. This is a Teacher's own named folder
+of already-Approved activities, built on three new tables: `activity_bundles` (teacher_id, name),
+`activity_bundle_activities` (which Approved activities are in it) and `activity_bundle_classes` (which
+classes it has been assigned to — a bundle can go to more than one class, and a class can carry more than
+one bundle, unlike the single `classes.group_tag` string, which is untouched and still works exactly as
+before). New `ActivityBundle` model, `BundleController`.
+
+**Where it lives:**
+- **Activities board**: a new "Bundles" row below the four columns — one tray per bundle (name, activity
+  count, which classes it reaches) plus a "+ New bundle" tray. Dropping an Approved card onto a tray adds
+  it (`teacher-app.js`'s existing drag/drop delegation, extended: `data-drop="bundle-{id}"` zones, guarded
+  to Approved cards only, posting to the tray's own `data-add-url`). The same action is also reachable from
+  an activity's own window (a new "Bundles" block next to "Assigned to": which bundles it's in, plus an
+  "Add to bundle" select for one more) — this is the path actually exercised live, see below.
+- **Class window**: a new "Bundles" tab (`ClassController::assignBundle()`/`unassignBundle()`), listing
+  bundles assigned to the class and a dropdown to assign one more. Assigning a bundle here is the one
+  clear place for it, matching how the instructor described the flow ("assign the bundle to a class") —
+  a bundle's own window is read-only plus "Remove" (its own `unassignClass()`, redirecting back to the
+  Activities page instead of the Classes page, since that's where its window was opened from).
+- `Learner::activitiesByClass()` (used by the class cards' own "N activities assigned" count and the
+  Activities tab's list) now also walks each class's assigned bundles; a bundle-sourced row is labeled
+  "Through bundle {name}", parallel to the existing "Through group {tag}" row.
+- `LearnerAuthService::findActivityOptions()`: bundles assigned to a Learner's class are merged into the
+  SAME priority tier as a direct class assignment (not a new 4th tier) — resolved live on every call, not
+  a snapshot, which is what makes "drop it in later, it just reaches them" true. A direct-to-Learner
+  assignment still wins over both, unchanged.
+
+**A real bug found live, not by the tests written alongside this feature.** `activity_bundle_classes.
+assigned_at` isn't cast to a datetime (a plain pivot column, not a model with its own casts), so the class
+window's shared "Activities" row template — which calls `->format('M j')` on the date for every row,
+`class`/`group`/`bundle` alike — threw `Call to a member function format() on string` the first time a
+real bundle-sourced row rendered. Fixed by wrapping it in `Carbon::parse()` where the row array is built
+(`ClassController::activitiesByClass()`), and while there, fixed a second real gap the same bug pointed
+at: the row's own label was a two-way ternary (`class` vs. "Through group") from before bundles existed,
+so a bundle-sourced row was silently mislabeled "Through group {bundle name}" — now a three-way `match`.
+Both were only caught by loading the real page in a browser with a real bundle-sourced row present, which
+none of the tests below happened to do until a regression test was added for exactly this afterward.
+
+**Tested — `tests/Feature/ActivityBundleTest.php` (15 tests)**: creating a bundle, adding/rejecting an
+Approved-only activity into it (ownership and status checks both ways), adding from the activity's own
+window, assigning/rejecting a bundle to a class (ownership and past-year checks), a Pending teacher
+blocked from every mutating route (JSON gets a real 403; a plain request gets the redirect-with-flash
+`EnsureTeacherIsActive` actually sends, matching how every other `teacher.active` route already behaves
+in `TeacherRedesignTest`) while still being able to view a bundle's own window (read-only, same rule as an
+activity's own window), un-assigning/removing/deleting, and the real point of the feature: an activity
+dropped into an already-assigned bundle reaches the Learner's picker with no separate step, a direct class
+assignment and a bundle assignment merge rather than one hiding the other, a direct-to-Learner assignment
+still wins over both, a bundle activity that gets Rejected afterward stops reaching anyone, and
+un-assigning the bundle from the class removes it from the Learner's picker. Plus the regression test
+above for the real rendering bug.
+
+**Also driven live in the browser**, not just the test suite: seeded a real Teacher with two real classes,
+one real Learner, and three real Approved activities; created "Bundle 1" through the real New Bundle
+window; added an activity to it via the activity window's own "Add to bundle" control; confirmed via
+`tinker` that `LearnerAuthService::findActivityOptions()` correctly returned it for the real Learner,
+labeled "Assigned by your Teacher"; assigned the bundle to the real class through its new Bundles tab
+(confirmed the class card's own count and the Activities tab's "Through bundle Bundle 1 · {date}" row,
+which is what surfaced the real bug above); added a SECOND activity to the same already-assigned bundle
+and confirmed via `tinker` — the actual scenario the instructor described — that it reached the Learner
+immediately, no further action taken anywhere.
+
+**Not verified live: real drag-and-drop onto a bundle tray.** A synthetic mouse drag in this sandboxed
+browser tool does not fire the real HTML5 `dragstart`/`dragover`/`drop` events Chromium requires for
+native drag and drop (confirmed by trying it — the bundle's activity count didn't change), the same
+category of environment limitation already on record in this file for touch input. The JS itself
+(`teacher-app.js`) reuses the exact same event-delegation pattern already proven live for the level
+board's own drag and drop, just gated to Approved cards and posting to a different URL — code-reviewed,
+not independently exercised end to end here. The window-based "Add to bundle" path (used for all the live
+testing above) reaches the identical controller method and database rows either way.
+
 ## The user's working style
 
 - Limited hands-on coding experience — explain what you're doing and

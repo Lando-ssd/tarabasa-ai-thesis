@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
+use App\Models\ActivityBundle;
 use App\Models\Learner;
 use App\Models\OpenRepositoryListing;
 use Illuminate\Support\Collection;
@@ -89,6 +90,16 @@ class LearnerAuthService
 
         if ($assignmentIds->isEmpty() && $learner->class_id) {
             $assignmentIds = ActivityAssignment::where('class_id', $learner->class_id)->pluck('activity_id');
+
+            // Bundles assigned to this class sit at the same priority as a direct class
+            // assignment — resolved live (never a snapshot), so an activity dropped into an
+            // already-assigned bundle reaches the Learner immediately, with no separate step.
+            $bundleActivityIds = ActivityBundle::whereHas('classes', fn ($q) => $q->where('classes.id', $learner->class_id))
+                ->with('activities')
+                ->get()
+                ->flatMap(fn (ActivityBundle $bundle) => $bundle->activities->pluck('id'));
+
+            $assignmentIds = $assignmentIds->concat($bundleActivityIds)->unique()->values();
         }
 
         if ($assignmentIds->isEmpty() && $learner->schoolClass?->group_tag) {
