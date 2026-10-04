@@ -34,13 +34,6 @@ class SchoolClass extends Model
         return $this->hasMany(Learner::class, 'class_id');
     }
 
-    /** The Teacher's own bundles ("Bundle 1") assigned to this class. */
-    public function bundles(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(ActivityBundle::class, 'activity_bundle_classes', 'class_id', 'activity_bundle_id')
-            ->withPivot('assigned_at');
-    }
-
     /**
      * Philippine school years typically run June through March/April, so
      * the "current" year rolls over in June rather than on the calendar

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Jobs\GenerateActivitiesJob;
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
-use App\Models\ActivityBundle;
 use App\Models\ActivityGeneration;
 use App\Models\Learner;
 use App\Models\OpenRepositoryListing;
@@ -205,14 +204,7 @@ class ActivityController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        $data = $this->boardData($request, $activities) + [
-            'teacher' => $teacher,
-            'bundles' => ActivityBundle::where('teacher_id', $teacher->id)
-                ->withCount('activities')
-                ->with(['classes' => fn ($q) => $q->orderBy('name')])
-                ->orderBy('name')
-                ->get(),
-        ];
+        $data = $this->boardData($request, $activities) + ['teacher' => $teacher];
         $data['state'] = [
             'view' => $data['view'],
             'q' => $data['q'],
@@ -255,39 +247,14 @@ class ActivityController extends Controller
             ->values();
 
         return view('teacher.activities._window', [
-            'activity' => $activity->load('assignments.learner', 'assignments.schoolClass', 'repositoryListing.ratings', 'bundles'),
+            'activity' => $activity->load('assignments.learner', 'assignments.schoolClass', 'repositoryListing.ratings'),
             'teacher' => $teacher,
             'locked' => $teacher->status !== 'Active',
             'assignClasses' => $classes,
             'assignGroupTags' => $classes->pluck('group_tag')->filter()->unique()->values(),
             'assignLearners' => Learner::whereIn('class_id', $classes->pluck('id'))->with('schoolClass')->orderBy('first_name')->get(),
             'levelInfo' => config('activity_levels.info'),
-            'teacherBundles' => ActivityBundle::where('teacher_id', $teacher->id)->orderBy('name')->get(),
         ]);
-    }
-
-    /**
-     * Add this Approved activity to one more of the Teacher's own bundles, from the activity's
-     * own window — the reverse direction of BundleController::addActivity() (drag and drop on the
-     * board, where the bundle is fixed and the activity varies). Both end at the same pivot row.
-     */
-    public function addToBundle(Request $request, Activity $activity): RedirectResponse
-    {
-        $this->authorizeOwnership($request, $activity);
-        abort_if($activity->status !== 'Approved', 403, 'Only an Approved activity can join a bundle.');
-
-        $teacher = $request->user()->teacher;
-        $validated = $request->validate(['bundle_id' => ['required', 'integer']]);
-
-        $bundle = ActivityBundle::where('teacher_id', $teacher->id)->find($validated['bundle_id']);
-
-        if (! $bundle) {
-            throw ValidationException::withMessages(['bundle_id' => 'Choose one of your own bundles.']);
-        }
-
-        $bundle->activities()->syncWithoutDetaching([$activity->id => ['added_at' => now()]]);
-
-        return back()->with('status', "\"{$activity->title}\" added to \"{$bundle->name}\".");
     }
 
     /**

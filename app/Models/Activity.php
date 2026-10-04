@@ -64,12 +64,6 @@ class Activity extends Model
         return $this->hasMany(ReadingSession::class);
     }
 
-    /** The Teacher's own bundles ("Bundle 1") this Approved activity has been dropped into. */
-    public function bundles(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(ActivityBundle::class, 'activity_bundle_activities')->withPivot('added_at');
-    }
-
     /** Counts words the way the generator does, so an edited text still gets a comparable count. */
     public static function countWords(string $text): int
     {

@@ -6,7 +6,6 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BookshelfController;
-use App\Http\Controllers\BundleController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\GameController;
@@ -151,9 +150,6 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     Route::post('/classes/{class}/join-learner', [ClassController::class, 'joinLearner'])->middleware('teacher.active')->name('classes.join-learner');
     // Assign an Approved activity to a whole class, from the class window.
     Route::post('/classes/{class}/assign-activity', [ClassController::class, 'assignActivity'])->middleware('teacher.active')->name('classes.assign-activity');
-    // Assign one of the Teacher's own bundles to this class (its own tab in the class window).
-    Route::post('/classes/{class}/bundles', [ClassController::class, 'assignBundle'])->middleware('teacher.active')->name('classes.bundles.assign');
-    Route::post('/classes/{class}/bundles/{bundle}/remove', [ClassController::class, 'unassignBundle'])->middleware('teacher.active')->name('classes.bundles.remove');
 
     // Activity Generation — Teacher Actor Prompt Step 7. Generate has NO
     // 'teacher.active' guard: a Pending Teacher can use their 2 free
@@ -181,22 +177,9 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     Route::put('/activities/{activity}', [ActivityController::class, 'update'])->middleware('teacher.active')->name('activities.update');
     Route::post('/activities/{activity}/reject', [ActivityController::class, 'reject'])->middleware('teacher.active')->name('activities.reject');
     Route::post('/activities/{activity}/assign', [ActivityController::class, 'assign'])->middleware('teacher.active')->name('activities.assign');
-    // Add this activity to one of the Teacher's own bundles, from the activity's own window.
-    Route::post('/activities/{activity}/bundles', [ActivityController::class, 'addToBundle'])->middleware('teacher.active')->name('activities.bundles.add');
     // Share to Repository — Teacher Actor Prompt Step 8's second required
     // action on an Approved card, same Active-gating as Assign.
     Route::post('/activities/{activity}/share', [ActivityController::class, 'shareToRepository'])->middleware('teacher.active')->name('activities.share');
-
-    // Activity Bundles — a named folder of Approved activities ("Bundle 1"), assignable to one or
-    // more classes at once. Drag onto a bundle tray or use a card's "Add to bundle" menu; assigning
-    // it to a class is on the class window's own Bundles tab.
-    Route::post('/bundles', [BundleController::class, 'store'])->middleware('teacher.active')->name('bundles.store');
-    // Read-only, so no 'teacher.active' guard, same rule as an activity's own window.
-    Route::get('/bundles/{bundle}/window', [BundleController::class, 'window'])->name('bundles.window');
-    Route::post('/bundles/{bundle}/activities', [BundleController::class, 'addActivity'])->middleware('teacher.active')->name('bundles.activities.add');
-    Route::post('/bundles/{bundle}/activities/{activity}/remove', [BundleController::class, 'removeActivity'])->middleware('teacher.active')->name('bundles.activities.remove');
-    Route::post('/bundles/{bundle}/classes/{class}/remove', [BundleController::class, 'unassignClass'])->middleware('teacher.active')->name('bundles.classes.remove');
-    Route::post('/bundles/{bundle}/delete', [BundleController::class, 'destroy'])->middleware('teacher.active')->name('bundles.destroy');
 
     // Analytics — Teacher Actor Prompt Step 10. Read-only, so no
     // 'teacher.active' guard, same rule as Class Management's index.

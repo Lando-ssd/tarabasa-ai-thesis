@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
-use App\Models\ActivityBundle;
 use App\Models\Learner;
 use App\Models\SchoolClass;
 use Illuminate\Http\RedirectResponse;
@@ -48,7 +47,7 @@ class ClassController extends Controller
 
         $classes = SchoolClass::where('teacher_id', $teacher->id)
             ->where('school_year', $selectedYear)
-            ->with(['learners.promotionRecords.releasedFromClass', 'learners.readingSessions', 'bundles.activities'])
+            ->with(['learners.promotionRecords.releasedFromClass', 'learners.readingSessions'])
             ->orderBy('name')
             ->get();
 
@@ -65,7 +64,6 @@ class ClassController extends Controller
             ->get();
 
         $classActivities = $this->activitiesByClass($teacher->id, $classes);
-        $teacherBundles = ActivityBundle::where('teacher_id', $teacher->id)->withCount('activities')->orderBy('name')->get();
 
         // What the page's script needs: the find box's index, and the assign dropdown's choices
         // (an activity a class already has, directly or through its group, is not offered again).
@@ -94,10 +92,9 @@ class ClassController extends Controller
             'isPastYear' => $isPastYear,
             'classActivities' => $classActivities,
             'approvedActivities' => $approved,
-            'teacherBundles' => $teacherBundles,
             'levelInfo' => config('activity_levels.info'),
             'openClassId' => (int) $request->query('open', 0),
-            'openTab' => in_array($request->query('tab'), ['learners', 'acts', 'bundles'], true) ? $request->query('tab') : 'learners',
+            'openTab' => in_array($request->query('tab'), ['learners', 'acts'], true) ? $request->query('tab') : 'learners',
         ]);
     }
 
@@ -241,47 +238,6 @@ class ClassController extends Controller
         return $this->backToClass($class, 'acts')->with('status', "\"{$activity->title}\" assigned to {$class->name}.");
     }
 
-    /**
-     * Assign one of the Teacher's own bundles to this class. Every Approved activity currently in
-     * the bundle reaches the class at once, and anything dropped into the bundle later reaches it
-     * too, with no further action here.
-     */
-    public function assignBundle(Request $request, SchoolClass $class): RedirectResponse
-    {
-        $teacher = $request->user()->teacher;
-
-        abort_if($class->teacher_id !== $teacher->id, 403);
-        abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
-
-        $validated = $request->validate([
-            'bundle_id' => ['required', 'integer'],
-        ], [
-            'bundle_id.required' => 'Choose a bundle to assign.',
-        ]);
-
-        $bundle = ActivityBundle::where('teacher_id', $teacher->id)->find($validated['bundle_id']);
-
-        if (! $bundle) {
-            throw ValidationException::withMessages(['bundle_id' => 'Choose one of your own bundles.']);
-        }
-
-        $bundle->classes()->syncWithoutDetaching([$class->id => ['assigned_at' => now()]]);
-
-        return $this->backToClass($class, 'bundles')->with('status', "\"{$bundle->name}\" assigned to {$class->name}.");
-    }
-
-    public function unassignBundle(Request $request, SchoolClass $class, ActivityBundle $bundle): RedirectResponse
-    {
-        $teacher = $request->user()->teacher;
-
-        abort_if($class->teacher_id !== $teacher->id, 403);
-        abort_if($bundle->teacher_id !== $teacher->id, 403);
-
-        $bundle->classes()->detach($class->id);
-
-        return $this->backToClass($class, 'bundles')->with('status', "\"{$bundle->name}\" no longer assigned to {$class->name}.");
-    }
-
     /** Back to the Classes screen with the same class window open again, on the right tab. */
     private function backToClass(SchoolClass $class, string $tab): RedirectResponse
     {
@@ -318,18 +274,6 @@ class ClassController extends Controller
                     $rows->put($a->activity_id, ['activity' => $a->activity, 'via' => 'class', 'tag' => null, 'on' => $a->assigned_at]);
                 } elseif ($class->group_tag && $a->group_tag === $class->group_tag && ! $rows->has($a->activity_id)) {
                     $rows->put($a->activity_id, ['activity' => $a->activity, 'via' => 'group', 'tag' => $a->group_tag, 'on' => $a->assigned_at]);
-                }
-            }
-
-            // Any bundle assigned to this class: every Approved activity in it reaches the class,
-            // resolved live here too (not a snapshot) so a card dropped into an already-assigned
-            // bundle shows up on the very next page load, no separate step needed.
-            foreach ($class->bundles as $bundle) {
-                foreach ($bundle->activities as $activity) {
-                    if ($activity->status !== 'Approved' || $rows->has($activity->id)) {
-                        continue;
-                    }
-                    $rows->put($activity->id, ['activity' => $activity, 'via' => 'bundle', 'tag' => $bundle->name, 'on' => \Illuminate\Support\Carbon::parse($bundle->pivot->assigned_at)]);
                 }
             }
 

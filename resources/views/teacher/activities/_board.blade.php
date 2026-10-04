@@ -12,7 +12,7 @@
     <div class="bcards">
       @forelse ($drafts as $a)
         @php $ai = $a->ai_difficulty_tier ?? $a->difficulty_tier; @endphp
-        <div class="bcard" @unless ($locked) draggable="true" @endunless data-place-url="{{ route('teacher.activities.place', $a) }}" data-status="Draft" data-activity-id="{{ $a->id }}">
+        <div class="bcard" @unless ($locked) draggable="true" @endunless data-place-url="{{ route('teacher.activities.place', $a) }}" data-status="Draft">
           <div class="b-top">
             <span class="grip">@include('learner._badge-icon', ['icon' => 'dots-six-vertical', 'class' => 'ico'])</span>
             <button type="button" class="b-title" data-window-url="{{ route('teacher.activities.window', $a) }}">{{ $a->title }}</button>
@@ -52,7 +52,7 @@
       <p class="hint">{{ $levelInfo[$tier]['short'] }}</p>
       <div class="bcards">
         @forelse ($col['cards'] as $a)
-          <div class="bcard ok" @unless ($locked) draggable="true" @endunless data-place-url="{{ route('teacher.activities.place', $a) }}" data-status="Approved" data-activity-id="{{ $a->id }}">
+          <div class="bcard ok" @unless ($locked) draggable="true" @endunless data-place-url="{{ route('teacher.activities.place', $a) }}" data-status="Approved">
             <button type="button" class="b-title" data-window-url="{{ route('teacher.activities.window', $a) }}">{{ $a->title }}</button>
             <div class="b-meta" style="margin-bottom:0">{{ $a->grade_level }} · {{ $a->word_count }} words @if ($a->assignments->isNotEmpty()) · {{ $a->assignments->count() }} assigned @endif</div>
             @if ($a->movedByTeacher())<div class="b-moved">Moved from {{ $a->ai_difficulty_tier }}</div>@endif
@@ -66,30 +66,4 @@
       @endif
     </section>
   @endforeach
-</div>
-
-{{--
-  Bundles: a Teacher's own named folders of approved activities. Drop an approved card here (or
-  use its "Add to bundle" menu), then open a class's Bundles tab to assign one — anything dropped
-  in afterward reaches that class right away, no separate step.
---}}
-<div class="bundles">
-  <header class="col-h"><h3>Bundles</h3><span class="pill">{{ $bundles->count() }}</span></header>
-  <p class="hint">Drop an approved activity here, then assign the bundle to a class from that class's own window. New activities dropped in later reach the same class right away.</p>
-  <div class="bundles-row">
-    @foreach ($bundles as $bundle)
-      <button type="button" class="bundle-tray" data-drop="bundle-{{ $bundle->id }}" data-add-url="{{ route('teacher.bundles.activities.add', $bundle) }}" data-window-url="{{ route('teacher.bundles.window', $bundle) }}">
-        <span class="bundle-name">@include('learner._badge-icon', ['icon' => 'folders', 'class' => 'ico']) {{ $bundle->name }}</span>
-        <span class="bundle-meta">{{ $bundle->activities_count }} {{ $bundle->activities_count === 1 ? 'activity' : 'activities' }}</span>
-        @if ($bundle->classes->isNotEmpty())
-          <span class="bundle-classes">{{ $bundle->classes->pluck('name')->join(', ') }}</span>
-        @else
-          <span class="bundle-classes none">Not assigned yet</span>
-        @endif
-      </button>
-    @endforeach
-    @unless ($locked)
-      <button type="button" class="bundle-tray new" data-open="newBundleDlg">@include('learner._badge-icon', ['icon' => 'plus', 'class' => 'ico']) New bundle</button>
-    @endunless
-  </div>
 </div>

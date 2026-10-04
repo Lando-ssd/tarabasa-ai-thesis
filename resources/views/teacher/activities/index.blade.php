@@ -57,5 +57,4 @@
 
 @push('dialogs')
   @include('teacher.activities._generate')
-  @include('teacher.bundles._new')
 @endpush
