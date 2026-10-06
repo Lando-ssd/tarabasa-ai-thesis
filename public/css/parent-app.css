@@ -161,8 +161,8 @@ h3{ margin:0; font:700 22px/1.15 var(--font-game); }
 .note{ color:var(--muted); font-size:14px; }
 
 /* ---------- Progress ---------- */
-.adaptive .eyebrow{ display:flex; align-items:center; gap:8px; }
-.adaptive .eyebrow .ico{ font-size:18px; color:var(--orange); }
+.adaptive .eyebrow, .level-card .eyebrow, .home-card .eyebrow{ display:flex; align-items:center; gap:8px; }
+.adaptive .eyebrow .ico, .level-card .eyebrow .ico, .home-card .eyebrow .ico{ font-size:18px; color:var(--orange); }
 .headline{ margin:10px 0 14px; font:600 24px/1.25 var(--font-game); }
 .headline b{ color:var(--blue-ink); }
 .skill-chips{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -176,6 +176,7 @@ h3{ margin:0; font:700 22px/1.15 var(--font-game); }
 .filters{ display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px; }
 .item-card{ display:flex; flex-direction:column; gap:10px; }
 .tags{ display:flex; gap:6px; flex-wrap:wrap; }
+.tag.match{ background:var(--orange-bg); color:var(--orange-ink); }
 .tag.free{ background:var(--green-bg); color:#137a63; } .tag.paid{ background:var(--amber-bg); color:var(--amber); } .tag.owned{ background:var(--blue-bg); color:var(--blue-ink); } .tag.diff{ background:#eef3f8; color:#4a5f73; }
 .item-name{ margin:0; font:700 24px/1.15 var(--font-game); }
 .rating{ color:var(--amber); font-size:14px; margin:0; }

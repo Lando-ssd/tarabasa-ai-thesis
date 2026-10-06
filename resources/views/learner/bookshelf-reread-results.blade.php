@@ -4,11 +4,15 @@
   streak, no level, no badges (see LearnerReadingService::recordFreeReattempt()).
 --}}
 @php
-    $stats = [
-        ['value' => round($accuracy).'%', 'label' => 'Accuracy', 'icon' => 'target', 'tone' => '#1f9e83'],
-        ['value' => $wcpm !== null ? round($wcpm) : 'N/A', 'label' => 'Words a minute', 'icon' => 'timer', 'tone' => '#1c7ed6'],
-        ['value' => $wordsToPractice ?? 'N/A', 'label' => 'Words to practice', 'icon' => 'book-open', 'tone' => '#dd7014'],
-    ];
+    $stats = [];
+    if (! empty($wordCounts)) {
+        $stats[] = ['value' => $wordCounts['right'].' of '.$wordCounts['total'], 'label' => 'Words read right', 'icon' => 'target', 'tone' => '#1f9e83'];
+        if ($wordCounts['notSure'] > 0) {
+            $stats[] = ['value' => $wordCounts['notSure'], 'label' => 'Not sure', 'icon' => 'info', 'tone' => '#5b6b7a'];
+        }
+    } else {
+        $stats[] = ['value' => round($accuracy).'%', 'label' => 'Accuracy', 'icon' => 'target', 'tone' => '#1f9e83'];
+    }
 @endphp
 @include('learner._feedback-scene', [
     'mood' => 'happy',

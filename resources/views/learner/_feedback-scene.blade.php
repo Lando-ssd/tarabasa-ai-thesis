@@ -18,7 +18,8 @@
             pill), $pill (a small note such as "Free practice"), $newBadges
             (badges just earned: code, name, description; each is shown with its
             own icon, see _badge-icon), $stats (number tiles: value, label and
-            optionally icon and tone) and $details (a view to show under the
+            optionally icon and tone), $secondLabel + $secondHref (a second, quieter link under
+            the button, e.g. "Try again") and $details (a view to show under the
             star, with $detailsData, e.g. _reading-review for the word by word
             look at a reading).
 --}}
@@ -30,8 +31,9 @@
 <title>{{ $pageTitle }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
+<script src="{{ asset('vendor/lottie-web-5.12.2.min.js') }}"></script>
 <style>
   :root{
     --navy-900:#131f2b; --slate-600:#5b6b7a; --blue-500:#1c7ed6; --teal:#2bb89c; --line:#dbe7f3;
@@ -116,6 +118,9 @@
     box-shadow:0 7px 0 #b4560b, 0 18px 24px -10px rgba(180,86,11,.65), inset 0 2px 0 rgba(255,255,255,.45);
     transition:transform .08s ease, box-shadow .08s ease;
   }
+  .fb-second{ display:inline-block; margin:18px 0 0 22px; font:600 22px/1.2 var(--font-game); letter-spacing:.04em; color:#3f566d; text-decoration:underline; text-underline-offset:4px; }
+  .fb-second:hover{ color:var(--blue-500); }
+  @media (max-width:860px){ .fb-second{ display:block; margin:16px 0 0; text-align:center; } }
   .fb-btn:hover{ transform:translateY(-1px); }
   .fb-btn:active{ transform:translateY(4px); box-shadow:0 3px 0 #b4560b, 0 8px 12px -6px rgba(180,86,11,.6), inset 0 2px 0 rgba(255,255,255,.4); }
   .fb-btn:focus-visible{ outline:4px solid var(--blue-500); outline-offset:4px; }
@@ -205,6 +210,9 @@
       @endif
 
       <a href="{{ $buttonHref }}" class="fb-btn" id="fbBtn">{{ $buttonLabel }}</a>
+      @if (! empty($secondLabel))
+        <a href="{{ $secondHref }}" class="fb-second">{{ $secondLabel }}</a>
+      @endif
     </div>
 
   </div>

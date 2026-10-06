@@ -72,12 +72,19 @@ class BadgeService
                     continue;
                 }
 
-                LearnerBadge::create([
+                // Two screens can ask at the same moment (a result and the Home page). The database
+                // allows each badge once, so the second insert is ignored instead of crashing, and
+                // only the request that really earned it celebrates it.
+                $inserted = LearnerBadge::insertOrIgnore([[
                     'learner_id' => $learner->id,
                     'badge_code' => $code,
                     'earned_at' => $result['at'],
-                ]);
+                ]]);
                 $existing[] = $code;
+
+                if ($inserted === 0) {
+                    continue;
+                }
 
                 if ($result['at']->gte(now()->subMinutes(self::RECENT_MINUTES))) {
                     $newlyEarned[] = array_merge(['code' => $code], $definition);

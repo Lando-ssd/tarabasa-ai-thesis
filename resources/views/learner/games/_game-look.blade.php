@@ -96,5 +96,34 @@
   .back-link:hover{ transform:translateY(-1px); }
   .back-link:active{ transform:translateY(3px); box-shadow:0 1px 0 #e3ebf3; }
 
+  /* Hearing and saying (games/_game-voice). A "Listen" pill, a round microphone, and a quiet Skip. */
+  .listen-btn{
+    display:inline-flex; align-items:center; gap:10px; margin:0 auto 16px; padding:11px 22px 10px; border-radius:999px; cursor:pointer;
+    font:600 21px/1 var(--font-game); letter-spacing:.05em; text-transform:uppercase; color:var(--blue-500);
+    background:#ffffff; border:2px solid var(--panel-line); box-shadow:0 4px 0 var(--lip); transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .listen-btn .badge-svg{ width:28px; height:28px; flex:none; display:block; }
+  .listen-btn:hover{ transform:translateY(-1px); }
+  .listen-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--lip); }
+  .listen-btn[hidden]{ display:none; }
+  .mic-btn{
+    width:96px; height:96px; margin:6px auto 4px; border:none; border-radius:50%; cursor:pointer; display:grid; place-items:center; color:#fff;
+    background:linear-gradient(180deg,#f9a544,#ee8a26);
+    box-shadow:0 7px 0 #b4560b, 0 16px 24px -10px rgba(180,86,11,.6), inset 0 3px 0 rgba(255,255,255,.45);
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .mic-btn .badge-svg{ width:46px; height:46px; display:block; }
+  .mic-btn:active:not(:disabled){ transform:translateY(5px); box-shadow:0 2px 0 #b4560b, inset 0 3px 0 rgba(255,255,255,.4); }
+  .mic-btn:disabled{ cursor:default; }
+  .mic-btn.listening{ animation:micPulse 1s ease-in-out infinite; background:linear-gradient(180deg,#ff8a6b,#e5562f); box-shadow:0 7px 0 #a8341a, 0 0 0 10px rgba(229,86,47,.18); }
+  @keyframes micPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.07); } }
+  .mic-btn:focus-visible, .listen-btn:focus-visible, .skip-btn:focus-visible{ outline:4px solid var(--blue-500); outline-offset:4px; }
+  .say-note{ margin:10px 0 0; font:500 23px/1.3 var(--font-game); color:var(--slate-600); min-height:1.3em; }
+  .skip-btn{
+    display:inline-block; margin:14px auto 0; padding:8px 18px 7px; border:none; background:none; cursor:pointer;
+    font:600 19px/1 var(--font-game); letter-spacing:.05em; text-transform:uppercase; color:var(--slate-600); text-decoration:underline; text-underline-offset:4px;
+  }
+  .skip-btn:hover{ color:var(--blue-500); }
+
   @media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
 </style>

@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TaraBasa AI — {{ $learner->first_name }} is all set!</title>
+<title>{{ $learner->first_name }} is all set | TaraBasa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <style>
   :root{
     --sky-50:#eef6ff; --sky-100:#dcedff;
@@ -41,6 +42,9 @@
   .code-box .label{ font-size:12px; font-weight:700; color:var(--slate-600); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
   .code-box .code{ font-family:'Baloo 2',sans-serif; font-size:28px; font-weight:700; color:var(--blue-700); letter-spacing:.03em; margin-bottom:6px; }
   .code-box .hint{ font-size:12.5px; color:var(--slate-600); font-weight:500; }
+  .code-box .parts{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:12px 0 12px; }
+  .code-box .parts div{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 4px; font-size:10.5px; font-weight:600; color:var(--slate-600); line-height:1.3; }
+  .code-box .parts b{ display:block; font:700 16px/1.2 'Baloo 2',sans-serif; color:var(--blue-700); }
   .copy-btn{
     display:inline-flex; align-items:center; gap:6px; margin-top:10px; background:var(--surface); border:1px solid var(--line);
     padding:7px 14px; border-radius:999px; font-size:12.5px; font-weight:700; color:var(--blue-600); cursor:pointer;
@@ -69,13 +73,24 @@
       @endif
     </div>
     <h1>{{ $learner->first_name }} is all set!</h1>
-    <p class="level-line">Estimated starting level: <b>{{ $learner->mastery_level }}</b></p>
-    <p class="next-note">{{ $learner->first_name }} will take a quick first reading check the first time they log in to confirm this.</p>
+    <p class="next-note">{{ $learner->first_name }} will take a short first reading check the first time they log in. It finds where to start.</p>
 
     <div class="code-box">
       <div class="label">Learner Code</div>
       <div class="code" id="learnerCode">{{ $learner->learner_code }}</div>
-      <div class="hint">Share this code with their teacher to join a class</div>
+      @php
+        // TB26-48293: TB, the school year, four random digits and a check digit. No personal information.
+        $codeParts = preg_match('/^TB(\d{2})-(\d{4})(\d)$/', $learner->learner_code, $cm) ? $cm : null;
+      @endphp
+      @if ($codeParts)
+        <div class="parts">
+          <div><b>TB</b>TaraBasa</div>
+          <div><b>{{ $cm[1] }}</b>School year 20{{ $cm[1] }}</div>
+          <div><b>{{ $cm[2] }}</b>Random</div>
+          <div><b>{{ $cm[3] }}</b>Check digit</div>
+        </div>
+      @endif
+      <div class="hint">{{ $learner->first_name }} types this code and the PIN to log in. A teacher adds {{ $learner->first_name }} to a class with the last five characters.</div>
       <button type="button" class="copy-btn" id="copyBtn">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="1.8"/></svg>
         <span id="copyBtnLabel">Copy code</span>

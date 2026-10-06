@@ -54,6 +54,7 @@
               <h3>{{ $activity->title }}</h3>
               <div class="rd-tags">
                 <span class="rd-tag {{ $isExtra ? 'green' : 'blue' }}">{{ $isExtra ? 'Extra Practice' : 'Assigned by your Teacher' }}</span>
+                @if (! empty($option['practice']))<span class="rd-tag green">{{ $option['practice'] }}</span>@endif
                 @if ($difficulty)<span class="rd-tag">{{ $difficulty }}</span>@endif
                 <span class="rd-tag lilac">About {{ $minutes }} {{ $minutes === 1 ? 'minute' : 'minutes' }}</span>
               </div>

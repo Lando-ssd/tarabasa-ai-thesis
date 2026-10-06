@@ -126,17 +126,31 @@ class PromotionController extends Controller
 
         abort_unless($class, 403, 'That class is not a valid claim target.');
 
-        $record->update([
-            'claimed_by_teacher_id' => $teacher->id,
-            'status' => 'Claimed',
-            'claimed_at' => now(),
-            'claimed_into_class_id' => $class->id,
-        ]);
+        // Two teachers pressing Claim for the same learner at the same moment: only one can win.
+        // The record is locked and its status read again inside the lock; the other is told it is gone.
+        $claimed = \Illuminate\Support\Facades\DB::transaction(function () use ($record, $teacher, $class) {
+            $locked = PromotionRecord::whereKey($record->id)->lockForUpdate()->first();
+            if ($locked === null || $locked->status !== 'Pending') {
+                return false;
+            }
 
-        $record->learner->update([
-            'class_id' => $class->id,
-            'grade_level' => $class->grade_level,
-        ]);
+            $locked->update([
+                'claimed_by_teacher_id' => $teacher->id,
+                'status' => 'Claimed',
+                'claimed_at' => now(),
+                'claimed_into_class_id' => $class->id,
+            ]);
+
+            $locked->learner->update([
+                'class_id' => $class->id,
+                'grade_level' => $class->grade_level,
+            ]);
+
+            return true;
+        });
+
+        abort_unless($claimed, 403, 'This promotion has already been claimed.');
+        $record->refresh();
 
         return redirect()
             ->route('teacher.promotions.index', ['tab' => 'claim'])

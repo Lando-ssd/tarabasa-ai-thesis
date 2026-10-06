@@ -18,6 +18,13 @@ class EnsureUserIsParent
             abort(403, 'Parent access required.');
         }
 
+        // A parent account always has its profile row (sign up makes both together). If one is ever
+        // missing, make it here instead of letting every parent screen crash on it.
+        if ($request->user()->parentProfile === null) {
+            \App\Models\ParentAccount::firstOrCreate(['user_id' => $request->user()->id]);
+            $request->user()->unsetRelation('parentProfile');
+        }
+
         return $next($request);
     }
 }

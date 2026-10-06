@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // The app never gives out links to the private disk, so its file route is switched off
+            // (one less thing reachable from outside).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

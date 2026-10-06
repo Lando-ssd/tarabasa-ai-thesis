@@ -18,6 +18,12 @@ class EnsureUserIsTeacher
             abort(403, 'Teacher access required.');
         }
 
+        // A teacher profile holds the school and employee number the Admin checks, so it cannot be
+        // invented here. An account without one is refused clearly instead of crashing every screen.
+        if ($request->user()->teacher === null) {
+            abort(403, 'Your teacher profile is incomplete. Please contact the TaraBasa admin.');
+        }
+
         return $next($request);
     }
 }

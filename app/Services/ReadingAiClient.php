@@ -6,6 +6,7 @@ use App\Models\Activity;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -116,7 +117,33 @@ class ReadingAiClient
             return ['unclear' => true];
         }
 
-        return ['unclear' => false, 'result' => $result];
+        // Words read correctly that the recognizer wrote differently (same sound, spelling variants,
+        // numbers, one word written as two) are put right here, once, for every screen.
+        return ['unclear' => false, 'result' => \App\Support\SpeechNormalizer::apply($result)];
+    }
+
+    /**
+     * Wakes the scoring service. It runs on free hosting that goes to sleep when nobody has used it
+     * for a while, and the first reading afterwards then waits up to a minute for it to start. A
+     * screen where a child is about to read or speak calls this as it opens, so the service is
+     * already awake by the time the recording arrives. It does not wait for the answer, and it is
+     * remembered for a few minutes so a busy classroom costs one request, not hundreds.
+     */
+    public function wake(): void
+    {
+        $url = config('services.reading_ai.url');
+
+        if (! $url || Cache::has('reading-api-awake')) {
+            return;
+        }
+
+        Cache::put('reading-api-awake', true, now()->addMinutes(4));
+
+        try {
+            Http::timeout(5)->get(rtrim($url, '/').'/health');
+        } catch (\Throwable) {
+            // Asleep and slow to answer is exactly the case this exists for; nothing to report.
+        }
     }
 
     /**

@@ -34,6 +34,21 @@
   <span class="roadmap-diff-chip {{ $started ? '' : 'locked' }}">{{ $row['difficultyWord'] ?? 'Not started yet' }}</span>
 </div>
 
+@if ($row['isUpNext'] && ! empty($why))
+  {{-- Why Tara picked this: said in plain words, with the curriculum competency it comes from, so a
+       parent or teacher can see the basis. The speaker reads it aloud for a child who cannot read it yet. --}}
+  <div class="why-card">
+    <button type="button" class="why-speak" data-speak="Why this one? {{ $why['text'] }}" aria-label="Hear why Tara picked this">
+      <svg viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-speaker-high"></use></svg>
+    </button>
+    <div class="why-copy">
+      <b>Why this one?</b>
+      <p>{{ $why['text'] }}</p>
+      <span class="why-code">{{ $why['code'] }}</span>
+    </div>
+  </div>
+@endif
+
 <div class="road-wrap">
   <svg class="roadmap-svg" viewBox="0 0 600 875" fill="none" role="img" aria-label="{{ $row['label'] }} road: {{ $started ? 'you are on step '.($current + 1).' of 8' : 'not started yet' }}">
     @foreach ($steps as $i => [$x, $y])

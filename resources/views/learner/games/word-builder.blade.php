@@ -2,6 +2,10 @@
   Word Builder: put scrambled letters in the right order to spell real words. Free play:
   no points, no streak, no level (see GameController). The look is shared with Letter
   Match in games/_game-look; only the tiles and slots are styled here.
+
+  Voice (games/_game-voice): a Listen button says the word first, and after spelling it the child
+  may say it out loud into the microphone (optional, with Skip). Tara never says "wrong" to speech.
+  A blocked or missing microphone just means the saying step is left out.
 --}}
 <!DOCTYPE html>
 <html lang="en">
@@ -12,7 +16,8 @@
 <title>Word Builder | TaraBasa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 @include('learner.games._game-look')
 <style>
   :root{ --leaf-green:#4caf7d; --petal-pink:#ff9ec4; }
@@ -82,8 +87,17 @@
     <div id="playArea">
       <div class="mascot">@include('learner.games._owl-mascot', ['id' => 'wbOwlMain'])</div>
       <h1 id="promptText">Spell the word!</h1>
+      <button type="button" class="listen-btn" id="listenBtn">@include('learner._badge-icon', ['icon' => 'speaker-high', 'class' => 'badge-svg']) Listen</button>
       <div class="slots" id="slots"></div>
       <div class="tiles" id="tiles"></div>
+    </div>
+
+    <div class="say-panel" id="sayPanel" hidden>
+      <div class="celebrate-mascot">@include('learner.games._owl-mascot', ['id' => 'wbOwlSay'])</div>
+      <p class="celebrate-text" id="sayWord">You spelled it!</p>
+      <p class="say-note" id="sayNote">Now say it out loud.</p>
+      <button type="button" class="mic-btn" id="micBtn" aria-label="Tap, then say the word">@include('learner._badge-icon', ['icon' => 'microphone', 'class' => 'badge-svg'])</button>
+      <div><button type="button" class="skip-btn" id="skipBtn">Skip</button></div>
     </div>
 
     <div class="celebrate" id="celebrate">
@@ -105,6 +119,7 @@
 </div>
 
 @include('learner.games._game-sounds')
+@include('learner.games._game-voice')
 @include('learner.games._game-finish', ['game' => 'word-builder'])
 
 <script>
@@ -123,6 +138,9 @@
   let wrongTapsThisAttempt = 0;
   let topLevelCleared = false;   // a whole round finished at level 3
   let hadPerfectRound = false;   // a round with no wrong taps
+  let userActive = false;        // the child has tapped something, so the browser lets the word be spoken on its own
+  let micOff = false;            // no microphone (blocked or missing): leave the saying step out
+  let sayTries = 0;
 
   const levelBadge = document.getElementById('levelBadge');
   const attemptLabel = document.getElementById('attemptLabel');
@@ -137,6 +155,12 @@
   const roundComplete = document.getElementById('roundComplete');
   const roundCompleteSummary = document.getElementById('roundCompleteSummary');
   const backLink = document.getElementById('backLink');
+  const listenBtn = document.getElementById('listenBtn');
+  const sayPanel = document.getElementById('sayPanel');
+  const sayWordEl = document.getElementById('sayWord');
+  const sayNote = document.getElementById('sayNote');
+  const micBtn = document.getElementById('micBtn');
+  const skipBtn = document.getElementById('skipBtn');
 
   const LEVEL_ICON = { 1: 'plant', 2: 'leaf', 3: 'tree' };
 
@@ -216,6 +240,15 @@
     return a;
   }
 
+  // Words to top a round up with: the ones that practise this child's own kind of mistake first
+  // (when there is one), then the rest of the level's list, each group in a fresh random order.
+  function fillFrom(data, picked) {
+    const free = (w) => picked.indexOf(w) === -1;
+    const favoured = shuffle((data.favoured || []).filter(free));
+    const rest = shuffle(data.fallback.filter((w) => free(w) && favoured.indexOf(w) === -1));
+    return favoured.concat(rest);
+  }
+
   // Real struggling words for the CURRENT level first, topped up from that
   // level's static list — re-run fresh every time a round starts (not just
   // once), so retrying a held level reshuffles instead of repeating the
@@ -225,7 +258,7 @@
     const data = LEVELS[level];
     let picked = shuffle(data.struggling).slice(0, 5);
     if (picked.length < 5) {
-      const filler = shuffle(data.fallback.filter((w) => picked.indexOf(w) === -1)).slice(0, 5 - picked.length);
+      const filler = fillFrom(data, picked).slice(0, 5 - picked.length);
       picked = picked.concat(filler);
     }
     return shuffle(picked);
@@ -270,6 +303,9 @@
     renderSlots();
     renderTiles();
     saveProgress();
+    // From the second word on the child has already tapped, so the browser allows the word to be
+    // said straight away. The first word waits for the Listen button.
+    if (userActive) window.tarabasaSayWord(word);
   }
 
   function renderSlots() {
@@ -300,6 +336,7 @@
     if (used[i]) return;
     const word = roundWords[wordIndex];
     const expected = word[spelled.length];
+    userActive = true;
 
     if (letters[i].toLowerCase() === expected) {
       used[i] = true;
@@ -317,7 +354,7 @@
         // of risking a frozen "fully spelled, nothing left to do" state
         // that the game has no code path to advance out of on a fresh
         // page load.
-        setTimeout(wordComplete, 350);
+        setTimeout(afterSpelled, 350);
       } else {
         saveProgress();
       }
@@ -339,9 +376,61 @@
     owl.classList.add('is-encouraging');
   }
 
-  function wordComplete() {
+  // After the last letter: ask the child to say the word out loud (optional), then celebrate.
+  function afterSpelled() {
+    const word = roundWords[wordIndex];
+    if (!window.tarabasaCanListen || micOff) { wordComplete(false); return; }
+
     playArea.style.display = 'none';
-    celebrateText.textContent = 'You spelled "' + roundWords[wordIndex].toUpperCase() + '"!';
+    sayWordEl.textContent = 'You spelled "' + word.toUpperCase() + '"!';
+    sayNote.textContent = 'Now say it out loud.';
+    sayTries = 0;
+    micBtn.disabled = false;
+    micBtn.classList.remove('listening');
+    sayPanel.hidden = false;
+    window.tarabasaSayWord(word);
+  }
+
+  function endSayStep(saidIt) {
+    sayPanel.hidden = true;
+    wordComplete(saidIt);
+  }
+
+  micBtn.addEventListener('click', () => {
+    userActive = true;
+    micBtn.disabled = true;
+    window.tbStopSpeaking();
+    window.tarabasaListenForWord(roundWords[wordIndex], {
+      onListening: () => { micBtn.classList.add('listening'); sayNote.textContent = 'Listening...'; },
+      onChecking: () => { micBtn.classList.remove('listening'); sayNote.textContent = 'Tara is checking...'; },
+      onDone: (status) => {
+        micBtn.classList.remove('listening');
+        if (status === 'unavailable') { micOff = true; endSayStep(false); return; }
+        if (status === 'heard') { endSayStep(true); return; }
+        // Not sure what was said: ask once more, then move on. There is no wrong answer here.
+        sayTries++;
+        if (sayTries >= 2) {
+          sayNote.textContent = 'Good try! On we go.';
+          setTimeout(() => endSayStep(false), 900);
+          return;
+        }
+        sayNote.textContent = 'Tara is not sure. Try once more!';
+        micBtn.disabled = false;
+      }
+    });
+  });
+
+  skipBtn.addEventListener('click', () => { window.tbStopSpeaking(); endSayStep(false); });
+
+  listenBtn.addEventListener('click', () => {
+    userActive = true;
+    window.tarabasaSayWord(roundWords[wordIndex]);
+  });
+  listenBtn.hidden = !window.tbCanSpeak;
+
+  function wordComplete(saidIt) {
+    playArea.style.display = 'none';
+    celebrateText.textContent = (saidIt ? 'You said "' : 'You spelled "') + roundWords[wordIndex].toUpperCase() + '"!';
     levelUpText.style.display = 'none';
     document.getElementById('wbOwlCelebrate').classList.add('is-celebrating');
     window.tarabasaPlaySfx('levelComplete', 0.5);

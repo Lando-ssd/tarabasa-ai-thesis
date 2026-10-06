@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TaraBasa AI — Link Existing Child</title>
+<title>Link Existing Child | TaraBasa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <style>
   :root{
     --sky-50:#eef6ff; --sky-100:#dcedff;
@@ -103,68 +104,52 @@
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.8"/><path d="M17 8l3 3-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
     <h1>Link Existing Child</h1>
-    <p class="sub">Enter the Learner Code to link an existing child to your account as a second guardian.</p>
+    <p class="sub">To be added as a second guardian, type the child's learner code and the child's 4 digit PIN. The child's other guardian can give you both. Everyone already linked is told when someone new is added.</p>
 
-    <form method="GET" action="{{ route('parent.children.link') }}">
+    <form method="POST" action="{{ route('parent.children.link.submit') }}" id="linkForm" novalidate>
+      @csrf
       <div class="field">
-        <label for="code">Learner Code</label>
-        <div class="code-row">
-          <input type="text" name="code" id="code" placeholder="TB-XXXXX" maxlength="8" value="{{ $searchedCode }}" class="@if($codeError) error @endif">
-          <button type="submit" class="find-btn">Find</button>
-        </div>
-        @if ($codeError)
-          <span class="error-msg">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            {{ $codeError }}
-          </span>
-        @endif
+        <label for="learner_code">Learner code</label>
+        <input type="text" name="learner_code" id="learner_code" placeholder="TB26-48293" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" value="{{ old('learner_code') }}" class="@error('learner_code') error @enderror" required>
       </div>
+
+      <div class="field">
+        <label for="pin">Child's PIN</label>
+        <input type="password" name="pin" id="pin" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="4 digits" autocomplete="off" style="letter-spacing:.3em" class="@error('pin') error @enderror" required>
+        @error('pin') <span class="error-msg">{{ $message }}</span> @enderror
+      </div>
+
+      @error('learner_code')
+        <span class="error-msg" style="margin:-6px 0 14px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          {{ $message }}
+        </span>
+      @enderror
+
+      <div class="field">
+        <label for="relationship">Your relationship to the child</label>
+        <select name="relationship" id="relationship">
+          @foreach (['Mother', 'Father', 'Guardian'] as $rel)
+            <option value="{{ $rel }}" @selected(old('relationship') === $rel)>{{ $rel }}</option>
+          @endforeach
+        </select>
+        @error('relationship') <span class="error-msg">{{ $message }}</span> @enderror
+      </div>
+
+      <div class="confirm-note">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0; margin-top:1px;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>You will be able to see this child's progress and alerts and unlock activities for them. The child's own account does not change.</span>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="linkSubmitBtn">Link as guardian</button>
     </form>
-
-    @if ($foundLearner)
-      <div class="found-card">
-        <div class="found-avatar">
-          @if ($foundLearner->avatar_photo_path)
-            <img src="{{ Storage::url($foundLearner->avatar_photo_path) }}" alt="{{ $foundLearner->first_name }}" class="avatar-photo-img">
-          @else
-            {{ $foundLearner->avatar_id }}
-          @endif
-        </div>
-        <div class="found-info">
-          <div class="fn">{{ $foundLearner->first_name }} {{ $foundLearner->last_name }}</div>
-          <div class="fm">{{ $foundLearner->grade_level }} · Currently linked to {{ $foundLearner->parents()->count() }} guardian{{ $foundLearner->parents()->count() === 1 ? '' : 's' }}</div>
-        </div>
-      </div>
-
-      <form method="POST" action="{{ route('parent.children.link.submit') }}" id="linkForm">
-        @csrf
-        <input type="hidden" name="learner_code" value="{{ $foundLearner->learner_code }}">
-
-        <div class="field">
-          <label for="relationship">Your relationship to {{ $foundLearner->first_name }}</label>
-          <select name="relationship" id="relationship">
-            <option value="Mother">Mother</option>
-            <option value="Father">Father</option>
-            <option value="Guardian">Guardian</option>
-          </select>
-          @error('relationship') <span class="error-msg">{{ $message }}</span> @enderror
-        </div>
-
-        <div class="confirm-note">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0; margin-top:1px;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          <span>You'll be added as a guardian for {{ $foundLearner->first_name }}. {{ $foundLearner->first_name }}'s account itself won't change — you'll just be able to see and manage it too.</span>
-        </div>
-
-        <button type="submit" class="btn btn-primary" id="linkSubmitBtn">Link as Guardian</button>
-      </form>
-    @endif
   </div>
 </div>
 <script>
   document.getElementById('linkForm')?.addEventListener('submit', function () {
     const btn = document.getElementById('linkSubmitBtn');
     btn.disabled = true;
-    btn.textContent = 'Linking…';
+    btn.textContent = 'Linking...';
   });
 </script>
 </body>

@@ -66,6 +66,18 @@
 
   <div class="stack" style="display:flex;flex-direction:column;gap:16px">
     <div class="card">
+      <p class="card-title">Your classes</p>
+      <p class="card-sub">The grades you handle. Creating a class offers only these. Classes you already have are not changed.</p>
+      <form method="POST" action="{{ route('profile.grades.update') }}" data-busy="Saving">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="form" value="profile">
+        @include('teacher._grades-field', ['selected' => $teacher->gradesAllowed(), 'idp' => 'prof'])
+        <button type="submit" class="btn small">Save grades</button>
+      </form>
+    </div>
+
+    <div class="card">
       <p class="card-title">School verification</p>
       <span class="pill {{ $isActive ? 'ok' : 'amber' }}">@if ($isActive)@include('learner._badge-icon', ['icon' => 'seal-check', 'class' => 'ico']) Verified @else Waiting for Admin approval @endif</span>
       <div class="locked-note">

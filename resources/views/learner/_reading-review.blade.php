@@ -38,6 +38,9 @@
   .rv-note.rv-mis{ background:var(--rv-danger-bg); color:var(--rv-danger); }
   .rv-note.rv-mis .rv-word{ border-bottom:3px dotted var(--rv-danger); }
   .rv-note.rv-rep{ background:var(--rv-blue-bg); color:var(--rv-blue); }
+  /* Not sure: heard too faintly to tell. Neither right nor wrong, so a quiet grey, never a warning colour. */
+  .rv-note.rv-unsure{ background:#edf1f4; color:#5b6b7a; }
+  .rv-note.rv-unsure .rv-word{ border-bottom:3px dashed #9aa8b6; }
 
   .rv-legend{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 22px; margin:16px 0 0; }
   .rv-key{ white-space:nowrap; font:600 18px/14px var(--font-game); color:#3f566d; }
@@ -48,6 +51,9 @@
   .rv-dot.rv-d-mis{ background:var(--rv-danger-bg); border:2px solid var(--rv-danger); }
   .rv-dot.rv-d-sub{ background:var(--rv-purple-bg); border:2px solid var(--rv-purple); }
   .rv-dot.rv-d-rep{ background:var(--rv-blue-bg); border:2px solid var(--rv-blue); }
+  .rv-dot.rv-d-unsure{ background:#f1f4f7; border:2px dashed #8a97a3; }
+  .rv-explain{ margin:16px 0 0; padding:12px 16px; border:2px dashed #cdd8e3; border-radius:16px; background:#f4f8fc; font:500 19px/1.4 var(--font-game); color:#3f566d; text-align:left; }
+  .rv-explain b{ font-weight:700; }
   .rv-extra{ margin:14px 0 0; font:500 20px/1.35 var(--font-game); color:#3f566d; text-align:left; }
 
   .rv-count{ display:flex; align-items:center; gap:10px; margin:0 0 14px; font:600 24px/1.2 var(--font-game); color:#131f2b; }
@@ -73,6 +79,8 @@
             <span class="rv-w rv-skip">{{ $word['text'] }}</span>
           @elseif ($word['status'] === 'repeated')
             <span class="rv-w rv-note rv-rep"><span class="rv-word">{{ $word['text'] }}</span><span class="rv-heard">said twice</span></span>
+          @elseif ($word['status'] === 'unsure')
+            <span class="rv-w rv-note rv-unsure"><span class="rv-word">{{ $word['text'] }}</span><span class="rv-heard">not sure</span></span>
           @elseif ($word['status'] === 'mispronounced')
             <span class="rv-w rv-note rv-mis"><span class="rv-word">{{ $word['text'] }}</span><span class="rv-heard">heard "{{ $word['heard'] }}"</span></span>
           @else
@@ -86,7 +94,13 @@
         <span class="rv-key"><span class="rv-dot rv-d-mis"></span><span class="rv-lab">Mispronounced</span></span>
         <span class="rv-key"><span class="rv-dot rv-d-sub"></span><span class="rv-lab">Said a different word</span></span>
         <span class="rv-key"><span class="rv-dot rv-d-rep"></span><span class="rv-lab">Repeated</span></span>
+        @if (collect($wordBreakdown)->contains('status', 'unsure'))
+          <span class="rv-key"><span class="rv-dot rv-d-unsure"></span><span class="rv-lab">Not sure</span></span>
+        @endif
       </div>
+      @if (collect($wordBreakdown)->contains('status', 'unsure'))
+        <p class="rv-explain"><b>Not sure words are not counted.</b> Sometimes Tara cannot tell what a small voice said. Those words are left out of your score and your word bank, so you are never marked down for something Tara did not hear well.</p>
+      @endif
       @if (! empty($extraWordsSaid))
         <p class="rv-extra">You also said "{{ implode('", "', $extraWordsSaid) }}", which is not in this passage. Great effort reading out loud!</p>
       @endif

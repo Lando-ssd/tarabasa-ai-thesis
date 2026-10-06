@@ -6,6 +6,8 @@ use App\Models\Activity;
 use App\Models\ActivityAssignment;
 use App\Models\Learner;
 use App\Models\SchoolClass;
+use App\Services\ActivitySuggestions;
+use App\Support\ReadingLevel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -40,6 +42,13 @@ class ClassController extends Controller
             $availableYears = $availableYears->push($currentSchoolYear)->sortByDesc(fn ($year) => $year)->values();
         }
 
+        // The dropdown always offers the next school year too, so a class can be set up ahead.
+        $nextStart = (int) explode('-', $currentSchoolYear)[0] + 1;
+        $nextYear = $nextStart.'-'.($nextStart + 1);
+        if (! $availableYears->contains($nextYear)) {
+            $availableYears = $availableYears->push($nextYear)->sortByDesc(fn ($year) => $year)->values();
+        }
+
         $selectedYear = $request->query('school_year', $currentSchoolYear);
         if (! $availableYears->contains($selectedYear)) {
             $selectedYear = $currentSchoolYear;
@@ -64,6 +73,26 @@ class ClassController extends Controller
             ->get();
 
         $classActivities = $this->activitiesByClass($teacher->id, $classes);
+
+        // What the class cards and windows show about reading levels: the level mix, the reading
+        // groups made automatically from each learner's latest level, the level-check flags and
+        // the suggested activities. All computed here, read only; nothing is assigned by it.
+        $suggestions = app(ActivitySuggestions::class);
+        $insights = [];
+        foreach ($classes as $c) {
+            $groups = ReadingLevel::groups($c->learners);
+            $hasLevels = collect($groups)->contains(fn ($g) => $g->isNotEmpty());
+            $insights[$c->id] = [
+                'mix' => ReadingLevel::mix($c->learners),
+                'groups' => $groups,
+                'flags' => ReadingLevel::levelChecks($c->learners),
+                'hasLevels' => $hasLevels,
+                'suggestions' => ($isPastYear || ! $hasLevels) ? [] : collect($groups)
+                    ->map(fn ($g, $key) => $g->isEmpty() ? collect() : $suggestions->forGroup($teacher, $c, $key, $g))
+                    ->all(),
+                'starter' => ($isPastYear || $hasLevels) ? collect() : $suggestions->starterForClass($teacher, $c),
+            ];
+        }
 
         // What the page's script needs: the find box's index, and the assign dropdown's choices
         // (an activity a class already has, directly or through its group, is not offered again).
@@ -91,10 +120,11 @@ class ClassController extends Controller
             'isCurrentYear' => $selectedYear === $currentSchoolYear,
             'isPastYear' => $isPastYear,
             'classActivities' => $classActivities,
+            'insights' => $insights,
             'approvedActivities' => $approved,
             'levelInfo' => config('activity_levels.info'),
             'openClassId' => (int) $request->query('open', 0),
-            'openTab' => in_array($request->query('tab'), ['learners', 'acts'], true) ? $request->query('tab') : 'learners',
+            'openTab' => in_array($request->query('tab'), ['learners', 'groups', 'acts'], true) ? $request->query('tab') : 'learners',
         ]);
     }
 
@@ -110,10 +140,14 @@ class ClassController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'grade_level' => ['required', Rule::in(['Grade 1', 'Grade 2', 'Grade 3'])],
+            // Only the grades the Teacher said they handle (Profile). Enforced here, so a forged
+            // request cannot open a class for another grade.
+            'grade_level' => ['required', Rule::in($teacher->gradesAllowed())],
             'section' => ['required', 'string', 'max:255'],
             'group_tag' => ['nullable', 'string', 'max:255'],
             'school_year' => ['required', 'string', 'max:20'],
+        ], [
+            'grade_level.in' => 'You handle '.implode(' and ', $teacher->gradesAllowed()).'. Change the grades you handle in Profile to open a class for another grade.',
         ]);
 
         $class = SchoolClass::create([
@@ -145,9 +179,13 @@ class ClassController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'grade_level' => ['required', Rule::in(['Grade 1', 'Grade 2', 'Grade 3'])],
+            // The class's own grade stays allowed even if the Teacher later narrowed the grades
+            // they handle, so an old class can still be renamed.
+            'grade_level' => ['required', Rule::in(array_unique([...$teacher->gradesAllowed(), $class->grade_level]))],
             'section' => ['required', 'string', 'max:255'],
             'group_tag' => ['nullable', 'string', 'max:255'],
+        ], [
+            'grade_level.in' => 'You handle '.implode(' and ', $teacher->gradesAllowed()).'. Change the grades you handle in Profile to use another grade.',
         ]);
 
         $class->update($validated);
@@ -177,23 +215,53 @@ class ClassController extends Controller
             'learner_code.required' => 'Type the last 5 characters of the Learner Code.',
         ]);
 
-        $tail = preg_replace('/^TB-?/', '', strtoupper(trim($validated['learner_code'])));
+        // The last 5 characters (the 4 digits and check digit of TB26-48293, or the 5 digits of an
+        // older TB-12345), or the whole code. See App\Support\LearnerCode.
+        // A wrong code is limited per teacher: the last 5 characters are only about ten thousand
+        // possibilities, and a teacher who tried them all would see every unenrolled child's name.
+        $joinKey = 'join-learner|teacher:'.$teacher->id;
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($joinKey, 10)) {
+            $minutes = (int) ceil(\Illuminate\Support\Facades\RateLimiter::availableIn($joinKey) / 60);
 
-        if (! preg_match('/^[A-Z0-9]{5}$/', $tail)) {
-            return back()->withErrors(['learner_code' => 'The Learner Code ends in 5 characters, like TB-12345.'])->withInput();
+            return back()->withErrors(['learner_code' => "Too many codes that did not match. Please wait {$minutes} ".($minutes === 1 ? 'minute' : 'minutes').' and try again.'])->withInput();
         }
 
-        $learner = Learner::where('learner_code', 'TB-'.$tail)->first();
+        $typed = trim($validated['learner_code']);
+        $tail = strtoupper(preg_replace('/^TB[0-9]{0,2}-?/i', '', preg_replace('/\s+/', '', $typed)));
+
+        if (! \App\Support\LearnerCode::looksLikeCode($typed) && ! preg_match('/^[A-Z0-9]{5}$/', $tail)) {
+            return back()->withErrors(['learner_code' => 'Type the last 5 characters of the Learner Code, like 48293.'])->withInput();
+        }
+
+        $matches = \App\Support\LearnerCode::matching(\App\Support\LearnerCode::looksLikeCode($typed) ? $typed : $tail);
+
+        if ($matches->count() > 1) {
+            return back()->withErrors(['learner_code' => 'More than one learner ends in those characters. Type the whole code, like TB26-48293.'])->withInput();
+        }
+
+        $learner = $matches->first();
 
         if (! $learner) {
+            \Illuminate\Support\Facades\RateLimiter::hit($joinKey, 900);
+
             return back()->withErrors(['learner_code' => 'No learner found with that code. Check it and try again.'])->withInput();
         }
 
         if ($learner->class_id !== null) {
+            \Illuminate\Support\Facades\RateLimiter::hit($joinKey, 900);
+
             return back()->withErrors(['learner_code' => 'This learner is already enrolled in a class.'])->withInput();
         }
 
         $learner->update(['class_id' => $class->id]);
+
+        // The child's guardians are told, so a child is never added to a class without them knowing.
+        \App\Models\Notification::notifyForLearner(
+            $learner,
+            \App\Models\Notification::TYPE_CLASS_JOINED,
+            "{$learner->first_name} was added to the class \"{$class->name}\" by {$request->user()->first_name} {$request->user()->last_name}".($teacher->school_name ? " ({$teacher->school_name})" : '').'.',
+            includeTeacher: false
+        );
 
         return $this->backToClass($class, 'learners')
             ->with('status', "{$learner->first_name} {$learner->last_name} added to \"{$class->name}\".");
@@ -212,10 +280,17 @@ class ClassController extends Controller
         abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
 
         $validated = $request->validate([
+            // A reading group of this class (made automatically from reading levels): only the
+            // learners who are in that group are given the activity. Left out, the whole class
+            // gets it, including learners who join later.
+            'reading_band' => ['nullable', Rule::in(array_keys(ReadingLevel::GROUPS))],
+            // Suggestions on the Activities page send the teacher back there instead of here.
+            'return' => ['nullable', Rule::in(['activities'])],
             'activity_id' => ['required', 'integer'],
         ], [
             'activity_id.required' => 'Choose an activity to assign.',
         ]);
+        $band = $validated['reading_band'] ?? null;
 
         $activity = Activity::where('created_by_teacher_id', $teacher->id)
             ->where('status', 'Approved')
@@ -225,17 +300,63 @@ class ClassController extends Controller
             throw ValidationException::withMessages(['activity_id' => 'Choose one of your approved activities.']);
         }
 
-        if (ActivityAssignment::where('activity_id', $activity->id)->where('class_id', $class->id)->exists()) {
-            throw ValidationException::withMessages(['activity_id' => 'That activity is already assigned to this class.']);
+        // Already given to the whole class covers every group too.
+        $already = ActivityAssignment::where('activity_id', $activity->id)->where('class_id', $class->id)
+            ->where(fn ($q) => $q->whereNull('reading_band')->when($band, fn ($x) => $x->orWhere('reading_band', $band)))
+            ->exists();
+
+        if ($already) {
+            throw ValidationException::withMessages(['activity_id' => $band
+                ? 'That activity is already given to this reading group.'
+                : 'That activity is already assigned to this class.']);
         }
 
         ActivityAssignment::create([
             'activity_id' => $activity->id,
             'class_id' => $class->id,
+            'reading_band' => $band,
             'assigned_by_teacher_id' => $teacher->id,
         ]);
 
-        return $this->backToClass($class, 'acts')->with('status', "\"{$activity->title}\" assigned to {$class->name}.");
+        $who = $band ? 'the '.strtolower(ReadingLevel::GROUPS[$band]['title']).' group in '.$class->name : $class->name;
+        $message = "\"{$activity->title}\" assigned to {$who}.";
+
+        if (($validated['return'] ?? null) === 'activities') {
+            return redirect()->route('teacher.activities.index', ['tab' => 'mine'])->with('status', $message);
+        }
+
+        return $this->backToClass($class, $band ? 'groups' : 'acts')->with('status', $message);
+    }
+
+    /**
+     * Move a learner to another of this Teacher's classes in the same school year. The system only
+     * suggests this (the level check on the roster); the Teacher decides. The learner's own grade
+     * is not touched: moving a strong reader to a higher class is a teaching decision, not a promotion.
+     */
+    public function moveLearner(Request $request, SchoolClass $class, Learner $learner): RedirectResponse
+    {
+        $teacher = $request->user()->teacher;
+
+        abort_if($class->teacher_id !== $teacher->id, 403);
+        abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
+        abort_if($learner->class_id !== $class->id, 404);
+
+        $validated = $request->validate(['to_class_id' => ['required', 'integer']], [
+            'to_class_id.required' => 'Choose the class to move to.',
+        ]);
+
+        $target = SchoolClass::where('teacher_id', $teacher->id)
+            ->where('school_year', $class->school_year)
+            ->where('id', '!=', $class->id)
+            ->find($validated['to_class_id']);
+
+        if (! $target) {
+            throw ValidationException::withMessages(['to_class_id' => 'Choose one of your other classes.']);
+        }
+
+        $learner->update(['class_id' => $target->id]);
+
+        return $this->backToClass($class, 'learners')->with('status', "{$learner->first_name} {$learner->last_name} moved to \"{$target->name}\".");
     }
 
     /** Back to the Classes screen with the same class window open again, on the right tab. */
@@ -270,12 +391,17 @@ class ClassController extends Controller
             $rows = collect();
 
             foreach ($assignments as $a) {
-                if ($a->class_id === $class->id) {
-                    $rows->put($a->activity_id, ['activity' => $a->activity, 'via' => 'class', 'tag' => null, 'on' => $a->assigned_at]);
-                } elseif ($class->group_tag && $a->group_tag === $class->group_tag && ! $rows->has($a->activity_id)) {
-                    $rows->put($a->activity_id, ['activity' => $a->activity, 'via' => 'group', 'tag' => $a->group_tag, 'on' => $a->assigned_at]);
+                if ($a->class_id === $class->id && $a->reading_band === null) {
+                    $rows->put($a->activity_id.'|', ['activity' => $a->activity, 'via' => 'class', 'tag' => null, 'band' => null, 'on' => $a->assigned_at]);
+                } elseif ($a->class_id === $class->id) {
+                    $rows->put($a->activity_id.'|'.$a->reading_band, ['activity' => $a->activity, 'via' => 'band', 'tag' => null, 'band' => $a->reading_band, 'on' => $a->assigned_at]);
+                } elseif ($class->group_tag && $a->group_tag === $class->group_tag && ! $rows->has($a->activity_id.'|')) {
+                    $rows->put($a->activity_id.'|', ['activity' => $a->activity, 'via' => 'group', 'tag' => $a->group_tag, 'band' => null, 'on' => $a->assigned_at]);
                 }
             }
+
+            // Given to the whole class (or through a focus group) already covers a reading group.
+            $rows = $rows->reject(fn ($row, $key) => $row['via'] === 'band' && $rows->has($row['activity']->id.'|'));
 
             $byClass[$class->id] = $rows->values();
         }

@@ -5,12 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * A finished Practice Games session. Only read by BadgeService (the Games badges);
+ * A finished Practice Games session (Word Builder, Letter Match or Balloon Pop). Only read by BadgeService (the Games badges);
  * see the migration for why this exists at all.
  */
 class GamePlay extends Model
 {
-    public const GAMES = ['word-builder', 'letter-match'];
+    public const GAMES = ['word-builder', 'letter-match', 'balloon-pop'];
 
     public $timestamps = false;
 

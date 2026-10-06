@@ -9,8 +9,18 @@ set -e
 # built with values present. $PORT is injected the same way by both
 # Railway and Render — the app must bind to whatever port it's given,
 # not a hardcoded one.
+# Loud, early warning in the server log if debug mode was left on: it shows internal details
+# (paths, settings) on an error page. It never stops the site, it only says so.
+case "$APP_DEBUG" in
+    true|1|TRUE|True) echo "WARNING: APP_DEBUG is on. Set APP_DEBUG=false in the host variables." ;;
+esac
+
 php artisan storage:link --force || true
 php artisan migrate --force
+
+# Keep the Admin account in step with ADMIN_EMAIL / ADMIN_PASSWORD (it does nothing when
+# ADMIN_PASSWORD is not set). `|| true`: a wrong value must never stop the site from starting.
+php artisan admin:sync || true
 
 # php artisan serve is single-threaded by default — it can only handle one
 # request at a time. That's fatal in production: while it's blocked on a

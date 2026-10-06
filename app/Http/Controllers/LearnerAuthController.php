@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Models\Learner;
 use App\Services\LearnerAuthService;
+use App\Services\LearnerReadingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -127,7 +129,7 @@ class LearnerAuthController extends Controller
         $options = $service->findActivityOptions($request->user('learner'));
 
         if ($options->count() === 1) {
-            return view('learner.activity-found', ['activity' => $options->first()['activity']]);
+            return $this->activityScreen($request->user('learner'), $options->first()['activity'], $request->query('stage'));
         }
 
         return view('learner.activity-picker', ['options' => $options]);
@@ -146,7 +148,35 @@ class LearnerAuthController extends Controller
 
         abort_unless($activity->isAccessibleByLearner($learner), 403);
 
-        return view('learner.activity-found', ['activity' => $activity, 'learner' => $learner]);
+        return $this->activityScreen($learner, $activity, $request->query('stage'));
+    }
+
+    /**
+     * The reading screen of a real activity, with its practice stage: Listen, Your turn (two free
+     * tries), then Read for real. A child who has already read this activity for real goes straight
+     * to reading; so does one whose practice tries are used up. ?stage=listen|try|real picks a stage.
+     */
+    private function activityScreen(Learner $learner, Activity $activity, ?string $stage): View
+    {
+        $left = app(LearnerReadingService::class)->practiceTriesLeft($learner, $activity);
+        $start = in_array($stage, ['listen', 'try', 'real'], true)
+            ? $stage
+            : ($activity->hasCompletedPracticeReadingFor($learner) ? 'real' : 'listen');
+
+        if ($start === 'try' && $left === 0) {
+            $start = 'real';
+        }
+
+        return view('learner.activity-found', [
+            'activity' => $activity,
+            'learner' => $learner,
+            'practice' => [
+                'tryUrl' => route('learner.activity.practice', $activity),
+                'realUrl' => route('learner.activity.record', $activity),
+                'triesLeft' => $left,
+                'startAt' => $start,
+            ],
+        ]);
     }
 
     /**

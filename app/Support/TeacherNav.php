@@ -8,7 +8,7 @@ use App\Models\SchoolClass;
 use App\Models\User;
 
 /**
- * The two counts the Teacher menu bar shows on every Teacher screen: unread alerts, and released
+ * The two counts the Teacher menu bar shows on every Teacher screen: open alerts, and released
  * learners this Teacher could claim right now. Worked out once, by the layout's view composer.
  */
 class TeacherNav
@@ -28,7 +28,9 @@ class TeacherNav
             : collect();
 
         return [
-            'unread' => Notification::where('recipient_user_id', $user->id)->where('is_read', false)->count(),
+            // The number on the Alerts item: alerts that are open (who needs support, who is ready to
+            // move up, who has gone quiet), not the routine reading summaries.
+            'unread' => $teacher ? app(\App\Services\TeacherAlerts::class)->openCount($teacher) : 0,
             // Same rule as the Promotions screen: a released learner is claimable only if this
             // Teacher has a current-year class for the grade they are moving up to.
             'claim' => $grades->isEmpty() ? 0 : PromotionRecord::where('status', 'Pending')->whereIn('next_grade', $grades)->count(),

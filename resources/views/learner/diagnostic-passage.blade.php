@@ -23,4 +23,7 @@
     'micLabel' => $present['micLabel'],
     'doneLabel' => $present['doneLabel'],
     'learner' => $learner,
+    // The very first item starts with a one word warm-up (a microphone check; nothing is scored).
+    'warmup' => $passageNumber === 1,
+    'warmupLetters' => $present['kind'] === 'letters',
 ])

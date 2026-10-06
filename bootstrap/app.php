@@ -19,6 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // absolute URL generation that checks $request->secure().
         $middleware->trustProxies(at: '*');
 
+        // A list in a page address is refused everywhere (it used to crash a few screens).
+        $middleware->append(\App\Http\Middleware\RejectNestedQuery::class);
+
+        // Frame protection, referrer and microphone policy, no-store for signed-in pages (see the class).
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'teacher' => \App\Http\Middleware\EnsureUserIsTeacher::class,

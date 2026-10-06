@@ -6,7 +6,8 @@
 <title>@yield('title', 'TaraBasa AI')</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <style>
   {{-- Same locked brand tokens as layouts/auth.blade.php (Register/etc keep
        that file untouched) — --blue-500/600/700 are the exact blue already
@@ -106,6 +107,7 @@
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
   @media (prefers-reduced-motion: reduce){ .screen{ animation:none; } }
 </style>
+@stack('styles')
 </head>
 <body>
 <div class="screen">

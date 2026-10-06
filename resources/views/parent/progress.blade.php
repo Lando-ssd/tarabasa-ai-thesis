@@ -55,6 +55,27 @@
   </div>
 
   <div class="two" style="margin-top:16px">
+    <div class="card level-card">
+      <div class="eyebrow">@include('learner._badge-icon', ['icon' => 'book', 'class' => 'ico']) Reading level</div>
+      <p class="headline" style="font-size:22px">{{ $level['label'] }}@if ($level['step']) <span class="hint">({{ $level['step'] }})</span>@endif</p>
+      <p class="hint" style="margin-top:6px">{{ $level['plain'] }}</p>
+      <p class="hint" style="margin-top:8px">Level names come from the Philippine Informal Reading Inventory (Phil-IRI) that schools use.</p>
+    </div>
+    <div class="card home-card">
+      <div class="eyebrow">@include('learner._badge-icon', ['icon' => 'house', 'class' => 'ico']) Practise at home</div>
+      @if ($home)
+        <p class="headline" style="font-size:20px">{{ $selectedLearner->first_name }} {{ $home['say'] }}.@if ($home['early']) <span class="hint">This is an early pattern and may change.</span>@endif</p>
+        @if (! empty($home['examples']))<p class="hint" style="margin-top:6px">For example: {{ implode(', ', array_slice($home['examples'], 0, 3)) }}.</p>@endif
+        <p style="margin:10px 0 0"><b>Try this:</b> {{ $home['tip'] }}</p>
+        @if (! empty($home['words']))<p class="hint" style="margin-top:8px">Words to practise together: {{ implode(', ', $home['words']) }}.</p>@endif
+        <p class="hint" style="margin-top:8px">Curriculum link: {{ $home['code'] }}, {{ \Illuminate\Support\Str::lower(rtrim($home['codeText'], '.')) }}.</p>
+      @else
+        <p class="hint">Nothing specific to practise yet. Once {{ $selectedLearner->first_name }} has a few readings, any pattern shows up here with one thing to try.</p>
+      @endif
+    </div>
+  </div>
+
+  <div class="two" style="margin-top:16px">
     <div class="card">@include('parent._goal-card', ['learner' => $selectedLearner])</div>
     <div class="card">@include('parent._badges-card')</div>
   </div>

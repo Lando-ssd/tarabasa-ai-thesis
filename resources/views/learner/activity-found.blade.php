@@ -20,6 +20,7 @@
     'passageText' => $activity->passage_text,
     'recordAction' => route('learner.activity.record', $activity),
     'quizQuestions' => $comprehensionQuestions,
+    'practice' => $practice ?? null,
     'backHref' => route('learner.dashboard'),
     'backLabel' => 'Back to My Dashboard',
     'learner' => $learner,

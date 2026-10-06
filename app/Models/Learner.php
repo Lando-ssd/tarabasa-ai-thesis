@@ -51,6 +51,10 @@ class Learner extends Model implements AuthenticatableContract
         'streak',
         'status',
         'reading_font_step',
+        'home_language',
+        'supports',
+        'interests',
+        'reading_rung',
     ];
 
     protected $hidden = [
@@ -71,6 +75,9 @@ class Learner extends Model implements AuthenticatableContract
             'subdomain_states' => 'array',
             // The Parent's own answers at sign up; see DiagnosticPlacement.
             'placement_answers' => 'array',
+            // What helps this child (the Parent ticks), and what they like reading about.
+            'supports' => 'array',
+            'interests' => 'array',
         ];
     }
 
@@ -434,15 +441,11 @@ class Learner extends Model implements AuthenticatableContract
     }
 
     /**
-     * "TB-48213" style — generated once at creation, retried on the rare
+     * "TB26-48213" style (see LearnerCode), generated once at creation, retried on the rare
      * collision (learner_code is UNIQUE in the schema).
      */
     public static function generateUniqueCode(): string
     {
-        do {
-            $code = 'TB-' . random_int(10000, 99999);
-        } while (self::where('learner_code', $code)->exists());
-
-        return $code;
+        return \App\Support\LearnerCode::generate();
     }
 }

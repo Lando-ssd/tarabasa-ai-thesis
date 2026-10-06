@@ -62,6 +62,22 @@ class ProfileController extends Controller
         return back()->with('status', 'Profile updated.');
     }
 
+    /**
+     * Which grades a Teacher handles (one grade, or several for a multigrade class). Class
+     * creation offers only these. Existing classes are never touched by a change here.
+     */
+    public function updateGrades(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->user_type === 'Teacher', 403);
+
+        $validated = $request->validate(\App\Models\Teacher::gradeRules());
+        $grades = \App\Models\Teacher::gradesFromValidated($validated);
+
+        $request->user()->teacher->update(['grades_handled' => $grades]);
+
+        return back()->with('status', 'Grades updated. New classes will offer: '.implode(', ', $grades).'.');
+    }
+
     public function updatePassword(Request $request): RedirectResponse
     {
         $user = $request->user();

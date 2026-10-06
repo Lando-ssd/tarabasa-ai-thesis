@@ -10,5 +10,7 @@
 --}}
 @php
     $badgeIconName = $icon ?? config('badge_icons.icons.'.($code ?? ''), config('badge_icons.fallback'));
+    // Only text counts as a class: some screens have a $class of their own (a school class record).
+    $svgClass = (isset($class) && is_string($class)) ? $class : 'badge-svg';
 @endphp
-<svg class="{{ $class ?? 'badge-svg' }}" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-{{ $badgeIconName }}"></use></svg>
+<svg class="{{ $svgClass }}" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-{{ $badgeIconName }}"></use></svg>

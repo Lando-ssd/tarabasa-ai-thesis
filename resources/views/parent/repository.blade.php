@@ -30,19 +30,25 @@
     <div class="flash error">{{ $errors->first() }}</div>
   @endif
 
-  @include('parent._child-chips', ['route' => 'parent.repository.index', 'extra' => ['filter' => $filter]])
+  @include('parent._child-chips', ['route' => 'parent.repository.index', 'extra' => array_filter(['filter' => $filter, 'best' => $onlyBest ? '1' : null])])
 
   <div class="filters" style="margin-top:18px">
     @foreach (['all' => 'All', 'free' => 'Free', 'paid' => 'Paid', 'unlocked' => 'Unlocked'] as $key => $label)
-      <a href="{{ route('parent.repository.index', ['learner_id' => $selectedLearner->id, 'filter' => $key]) }}" class="chip plain {{ $filter === $key ? 'on' : '' }}" @if ($filter === $key) aria-current="true" @endif>{{ $label }}</a>
+      <a href="{{ route('parent.repository.index', array_filter(['learner_id' => $selectedLearner->id, 'filter' => $key, 'best' => $onlyBest ? '1' : null])) }}" class="chip plain {{ $filter === $key ? 'on' : '' }}" @if ($filter === $key) aria-current="true" @endif>{{ $label }}</a>
     @endforeach
+    @if ($hasMatching && ($rows->isNotEmpty() || $onlyBest))
+      <a href="{{ route('parent.repository.index', array_filter(['learner_id' => $selectedLearner->id, 'filter' => $filter, 'best' => $onlyBest ? null : '1'])) }}" class="chip plain {{ $onlyBest ? 'on' : '' }}" @if ($onlyBest) aria-current="true" @endif>{{ $onlyBest ? 'Showing only matches for '.$selectedLearner->first_name : 'Only matches for '.$selectedLearner->first_name }}</a>
+    @endif
   </div>
+  @if ($hasMatching && ! $onlyBest && $rows->isNotEmpty())
+    <p class="note" style="margin:10px 0 0">Activities that suit {{ $selectedLearner->first_name }} are shown first.</p>
+  @endif
 
   @if ($rows->isEmpty())
     <div class="card empty-hero">
       <div class="empty-ico">@include('learner._badge-icon', ['icon' => 'storefront', 'class' => 'ico'])</div>
-      <h2>{{ $filter === 'all' ? 'No activities shared yet' : 'No activities match this filter' }}</h2>
-      <p>{{ $filter === 'all' ? 'Check back soon. Teachers share activities here as they create them.' : 'Try a different tab above.' }}</p>
+      <h2>{{ $filter === 'all' && ! $onlyBest ? 'No activities shared yet' : 'No activities match this filter' }}</h2>
+      <p>{{ $filter === 'all' && ! $onlyBest ? 'Check back soon. Teachers share activities here as they create them.' : 'Try a different tab above, or show all activities.' }}</p>
     </div>
   @else
     <div class="grid3">
@@ -50,6 +56,8 @@
         @php $listing = $row['listing']; $activity = $listing->activity; @endphp
         <div class="card item-card">
           <div class="tags">
+            @if ($row['level_match'])<span class="tag match">Matches {{ $selectedLearner->first_name }}'s level</span>@endif
+            @if ($row['pattern_match'])<span class="tag match">Practises {{ $row['pattern_match'] }}</span>@endif
             <span class="tag">{{ $activity->competency_label }}</span>
             <span class="tag diff">{{ $activity->difficulty_tier }}</span>
             @if ($row['is_unlocked'])

@@ -83,7 +83,7 @@ class LearnerApiController extends Controller
         $options = $service->findActivityOptions($request->user());
 
         return response()->json([
-            'options' => $options->map(fn (array $option) => $this->activitySummaryPayload($option['activity'], $option['source']))->values(),
+            'options' => $options->map(fn (array $option) => $this->activitySummaryPayload($option['activity'], $option['source'], $option['practice'] ?? null))->values(),
         ]);
     }
 
@@ -112,7 +112,7 @@ class LearnerApiController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    private function activitySummaryPayload(Activity $activity, string $source): array
+    private function activitySummaryPayload(Activity $activity, string $source, ?string $practice = null): array
     {
         return [
             'id' => $activity->id,
@@ -121,6 +121,8 @@ class LearnerApiController extends Controller
             'difficultyTier' => $activity->difficulty_tier,
             'source' => $source,
             'isRecommended' => str_contains($source, 'Picked just for you'),
+            // What this story practises for this child, when their own readings show a clear pattern.
+            'practice' => $practice,
         ];
     }
 

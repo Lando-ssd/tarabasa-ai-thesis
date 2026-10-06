@@ -51,6 +51,10 @@
      like an instant snap. */
   @keyframes recStepEnter{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
   .rec-step-enter{ animation:recStepEnter .25s ease; }
+  /* A quiet text button under a big one ("Read Again"), so a child is not offered two equal choices. */
+  .rec-linkbtn{ display:block; margin:14px auto 0; background:none; border:0; padding:8px 12px; cursor:pointer; font:inherit; font-size:17px; font-weight:600; color:#587086; text-decoration:underline; }
+  .rec-linkbtn:hover{ color:#1c7ed6; }
+  #slowNote{ display:none; margin-top:10px; }
   @media (prefers-reduced-motion: reduce){ .rec-step-enter{ animation:none; } }
 </style>
 <form method="POST" action="{{ $recordAction }}" enctype="multipart/form-data" id="recordForm">
@@ -59,7 +63,7 @@
 </form>
 
 <div class="step" id="stepUnsupported">
-  <div class="note-banner amber">Recording isn't supported in this browser yet — please try a newer browser like Chrome.</div>
+  <div class="note-banner amber">Recording is not supported in this browser yet. Please try a newer browser like Chrome.</div>
 </div>
 
 <div class="step" id="stepPermission">
@@ -89,6 +93,15 @@
 <div class="step" id="stepChecking">
   <div class="loading-spin"></div>
   <p class="mic-label">Checking...</p>
+  <p class="mic-label" id="slowNote" role="status" aria-live="polite"></p>
+</div>
+
+{{-- The connection was down (or too slow to answer) the moment the recording was about to be sent.
+     The recording is still on this screen, so "Send Again" needs no new reading. --}}
+<div class="step" id="stepOffline">
+  <div class="note-banner amber">We could not reach the internet. Your reading is still here. Check the connection, then tap Send Again.</div>
+  <button type="button" class="big-btn" id="sendAgainBtn">Send Again</button>
+  <button type="button" class="rec-linkbtn" id="readAgainBtn">Read it again instead</button>
 </div>
 
 <div class="step" id="stepSilent">
@@ -109,7 +122,17 @@
     // accidental instant tap) — not enough real time to fairly judge.
     const MIN_SECONDS_FOR_SILENCE_CHECK = 1;
 
+    // The recording is sent in one go, so first make sure our own server can be reached (a tiny
+    // request). If not, the child keeps the recording and can send it again when the internet is back,
+    // instead of losing it to the browser's own error page. Any answer from the server counts, only
+    // "no answer" or a server error does not.
+    const PING_URL = @json(url('/up'));
+    const PING_TIMEOUT_MS = 8000;
+    const SLOW_NOTE_AFTER_MS = 20000;
+    const VERY_SLOW_NOTE_AFTER_MS = 60000;
+
     let mediaRecorder, chunks = [], stream, timerInterval, seconds = 0;
+    let submitting = false, slowTimers = [];
     let audioCtx, analyser, levelCheckInterval, hasDetectedSound = false;
 
     const steps = {
@@ -119,10 +142,14 @@
       recording: document.getElementById('stepRecording'),
       checking: document.getElementById('stepChecking'),
       silent: document.getElementById('stepSilent'),
+      offline: document.getElementById('stepOffline'),
     };
 
     function showStep(name) {
       Object.values(steps).forEach(el => { el.classList.remove('active', 'rec-step-enter'); el.style.display = 'none'; });
+      // The comprehension quiz belongs to the page, not to this widget, but it must go once we move on.
+      const quiz = document.getElementById('stepComprehensionQuiz');
+      if (quiz) { quiz.style.display = 'none'; quiz.classList.remove('active'); }
       const target = steps[name];
       target.style.display = 'block';
       // Force a reflow so the animation class retriggers every time,
@@ -143,7 +170,7 @@
       // user-gesture chain) — iOS Safari refuses microphone access
       // otherwise.
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       } catch (err) {
         showStep('permission');
         return;
@@ -261,9 +288,70 @@
       }
     }
 
+    function connectionLooksOk() {
+      if (navigator.onLine === false) return Promise.resolve(false);
+      if (!('fetch' in window)) return Promise.resolve(true);
+
+      const ctrl = ('AbortController' in window) ? new AbortController() : null;
+      const timer = setTimeout(() => { if (ctrl) ctrl.abort(); }, PING_TIMEOUT_MS);
+
+      return fetch(PING_URL, { cache: 'no-store', credentials: 'same-origin', signal: ctrl ? ctrl.signal : undefined })
+        .then(r => { clearTimeout(timer); return r.status < 500; })
+        .catch(() => { clearTimeout(timer); return false; });
+    }
+
+    function clearSlowNotes() {
+      slowTimers.forEach(clearTimeout);
+      slowTimers = [];
+      const note = document.getElementById('slowNote');
+      note.style.display = 'none';
+      note.textContent = '';
+    }
+
+    // Once sent, the page can only wait. Say so plainly when it takes a while, so a child (or a
+    // grown up) does not think it froze and close the screen.
+    function startSlowNotes() {
+      const note = document.getElementById('slowNote');
+      slowTimers.push(setTimeout(() => {
+        note.textContent = 'Still working. The internet may be slow. Please keep this screen open.';
+        note.style.display = 'block';
+      }, SLOW_NOTE_AFTER_MS));
+      slowTimers.push(setTimeout(() => {
+        note.textContent = 'This is taking a long time. Please keep waiting. If it does not finish, ask a grown up to check the internet.';
+        note.style.display = 'block';
+      }, VERY_SLOW_NOTE_AFTER_MS));
+    }
+
     window.tarabasaSubmitRecording = function () {
+      if (submitting) return;
+      clearSlowNotes();
       showStep('checking');
-      document.getElementById('recordForm').submit();
+
+      connectionLooksOk().then(ok => {
+        if (!ok) { showStep('offline'); return; }
+        submitting = true;
+        startSlowNotes();
+        document.getElementById('recordForm').submit();
+      });
     };
+
+    document.getElementById('sendAgainBtn').addEventListener('click', () => window.tarabasaSubmitRecording());
+    document.getElementById('readAgainBtn').addEventListener('click', () => window.location.reload());
+
+    window.addEventListener('offline', () => {
+      if (!submitting) return;
+      const note = document.getElementById('slowNote');
+      note.textContent = 'The internet dropped. Please wait for it to come back.';
+      note.style.display = 'block';
+    });
+
+    // Coming back with the Back button can restore this page as it was left, stuck on "Checking...".
+    window.addEventListener('pageshow', e => {
+      if (e.persisted) {
+        submitting = false;
+        clearSlowNotes();
+        showStep('ready');
+      }
+    });
   })();
 </script>

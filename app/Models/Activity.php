@@ -17,6 +17,8 @@ class Activity extends Model
         'competency_label',
         'activity_type',
         'purpose',
+        'curriculum_code',
+        'check_rung',
         'difficulty_tier',
         'ai_difficulty_tier',
         'variant_label',
@@ -86,6 +88,29 @@ class Activity extends Model
         $tier = strtolower($tier ?? $this->difficulty_tier);
 
         return config("activity_levels.bands.{$this->activity_type}.{$this->gradeNumber()}.{$tier}");
+    }
+
+    /**
+     * One line saying why a draft sits in the level the AI chose: its length against the usual
+     * range for the grade, activity type and level. Nothing here approves anything; the Teacher
+     * decides the level.
+     */
+    public function whyLevel(): string
+    {
+        $tier = $this->ai_difficulty_tier ?? $this->difficulty_tier;
+        $band = $this->levelBand($tier);
+
+        if ($band && $this->word_count) {
+            $range = "the usual {$this->grade_level} {$tier} range ({$band[0]} to {$band[1]})";
+
+            return match (true) {
+                $this->word_count > $band[1] => "{$this->word_count} words is above {$range}.",
+                $this->word_count < $band[0] => "{$this->word_count} words is below {$range}.",
+                default => "{$this->word_count} words is inside {$range}.",
+            };
+        }
+
+        return $this->reading_features[0] ?? 'The AI chose this level from how familiar the words are and how long the text is.';
     }
 
     /** Whether the text's length sits inside the usual range for the level it is in (null: unknown). */
@@ -208,21 +233,8 @@ class Activity extends Model
 
     public function isAssignedToLearner(Learner $learner): bool
     {
-        return $this->assignments()
-            ->where(function ($query) use ($learner) {
-                $query->where('learner_id', $learner->id);
-
-                if ($learner->class_id !== null) {
-                    $query->orWhere('class_id', $learner->class_id);
-                }
-
-                if ($learner->schoolClass?->group_tag) {
-                    $query->orWhere(function ($groupQuery) use ($learner) {
-                        $groupQuery->where('group_tag', $learner->schoolClass->group_tag)
-                            ->where('assigned_by_teacher_id', $learner->schoolClass->teacher_id);
-                    });
-                }
-            })
+        return ActivityAssignment::reachingLearner($learner)
+            ->where('activity_id', $this->id)
             ->exists();
     }
 

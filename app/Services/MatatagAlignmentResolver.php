@@ -64,13 +64,16 @@ class MatatagAlignmentResolver
         $competency = (string) $activity->competency;
         $subdomain = $this->subdomainFor($activity) ?? 'Comprehending and Analyzing Text';
 
-        // The first-login letters rung is not a generated activity, so there
-        // is nothing to look up: it is the curriculum's own letter competency.
-        if ($activity->isLetterCheck()) {
+        // The first-login check's items are curated, not generated, so there is
+        // nothing to look up: each one carries the curriculum code it practises
+        // (see config/diagnostic.php). The letters rows made before that column
+        // existed fall back to the rung's own code.
+        $own = $this->ownCode($activity);
+        if ($own !== null) {
             return [
                 'grade' => $grade,
                 'subdomain' => $subdomain,
-                'competency_code' => config('diagnostic.ladder.letters.competency_code'),
+                'competency_code' => $own,
             ];
         }
 
@@ -88,6 +91,43 @@ class MatatagAlignmentResolver
             'subdomain' => $subdomain,
             'competency_code' => $match['code'] ?? 'UNMAPPED',
         ];
+    }
+
+    /**
+     * The competency code to SHOW next to an activity (a teacher screen, not a reading), or null.
+     * Reads only what is already cached; it never calls the generator, so a page that lists many
+     * activities can never wait on a service that is asleep.
+     */
+    public function cachedCodeFor(Activity $activity): ?string
+    {
+        $own = $this->ownCode($activity);
+        if ($own !== null) {
+            return $own;
+        }
+
+        $records = Cache::get("matatag_records:{$this->gradeOf($activity)}:{$activity->competency}");
+
+        if (! is_array($records) || $records === []) {
+            return null;
+        }
+
+        $subdomain = $this->subdomainFor($activity);
+
+        return (collect($records)->firstWhere('subdomain', $subdomain) ?? $records[0])['code'] ?? null;
+    }
+
+    /** The code an activity carries itself (a curated check item), or null for a generated one. */
+    private function ownCode(Activity $activity): ?string
+    {
+        if ($activity->curriculum_code) {
+            return $activity->curriculum_code;
+        }
+
+        if ($activity->isLetterCheck()) {
+            return array_key_first(config('diagnostic.ladder.letters.codes'));
+        }
+
+        return null;
     }
 
     /**

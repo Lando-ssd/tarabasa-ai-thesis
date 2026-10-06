@@ -15,10 +15,11 @@
       <form id="new-class-form" method="POST" action="{{ route('teacher.classes.store') }}" data-busy="Creating">
         @csrf
         <input type="hidden" name="form" value="new-class">
+        <div class="help">@include('learner._badge-icon', ['icon' => 'info', 'class' => 'ico'])<div><b>Class name</b> is what your school calls this class, for example <i>Kamunggay</i>. <b>Section</b> is the official section. Learners and parents see the name.</div></div>
         <div class="grid2">
           <div class="field"><label for="nc-name">Class name</label><input type="text" id="nc-name" name="name" data-af placeholder="e.g. Sampaguita" value="{{ $reopen ? old('name') : '' }}" required>@if ($reopen) @error('name')<span class="field-error">{{ $message }}</span>@enderror @endif</div>
           <div class="field"><label for="nc-section">Section</label><input type="text" id="nc-section" name="section" placeholder="e.g. Section A" value="{{ $reopen ? old('section') : '' }}" required>@if ($reopen) @error('section')<span class="field-error">{{ $message }}</span>@enderror @endif</div>
-          <div class="field"><label for="nc-grade">Grade level</label><select id="nc-grade" name="grade_level" required>@foreach (['Grade 1', 'Grade 2', 'Grade 3'] as $g)<option @selected(old('grade_level') === $g)>{{ $g }}</option>@endforeach</select></div>
+          <div class="field"><label for="nc-grade">Grade level</label><select id="nc-grade" name="grade_level" required>@foreach (auth()->user()->teacher->gradesAllowed() as $g)<option @selected(old('grade_level') === $g)>{{ $g }}</option>@endforeach</select><span class="fhint">Only the grades you handle: {{ implode(' and ', auth()->user()->teacher->gradesAllowed()) }}. Change this in Profile.</span></div>
           <div class="field"><label for="nc-year">School year</label>
             <select id="nc-year" name="school_year" required>
               <option value="{{ $currentYear }}" @selected(old('school_year', $currentYear) === $currentYear)>SY {{ $currentYear }} (current)</option>
@@ -26,7 +27,7 @@
             </select>
           </div>
         </div>
-        <div class="field"><label for="nc-tag">Group tag <span class="opt">optional</span></label><input type="text" id="nc-tag" name="group_tag" placeholder="e.g. needs-phonics-support" value="{{ $reopen ? old('group_tag') : '' }}"><span class="fhint">Use the same tag on classes you want to assign to or track together.</span></div>
+        <div class="field"><label for="nc-tag">Focus group <span class="opt">optional</span></label><input type="text" id="nc-tag" name="group_tag" placeholder="e.g. Basic Phonics" value="{{ $reopen ? old('group_tag') : '' }}"><span class="fhint">A label for what this class is working on. Give two classes the same focus to assign one activity to both at once. <b>It does not sort learners.</b> Reading groups inside the class are made automatically from reading levels.</span></div>
       </form>
     </div>
     <footer class="win-foot">

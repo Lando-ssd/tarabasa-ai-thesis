@@ -1,7 +1,10 @@
 {{--
-  Teacher Analytics (Actor Prompt Step 10): one learner at a time, or one group. Teacher-assigned
-  and parent-started readings are always two separate numbers, never combined. A one-time
-  placement test is not practice, so diagnostic sessions are left out everywhere here.
+  Teacher Analytics (Actor Prompt Step 10). It opens on an OVERVIEW of the whole class (how many
+  learners, the average score, readings this week, who needs support, the Phil-IRI reading levels,
+  the words missed most, and what each assignment produced), with a class report to download.
+  By learner and By group are one tap away. Teacher-assigned and parent-started readings are always
+  two separate numbers, never combined. A one-time placement test is not practice, so diagnostic
+  sessions are left out everywhere here.
 
   Fits one laptop window: the learner card, three summary cards, the trend and the four newest
   sessions. "Change learner" opens a search window (class chips, then type), "See all" opens the
@@ -23,20 +26,130 @@
 <div class="head">
   <div>
     <h1>Analytics</h1>
-    <p class="sub">How your learners are reading, one learner or one group at a time.</p>
+    <p class="sub">{{ $mode === 'overview' ? 'How your classes are reading. Open a learner or a group for detail.' : 'How your learners are reading, one learner or one group at a time.' }}</p>
   </div>
   <div class="chips" role="group" aria-label="View">
+    <a class="chip plain" href="{{ route('teacher.analytics.index') }}" aria-pressed="{{ $mode === 'overview' ? 'true' : 'false' }}">Overview</a>
     <a class="chip plain" href="{{ route('teacher.analytics.index', ['mode' => 'learner']) }}" aria-pressed="{{ $mode === 'learner' ? 'true' : 'false' }}">By learner</a>
     <a class="chip plain" href="{{ route('teacher.analytics.index', ['mode' => 'group']) }}" aria-pressed="{{ $mode === 'group' ? 'true' : 'false' }}">By group</a>
   </div>
 </div>
 
-@if ($noLearners)
+@if ($noLearners && $mode !== 'overview')
   <div class="card empty-hero">
     <div class="empty-ico">@include('learner._badge-icon', ['icon' => 'chart-line-up', 'class' => 'ico'])</div>
     <h2>No learners yet</h2>
     <p>Once you have joined learners into your classes, their reading progress shows up here.</p>
   </div>
+
+@elseif ($mode === 'overview')
+  @php
+      $o = $overview;
+      $periodWord = ['week' => 'this week', 'month' => 'this month', 'all' => 'in the last 6 months'][$period];
+      $total = max(1, $o['learners']->count());
+      $bandRows = [['non', 'Non-reader', 'd0'], ['frustration', 'Frustration', 'd1'], ['instructional', 'Instructional', 'd2'], ['independent', 'Independent', 'd3']];
+      $reportQuery = ['class' => $classChoice ?? 'all', 'period' => $period];
+  @endphp
+
+  <form method="GET" action="{{ route('teacher.analytics.index') }}" class="filters" id="overviewFilters">
+    <label class="sr" for="ovClass">Class</label>
+    <select id="ovClass" name="class" class="mini wide" onchange="this.form.submit()">
+      <option value="all" @selected($classChoice === null)>All my classes</option>
+      @foreach ($pickerClasses as $pc)
+        <option value="{{ $pc->id }}" @selected($classChoice === $pc->id)>{{ $pc->name }}{{ $pc->school_year !== \App\Models\SchoolClass::currentSchoolYear() ? ' ('.$pc->school_year.')' : '' }}</option>
+      @endforeach
+    </select>
+    <label class="sr" for="ovPeriod">Period</label>
+    <select id="ovPeriod" name="period" class="mini wide" onchange="this.form.submit()">
+      @foreach ($periods as $key => $label)
+        <option value="{{ $key }}" @selected($period === $key)>{{ $label }}</option>
+      @endforeach
+    </select>
+    <noscript><button type="submit" class="btn small ghost">Show</button></noscript>
+    <a class="btn small ghost" href="{{ route('teacher.analytics.report', $reportQuery) }}" style="margin-left:auto">@include('learner._badge-icon', ['icon' => 'download-simple', 'class' => 'ico']) Download class report</a>
+  </form>
+
+  @if ($o['learners']->isEmpty())
+    <div class="card empty-hero">
+      <div class="empty-ico">@include('learner._badge-icon', ['icon' => 'chart-line-up', 'class' => 'ico'])</div>
+      <h2>No learners in {{ $classChoice ? 'this class' : 'your classes' }} yet</h2>
+      <p>Once learners are in a class, how the class reads shows up here.</p>
+    </div>
+  @else
+    <div class="kpis">
+      <div class="card kpi"><span class="label">Learners</span><div class="v">{{ $o['learners']->count() }}</div><div class="d">across {{ $o['classes']->count() }} {{ $o['classes']->count() === 1 ? 'class' : 'classes' }}</div></div>
+      <div class="card kpi">
+        <span class="label">Average score</span>
+        <div class="v">{{ $o['avg'] === null ? 'No readings' : $o['avg'].'%' }}</div>
+        @if ($o['delta'] !== null)
+          <div class="d {{ $o['delta'] > 0 ? 'up' : ($o['delta'] < 0 ? 'warn' : '') }}">{{ $o['delta'] === 0 ? 'same as '.($period === 'week' ? 'last week' : 'last month') : ($o['delta'] > 0 ? 'up ' : 'down ').abs($o['delta']).' '.(abs($o['delta']) === 1 ? 'point' : 'points').' on '.($period === 'week' ? 'last week' : 'last month') }}</div>
+        @else
+          <div class="d">{{ $o['avg'] === null ? 'Nothing read '.$periodWord : 'practice readings only' }}</div>
+        @endif
+      </div>
+      <div class="card kpi"><span class="label">Readings {{ $periodWord }}</span><div class="v">{{ $o['readings'] }}</div><div class="d">{{ $o['bySource']['Teacher'] }} assigned · {{ $o['bySource']['Parent'] }} started by parents</div></div>
+      <div class="card kpi"><span class="label">Need support</span><div class="v">{{ $o['needSupport'] }}</div><div class="d {{ $o['needSupport'] > 0 ? 'warn' : '' }}"><a href="{{ route('teacher.notifications.index', ['filter' => 'support']) }}" style="color:inherit">see Alerts</a></div></div>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <p class="card-title">Reading levels</p>
+        <p class="card-sub">Where all {{ $o['learners']->count() }} {{ $o['learners']->count() === 1 ? 'learner is' : 'learners are' }} now (Phil-IRI levels).</p>
+        @if ($o['checked'] === 0)
+          <p class="note">Nobody has finished the first reading check yet, so there are no levels to show.</p>
+        @else
+          <div class="dist" role="img" aria-label="Reading levels: {{ collect($bandRows)->map(fn ($r) => $o['bands'][$r[0]].' '.$r[1])->implode(', ') }}">
+            @foreach ($bandRows as [$key, $label, $cls])
+              @if ($o['bands'][$key] > 0)<span class="{{ $cls }}" style="width:{{ $o['bands'][$key] / $o['checked'] * 100 }}%">{{ $o['bands'][$key] }}</span>@endif
+            @endforeach
+          </div>
+          <div class="mixkey">
+            @foreach ($bandRows as [$key, $label, $cls])<span class="k{{ substr($cls, 1) }}">{{ $o['bands'][$key] }} {{ $label }}</span>@endforeach
+          </div>
+          @if ($o['bands']['unchecked'] > 0)<p class="note" style="margin:8px 0 0">{{ $o['bands']['unchecked'] }} {{ $o['bands']['unchecked'] === 1 ? 'learner has' : 'learners have' }} not finished the first reading check.</p>@endif
+        @endif
+      </div>
+      <div class="card">
+        <p class="card-title">Words missed most {{ $periodWord }}</p>
+        <p class="card-sub">From the learners' own readings.</p>
+        @if ($o['missedWords']->isEmpty())
+          <p class="note">No missed words {{ $periodWord }}.</p>
+        @else
+          <div class="words">@foreach ($o['missedWords'] as $word => $n)<span>{{ $word }}<small>{{ $n }}</small></span>@endforeach</div>
+        @endif
+        @if ($o['patterns']->isNotEmpty())
+          <p class="card-sub" style="margin:14px 0 4px">What kind of mistakes</p>
+          <ul class="plain-list">
+            @foreach ($o['patterns'] as $p)
+              <li><b>{{ $p['label'] }}</b> <span class="note">for {{ $p['learners'] }} {{ $p['learners'] === 1 ? 'learner' : 'learners' }}</span></li>
+            @endforeach
+          </ul>
+        @endif
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <p class="card-title">Assigned activities</p>
+      <p class="card-sub">What each assignment produced. This is where reports show up.</p>
+      @if ($o['assignments']->isEmpty())
+        <p class="note">Nothing has been assigned to {{ $classChoice ? 'this class' : 'your classes' }} yet. Assign an activity from Activities or from a class.</p>
+      @else
+        <table class="rep">
+          <thead><tr><th>Activity</th><th>For</th><th>Done</th><th>Average</th></tr></thead>
+          <tbody>
+            @foreach ($o['assignments'] as $row)
+              <tr>
+                <td><b>{{ $row['activity']->title }}</b></td>
+                <td>{{ $row['for'] }}</td>
+                <td>{{ $row['done'] }} of {{ $row['total'] }}</td>
+                <td>@if ($row['avg'] === null)<span class="note">no readings yet</span>@else<span class="bar1"><i style="width:{{ $row['avg'] }}%"></i></span>{{ $row['avg'] }}%@endif</td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      @endif
+    </div>
+  @endif
 
 @elseif ($mode === 'learner')
   @if ($learners->isEmpty())
@@ -83,6 +196,18 @@
           <div class="skill-chips">@foreach ($focus as $item)<span class="skill {{ $item['isUpNext'] ? 'on' : '' }}">{{ $item['label'] }}</span>@endforeach</div>
         @endif
       </div>
+    </div>
+
+    @php $pat = $learnerStats['patterns']; @endphp
+    <div class="card" style="margin-top:14px; padding:14px 20px">
+      <div class="eyebrow">@include('learner._badge-icon', ['icon' => 'lightbulb', 'class' => 'ico']) How {{ $l->first_name }} misses words</div>
+      @if (empty($pat['top']))
+        <p class="note" style="margin:6px 0 0">{{ $pat['readings'] < \App\Support\ErrorPatterns::MIN_READINGS ? 'A pattern shows after about '.\App\Support\ErrorPatterns::MIN_READINGS.' readings ('.$pat['readings'].' so far).' : 'No clear pattern yet: the missed words are of different kinds.' }}</p>
+      @else
+        @php $top = $pat['top'][0]; $cat = \App\Support\ErrorPatterns::CATEGORIES[$top['key']]; @endphp
+        <p class="headline" style="margin:6px 0 4px">{{ $l->first_name }} {{ $cat['teacher'] }}.@if ($pat['early']) <span class="note">(Early: based on {{ $pat['readings'] }} readings.)</span>@endif</p>
+        <p class="note" style="margin:0">{{ $top['share'] }}% of missed words{{ $top['examples'] ? ', for example '.implode(', ', array_slice($top['examples'], 0, 3)) : '' }}. Try this: {{ lcfirst($cat['tip']) }} <span class="code">({{ $cat['code'] }}, {{ lcfirst($cat['codeText']) }})</span></p>
+      @endif
     </div>
 
     @if ($history->isEmpty())

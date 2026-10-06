@@ -3,6 +3,13 @@
 .env
 .env.backup
 .env.production
+.env.render
+
+# Credential files must never be committed (a Google OAuth client secret was once attached to a chat).
+client_secret*.json
+*credentials*.json
+service-account*.json
+*.pem
 .phpactor.json
 .phpunit.result.cache
 /.codex

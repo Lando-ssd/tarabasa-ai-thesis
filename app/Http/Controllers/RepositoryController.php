@@ -6,6 +6,8 @@ use App\Models\Learner;
 use App\Models\OpenRepositoryListing;
 use App\Models\RepositoryRating;
 use App\Models\RepositoryUnlock;
+use App\Support\ErrorPatterns;
+use App\Support\ReadingLevel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -37,23 +39,51 @@ class RepositoryController extends Controller
             ? $request->query('filter')
             : 'all';
 
+        // Only matches for this child (their level, their pattern), when asked for.
+        $onlyBest = $request->query('best') === '1';
+
+        // What suits this child: the activity level for their reading level (Phil-IRI, see ReadingLevel),
+        // and the kind of mistake they keep making (ErrorPatterns). Both are said plainly on the card.
+        $wantedTier = null;
+        $pattern = null;
+        $missed = [];
+        if ($selectedLearner) {
+            $band = ReadingLevel::forAdult($selectedLearner)['band'];
+            $wantedTier = $band === 'unchecked' ? null : ReadingLevel::tierForBand($band);
+            $profile = ErrorPatterns::forLearner($selectedLearner);
+            $pattern = ErrorPatterns::mainPattern($profile);
+            $missed = $profile['missedWords'];
+        }
+
         $listings = OpenRepositoryListing::with(['activity', 'teacher.user', 'ratings'])
             ->whereHas('activity', fn ($query) => $query->where('status', 'Approved'))
             ->get()
-            ->map(function (OpenRepositoryListing $listing) use ($selectedLearner, $parent) {
+            ->map(function (OpenRepositoryListing $listing) use ($selectedLearner, $parent, $wantedTier, $pattern, $missed) {
                 $isUnlocked = $selectedLearner && $listing->isUnlockedFor($selectedLearner->id);
                 $myRating = $selectedLearner
                     ? RepositoryRating::where('listing_id', $listing->id)->where('parent_id', $parent->id)->first()
                     : null;
 
+                $activity = $listing->activity;
+                $tierMatch = $wantedTier !== null && $activity->difficulty_tier === $wantedTier;
+                $levelMatch = $tierMatch && $selectedLearner && $activity->grade_level === $selectedLearner->grade_level;
+                $patternMatch = $pattern !== null && ErrorPatterns::fit($activity, $pattern, $missed) > 0.15;
+                $avg = $listing->ratings->isNotEmpty() ? round($listing->ratings->avg('rating'), 1) : null;
+
                 return [
                     'listing' => $listing,
                     'is_unlocked' => $isUnlocked,
-                    'avg_rating' => $listing->ratings->isNotEmpty() ? round($listing->ratings->avg('rating'), 1) : null,
+                    'avg_rating' => $avg,
                     'rating_count' => $listing->ratings->count(),
                     'my_rating' => $myRating,
+                    // Why this suits the child, said as short tags.
+                    'level_match' => $levelMatch,
+                    'pattern_match' => $patternMatch ? strtolower(ErrorPatterns::CATEGORIES[$pattern]['label']) : null,
+                    'score' => ($levelMatch ? 4 : 0) + ($tierMatch ? 2 : 0) + ($patternMatch ? 3 : 0) + (($avg ?? 0) / 5),
                 ];
             })
+            ->sort(fn ($a, $b) => [$b['score'], $b['listing']->id] <=> [$a['score'], $a['listing']->id])
+            ->when($onlyBest, fn ($rows) => $rows->filter(fn ($row) => $row['level_match'] || $row['pattern_match'] !== null))
             ->when($filter === 'free', fn ($rows) => $rows->filter(fn ($row) => $row['listing']->price_type === 'Free'))
             ->when($filter === 'paid', fn ($rows) => $rows->filter(fn ($row) => $row['listing']->price_type === 'Paid'))
             ->when($filter === 'unlocked', fn ($rows) => $rows->filter(fn ($row) => $row['is_unlocked']))
@@ -64,6 +94,8 @@ class RepositoryController extends Controller
             'learners' => $learners,
             'selectedLearner' => $selectedLearner,
             'filter' => $filter,
+            'onlyBest' => $onlyBest,
+            'hasMatching' => $wantedTier !== null || $pattern !== null,
             'rows' => $listings,
         ]);
     }
@@ -91,12 +123,17 @@ class RepositoryController extends Controller
             ]);
         }
 
-        RepositoryUnlock::create([
-            'listing_id' => $listing->id,
-            'parent_id' => $parent->id,
-            'learner_id' => $learner->id,
-            'amount_paid' => $listing->price_type === 'Paid' ? $listing->price : 0,
-        ]);
+        try {
+            RepositoryUnlock::create([
+                'listing_id' => $listing->id,
+                'parent_id' => $parent->id,
+                'learner_id' => $learner->id,
+                'amount_paid' => $listing->price_type === 'Paid' ? $listing->price : 0,
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            // Pressed twice at the same moment: the database refuses the second, and so does this.
+            throw ValidationException::withMessages(['unlock' => 'Already unlocked for '.$learner->first_name.'.']);
+        }
 
         return redirect()
             ->route('parent.repository.index', ['learner_id' => $learner->id])

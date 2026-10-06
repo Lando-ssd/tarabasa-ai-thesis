@@ -49,7 +49,9 @@ class DiagnosticPlacement
         }
 
         $answers = is_array($learner->placement_answers) ? $learner->placement_answers : [];
-        if (isset($answers['q1'], $answers['q2'], $answers['q3'])) {
+        // "Not sure" on every question is no signal at all, so the stage alone (or the level) decides.
+        $answered = array_filter($answers, fn ($a) => in_array($a, ['yes', 'no'], true));
+        if (isset($answers['q1'], $answers['q2'], $answers['q3']) && $answered !== []) {
             $yes = count(array_filter([$answers['q1'], $answers['q2'], $answers['q3']], fn ($a) => $a === 'yes'));
             $grade = (int) substr((string) $learner->grade_level, 6);
 
@@ -79,61 +81,17 @@ class DiagnosticPlacement
     }
 
     /**
-     * The rungs a check starting at $start can reach: at most three items, one
-     * step per item after the first.
-     *
-     * @return list<string>
-     */
-    public static function reachableRungs(string $start): array
-    {
-        $ladder = self::ladder();
-        $index = array_search($start, $ladder, true);
-        $index = $index === false ? 0 : $index;
-        $reach = (int) config('diagnostic.reach', 2);
-        $from = max(0, $index - $reach);
-        $to = min(count($ladder) - 1, $index + $reach);
-
-        return array_slice($ladder, $from, $to - $from + 1);
-    }
-
-    /**
-     * What the generator has to be asked for to cover these rungs. One request
-     * returns all three tiers of one (grade, competency, activity type), so
-     * rungs that share those share a request. The letters rung needs none.
-     *
-     * @param  list<string>  $rungs
-     * @return array<string, array{grade: int, competency: string, activity_type: string, tiers: array<string, string>}>
-     */
-    public static function generationGroups(array $rungs): array
-    {
-        $groups = [];
-
-        foreach ($rungs as $key) {
-            $rung = config("diagnostic.ladder.{$key}");
-            if (($rung['kind'] ?? null) !== 'generated') {
-                continue;
-            }
-
-            $groupKey = "{$rung['grade']}:{$rung['competency']}:{$rung['activity_type']}";
-            $groups[$groupKey] ??= [
-                'grade' => $rung['grade'],
-                'competency' => $rung['competency'],
-                'activity_type' => $rung['activity_type'],
-                'tiers' => [],
-            ];
-            $groups[$groupKey]['tiers'][$rung['tier']] = $key;
-        }
-
-        return $groups;
-    }
-
-    /**
-     * The rung an activity belongs to. Items made before the ladder existed
-     * (a check that was already running) were plain easy/medium/hard tiers of
-     * the child's own grade and keep that name.
+     * The rung an activity belongs to. Items from the curated bank say so themselves
+     * (check_rung). Items made before the bank existed (a check that was already running,
+     * or old readings) were generated: they are matched by grade, competency, type and level
+     * where that fits a rung, and otherwise keep their plain easy/medium/hard tier name.
      */
     public static function rungOf(Activity $activity): string
     {
+        if ($activity->check_rung) {
+            return $activity->check_rung;
+        }
+
         if ($activity->isLetterCheck()) {
             return self::LETTERS;
         }
@@ -142,7 +100,7 @@ class DiagnosticPlacement
         $tier = strtolower((string) $activity->difficulty_tier);
 
         foreach (config('diagnostic.ladder') as $key => $rung) {
-            if (($rung['kind'] ?? null) === 'generated'
+            if (($rung['kind'] ?? null) === 'bank'
                 && $rung['grade'] === $grade
                 && $rung['competency'] === $activity->competency
                 && $rung['activity_type'] === $activity->activity_type

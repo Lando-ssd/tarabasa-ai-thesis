@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Something went wrong')
+@section('code', '500')
+@section('heading', 'Something went wrong on our side')
+@section('message', 'It is not your fault. Please try again in a moment. If it keeps happening, tell your teacher or the person who set up your account.')

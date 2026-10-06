@@ -14,7 +14,10 @@
 @php
     $isActive = $teacher->status === 'Active';
     $canCreate = $isActive && ! $isPastYear;
-    $gradeChips = ['All', 'Grade 1', 'Grade 2', 'Grade 3'];
+    $gradeChips = ['All', ...$teacher->gradesAllowed()];
+    $yearState = fn ($y) => $y === $currentSchoolYear ? ['Current', 'ok'] : (\App\Models\SchoolClass::isYearPast($y) ? ['Past, read only', ''] : ['Upcoming', 'amber']);
+    [$selLabel, $selClass] = $yearState($selectedYear);
+    $levelNames = ['Non-reader', 'Frustration', 'Instructional', 'Independent'];
 @endphp
 
 @section('content')
@@ -59,10 +62,15 @@
       <input type="search" id="findBox" placeholder="Find a class or learner" autocomplete="off">
       <div class="find-res" id="findRes" hidden></div>
     </div>
-    <div class="chips" role="group" aria-label="School year">
-      @foreach ($availableYears as $year)
-        <a class="chip plain" href="{{ route('teacher.classes.index', ['school_year' => $year]) }}" aria-pressed="{{ $year === $selectedYear ? 'true' : 'false' }}">SY {{ $year }} · {{ $year === $currentSchoolYear ? 'Current' : (\App\Models\SchoolClass::isYearPast($year) ? 'Past' : 'Upcoming') }}</a>
-      @endforeach
+    {{-- One school-year selector instead of a row of chips that wrapped on narrow windows. --}}
+    <div class="sy" data-sy>
+      <button type="button" class="sy-btn" aria-haspopup="listbox" aria-expanded="false" data-sy-btn><small>School year</small> {{ $selectedYear }} <span class="pill {{ $selClass }}">{{ $selLabel }}</span>@include('learner._badge-icon', ['icon' => 'caret-down', 'class' => 'ico'])</button>
+      <div class="sy-menu" role="listbox" aria-label="School year" data-sy-menu hidden>
+        @foreach ($availableYears as $year)
+          @php [$yl, $yc] = $yearState($year); @endphp
+          <a class="sy-opt" role="option" aria-selected="{{ $year === $selectedYear ? 'true' : 'false' }}" href="{{ route('teacher.classes.index', ['school_year' => $year]) }}">SY {{ $year }} <span class="pill {{ $yc }}">{{ $yl }}</span></a>
+        @endforeach
+      </div>
     </div>
   </div>
 
@@ -93,12 +101,19 @@
         <button type="button" class="ctile" data-open="class-{{ $c->id }}" data-grade="{{ $c->grade_level }}">
           <span class="ctile-top">
             <span class="pill">{{ $c->grade_level }}</span>
-            @if ($c->group_tag)<span class="pill blue">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']){{ $c->group_tag }}</span>@endif
+            @if ($c->group_tag)<span class="pill blue" title="Focus group">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']){{ $c->group_tag }}</span>@endif
             @if ($isPastYear)<span class="pill amber">Read only</span>@endif
           </span>
           <span class="ctile-name">{{ $c->name }}</span>
           <span class="ctile-meta">{{ $c->section }} · SY {{ $c->school_year }}</span>
           <span class="ctile-acts {{ $na ? '' : 'none' }}">@include('learner._badge-icon', ['icon' => 'books', 'class' => 'ico']){{ $na ? $na.' '.($na === 1 ? 'activity' : 'activities').' assigned' : 'No activities yet' }}</span>
+          @php $mix = $insights[$c->id]['mix']; $mixSum = array_sum($mix); @endphp
+          @if ($mixSum)
+            <span class="mix" aria-hidden="true">@foreach ($mix as $i => $v)@if ($v)<i class="m{{ $i }}" style="width:{{ round(100 * $v / $mixSum) }}%"></i>@endif @endforeach</span>
+            <span class="mixkey">@foreach ($mix as $i => $v)@if ($v)<span class="k{{ $i }}">{{ $v }} {{ $levelNames[$i] }}</span>@endif @endforeach</span>
+          @elseif ($c->learners->isNotEmpty())
+            <span class="mixkey"><span>Levels appear after the first reading check</span></span>
+          @endif
           <span class="ctile-foot">
             <span class="stack">
               @foreach ($c->learners->take(4) as $l)@include('teacher._avatar', ['learner' => $l])@endforeach

@@ -19,6 +19,9 @@ RUN composer dump-autoload --optimize --no-dev \
     && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+# Upload limits that match the app's own rules, and no PHP version in the headers.
+COPY docker/php-custom.ini /usr/local/etc/php/conf.d/zz-tarabasa.ini
+
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

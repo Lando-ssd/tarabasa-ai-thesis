@@ -41,6 +41,25 @@ class LearnerController extends Controller
     public const AVATARS = ['🦁', '🐰', '🦊', '🐻', '🐼', '🐯', '🐨', '🐸'];
 
     /**
+     * The language spoken at home (the manuscript's Create Child Profile figure). Context for the
+     * teacher only: the curriculum starts from the child's first language, so it helps to know it.
+     * Age and school are left out on purpose (the grade gives the level, the class gives the school).
+     */
+    public const HOME_LANGUAGES = ['Filipino', 'Cebuano', 'Hiligaynon', 'Ilocano', 'Waray', 'Bikol', 'Kapampangan', 'Pangasinan', 'English', 'Other'];
+
+    /** What helps the child most. These switch on supports; they never decide the activities. */
+    public const SUPPORTS = [
+        'read_aloud' => 'Hearing the words read aloud',
+        'pictures' => 'Pictures with the words',
+        'games' => 'Short games',
+        'reading_with' => 'Someone reading with them',
+        'praise' => 'Praise and rewards',
+    ];
+
+    /** Topics the child likes; they feed activity suggestions. */
+    public const INTERESTS = ['animals' => 'Animals', 'food' => 'Food', 'family' => 'Family', 'vehicles' => 'Vehicles', 'nature' => 'Nature'];
+
+    /**
      * Letters (any language/script), spaces, hyphens, and apostrophes only
      * — so "Anne-Marie" and "O'Brien" still work, but a name can never
      * contain a digit. \p{L} rather than a plain a-z so Filipino names
@@ -95,10 +114,17 @@ class LearnerController extends Controller
             // getimagesize(), not the filename extension.
             'avatar_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'reading_stage' => ['required', Rule::in(['starting', 'letters', 'blending', 'sentences', 'independent', 'unsure'])],
-            'learning_style' => ['required', Rule::in(['Visual', 'Listening', 'Hands-on'])],
-            'q1' => ['required', Rule::in(['yes', 'no'])],
-            'q2' => ['required', Rule::in(['yes', 'no'])],
-            'q3' => ['required', Rule::in(['yes', 'no'])],
+            // Learning style is no longer asked: the research does not support teaching to a style
+            // (Pashler et al., 2008). Supports and topics are asked instead.
+            'home_language' => ['nullable', Rule::in(self::HOME_LANGUAGES)],
+            'supports' => ['nullable', 'array'],
+            'supports.*' => ['string', Rule::in(array_keys(self::SUPPORTS))],
+            'interests' => ['nullable', 'array'],
+            'interests.*' => ['string', Rule::in(array_keys(self::INTERESTS))],
+            // "Not sure" is 'unsure': no signal, never counted as a wrong answer.
+            'q1' => ['required', Rule::in(['yes', 'no', 'unsure'])],
+            'q2' => ['required', Rule::in(['yes', 'no', 'unsure'])],
+            'q3' => ['required', Rule::in(['yes', 'no', 'unsure'])],
             'pin' => ['required', 'digits:4'],
             'pin_confirmation' => ['required', 'same:pin'],
         ], [
@@ -112,11 +138,14 @@ class LearnerController extends Controller
         // The placement score — not the self-report — is what actually sets
         // the starting level (Parent Actor Prompt Step 4.4). Computed here,
         // server-side, never trusted from the client.
-        $yesCount = collect([$validated['q1'], $validated['q2'], $validated['q3']])
-            ->filter(fn ($answer) => $answer === 'yes')
-            ->count();
+        $answers = collect([$validated['q1'], $validated['q2'], $validated['q3']]);
+        $yesCount = $answers->filter(fn ($answer) => $answer === 'yes')->count();
+        $answeredCount = $answers->filter(fn ($answer) => $answer !== 'unsure')->count();
 
+        // Only the answered questions count. If every answer was "Not sure" there is no signal,
+        // so the starting level is the neutral one and the first reading check decides.
         $masteryLevel = match (true) {
+            $answeredCount === 0 => 'Developing',
             $yesCount >= 3 => 'Proficient',
             $yesCount === 2 => 'Developing',
             default => 'Beginning',
@@ -139,7 +168,7 @@ class LearnerController extends Controller
             'q3' => $validated['q3'],
         ];
 
-        $learner = DB::transaction(function () use ($validated, $masteryLevel, $parent, $photoPath, $placementAnswers) {
+        $learner = $this->withFreshCode(function () use ($validated, $masteryLevel, $parent, $photoPath, $placementAnswers) {
             $learner = Learner::create([
                 'learner_code' => Learner::generateUniqueCode(),
                 'class_id' => null,
@@ -152,7 +181,9 @@ class LearnerController extends Controller
                 'theme_color' => $validated['theme_color'] ?? 'blue',
                 'avatar_photo_path' => $photoPath,
                 'mastery_level' => $masteryLevel,
-                'learning_style' => $validated['learning_style'],
+                'home_language' => $validated['home_language'] ?? null,
+                'supports' => array_values($validated['supports'] ?? []),
+                'interests' => array_values($validated['interests'] ?? []),
                 'reading_stage' => $validated['reading_stage'],
                 'placement_answers' => $placementAnswers,
                 'status' => 'Active',
@@ -173,6 +204,23 @@ class LearnerController extends Controller
     }
 
     /**
+     * Runs the creation of a child, drawing a new learner code again if two parents happened to draw
+     * the same one at the same moment (the database refuses the second). Only that clash is retried.
+     */
+    private function withFreshCode(callable $create): Learner
+    {
+        for ($try = 1; ; $try++) {
+            try {
+                return DB::transaction($create);
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                if ($try >= 3 || ! str_contains($e->getMessage(), 'learner_code')) {
+                    throw $e;
+                }
+            }
+        }
+    }
+
+    /**
      * Link an Existing Child's Account — Parent Actor Prompt Step 5, a
      * second guardian joining a Learner someone else already created.
      *
@@ -184,49 +232,62 @@ class LearnerController extends Controller
      */
     public function showLink(Request $request): View
     {
-        $code = $request->query('code');
-        $foundLearner = null;
-        $codeError = null;
-
-        if ($code !== null && trim($code) !== '') {
-            $parent = $request->user()->parentProfile;
-            $normalizedCode = strtoupper(trim($code));
-            $foundLearner = Learner::where('learner_code', $normalizedCode)->first();
-
-            if (! $foundLearner) {
-                $codeError = 'No learner found with that code — double check and try again.';
-            } elseif ($parent->learners()->where('learners.id', $foundLearner->id)->exists()) {
-                $codeError = 'This child is already linked to your account.';
-                $foundLearner = null;
-            }
-        }
-
-        return view('parent.children.link', [
-            'searchedCode' => $code,
-            'foundLearner' => $foundLearner,
-            'codeError' => $codeError,
-        ]);
+        // Nothing about a child is shown from a code alone. This used to look the code up and show
+        // the child's name and photo to anyone who typed it, which let a parent walk through the
+        // codes and read children's names. Linking now needs the child's PIN as well (see storeLink).
+        return view('parent.children.link');
     }
 
     public function storeLink(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'learner_code' => ['required', 'string'],
+            'learner_code' => ['required', 'string', 'max:20'],
+            'pin' => ['required', 'digits:4'],
             'relationship' => ['required', Rule::in(['Mother', 'Father', 'Guardian'])],
+        ], [
+            'pin.required' => "Type the child's 4 digit PIN.",
+            'pin.digits' => "The PIN is 4 digits.",
         ]);
 
         $parent = $request->user()->parentProfile;
-        $code = strtoupper(trim($validated['learner_code']));
+        $code = \App\Support\LearnerCode::normalize($validated['learner_code']);
+
+        // Linking is the way someone gains access to a child's name, photo, progress and alerts, so
+        // it takes BOTH the code and the PIN (which the child's other guardian can give), and a wrong
+        // guess is limited per parent and per code. A learner code has only about ten thousand
+        // possibilities a year, which is nothing to someone trying them all.
+        $parentKey = 'link-child|parent:'.$parent->id;
+        $codeKey = 'link-child|code:'.$code;
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($parentKey, 5) || \Illuminate\Support\Facades\RateLimiter::tooManyAttempts($codeKey, 5)) {
+            $minutes = (int) ceil(max(\Illuminate\Support\Facades\RateLimiter::availableIn($parentKey), \Illuminate\Support\Facades\RateLimiter::availableIn($codeKey)) / 60);
+
+            return back()->withErrors(['learner_code' => "Too many tries. Please wait {$minutes} ".($minutes === 1 ? 'minute' : 'minutes').' and try again.'])->withInput($request->only('learner_code', 'relationship'));
+        }
 
         $learner = Learner::where('learner_code', $code)->first();
 
-        if (! $learner) {
-            return back()->withErrors(['learner_code' => 'No learner found with that code — double check and try again.'])->withInput();
+        // One message whether the code is unknown or the PIN is wrong, so it never says which.
+        if (! $learner || ! \Illuminate\Support\Facades\Hash::check($validated['pin'], $learner->pin)) {
+            \Illuminate\Support\Facades\RateLimiter::hit($parentKey, 900);
+            \Illuminate\Support\Facades\RateLimiter::hit($codeKey, 900);
+
+            return back()->withErrors(['learner_code' => 'That learner code and PIN do not match. Ask the child\'s other guardian for both.'])->withInput($request->only('learner_code', 'relationship'));
         }
 
         if ($parent->learners()->where('learners.id', $learner->id)->exists()) {
-            return back()->withErrors(['learner_code' => 'This child is already linked to your account.'])->withInput();
+            return back()->withErrors(['learner_code' => 'This child is already linked to your account.'])->withInput($request->only('learner_code', 'relationship'));
         }
+
+        \Illuminate\Support\Facades\RateLimiter::clear($parentKey);
+        \Illuminate\Support\Facades\RateLimiter::clear($codeKey);
+
+        // Tell the guardians who are already linked, so nobody can be added without them knowing.
+        \App\Models\Notification::notifyForLearner(
+            $learner,
+            \App\Models\Notification::TYPE_GUARDIAN_LINKED,
+            "{$request->user()->first_name} {$request->user()->last_name} was linked to {$learner->first_name} as {$validated['relationship']}.",
+            includeTeacher: false
+        );
 
         $parent->learners()->attach($learner->id, [
             'relationship' => $validated['relationship'],

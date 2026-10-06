@@ -98,13 +98,14 @@ class TeacherRedesignTest extends TestCase
 
         $this->get(route('teacher.dashboard'))->assertOk()->assertSee('Welcome back')->assertSee('Rizal')->assertSee('1 draft to review');
         $this->get(route('teacher.classes.index'))->assertOk()->assertSee('1 activity assigned')->assertSee('Add learner')->assertSee('Assign an activity')->assertSee($kid->learner_code);
-        $this->get(route('teacher.activities.index'))->assertOk()->assertSee('To review')->assertSee('Draft One')->assertSee('Moved from Medium')->assertSee('Generate activities');
+        $this->get(route('teacher.activities.index'))->assertOk()->assertSee('To review')->assertSee('Draft One')->assertSee('Generate activities');
         $this->get(route('teacher.activities.index', ['view' => 'list', 'status' => 'Approved']))->assertOk()->assertSee('Approved One');
-        $this->get(route('teacher.activities.index', ['fragment' => 1]))->assertOk()->assertSee('class="board"', false)->assertDontSee('<html', false);
+        $this->get(route('teacher.activities.index', ['fragment' => 1]))->assertOk()->assertSee('class="seg"', false)->assertDontSee('<html', false);
         $this->get(route('teacher.activities.create'))->assertRedirect(route('teacher.activities.index', ['generate' => 1]));
         $this->get(route('teacher.activities.window', $draft))->assertOk()->assertSee('Why Medium')->assertSee('Approve in level');
         $this->get(route('teacher.activities.window', $approved))->assertOk()->assertSee('Assigned to')->assertSee('The AI suggested');
-        $this->get(route('teacher.analytics.index'))->assertOk()->assertSee('Days in a row')->assertSee('Recent sessions');
+        $this->get(route('teacher.analytics.index'))->assertOk()->assertSee('Reading levels')->assertSee('Words missed most')->assertSee('Assigned activities')->assertSee('Download class report');
+        $this->get(route('teacher.analytics.index', ['mode' => 'learner']))->assertOk()->assertSee('Days in a row')->assertSee('Recent sessions');
         $this->get(route('teacher.analytics.index', ['mode' => 'group']))->assertOk()->assertSee('phonics-focus')->assertSee('Who needs help first');
         $this->get(route('teacher.promotions.index'))->assertOk()->assertSee('To Grade 3');
         $this->get(route('teacher.promotions.index', ['tab' => 'claim']))->assertOk();
@@ -314,7 +315,7 @@ class TeacherRedesignTest extends TestCase
 
         // The class page lists both what the class was given directly and what came through its group tag.
         $page = $this->get(route('teacher.classes.index', ['open' => $class->id, 'tab' => 'acts']))->assertOk();
-        $page->assertSee('Given to this class')->assertSee('Through group needs-fluency')->assertSee('Direct One')->assertSee('Group One')->assertSee('data-autoview="acts"', false);
+        $page->assertSee('Given to this class')->assertSee('Through focus group needs-fluency')->assertSee('Direct One')->assertSee('Group One')->assertSee('data-autoview="acts"', false);
         // The class counts both; another class with the same tag gets the group activity too.
         $page->assertSee('2 activities assigned')->assertSee('1 activity assigned')->assertSee($sameTag->name);
     }
@@ -352,7 +353,7 @@ class TeacherRedesignTest extends TestCase
         $this->post($url, ['learner_code' => ' tb-67890 '])->assertRedirect();
         $this->assertSame($class->id, $b->fresh()->class_id);
 
-        $this->from('/x')->post($url, ['learner_code' => '123'])->assertSessionHasErrors(['learner_code' => 'The Learner Code ends in 5 characters, like TB-12345.']);
+        $this->from('/x')->post($url, ['learner_code' => '123'])->assertSessionHasErrors(['learner_code' => 'Type the last 5 characters of the Learner Code, like 48293.']);
         $this->from('/x')->post($url, ['learner_code' => '00000'])->assertSessionHasErrors(['learner_code' => 'No learner found with that code. Check it and try again.']);
         $this->from('/x')->post($url, ['learner_code' => '55555'])->assertSessionHasErrors(['learner_code' => 'This learner is already enrolled in a class.']);
         $this->from('/x')->post($url, ['learner_code' => ''])->assertSessionHasErrors('learner_code');
@@ -401,19 +402,47 @@ class TeacherRedesignTest extends TestCase
         $this->assertSame([$g2->id, 'Grade 2'], [$kid->fresh()->class_id, $kid->fresh()->grade_level]);
     }
 
-    public function test_the_menu_bar_counts_unread_alerts_and_claimable_learners(): void
+    public function test_the_menu_bar_counts_open_alerts_and_claimable_learners(): void
     {
         [$user, $teacher] = $this->teacher();
         $g2 = $this->klass($teacher);
         $mover = $this->learner(null, ['grade_level' => 'Grade 1']);
         PromotionRecord::create(['learner_id' => $mover->id, 'released_by_teacher_id' => $teacher->id, 'next_grade' => 'Grade 2', 'status' => 'Pending', 'released_from_class_id' => $g2->id]);
-        Notification::create(['recipient_user_id' => $user->id, 'learner_id' => $mover->id, 'type' => Notification::TYPE_NEEDS_ATTENTION, 'message' => 'Needs help.', 'timestamp' => now()]);
+        // One open alert: a learner in the class whose last three readings were all under 70 percent.
+        $kid = $this->learner($g2, ['first_name' => 'Struggling']);
+        $act = $this->activity($teacher, ['status' => 'Approved']);
+        foreach ([2, 1, 0] as $daysAgo) {
+            $row = ReadingSession::create(['learner_id' => $kid->id, 'activity_id' => $act->id, 'session_type' => 'Practice', 'initiated_by' => 'Teacher', 'accuracy_percent' => 50]);
+            $row->timestamp = now()->subDays($daysAgo);
+            $row->save();
+        }
+        // A routine message is not an alert and does not count.
+        Notification::create(['recipient_user_id' => $user->id, 'learner_id' => $kid->id, 'type' => Notification::TYPE_SESSION_SUMMARY, 'message' => 'Read it.', 'timestamp' => now()]);
         $this->actingAs($user);
 
         $html = $this->get(route('teacher.dashboard'))->assertOk()->getContent();
         $this->assertMatchesRegularExpression('/Promotions<\/span>\s*<span class="nav-count">1</', $html);
         $this->assertMatchesRegularExpression('/Alerts<\/span>\s*<span class="nav-count">1</', $html);
         $this->assertSame(['unread' => 1, 'claim' => 1], \App\Support\TeacherNav::counts($user));
+    }
+
+    public function test_a_class_page_stays_small_and_never_prints_a_record_into_a_class_attribute(): void
+    {
+        // Inside the class window the name $class holds the whole school class (with every learner).
+        // An avatar partial that used it for a CSS class once printed that record, over and over,
+        // into the page: 1.6 MB for ten learners, growing with the square of the class size.
+        [$user, $teacher] = $this->teacher();
+        $class = $this->klass($teacher, ['name' => 'Kamunggay']);
+        foreach (range(1, 12) as $i) {
+            $this->learner($class, ['first_name' => "Child{$i}"]);
+        }
+
+        $html = $this->actingAs($user)->get(route('teacher.classes.index'))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('&quot;teacher_id&quot;', $html, 'a model was printed into the page');
+        $this->assertStringNotContainsString('class="{', $html);
+        $this->assertLessThan(300000, strlen($html), 'twelve learners should not make a page this big');
+        $this->assertStringContainsString('class="av init', $html, 'the avatar keeps its own styling');
     }
 
     public function test_other_roles_cannot_open_teacher_screens(): void

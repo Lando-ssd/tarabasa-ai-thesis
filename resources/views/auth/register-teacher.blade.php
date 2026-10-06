@@ -59,6 +59,10 @@
              placeholder="Re-type your password" required>
     </div>
 
+    <div class="divider-label">Your classes</div>
+
+    @include('teacher._grades-field', ['selected' => [], 'idp' => 'reg'])
+
     <div class="divider-label">School Verification</div>
 
     <div class="verify-note">

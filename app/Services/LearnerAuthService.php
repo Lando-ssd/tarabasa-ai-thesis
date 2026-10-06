@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\ActivityAssignment;
 use App\Models\Learner;
 use App\Models\OpenRepositoryListing;
+use App\Support\ErrorPatterns;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -37,7 +38,7 @@ class LearnerAuthService
      */
     public function authenticate(string $rawCode, string $pin, string $ip): Learner
     {
-        $code = strtoupper(trim($rawCode));
+        $code = \App\Support\LearnerCode::normalize($rawCode);
         $throttleKey = 'learner-login:'.$code.'|'.$ip;
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
@@ -54,7 +55,7 @@ class LearnerAuthService
             RateLimiter::hit($throttleKey, 900);
 
             throw ValidationException::withMessages([
-                'pin' => 'Incorrect PIN.',
+                'pin' => 'Incorrect code or PIN.',
             ]);
         }
 
@@ -76,26 +77,18 @@ class LearnerAuthService
     }
 
     /**
-     * Learner Actor Prompt Step 3: resolve the Teacher-assigned Activity
-     * using priority — direct-to-this-Learner first, then Class, then
-     * Class's Group tag — plus any Open-Repository-unlocked Activities,
-     * always included alongside the assignment result. Returns a plain
+     * Learner Actor Prompt Step 3: gather what a Teacher gave this Learner (directly, to
+     * their class or reading group, or to a focus group their class carries) plus any
+     * Open-Repository-unlocked Activities. All sources are shown together: the same rule the
+     * access check uses (ActivityAssignment::reachingLearner), so a child is never shown less
+     * than they may open. (This used to stop at the first source that had anything, which hid a
+     * class activity from a child who also had a direct one.) Returns a plain
      * Collection of ['activity' => Activity, 'source' => string] — the
      * same shape both the Blade picker and the JSON picker render from.
      */
     public function findActivityOptions(Learner $learner): Collection
     {
-        $assignmentIds = ActivityAssignment::where('learner_id', $learner->id)->pluck('activity_id');
-
-        if ($assignmentIds->isEmpty() && $learner->class_id) {
-            $assignmentIds = ActivityAssignment::where('class_id', $learner->class_id)->pluck('activity_id');
-        }
-
-        if ($assignmentIds->isEmpty() && $learner->schoolClass?->group_tag) {
-            $assignmentIds = ActivityAssignment::where('group_tag', $learner->schoolClass->group_tag)
-                ->where('assigned_by_teacher_id', $learner->schoolClass->teacher_id)
-                ->pluck('activity_id');
-        }
+        $assignmentIds = ActivityAssignment::reachingLearner($learner)->pluck('activity_id')->unique();
 
         $assignedActivities = Activity::whereIn('id', $assignmentIds)
             ->where('status', 'Approved')
@@ -115,7 +108,73 @@ class LearnerAuthService
             ->concat($unlockedActivities->map(fn ($activity) => ['activity' => $activity, 'source' => 'Extra Practice']))
             ->values();
 
-        return $this->applyAdaptiveRecommendation($learner, $options);
+        return $this->applyPatternPractice($learner, $this->applyAdaptiveRecommendation($learner, $options));
+    }
+
+    /**
+     * How a repeating kind of mistake is said to a CHILD: what to practise, never what went wrong.
+     * (The adult wording lives in ErrorPatterns::CATEGORIES.)
+     */
+    private const PRACTICE_WORDING = [
+        'small_words' => 'Practice small words',
+        'endings' => 'Practice word endings',
+        'vowels' => 'Practice middle sounds',
+        'beginning' => 'Practice first sounds',
+        'ending_sound' => 'Practice last sounds',
+        'blends' => 'Practice letter blends',
+        'look_alike' => 'Practice looking closely at letters',
+        'skipped' => 'Practice reading every word',
+        'other' => 'Practice sounding words out',
+    ];
+
+    /**
+     * Uses what the child's own readings show (ErrorPatterns). When there is a clear repeating kind of
+     * mistake, the available story that practises it best is moved up (just behind the recommender's
+     * own pick) and tagged with what it practises. It only ever reorders what the child may already
+     * open, so a teacher's assignment is never hidden, and it says nothing when there is no clear
+     * pattern or no story fits well (the same 0.15 bar the Teacher's suggestions use).
+     */
+    private function applyPatternPractice(Learner $learner, Collection $options): Collection
+    {
+        if ($options->count() < 2) {
+            return $options;
+        }
+
+        $profile = ErrorPatterns::forLearner($learner);
+        $pattern = ErrorPatterns::mainPattern($profile);
+
+        if ($pattern === null) {
+            return $options;
+        }
+
+        $best = null;
+        $bestFit = 0.15;
+
+        foreach ($options as $i => $option) {
+            // The recommender's own pick keeps its own label and place.
+            if (str_contains($option['source'], 'Picked just for you')) {
+                continue;
+            }
+
+            $fit = ErrorPatterns::fit($option['activity'], $pattern, $profile['missedWords']);
+
+            if ($fit > $bestFit) {
+                $best = $i;
+                $bestFit = $fit;
+            }
+        }
+
+        if ($best === null) {
+            return $options;
+        }
+
+        $chosen = $options->get($best);
+        $chosen['practice'] = self::PRACTICE_WORDING[$pattern] ?? self::PRACTICE_WORDING['other'];
+
+        $rest = $options->reject(fn ($option, int $i) => $i === $best)->values();
+        $position = $rest->isNotEmpty() && str_contains($rest->first()['source'], 'Picked just for you') ? 1 : 0;
+
+        return $rest->slice(0, $position)->concat([$chosen])->concat($rest->slice($position))->values();
     }
 
     /**

@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Not allowed')
+@section('code', '403')
+@section('heading', 'This page is not for this account')
+@section('message', 'You are signed in, but this page belongs to someone else. If you think this is a mistake, go back and sign in with the right account.')

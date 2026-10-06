@@ -9,26 +9,29 @@ use App\Models\ReadingSession;
 use App\Support\DiagnosticPlacement;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 
 /**
  * The first-login reading check: an adaptive staircase up a ladder of curriculum
  * content, starting where the Parent said the CHILD is, not where their grade
  * says they should be (see DiagnosticPlacement and config/diagnostic.php). A
  * child who cannot read yet starts on letters at any grade; one who reads well
- * starts on a passage. Extracted out of
- * LearnerDiagnosticController (previously `private` methods returning
- * Blade Views) for the same reason as LearnerReadingService: one real
- * implementation, called by both the web controller and the mobile API
- * controller. No behavior change from the original — see CLAUDE.md's
- * "Mobile API layer" entry.
+ * starts on a passage.
  *
- * The staircase's in-progress state (which tier/variant is current, how
- * many passages done, accuracy history) and the "3 unclear attempts"
- * counter both used to live in the web session — moved to the database
- * cache store, keyed by learner_id, so a token-authenticated mobile
- * request (which carries no session cookie) sees the exact same state a
+ * Every item comes from the curated, curriculum-coded bank (DiagnosticBank), so
+ * the check opens at once and every child on a rung reads the same reviewed
+ * material. The AI generator is no longer involved: it used to write each item
+ * live, which took from eight seconds to over a minute and sometimes gave a
+ * Grade 1 child text that was too long or only a list of words.
+ *
+ * Extracted out of LearnerDiagnosticController (previously `private` methods
+ * returning Blade Views) for the same reason as LearnerReadingService: one real
+ * implementation, called by both the web controller and the mobile API
+ * controller.
+ *
+ * The staircase's in-progress state (which rung/variant is current, how many
+ * items done, accuracy history) and the "3 unclear attempts" counter both live
+ * in the database cache store, keyed by learner_id, so a token-authenticated
+ * mobile request (which carries no session cookie) sees the exact same state a
  * web request would.
  */
 class LearnerDiagnosticService
@@ -53,6 +56,12 @@ class LearnerDiagnosticService
 
     private const STATE_TTL_HOURS = 6;
 
+    /**
+     * Starts the check for a child (or returns the one already in progress): looks up the bank,
+     * rotates each rung's variants by child so two children on one device do not read the same
+     * words, and saves the starting state. Kept under its old name because the web controller and
+     * the mobile API both call it; there is nothing to generate any more.
+     */
     public function ensureBundleGenerated(Learner $learner): array
     {
         $existing = $this->diagnosticState($learner);
@@ -63,66 +72,10 @@ class LearnerDiagnosticService
         $ladder = DiagnosticPlacement::ladder();
         $start = DiagnosticPlacement::startingRung($learner);
 
-        // Only the content this child can actually reach from where they start
-        // (at most three items, one step each), so a child who starts on
-        // letters does not wait for passages they will never be shown.
-        $reachable = DiagnosticPlacement::reachableRungs($start);
-        $groups = DiagnosticPlacement::generationGroups($reachable);
-
-        $activityIds = array_fill_keys($ladder, []);
-
-        if ($groups !== []) {
-            $competencies = config('activity_competencies.competencies');
-
-            // Every reading item is real curriculum content: the generator
-            // aligns each bundle to the MATATAG guide for the grade it is asked
-            // for. That grade is the grade of the CONTENT the rung needs (Grade 1
-            // phonics for a beginner, Grade 2 passages for a reader), never the
-            // child's own grade. The requests run at the same time, since each
-            // takes several seconds.
-            $payloads = [];
-            foreach (array_keys($groups) as $i => $groupKey) {
-                $payloads['g'.$i] = [
-                    'grade' => $groups[$groupKey]['grade'],
-                    'competency' => $groups[$groupKey]['competency'],
-                    'activity_type' => $groups[$groupKey]['activity_type'],
-                    'variants_per_level' => 2,
-                    'topic' => null,
-                ];
-            }
-
-            try {
-                // Each request normally answers in under ten seconds, so one that
-                // has not after 70 is stuck: try it again rather than have a child
-                // wait two and a half minutes for nothing (seen twice in testing).
-                $bundles = app(ActivityAiClient::class)->generateBundles($payloads, 70, 2);
-            } catch (\RuntimeException $e) {
-                throw ValidationException::withMessages(['diagnostic' => $e->getMessage()]);
-            }
-
-            foreach (array_values($groups) as $i => $group) {
-                $data = $bundles['g'.$i];
-
-                $activities = Activity::createManyFromBundle($data, [
-                    'created_by_teacher_id' => null,
-                    'grade_level' => 'Grade '.$group['grade'],
-                    'competency' => $group['competency'],
-                    'competency_label' => $data['competency_label'] ?? $competencies[$group['competency']]['label'],
-                    'activity_type' => $group['activity_type'],
-                    'purpose' => 'diagnostic',
-                ]);
-
-                foreach ($activities as $activity) {
-                    $rung = $group['tiers'][strtolower($activity->difficulty_tier)] ?? null;
-                    if ($rung !== null) {
-                        $activityIds[$rung][] = $activity->id;
-                    }
-                }
-            }
-        }
-
-        if (in_array(DiagnosticPlacement::LETTERS, $reachable, true)) {
-            $activityIds[DiagnosticPlacement::LETTERS] = $this->letterCheckActivityIds();
+        $activityIds = [];
+        foreach (app(DiagnosticBank::class)->idsByRung() as $rung => $ids) {
+            $shift = ($learner->id + array_search($rung, $ladder, true)) % max(1, count($ids));
+            $activityIds[$rung] = array_values(array_merge(array_slice($ids, $shift), array_slice($ids, 0, $shift)));
         }
 
         $state = [
@@ -149,52 +102,6 @@ class LearnerDiagnosticService
         $this->putState($learner, $state);
 
         return $state;
-    }
-
-    /**
-     * The two letter rows of the letters rung, made once and shared by every
-     * child (they are fixed content, not generated per learner). Looked up by
-     * their exact letters, so changing config/diagnostic.php makes new rows
-     * instead of silently showing the old letters.
-     *
-     * @return list<int>
-     */
-    private function letterCheckActivityIds(): array
-    {
-        $ids = [];
-
-        foreach (config('diagnostic.letters.sets') as $set) {
-            $letters = $set['letters'];
-
-            $activity = Activity::firstOrCreate(
-                [
-                    'purpose' => 'diagnostic',
-                    'activity_type' => 'phonics',
-                    'grade_level' => 'Grade '.config('diagnostic.ladder.letters.grade'),
-                    'variant_label' => $set['label'],
-                    'reference_text' => strtolower(implode(' ', $letters)),
-                ],
-                [
-                    'created_by_teacher_id' => null,
-                    'competency' => 'foundational_reading',
-                    'competency_label' => 'Foundational Reading',
-                    'difficulty_tier' => 'Easy',
-                    'bundle_title' => 'Letter Check',
-                    'title' => 'Letter Check '.$set['label'],
-                    'instructions' => 'Say the name of each letter.',
-                    'passage_text' => implode(' ', $letters),
-                    'word_count' => count($letters),
-                    'target_skills' => ['Naming letters'],
-                    'reading_features' => ['Single letters'],
-                    'follow_up_questions' => [],
-                    'status' => 'Draft',
-                ]
-            );
-
-            $ids[] = $activity->id;
-        }
-
-        return $ids;
     }
 
     /**
@@ -304,7 +211,8 @@ class LearnerDiagnosticService
 
         $this->clearUnclearAttempts($learner);
 
-        return $this->applyStaircaseStep($learner, $state, $activity, $outcome['result']);
+        // Words the app did not hear well are "not sure", left out of the accuracy (see NotSure).
+        return $this->applyStaircaseStep($learner, $state, $activity, \App\Support\NotSure::apply($outcome['result']));
     }
 
     /**
@@ -359,7 +267,13 @@ class LearnerDiagnosticService
             return $this->finishDiagnostic($learner, $tier, $accuracy, $state['is_first_ever_reading']);
         }
 
-        $state['variant_used'][$nextTier] = min($state['variant_used'][$nextTier] + 1, 1);
+        // A rung the child has already read gets its next text, never the same one twice. A rung
+        // they have not been on yet starts with its first.
+        $visited = in_array($nextTier, array_column($state['accuracy_history'], 'tier'), true);
+        if ($visited) {
+            $last = max(0, count($state['activity_ids'][$nextTier] ?? []) - 1);
+            $state['variant_used'][$nextTier] = min(($state['variant_used'][$nextTier] ?? 0) + 1, $last);
+        }
         $state['current_tier'] = $nextTier;
 
         $this->putState($learner, $state);
@@ -378,7 +292,17 @@ class LearnerDiagnosticService
     {
         $finalLevel = DiagnosticPlacement::masteryOf($landedTier);
 
-        $learner->update(['mastery_level' => $finalLevel]);
+        $update = ['mastery_level' => $finalLevel];
+
+        // Where on the ladder the child landed: what their four step reading path (Letter
+        // Explorer ... Story Reader) is worked out from. A check that was already running on the
+        // old three tiers has no rung to save; the step is then estimated from the level.
+        $rungIndex = array_search($landedTier, DiagnosticPlacement::ladder(), true);
+        if ($rungIndex !== false) {
+            $update['reading_rung'] = $rungIndex;
+        }
+
+        $learner->update($update);
 
         Notification::notifyForLearner(
             $learner,

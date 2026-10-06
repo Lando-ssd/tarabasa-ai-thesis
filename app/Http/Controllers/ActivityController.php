@@ -10,6 +10,7 @@ use App\Models\Learner;
 use App\Models\OpenRepositoryListing;
 use App\Models\SchoolClass;
 use App\Services\ActivityAiClient;
+use App\Services\ActivitySuggestions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,13 +23,10 @@ use Illuminate\View\View;
 
 class ActivityController extends Controller
 {
-    /** Drafts shown on the board's "To review" column at a time, and rows per page in the list. */
+    /** Drafts shown on the To review tab at a time, and activities per page on My activities. */
     private const TRAY = 4;
 
-    private const PER_PAGE = 7;
-
-    /** Approved cards shown in each level column before "See all". */
-    private const COLUMN = 5;
+    private const PER_PAGE = 20;
 
     /**
      * The old Generate page: Generate now lives in a window on the Activities screen, so a
@@ -97,23 +95,33 @@ class ActivityController extends Controller
             ]);
         }
 
-        // One at a time: a second request now could spend a credit the first one still needs.
-        if (ActivityGeneration::activeFor($teacher->id)) {
+        // One at a time: a second request now could spend a credit the first one still needs. The
+        // check and the new request are made together under a lock on the teacher's row, so two
+        // clicks at the same moment cannot both get through.
+        $generation = \Illuminate\Support\Facades\DB::transaction(function () use ($teacher, $validated, $wanted) {
+            \App\Models\Teacher::whereKey($teacher->id)->lockForUpdate()->first();
+
+            if (ActivityGeneration::activeFor($teacher->id)) {
+                return null;
+            }
+
+            return ActivityGeneration::create([
+                'teacher_id' => $teacher->id,
+                'status' => ActivityGeneration::QUEUED,
+                'grade_level' => $validated['grade_level'],
+                'competency' => $validated['competency'],
+                'activity_type' => $validated['activity_type'],
+                'topic' => $validated['topic'] ?? null,
+                'teacher_notes' => $validated['teacher_notes'] ?? null,
+                'levels' => $wanted,
+            ]);
+        });
+
+        if ($generation === null) {
             throw ValidationException::withMessages([
                 'generate' => 'Your last request is still being written. It shows at the top of Activities. Wait for it to finish, then ask for more.',
             ]);
         }
-
-        $generation = ActivityGeneration::create([
-            'teacher_id' => $teacher->id,
-            'status' => ActivityGeneration::QUEUED,
-            'grade_level' => $validated['grade_level'],
-            'competency' => $validated['competency'],
-            'activity_type' => $validated['activity_type'],
-            'topic' => $validated['topic'] ?? null,
-            'teacher_notes' => $validated['teacher_notes'] ?? null,
-            'levels' => $wanted,
-        ]);
 
         // Normally this only queues the work and returns at once. If the queue is set to run
         // inline (QUEUE_CONNECTION=sync), it runs here and the result is known right away.
@@ -206,11 +214,13 @@ class ActivityController extends Controller
 
         $data = $this->boardData($request, $activities) + ['teacher' => $teacher];
         $data['state'] = [
-            'view' => $data['view'],
+            'tab' => $data['tab'],
             'q' => $data['q'],
             'grade' => $data['grade'],
-            'status' => $data['status'] ?? 'Draft',
+            'status' => $data['status'] ?? 'Approved',
             'tier' => $data['tier'] ?? 'all',
+            'skill' => $data['skill'] ?? 'all',
+            'unassigned' => ($data['unassigned'] ?? false) ? 1 : '',
             'page' => $data['page'] ?? 0,
             'tray' => $data['tray'] ?? 0,
         ];
@@ -447,15 +457,28 @@ class ActivityController extends Controller
 
         $teacher = $request->user()->teacher;
 
-        OpenRepositoryListing::create([
-            'activity_id' => $activity->id,
-            'teacher_id' => $teacher->id,
-            'price_type' => $validated['price_type'],
-            'price' => $validated['price_type'] === 'Paid' ? $validated['price'] : 0,
-        ]);
+        // Done under a lock and checked again inside it: two clicks (or two tabs) at the same moment
+        // used to both pass the check above, list the activity twice and pay out the 2 credits twice.
+        $shared = \Illuminate\Support\Facades\DB::transaction(function () use ($activity, $teacher, $validated) {
+            $fresh = Activity::whereKey($activity->id)->lockForUpdate()->first();
+            if ($fresh === null || $fresh->shared_to_repository) {
+                return false;
+            }
 
-        $activity->update(['shared_to_repository' => true]);
-        $teacher->increment('free_generation_credits_remaining', 2);
+            OpenRepositoryListing::create([
+                'activity_id' => $activity->id,
+                'teacher_id' => $teacher->id,
+                'price_type' => $validated['price_type'],
+                'price' => $validated['price_type'] === 'Paid' ? $validated['price'] : 0,
+            ]);
+
+            $fresh->update(['shared_to_repository' => true]);
+            $teacher->increment('free_generation_credits_remaining', 2);
+
+            return true;
+        });
+
+        abort_unless($shared, 403, 'This activity has already been shared.');
 
         return back()->with('status', "\"{$activity->title}\" shared to the Repository. You earned 2 free credits.");
     }
@@ -483,13 +506,28 @@ class ActivityController extends Controller
     }
 
     /**
-     * Everything the board and the list need, worked out from the request's filters.
+     * Everything the Activities page needs, worked out from the request's filters. Two tabs:
+     * To review (drafts, placed in a level one by one) and My activities (everything approved,
+     * with suggestions on top, filters and paging). Old links (view=board, view=list) still land
+     * on the right tab.
      *
      * @return array<string, mixed>
      */
     private function boardData(Request $request, Collection $activities): array
     {
-        $view = $request->query('view') === 'list' ? 'list' : 'board';
+        $teacher = $request->user()->teacher;
+        $counts = $activities->countBy('status');
+        $tiers = config('activity_levels.tiers');
+
+        $tab = $request->query('tab');
+        if (! in_array($tab, ['review', 'mine'], true)) {
+            $tab = match ($request->query('view')) {
+                'list' => 'mine',
+                'board' => 'review',
+                default => $counts->get('Draft', 0) > 0 ? 'review' : 'mine',
+            };
+        }
+
         $query = trim((string) $request->query('q', ''));
         $grade = in_array($request->query('grade'), ['Grade 1', 'Grade 2', 'Grade 3'], true) ? $request->query('grade') : 'All';
 
@@ -504,63 +542,63 @@ class ActivityController extends Controller
             );
         };
 
-        $counts = $activities->countBy('status');
-        $tiers = config('activity_levels.tiers');
-
         $data = [
-            'view' => $view,
+            'tab' => $tab,
             'q' => $query,
             'grade' => $grade,
             'counts' => ['Draft' => $counts->get('Draft', 0), 'Approved' => $counts->get('Approved', 0), 'Rejected' => $counts->get('Rejected', 0)],
-            'locked' => $request->user()->teacher->status !== 'Active',
+            'locked' => $teacher->status !== 'Active',
             'tiers' => $tiers,
             'levelInfo' => config('activity_levels.info'),
         ];
 
-        if ($view === 'board') {
+        if ($tab === 'review') {
             $drafts = $activities->where('status', 'Draft')->filter($matches)->values();
             $pages = max(1, (int) ceil($drafts->count() / self::TRAY));
             $tray = min(max((int) $request->query('tray', 0), 0), $pages - 1);
 
-            $data += [
+            return $data + [
                 'drafts' => $drafts->slice($tray * self::TRAY, self::TRAY)->values(),
                 'draftTotal' => $drafts->count(),
                 'tray' => $tray,
                 'trayPages' => $pages,
-                'columns' => collect($tiers)->mapWithKeys(function (string $tier) use ($activities, $matches) {
-                    $approved = $activities->where('status', 'Approved')->where('difficulty_tier', $tier);
-                    $shown = $approved->filter($matches)->values();
-
-                    return [$tier => [
-                        'total' => $approved->count(),
-                        'matching' => $shown->count(),
-                        'cards' => $shown->take(self::COLUMN),
-                    ]];
-                })->all(),
+                'trayFrom' => $drafts->isEmpty() ? 0 : $tray * self::TRAY + 1,
             ];
-
-            return $data;
         }
 
-        $status = in_array($request->query('status'), ['Draft', 'Approved', 'Rejected'], true) ? $request->query('status') : 'Draft';
+        $status = $request->query('status') === 'Rejected' ? 'Rejected' : 'Approved';
         $tier = in_array($request->query('tier'), $tiers, true) ? $request->query('tier') : 'all';
+        $skills = config('activity_competencies.competencies');
+        $skill = array_key_exists((string) $request->query('skill'), $skills) ? $request->query('skill') : 'all';
+        $unassigned = $request->boolean('unassigned');
 
         $rows = $activities->where('status', $status)
             ->when($tier !== 'all', fn ($c) => $c->where('difficulty_tier', $tier))
+            ->when($skill !== 'all', fn ($c) => $c->where('competency', $skill))
+            ->when($unassigned, fn ($c) => $c->filter(fn (Activity $a) => $a->assignments->isEmpty()))
             ->filter($matches)
             ->values();
 
         $pages = max(1, (int) ceil($rows->count() / self::PER_PAGE));
         $page = min(max((int) $request->query('page', 0), 0), $pages - 1);
 
+        $filtering = $query !== '' || $grade !== 'All' || $tier !== 'all' || $skill !== 'all' || $unassigned;
+
         return $data + [
             'status' => $status,
             'tier' => $tier,
+            'skill' => $skill,
+            'skills' => collect($skills)->map(fn ($c) => $c['label'])->all(),
+            'unassigned' => $unassigned,
+            'filtering' => $filtering,
             'rows' => $rows->slice($page * self::PER_PAGE, self::PER_PAGE)->values(),
             'rowTotal' => $rows->count(),
             'page' => $page,
             'pages' => $pages,
             'perPage' => self::PER_PAGE,
+            // Suggestions go first, where nobody has to scroll a long list to find something to
+            // assign. They never appear on the Rejected view or once the teacher is searching.
+            'weekly' => ($status === 'Approved' && ! $filtering && ! $data['locked']) ? app(ActivitySuggestions::class)->weekly($teacher) : collect(),
         ];
     }
 

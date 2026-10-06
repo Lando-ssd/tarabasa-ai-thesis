@@ -55,8 +55,56 @@ class LearnerReadingController extends Controller
             'wordBreakdown' => $outcome['wordBreakdown'],
             'extraWordsSaid' => $outcome['extraWordsSaid'],
             'wordsToPractice' => $outcome['wordsToPractice'],
+            'wordCounts' => $outcome['wordCounts'] ?? null,
             'comprehension' => $outcome['comprehension'],
             'newBadges' => $outcome['newBadges'],
         ]);
+    }
+
+    /**
+     * A practice try before the real reading (stage 2 of the practice stage). Free and unscored:
+     * the child sees the same word by word look, but nothing is saved and no points, streak or level
+     * move. Two tries at most; after that the child reads for real.
+     */
+    public function submitPractice(Request $request, Activity $activity, ReadingAiClient $readingAi, LearnerReadingService $service): View|\Illuminate\Http\RedirectResponse
+    {
+        $learner = $request->user('learner');
+
+        abort_unless($activity->isAccessibleByLearner($learner), 403);
+
+        if ($service->practiceTriesLeft($learner, $activity) === 0) {
+            return redirect()->route('learner.activity.show', [$activity, 'stage' => 'real']);
+        }
+
+        $validated = $request->validate([
+            'audio' => ['required', 'file', 'max:15360'],
+        ]);
+
+        $outcome = $service->recordPractice($learner, $activity, $validated['audio'], $readingAi);
+
+        if ($outcome['status'] === 'unclear') {
+            return view('learner.activity-practice-unclear', ['activity' => $activity]);
+        }
+
+        return view('learner.activity-practice-result', [
+            'activity' => $activity,
+            'learner' => $learner,
+            'wordBreakdown' => $outcome['wordBreakdown'],
+            'extraWordsSaid' => $outcome['extraWordsSaid'],
+            'wordCounts' => $outcome['wordCounts'],
+            'accuracy' => $outcome['accuracy'],
+            'triesLeft' => $outcome['triesLeft'],
+        ]);
+    }
+
+    /**
+     * Called quietly by a screen where a child is about to read or speak, so the scoring service is
+     * awake by the time the recording is sent. Always answers at once with nothing to show.
+     */
+    public function warm(ReadingAiClient $readingAi): \Illuminate\Http\Response
+    {
+        $readingAi->wake();
+
+        return response()->noContent();
     }
 }

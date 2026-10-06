@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Page timed out')
+@section('code', '419')
+@section('heading', 'This page timed out')
+@section('message', 'You stayed on it for a while, or the page was opened twice. Go back, refresh it, and try again. Nothing was lost.')

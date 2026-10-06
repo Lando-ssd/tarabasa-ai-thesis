@@ -1,8 +1,8 @@
 {{--
   The Learner sidebar. Expects $learner. The active item follows the route,
-  so nothing here needs to be told which page it is on. "Switch" signs the
-  child out of the Learner session and lands on the Learner login (the same
-  code + PIN form), which is what "switch learner" means on a shared device.
+  so nothing here needs to be told which page it is on. "Log out" signs the
+  child out of the Learner session and lands on the child's own login page
+  (code + PIN), so the next child on a shared device can log in.
 --}}
 @php
     $glyph = $learner->avatar_id ?? '';
@@ -49,7 +49,7 @@
       <span class="nav-icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true"><path fill="#bf360c" d="M35.126,44c0,0-6-2-11-2S13,44,13,44l-1-12h24L35.126,44z"/><path fill="#ffa726" d="M14.126 28c0 2.208-1.791 4-4 4s-4-1.792-4-4c0-2.209 1.791-4 4-4S14.126 25.791 14.126 28M42.126 28c0 2.208-1.791 4-4 4s-4-1.792-4-4c0-2.209 1.791-4 4-4S42.126 25.791 42.126 28"/><path fill="#ffe0b2" d="M38.126,18c0-12.725-28-8.285-28,0v9c0,8.286,6.269,15,14,15s14-6.714,14-15V18z"/><path fill="#784719" d="M32,26c0,1.106-0.896,2-2,2c-1.105,0-2-0.894-2-2c0-1.105,0.895-2,2-2C31.104,24,32,24.895,32,26 M20,26c0-1.105-0.896-2-2-2c-1.105,0-2,0.895-2,2c0,1.106,0.895,2,2,2C19.104,28,20,27.106,20,26"/><path fill="#ff5722" d="M24.126,4C15.621,4,3.126,9,3,36l10,8V24l16.876-9l5.125,7l0.125,22L45,36c0-12-0.417-29-14.874-29l-2-3H24.126z"/><path fill="#ffab91" d="M19,35h10c0,0-2,3-5,3S19,35,19,35z"/></svg>
       </span>
-      <span class="nav-label">Switch</span>
+      <span class="nav-label">Log out</span>
     </button>
   </form>
 

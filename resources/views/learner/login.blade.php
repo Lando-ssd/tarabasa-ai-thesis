@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Learner Login — TaraBasa AI</title>
+<title>Learner Login | TaraBasa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<script src="{{ asset('vendor/lottie-web-5.12.2.min.js') }}"></script>
 <style>
   :root{
     --blue-500:#1c7ed6; --blue-600:#0f5fae; --blue-700:#0a3d73;
@@ -34,6 +35,12 @@
 
   h1{ font-family:'Baloo 2',sans-serif; font-size:34px; font-weight:800; color:var(--blue-600); margin:4px 0 10px; letter-spacing:-.01em; }
   .sub{ font-size:18px; color:var(--slate-600); font-weight:600; margin:0 0 30px; line-height:1.5; }
+
+  /* A speaker that reads the line aloud in the browser's own voice (for children who cannot read it yet). */
+  .speak-btn{ display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; margin-left:8px; vertical-align:middle; border:0; border-radius:50%; cursor:pointer; background:var(--blue-500); color:#fff; box-shadow:0 3px 0 var(--blue-700); }
+  .speak-btn svg{ width:22px; height:22px; fill:currentColor; }
+  .speak-btn:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--blue-700); }
+  .speak-btn[hidden]{ display:none; }
 
   .field{ margin-bottom:22px; text-align:center; }
   input[type="text"]{
@@ -78,7 +85,11 @@
   <div class="hero-lottie" id="heroLottie" role="img" aria-label="Children holding up letters, ready to read"></div>
 
   <h1>Hi there!</h1>
-  <p class="sub">Type your code, then your secret PIN.</p>
+  <p class="sub">Type your code, then your secret PIN.
+    <button type="button" class="speak-btn" data-speak="Hi there! Type your code, then your secret PIN." aria-label="Hear this">
+      <svg viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-speaker-high"></use></svg>
+    </button>
+  </p>
 
   @if ($errors->any())
     <div class="inline-error">{{ $errors->first() }}</div>
@@ -87,7 +98,7 @@
   <form method="POST" action="{{ route('learner.login.submit') }}" id="learnerLoginForm">
     @csrf
     <div class="field">
-      <input type="text" name="learner_code" id="learner_code" placeholder="TB-XXXXX" maxlength="8"
+      <input type="text" name="learner_code" id="learner_code" placeholder="TB26-48293" maxlength="12" autocapitalize="characters" spellcheck="false"
              value="{{ old('learner_code') }}" autocomplete="off" autofocus required>
     </div>
 
@@ -159,5 +170,6 @@
     } catch (e) { /* never block login over a sound failing to init */ }
   })();
 </script>
+@include('partials.speak')
 </body>
 </html>

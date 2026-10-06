@@ -6,16 +6,23 @@
 --}}
 @extends('layouts.learner-shell')
 
-@section('title', 'My Dashboard — TaraBasa AI')
+@section('title', 'My Dashboard | TaraBasa AI')
 @section('page', 'home')
 
 @php
-    $levels = [
-        'Beginning' => ['plant', 'Beginning'],
-        'Developing' => ['leaf', 'Developing'],
-        'Proficient' => ['star', 'Proficient'],
+    // The child's level is shown as a step on the reading path (letters, words, sentences, stories),
+    // the order the Philippine curriculum teaches reading. The stored level (Beginning, Developing,
+    // Proficient) is unchanged underneath; only the words shown are different.
+    $pathSteps = \App\Support\ReadingLevel::STEPS;
+    $stepNo = \App\Support\ReadingLevel::step($learner);
+    $levelName = \App\Support\ReadingLevel::stepName($learner);
+    $whyLines = [
+        1 => 'Tara saw that you are still learning your letters, so she picked letters and sounds first. When you are ready, words come next!',
+        2 => 'Tara saw that you know your letters, so she picked sounding out words. Next come whole sentences!',
+        3 => 'Tara saw that you can read words, so she picked sentences. Next come stories!',
+        4 => 'Tara saw that you read sentences well, so she picked stories. Keep reading and you will love them!',
     ];
-    $levelName = $learner->mastery_level ?? 'New';
+    $why = $stepNo ? ['text' => $whyLines[$stepNo], 'code' => $pathSteps[$stepNo]['codeText']] : null;
     $goalLeft = max(0, $weeklyTarget - $weeklyCount);
     $animUrls = [
         'flame' => asset('animations/learner/flame-icon.json'),
@@ -43,7 +50,7 @@
       <p style="margin:20px 0 0;"><a class="clay-btn orange" style="display:inline-block;text-decoration:none;" href="{{ route('learner.activity.find') }}">Start Reading</a></p>
     @else
       @foreach ($journeyRows as $row)
-        @include('learner._road', ['row' => $row])
+        @include('learner._road', ['row' => $row, 'why' => $why])
       @endforeach
     @endif
 
@@ -82,14 +89,14 @@
           <span class="popover-caret"></span>
           <div class="popover-inner">
             <div class="lv-body">
-              <h4>Your Reading Level</h4>
-              <p class="lv-sub">This grows as your real reading accuracy improves.</p>
+              <h4>Your Reading Path</h4>
+              <p class="lv-sub">Letters, then words, then sentences, then stories. The Philippine curriculum teaches reading in this order.</p>
               <div class="lv-rows">
-                @foreach ($levels as $name => [$icon, $label])
-                  <div class="lv-row {{ $levelName === $name ? 'current' : '' }}">
-                    <span class="lv-ico">@include('learner._badge-icon', ['icon' => $icon, 'class' => 'badge-svg'])</span>
-                    <span class="lv-name">{{ $label }}</span>
-                    @if ($levelName === $name)<span class="lv-you">That's you</span>@endif
+                @foreach ($pathSteps as $n => $info)
+                  <div class="lv-row {{ $stepNo === $n ? 'current' : '' }}">
+                    <span class="lv-ico lv-num">{{ $n }}</span>
+                    <span class="lv-name">{{ $info['name'] }}<small>{{ $info['blurb'] }}</small></span>
+                    @if ($stepNo === $n)<span class="lv-you">That's you</span>@endif
                   </div>
                 @endforeach
               </div>

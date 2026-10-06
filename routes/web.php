@@ -27,6 +27,9 @@ Route::get('/', function () {
     return view('landing');
 })->name('landing');
 
+// The privacy page: public, plain words, and the address Google asks for to publish the Gmail sender.
+Route::view('/privacy', 'privacy')->name('privacy');
+
 Route::get('/register/teacher', [AuthController::class, 'showTeacherRegister'])->name('register.teacher');
 Route::post('/register/teacher', [AuthController::class, 'storeTeacher'])->name('register.teacher.submit');
 
@@ -47,8 +50,12 @@ Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallbac
 
 // One-time manual setup tool, not part of any user-facing flow — see
 // GmailAuthorizationController's own doc comment.
-Route::get('/internal/gmail-authorize', [GmailAuthorizationController::class, 'redirect'])->name('internal.gmail-authorize.redirect');
-Route::get('/internal/gmail-authorize/callback', [GmailAuthorizationController::class, 'callback'])->name('internal.gmail-authorize.callback');
+// Admin only: it used to be open to anyone, and it printed a URL parameter back into the page
+// (an injection hole), so it is behind the Admin login now and escapes everything it prints.
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/internal/gmail-authorize', [GmailAuthorizationController::class, 'redirect'])->name('internal.gmail-authorize.redirect');
+    Route::get('/internal/gmail-authorize/callback', [GmailAuthorizationController::class, 'callback'])->name('internal.gmail-authorize.callback');
+});
 
 // Mark-as-read is shared plumbing for both Teacher and Parent Notifications
 // screens — ownership (recipient_user_id === current user) is checked
@@ -65,6 +72,7 @@ Route::middleware('auth')->group(function () {
     // view is reached from its own dashboard nav.
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::put('/profile/grades', [ProfileController::class, 'updateGrades'])->name('profile.grades.update');
 });
 
 // Learner Login — Learner Actor Prompt Steps 1-2. Code entry only (typing
@@ -90,6 +98,9 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
     // works on both.
     Route::post('/reading-preferences/font-step', [LearnerAuthController::class, 'updateReadingFontStep'])->name('reading-preferences.font-step');
 
+    // Wakes the scoring service as a reading or speaking screen opens (see ReadingAiClient::wake()).
+    Route::get('/warm', [LearnerReadingController::class, 'warm'])->middleware('throttle:20,1')->name('warm');
+
     Route::middleware('learner.diagnostic')->group(function () {
         Route::get('/dashboard', [LearnerAuthController::class, 'dashboard'])->name('dashboard');
         // Step 3 "Finding what to read" — resolves real Teacher assignments
@@ -103,6 +114,8 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         // is re-checked inside the controller via the same Activity model
         // method showActivity() uses, not duplicated.
         Route::post('/activity/{activity}/record', [LearnerReadingController::class, 'submitRecording'])->name('activity.record');
+        // The practice tries before a real reading: scored for feedback only, nothing saved (two tries).
+        Route::post('/activity/{activity}/practice', [LearnerReadingController::class, 'submitPractice'])->name('activity.practice');
 
         // Practice Games — standalone free-play, no points/scoring/
         // ReadingSession impact, deliberately kept separate from the real
@@ -110,6 +123,9 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         Route::get('/games', [GameController::class, 'index'])->name('games.index');
         Route::get('/games/word-builder', [GameController::class, 'wordBuilder'])->name('games.word-builder');
         Route::get('/games/letter-match', [GameController::class, 'letterMatch'])->name('games.letter-match');
+        Route::get('/games/balloon-pop', [GameController::class, 'balloonPop'])->name('games.balloon-pop');
+        // One spoken word checked by the same service that scores readings. Practice only: nothing is saved.
+        Route::post('/games/check-word', [GameController::class, 'checkWord'])->middleware('throttle:90,1')->name('games.check-word');
         Route::post('/games/{game}/finish', [GameController::class, 'finish'])->middleware('throttle:30,1')->name('games.finish');
 
         Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');
@@ -150,6 +166,7 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     Route::post('/classes/{class}/join-learner', [ClassController::class, 'joinLearner'])->middleware('teacher.active')->name('classes.join-learner');
     // Assign an Approved activity to a whole class, from the class window.
     Route::post('/classes/{class}/assign-activity', [ClassController::class, 'assignActivity'])->middleware('teacher.active')->name('classes.assign-activity');
+    Route::post('/classes/{class}/learners/{learner}/move', [ClassController::class, 'moveLearner'])->middleware('teacher.active')->name('classes.move-learner');
 
     // Activity Generation — Teacher Actor Prompt Step 7. Generate has NO
     // 'teacher.active' guard: a Pending Teacher can use their 2 free
@@ -184,6 +201,8 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     // Analytics — Teacher Actor Prompt Step 10. Read-only, so no
     // 'teacher.active' guard, same rule as Class Management's index.
     Route::get('/analytics', [AnalyticsController::class, 'teacherIndex'])->name('analytics.index');
+    // The class report as a spreadsheet (CSV), for the school's own reading report. Read-only.
+    Route::get('/analytics/report', [AnalyticsController::class, 'teacherReport'])->middleware('throttle:20,1')->name('analytics.report');
 
     // Grade Promotions — Teacher Actor Prompt Step 9. Viewable while
     // Pending, same rule as Class Management's index; only the mutating
@@ -194,6 +213,10 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
 
     // Notifications — Teacher Actor Prompt Step 11.
     Route::get('/notifications', [NotificationController::class, 'teacherIndex'])->name('notifications.index');
+    // What a Teacher does about an alert (see App\Services\TeacherAlerts): mark it handled, or give
+    // the suggested activity to that learner (which touches a real learner, so it needs approval).
+    Route::post('/alerts/{learner}/handled', [NotificationController::class, 'handled'])->name('alerts.handled');
+    Route::post('/alerts/{learner}/assign', [NotificationController::class, 'assignSuggested'])->middleware('teacher.active')->name('alerts.assign');
 
     // My Profile — not spec'd in any actor prompt, a genuinely missing
     // feature built from reasonable judgment (see ProfileController).

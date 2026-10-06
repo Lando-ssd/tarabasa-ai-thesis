@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Back soon')
+@section('code', '503')
+@section('heading', 'We are getting things ready')
+@section('message', 'TaraBasa AI is being updated and will be back in a minute. Please try again soon.')

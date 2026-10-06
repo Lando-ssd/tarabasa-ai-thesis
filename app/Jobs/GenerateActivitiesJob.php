@@ -91,6 +91,16 @@ class GenerateActivitiesJob implements ShouldQueue
         $competencies = config('activity_competencies.competencies');
 
         $created = DB::transaction(function () use ($data, $generation, $teacher, $wanted, $competencies) {
+            // The credit is taken first and only if one is left, in one step: the check at the top
+            // can be out of date by now, and a credit must never go below zero or be spent twice.
+            $charged = \App\Models\Teacher::whereKey($teacher->id)
+                ->where('free_generation_credits_remaining', '>', 0)
+                ->decrement('free_generation_credits_remaining');
+
+            if ($charged === 0) {
+                return null;
+            }
+
             $rows = Activity::createManyFromBundle($data, [
                 'created_by_teacher_id' => $teacher->id,
                 'grade_level' => $generation->grade_level,
@@ -101,10 +111,14 @@ class GenerateActivitiesJob implements ShouldQueue
                 'teacher_notes' => $generation->teacher_notes,
             ], $wanted);
 
-            $teacher->decrement('free_generation_credits_remaining');
-
             return $rows;
         });
+
+        if ($created === null) {
+            $this->finish($generation, ActivityGeneration::FAILED, "You're out of free generation credits. Nothing was charged.");
+
+            return;
+        }
 
         $count = $created->count();
 

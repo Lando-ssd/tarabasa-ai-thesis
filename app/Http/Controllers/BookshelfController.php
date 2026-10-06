@@ -60,6 +60,7 @@ class BookshelfController extends Controller
             'wordBreakdown' => $outcome['wordBreakdown'],
             'extraWordsSaid' => $outcome['extraWordsSaid'],
             'wordsToPractice' => $outcome['wordsToPractice'],
+            'wordCounts' => $outcome['wordCounts'] ?? null,
         ]);
     }
 }

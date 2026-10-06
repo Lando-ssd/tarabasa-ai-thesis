@@ -20,6 +20,11 @@ class PersonalWordBank extends Model
         'last_reviewed',
     ];
 
+    protected function casts(): array
+    {
+        return ['last_reviewed' => 'datetime'];
+    }
+
     public function learner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Learner::class);

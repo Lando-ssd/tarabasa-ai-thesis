@@ -6,9 +6,13 @@ use App\Models\Learner;
 use App\Models\ReadingSession;
 use App\Models\SchoolClass;
 use App\Models\Teacher;
+use App\Services\TeacherInsights;
 use App\Support\ChildSummary;
+use App\Support\ErrorPatterns;
+use App\Support\ReadingLevel;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AnalyticsController extends Controller
 {
@@ -24,7 +28,7 @@ class AnalyticsController extends Controller
      * comparable to an ongoing accuracy trend (confirmed with the user
      * before building this).
      */
-    public function teacherIndex(Request $request): View
+    public function teacherIndex(Request $request, TeacherInsights $insights): View
     {
         $teacher = $request->user()->teacher;
 
@@ -42,7 +46,17 @@ class AnalyticsController extends Controller
             ->orderBy('group_tag')
             ->pluck('group_tag');
 
-        $mode = $request->query('mode') === 'group' ? 'group' : 'learner';
+        // It opens on the whole picture; one learner and one group are a tap away.
+        $mode = in_array($request->query('mode'), ['learner', 'group'], true) ? $request->query('mode') : 'overview';
+
+        $overview = null;
+        $period = is_string($request->query('period')) && array_key_exists($request->query('period'), TeacherInsights::PERIODS) ? $request->query('period') : 'week';
+        $classChoice = $request->query('class') === 'all' ? null : ((int) $request->query('class') ?: null);
+        if ($mode === 'overview') {
+            $classes = $insights->classesFor($teacher, $classChoice);
+            $classChoice = $classes->count() === 1 && $classChoice !== null ? $classes->first()->id : null;
+            $overview = $insights->overview($teacher, $classes, $period);
+        }
 
         $selectedLearner = null;
         $learnerStats = null;
@@ -73,7 +87,36 @@ class AnalyticsController extends Controller
             // The same day streak and weekly goal the child sees on their own Home.
             'summary' => $selectedLearner ? ChildSummary::for($selectedLearner) : null,
             'pickerClasses' => SchoolClass::whereIn('id', $classIds)->orderByDesc('school_year')->orderBy('name')->get(),
+            'overview' => $overview,
+            'period' => $period,
+            'classChoice' => $classChoice,
+            'periods' => TeacherInsights::PERIODS,
         ]);
+    }
+
+    /**
+     * The class report as a CSV, one row per learner in the chosen classes and period. Nothing a
+     * report does not need (no learner code, no contact details), and any cell a spreadsheet could
+     * run as a formula is neutralised.
+     */
+    public function teacherReport(Request $request, TeacherInsights $insights): StreamedResponse
+    {
+        $teacher = $request->user()->teacher;
+        $period = is_string($request->query('period')) && array_key_exists($request->query('period'), TeacherInsights::PERIODS) ? $request->query('period') : 'week';
+        $classId = $request->query('class') === 'all' ? null : ((int) $request->query('class') ?: null);
+
+        $classes = $insights->classesFor($teacher, $classId);
+        $rows = $insights->reportRows($teacher, $classes, $period);
+
+        return response()->streamDownload(function () use ($rows) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // so Excel reads the names as UTF-8
+            fputcsv($out, TeacherInsights::reportHeader());
+            foreach ($rows as $row) {
+                fputcsv($out, array_map([TeacherInsights::class, 'csvSafe'], $row));
+            }
+            fclose($out);
+        }, 'class-report-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /**
@@ -103,7 +146,58 @@ class AnalyticsController extends Controller
             'selectedLearner' => $selectedLearner,
             'learnerStats' => $learnerStats,
             'summary' => $selectedLearner ? ChildSummary::for($selectedLearner) : null,
+            'level' => $selectedLearner ? $this->parentLevel($selectedLearner) : null,
+            'home' => $selectedLearner ? $this->homePractice($selectedLearner) : null,
         ]);
+    }
+
+    /**
+     * The child's reading level in the school's own words (Phil-IRI, see ReadingLevel) with a plain
+     * sentence for a parent. The Phil-IRI names can sound harsh to a parent ("frustration level"), so
+     * each comes with what it means in everyday words.
+     */
+    private function parentLevel(Learner $learner): array
+    {
+        $level = ReadingLevel::forAdult($learner);
+        $name = $learner->first_name;
+
+        $level['plain'] = [
+            'non' => "{$name} is just starting with letters and sounds. Short, happy practice every day helps most.",
+            'frustration' => "Reading is still hard for {$name} right now. That is common while learning, and short daily practice helps.",
+            'instructional' => "{$name} reads well with some help and is learning steadily.",
+            'independent' => "{$name} reads comfortably alone.",
+            'unchecked' => "{$name} has not finished the first reading check yet.",
+        ][$level['band']] ?? '';
+
+        return $level;
+    }
+
+    /**
+     * What to practise at home, taken from the kind of mistake the child keeps making across their
+     * recent readings (ErrorPatterns). Only said when there is enough evidence, in a parent's words,
+     * with one thing to try and the curriculum competency it practises. Null when there is no clear
+     * pattern: a few mistakes are not a pattern, and nothing is invented.
+     */
+    private function homePractice(Learner $learner): ?array
+    {
+        $profile = ErrorPatterns::forLearner($learner);
+        $main = ErrorPatterns::mainPattern($profile);
+
+        if ($main === null) {
+            return null;
+        }
+
+        $category = ErrorPatterns::CATEGORIES[$main];
+
+        return [
+            'say' => $category['parent'],
+            'tip' => $category['tip'],
+            'code' => $category['code'],
+            'codeText' => $category['codeText'],
+            'early' => $profile['early'],
+            'examples' => $profile['top'][0]['examples'] ?? [],
+            'words' => array_slice(array_keys($profile['missedWords']), 0, 6),
+        ];
     }
 
     /**
@@ -143,6 +237,8 @@ class AnalyticsController extends Controller
         });
 
         return [
+            // What kind of mistakes this child makes (needs a few readings before it says anything).
+            'patterns' => ErrorPatterns::profile($sessions->sortByDesc('timestamp')->values()),
             'source_summary' => $sourceSummary,
             'chart_points' => $chartPoints,
             'polyline' => $chartPoints->map(fn (array $p) => "{$p['x']},{$p['y']}")->implode(' '),

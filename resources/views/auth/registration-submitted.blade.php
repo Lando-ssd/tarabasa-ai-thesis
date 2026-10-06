@@ -39,7 +39,7 @@
     Continue to sign in
   </a>
 
-  <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+  <script src="{{ asset('vendor/lottie-web-5.12.2.min.js') }}"></script>
   <script>
     (function () {
       var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

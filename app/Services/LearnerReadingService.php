@@ -7,6 +7,7 @@ use App\Models\Learner;
 use App\Models\Notification;
 use App\Models\PersonalWordBank;
 use App\Models\ReadingSession;
+use App\Support\NotSure;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -33,6 +34,11 @@ class LearnerReadingService
     private const MASTERY_TIERS = ['Beginning', 'Developing', 'Proficient'];
 
     public const MAX_UNCLEAR_ATTEMPTS = 3;
+
+    /** Practice tries before a real reading. They count for nothing: no points, no streak, no level, nothing saved. */
+    public const MAX_PRACTICE_TRIES = 2;
+
+    private const PRACTICE_TRIES_TTL_HOURS = 12;
 
     private const UNCLEAR_ATTEMPTS_TTL_HOURS = 6;
 
@@ -68,7 +74,35 @@ class LearnerReadingService
         // this Learner+Activity so a future fresh attempt starts clean.
         $this->clearUnclearAttempts($learner, $activity);
 
-        return ['status' => 'scored'] + $this->scoreAndPersist($learner, $activity, $outcome['result'], $comprehension);
+        // Words the app did not hear well are "not sure", left out of the score (see NotSure).
+        return ['status' => 'scored'] + $this->scoreAndPersist($learner, $activity, NotSure::apply($outcome['result']), $comprehension);
+    }
+
+    public static function practiceKey(Learner $learner, Activity $activity): string
+    {
+        return "practice-tries:{$learner->id}:{$activity->id}";
+    }
+
+    /** How many practice tries a child has left on this activity (resets on its own after a while). */
+    public function practiceTriesLeft(Learner $learner, Activity $activity): int
+    {
+        return max(0, self::MAX_PRACTICE_TRIES - (int) Cache::get(self::practiceKey($learner, $activity), 0));
+    }
+
+    /**
+     * One practice try before the real reading. It is a free attempt (recordFreeReattempt): the same
+     * word by word feedback, nothing saved. A try that could not be heard does not use up a try.
+     */
+    public function recordPractice(Learner $learner, Activity $activity, UploadedFile $audio, ReadingAiClient $readingAi): array
+    {
+        $outcome = $this->recordFreeReattempt($activity, $audio, $readingAi);
+
+        if ($outcome['status'] === 'scored') {
+            $key = self::practiceKey($learner, $activity);
+            Cache::put($key, (int) Cache::get($key, 0) + 1, now()->addHours(self::PRACTICE_TRIES_TTL_HOURS));
+        }
+
+        return $outcome + ['triesLeft' => $this->practiceTriesLeft($learner, $activity)];
     }
 
     /**
@@ -95,7 +129,7 @@ class LearnerReadingService
             return ['status' => 'unclear'];
         }
 
-        $result = $outcome['result'];
+        $result = NotSure::apply($outcome['result']);
         $accuracy = (float) ($result['accuracy']['accuracy_score'] ?? 0);
         $wcpm = $result['speed']['wcpm'] ?? null;
 
@@ -111,6 +145,7 @@ class LearnerReadingService
             'wordBreakdown' => $breakdown['words'],
             'extraWordsSaid' => $breakdown['extraWordsSaid'],
             'wordsToPractice' => $breakdown['practiceCount'],
+            'wordCounts' => NotSure::counts($result['accuracy']['word_feedback'] ?? null),
         ];
     }
 
@@ -197,12 +232,13 @@ class LearnerReadingService
             'initiated_by' => $initiatedBy,
         ]);
 
-        if ($accuracy < 80) {
-            $this->recordStrugglingWords($learner, $session, $result);
-        }
+        // The child's own word bank: new misses go in, words they now read right move toward mastered.
+        app(WordBank::class)->record($learner, $session, (array) ($result['accuracy']['word_feedback'] ?? []));
 
         $learner->update([
             'mastery_level' => $levelAfter,
+            // Keep the child's reading path step in line with a level that just moved.
+            'reading_rung' => \App\Support\ReadingLevel::rungAfterLevelChange($learner, $levelAfter),
             'points' => $learner->points + $pointsEarned,
             'streak' => $learner->streak + 1,
         ]);
@@ -241,6 +277,7 @@ class LearnerReadingService
             'wordBreakdown' => $breakdown['words'],
             'extraWordsSaid' => $breakdown['extraWordsSaid'],
             'wordsToPractice' => $breakdown['practiceCount'],
+            'wordCounts' => NotSure::counts($result['accuracy']['word_feedback'] ?? null),
             'comprehension' => $comprehension,
             'newBadges' => $newBadges,
         ];
@@ -268,8 +305,17 @@ class LearnerReadingService
                 continue;
             }
 
+            if (! empty($entry['unsure'])) {
+                // Heard too faintly to tell what was said: neither right nor wrong (see NotSure).
+                $words[] = ['text' => $entry['reference'] ?? '', 'status' => 'unsure', 'heard' => null];
+                $spokenIndex++;
+
+                continue;
+            }
+
             if ($status === 'insertion') {
-                if (! empty($entry['spoken'])) {
+                // A word the recognizer split in two is one word read right, not an extra word (SpeechNormalizer).
+                if (! empty($entry['spoken']) && empty($entry['merged'])) {
                     $extraWordsSaid[] = $entry['spoken'];
                 }
 
@@ -300,7 +346,7 @@ class LearnerReadingService
             ];
         }
 
-        $practiceCount = empty($wordFeedback) ? null : count(array_filter($words, fn (array $w) => $w['status'] !== 'correct'));
+        $practiceCount = empty($wordFeedback) ? null : count(array_filter($words, fn (array $w) => ! in_array($w['status'], ['correct', 'unsure'], true)));
 
         return ['words' => $words, 'extraWordsSaid' => $extraWordsSaid, 'practiceCount' => $practiceCount];
     }
@@ -354,25 +400,6 @@ class LearnerReadingService
         }
 
         return self::MASTERY_TIERS[$index];
-    }
-
-    private function recordStrugglingWords(Learner $learner, ReadingSession $session, array $result): void
-    {
-        $missed = collect($result['accuracy']['word_feedback'] ?? [])
-            ->filter(fn ($word) => ($word['status'] ?? 'correct') !== 'correct')
-            ->pluck('reference')
-            ->filter()
-            ->unique()
-            ->take(2);
-
-        foreach ($missed as $word) {
-            PersonalWordBank::create([
-                'learner_id' => $learner->id,
-                'session_id' => $session->id,
-                'word' => $word,
-                'mastery_status' => 'Struggling',
-            ]);
-        }
     }
 
     private function notifyForSession(Learner $learner, Activity $activity, ReadingSession $session): void

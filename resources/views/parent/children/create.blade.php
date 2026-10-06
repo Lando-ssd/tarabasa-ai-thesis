@@ -6,8 +6,9 @@
 <title>TaraBasa AI — Add your child</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link href="{{ asset('vendor/cropper-1.6.2.min.css') }}" rel="stylesheet">
 <style>
   :root{
     --sky-50:#eef6ff; --sky-100:#dcedff;
@@ -80,21 +81,6 @@
   .avatar-opt:hover{ transform:translateY(-2px); }
   .avatar-opt.selected{ border-color:var(--blue-500); background:var(--sky-50); box-shadow:0 0 0 3px rgba(28,126,214,0.14); }
 
-  .color-pick{ margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
-  .color-pick-label{ font:700 13px/1 'Inter',sans-serif; color:var(--navy-900); margin-bottom:10px; }
-  .color-opts{ display:flex; gap:10px; }
-  .color-opt{
-    flex:1; display:flex; align-items:center; justify-content:center; gap:10px; padding:12px 10px; cursor:pointer;
-    border-radius:14px; border:2px solid var(--line); background:var(--bg-0); font:700 14px/1 'Inter',sans-serif; color:var(--navy-900);
-    transition:border-color .15s ease, transform .15s ease;
-  }
-  .color-opt:hover{ transform:translateY(-1px); }
-  .color-opt.selected{ border-color:var(--blue-500); background:var(--sky-50); box-shadow:0 0 0 3px rgba(28,126,214,0.14); }
-  .color-opt .swatch{ width:22px; height:22px; border-radius:50%; box-shadow:inset 0 -3px 0 rgba(0,0,0,.16); }
-  .color-opt .swatch.blue{ background:linear-gradient(180deg,#52adf8,#1c7ed6); }
-  .color-opt .swatch.pink{ background:linear-gradient(180deg,#ff9fc4,#f0629a); }
-  .color-hint{ font:500 12.5px/1.4 'Inter',sans-serif; color:var(--slate-600); margin:8px 0 0; }
-
   .avatar-mode-toggle{ display:flex; gap:6px; margin-bottom:16px; background:var(--bg-0); border:1px solid var(--line); border-radius:12px; padding:4px; }
   .mode-tab{
     flex:1; padding:9px; border:none; border-radius:9px; background:none; color:var(--slate-600);
@@ -143,15 +129,25 @@
   .pin-hidden-input{ position:absolute; opacity:0; pointer-events:none; }
   .pin-label{ text-align:center; font-size:12.5px; font-weight:700; color:var(--slate-600); margin:14px 0 4px; }
 
-  .nav-row{ display:flex; gap:10px; margin-top:22px; }
+  .nav-row{ display:flex; gap:10px; margin-top:22px; justify-content:space-between; align-items:center; }
   .btn{
-    flex:1; padding:14px; border:none; border-radius:12px; font:700 15px/1 'Inter',sans-serif; cursor:pointer;
+    flex:0 0 auto; padding:14px 34px; border:none; border-radius:12px; font:700 15px/1 'Inter',sans-serif; cursor:pointer;
     display:flex; align-items:safe center; justify-content:center; gap:8px; transition:transform .15s ease, opacity .15s ease;
   }
   .btn:hover{ transform:translateY(-1px); }
   .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
   .btn-primary{ background:linear-gradient(155deg, var(--blue-500), var(--blue-700)); color:#fff; box-shadow:0 12px 22px -10px rgba(15,95,174,0.55); }
-  .btn-ghost{ background:var(--bg-0); color:var(--slate-600); border:1.5px solid var(--line); flex:0 0 110px; }
+  .btn-ghost{ background:var(--bg-0); color:var(--slate-600); border:1.5px solid var(--line); padding:14px 28px; }
+
+  .chiprow{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 4px; }
+  .chip{ position:relative; display:inline-flex; align-items:center; padding:9px 14px; border:1.5px solid var(--line); border-radius:999px; background:var(--surface); font:700 13.5px/1 'Inter',sans-serif; color:var(--navy-900); cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+  .chip input{ position:absolute; opacity:0; pointer-events:none; }
+  .chip.selected{ border-color:var(--blue-500); background:var(--sky-50); color:var(--blue-600); }
+  .field-hint{ font:500 12.5px/1.45 'Inter',sans-serif; color:var(--slate-600); margin:6px 0 0; }
+  .qdots{ display:flex; gap:7px; margin:0 0 14px; }
+  .qdots i{ width:10px; height:10px; border-radius:50%; background:var(--line); display:block; }
+  .qdots i.c{ background:var(--blue-500); } .qdots i.d{ background:var(--parent-teal); }
+  .pq-opts.three .pq-opt{ padding:14px 8px; font-size:14px; }
 
   .step-hidden{ display:none; }
   @keyframes stepFadeIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
@@ -218,6 +214,16 @@
             <option value="Grade 3">Grade 3</option>
           </select>
         </div>
+        <div class="field">
+          <label for="home_language">Language spoken at home <span class="optional-tag">optional</span></label>
+          <select name="home_language" id="home_language">
+            <option value="">Choose one</option>
+            @foreach (\App\Http\Controllers\LearnerController::HOME_LANGUAGES as $lang)
+              <option value="{{ $lang }}" @selected(old('home_language') === $lang)>{{ $lang }}</option>
+            @endforeach
+          </select>
+          <p class="field-hint">Helps us understand how much English your child hears at home. It does not change the activities.</p>
+        </div>
       </div>
 
       <div class="step step-hidden" id="step2">
@@ -263,15 +269,6 @@
           <div class="field-error" id="photoError" style="display:none;"></div>
         </div>
 
-        <div class="color-pick">
-          <div class="color-pick-label">Favorite color</div>
-          <div class="color-opts" id="colorOpts">
-            <button type="button" class="color-opt selected" data-color="blue"><span class="swatch blue"></span>Blue</button>
-            <button type="button" class="color-opt" data-color="pink"><span class="swatch pink"></span>Pink</button>
-          </div>
-          <p class="color-hint">This tints <span class="child-name-possessive-ref">their</span> name badge inside TaraBasa.</p>
-        </div>
-        <input type="hidden" name="theme_color" id="theme_color" value="blue">
         <input type="hidden" name="avatar_id" id="avatar_id" value="{{ $avatars[0] }}">
         <input type="file" name="avatar_photo" id="avatarPhotoRealInput" style="display:none;">
       </div>
@@ -281,30 +278,39 @@
         <h1>How would you describe <span class="child-name-possessive-ref">their</span> reading?</h1>
         <p class="sub">We'll confirm this with a quick placement check next — this initial estimate isn't final, it just helps set a starting point.</p>
         <div id="stageOptions">
-          <button type="button" class="option-btn" data-stage="starting">Just starting</button>
-          <button type="button" class="option-btn" data-stage="letters">Knows letters and sounds</button>
-          <button type="button" class="option-btn" data-stage="blending">Blending sounds into words</button>
-          <button type="button" class="option-btn" data-stage="sentences">Reading simple sentences</button>
-          <button type="button" class="option-btn" data-stage="independent">Reading independently but needs confidence</button>
+          <button type="button" class="option-btn" data-stage="starting">Cannot yet recognize letters</button>
+          <button type="button" class="option-btn" data-stage="letters">Recognizes letters but cannot read words yet</button>
+          <button type="button" class="option-btn" data-stage="blending">Reads simple words</button>
+          <button type="button" class="option-btn" data-stage="sentences">Reads short sentences</button>
+          <button type="button" class="option-btn" data-stage="independent">Reads grade-level passages on their own</button>
           <button type="button" class="option-btn" data-stage="unsure">Not sure</button>
         </div>
         <input type="hidden" name="reading_stage" id="reading_stage" value="">
 
-        <div class="field" style="margin-top:18px;">
-          <label>Learning style</label>
+        <div class="field" style="margin-top:20px;">
+          <label>What helps <span class="child-name-ref">your child</span> most? <span class="optional-tag">choose any</span></label>
+          <div class="chiprow" id="supportChips">
+            @foreach (\App\Http\Controllers\LearnerController::SUPPORTS as $key => $label)
+              <label class="chip"><input type="checkbox" name="supports[]" value="{{ $key }}"><span>{{ $label }}</span></label>
+            @endforeach
+          </div>
+          <p class="field-hint">These switch on supports such as voice help and hints. They do not decide the activities.</p>
         </div>
-        <div id="learningStyleOptions">
-          <button type="button" class="option-btn" data-style="Visual">Visual — learns best by seeing pictures and images</button>
-          <button type="button" class="option-btn" data-style="Listening">Listening — learns best by hearing things explained</button>
-          <button type="button" class="option-btn" data-style="Hands-on">Hands-on — learns best by doing and interacting</button>
+        <div class="field">
+          <label>Topics <span class="child-name-ref">your child</span> likes <span class="optional-tag">choose any</span></label>
+          <div class="chiprow" id="interestChips">
+            @foreach (\App\Http\Controllers\LearnerController::INTERESTS as $key => $label)
+              <label class="chip"><input type="checkbox" name="interests[]" value="{{ $key }}"><span>{{ $label }}</span></label>
+            @endforeach
+          </div>
         </div>
-        <input type="hidden" name="learning_style" id="learning_style" value="">
       </div>
 
       <div class="step step-hidden" id="step4">
         <div class="step-eyebrow">Almost there</div>
-        <h1>Quick Placement Check</h1>
-        <p class="sub">These 3 questions are tailored to <span class="grade-tag" id="gradeTagText">Grade 1</span> to help set a real starting level — more accurate than a guess alone.</p>
+        <h1>A few quick questions</h1>
+        <p class="sub">Three questions for <span class="grade-tag" id="gradeTagText">Grade 1</span>. A guess is fine. <span class="child-name-ref">Your child</span>'s first reading check finds the real starting point.</p>
+        <div class="qdots" id="qDots"><i class="c"></i><i></i><i></i></div>
         <div id="placementQuestions"></div>
         <input type="hidden" name="q1" id="q1" value="">
         <input type="hidden" name="q2" id="q2" value="">
@@ -339,14 +345,14 @@
 
       <div class="nav-row" id="navRow">
         <button type="button" class="btn btn-ghost" id="prevBtn">Back</button>
-        <button type="button" class="btn btn-primary" id="nextBtn">Next <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button type="submit" class="btn btn-primary step-hidden" id="submitBtn">Complete Setup <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+        <button type="submit" class="btn btn-primary step-hidden" id="submitBtn">Complete setup</button>
       </div>
     </form>
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+<script src="{{ asset('vendor/cropper-1.6.2.min.js') }}"></script>
 <script>
   const PLACEMENT_QUESTIONS = @json($placementQuestions);
 
@@ -356,39 +362,41 @@
 
   function selectedGrade(){ return document.getElementById('grade_level').value; }
 
+  // One question at a time (three dots). Yes / Not yet / Not sure: "Not sure" is stored as
+  // 'unsure' and counts as no signal, never as a wrong answer.
+  let qIndex = 0;
+  const ANSWER_LABEL = { yes: 'Yes', no: 'Not yet', unsure: 'Not sure' };
+
   function renderPlacementQuestions(){
     const grade = selectedGrade();
     document.getElementById('gradeTagText').textContent = grade;
     const container = document.getElementById('placementQuestions');
-    container.innerHTML = '';
-    PLACEMENT_QUESTIONS[grade].forEach((q, i) => {
-      const key = 'q' + (i + 1);
-      const div = document.createElement('div');
-      div.className = 'pq';
-      div.innerHTML = `
+    const q = PLACEMENT_QUESTIONS[grade][qIndex];
+    const key = 'q' + (qIndex + 1);
+    container.innerHTML = `
+      <div class="pq">
         <div class="q">${q}</div>
-        <div class="pq-opts">
-          <button type="button" class="pq-opt" data-key="${key}" data-val="yes">Yes</button>
-          <button type="button" class="pq-opt" data-key="${key}" data-val="no">No</button>
-        </div>`;
-      container.appendChild(div);
-    });
+        <div class="pq-opts three">
+          ${['yes', 'no', 'unsure'].map(v => `<button type="button" class="pq-opt" data-key="${key}" data-val="${v}">${ANSWER_LABEL[v]}</button>`).join('')}
+        </div>
+      </div>`;
+    const current = document.getElementById(key).value;
     container.querySelectorAll('.pq-opt').forEach(btn => {
+      if (btn.dataset.val === current) btn.classList.add('selected');
       btn.addEventListener('click', () => {
-        const key = btn.dataset.key;
         document.getElementById(key).value = btn.dataset.val;
-        container.querySelectorAll(`[data-key="${key}"]`).forEach(b => b.classList.remove('selected'));
+        container.querySelectorAll('.pq-opt').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
       });
     });
+    document.querySelectorAll('#qDots i').forEach((dot, i) => {
+      dot.className = i < qIndex ? 'd' : (i === qIndex ? 'c' : '');
+    });
   }
 
-  document.querySelectorAll('.color-opt').forEach(el => {
-    el.addEventListener('click', () => {
-      document.querySelectorAll('.color-opt').forEach(x => x.classList.remove('selected'));
-      el.classList.add('selected');
-      document.getElementById('theme_color').value = el.dataset.color;
-    });
+  // Interest and support chips.
+  document.querySelectorAll('.chip input').forEach(box => {
+    box.addEventListener('change', () => box.parentNode.classList.toggle('selected', box.checked));
   });
 
   document.querySelectorAll('.avatar-opt').forEach(el => {
@@ -505,14 +513,6 @@
       document.getElementById('reading_stage').value = el.dataset.stage;
     });
   });
-  document.querySelectorAll('#learningStyleOptions .option-btn').forEach(el => {
-    el.addEventListener('click', () => {
-      document.querySelectorAll('#learningStyleOptions .option-btn').forEach(x => x.classList.remove('selected'));
-      el.classList.add('selected');
-      document.getElementById('learning_style').value = el.dataset.style;
-    });
-  });
-
   function wirePinBoxes(boxesId, inputId, hiddenId, onComplete){
     const boxes = document.querySelectorAll('#' + boxesId + ' .pin-box');
     const input = document.getElementById(inputId);
@@ -544,6 +544,8 @@
     document.querySelectorAll('.child-name-possessive-ref').forEach(el => el.textContent = possessive);
   }
   document.getElementById('first_name').addEventListener('input', updateChildNameRefs);
+  // The three questions differ by grade, so changing the grade clears earlier answers.
+  document.getElementById('grade_level').addEventListener('change', () => { ['q1','q2','q3'].forEach(k => document.getElementById(k).value = ''); qIndex = 0; });
 
   const progressFill = document.getElementById('progressFill');
   const progressLabel = document.getElementById('progressLabel');
@@ -574,7 +576,7 @@
 
     progressFill.style.width = (n / totalSteps * 100) + '%';
     progressLabel.textContent = `Step ${n} of ${totalSteps}`;
-    prevBtn.disabled = n === 1;
+    prevBtn.style.visibility = n === 1 ? 'hidden' : 'visible';
     if (n === 4) renderPlacementQuestions();
 
     nextBtn.classList.toggle('step-hidden', n === totalSteps);
@@ -602,11 +604,10 @@
     }
     if (n === 3){
       if (!document.getElementById('reading_stage').value){ showInlineError('Please choose one option to describe their reading.'); return false; }
-      if (!document.getElementById('learning_style').value){ showInlineError('Please choose a learning style.'); return false; }
     }
     if (n === 4){
-      if (!document.getElementById('q1').value || !document.getElementById('q2').value || !document.getElementById('q3').value){
-        showInlineError('Please answer all 3 questions.');
+      if (!document.getElementById('q' + (qIndex + 1)).value){
+        showInlineError('Please choose Yes, Not yet or Not sure.');
         return false;
       }
     }
@@ -622,11 +623,16 @@
   nextBtn.addEventListener('click', () => {
     if (!validateStep(step)) return;
     updateChildNameRefs();
+    if (step === 3) qIndex = 0;
+    // Step 4 is three questions, one at a time.
+    if (step === 4 && qIndex < 2) { qIndex++; clearInlineErrors(); renderPlacementQuestions(); return; }
     step++;
     showStep(step);
   });
   prevBtn.addEventListener('click', () => {
     if (step === 1) return;
+    if (step === 4 && qIndex > 0) { qIndex--; clearInlineErrors(); renderPlacementQuestions(); return; }
+    if (step === 5) qIndex = 2;
     step--;
     showStep(step);
   });

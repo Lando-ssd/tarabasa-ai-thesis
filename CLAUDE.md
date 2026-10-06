@@ -5423,6 +5423,9 @@ that 0.335 in `diagnostic-intro.blade.php`.
 The passage, Great job, results and try again screens are redesigned too (see below).
 
 **First-login reading check follows the Parent's profile, not the grade (2026-09-24).**
+**PARTLY SUPERSEDED 2026-10-05:** the items are no longer written by the generator. They come from a
+curated, curriculum-coded bank (see "Curated first-check bank" near the end of this file). Where the
+Parent's profile starts the check, the staircase, and the placement score below are unchanged.
 The instructor's finding: the check must match what the Parent said at sign up, be
 based on the curriculum and NOT on which grade the child is enrolled in. Some Grade 2
 children read well (they should get real reading passages, not phonics) and some
@@ -5769,6 +5772,429 @@ after the team consulted the adviser and the direction changed: classes and grou
 reading level, and the app suggests suitable activities automatically instead of the teacher sorting
 activities into folders by hand. Do not rebuild bundles. `activities.bundle_title` is a different thing
 (the generator's own batch label) and stays.
+
+## Revision round after the adviser consult (2026-10-05, BUILT LOCALLY, NOT PUSHED YET)
+
+The adviser's feedback was approved as a 29 screen preview (artifact `R8ZBrv9dtu2rCug8yxWSao`). The user
+said: build it, test it, run it on localhost FIRST, push only after their own go. Standing rule for the
+Learner side from this round: **keep every animation and look that is live on Railway** (the Lotties in
+`public/animations[/learner]`: star happy and sad, owl head, Tara intro, flame and star icons, the flying owl
+bird, the children holding letters on the login). The adviser's input is wording, UX and logic only. The
+preview's drawn mascots were stand-ins; never ship them. Teacher and Parent screens were accepted as they are.
+
+- **Sign in.** One general form (`auth/login`). If a Learner code is typed (`LearnerCode::looksLikeCode`),
+  the form switches to a 4 digit PIN and `AuthController::login()` hands the pair to
+  `LearnerAuthController::login`, so a child who types a correct code and PIN lands on the dashboard without
+  retyping anything. The children-holding-letters form (`learner/login`) is the original one with a speaker
+  button added. Logging out as a Learner lands on that form. Sidebar says "Log out" (was "Switch").
+- **Learner code.** New format `TB` + 2 digit year + 4 digits + a Luhn check digit, shown `TB26-48293`
+  (`App\Support\LearnerCode`: generate, normalize, looksLikeCode, checkDigitOk, matching). Old `TB-XXXXX`
+  codes keep working. A teacher joins a learner with only the LAST 5 characters (an ambiguous match asks for
+  more); this is our reading of a teammate's note and the user has not confirmed it.
+- **One reading level language** (`App\Support\ReadingLevel`). `mastery_level` (Beginning / Developing /
+  Proficient) is still what is stored and what the adaptive engine uses. Adults see Phil-IRI names (Non-reader
+  only when the first check never got past letters; Frustration; Instructional; Independent; DepEd Order 14,
+  2018). A single reading is named by accuracy (97 and above Independent, 90 to 96 Instructional, below 90
+  Frustration). A child sees a four step path: Letter Explorer, Word Builder, Sentence Reader, Story Reader
+  (rung 0 / 1 / 2 and 3 / 4 to 6; each step carries a curriculum code and a "why this one" line). New
+  `learners.reading_rung` (0 to 6, ladder in `config/diagnostic.php`); children checked before it fall back
+  to an estimate from `mastery_level`. Home shows the step name and a "Your Reading Path" popover ("That's you"
+  on the child's step). **Nothing sets `reading_rung` yet except what Phase 4 below will do**; until then it
+  is null for new children too and the estimate is used.
+- **Reading groups.** Classes are split automatically into three groups (support, instructional, independent)
+  by `ReadingLevel::groups`. `ActivityAssignment.reading_band` assigns to one group of a class.
+  `ActivityAssignment::reachingLearner()` is the ONE rule for what reaches a child (direct, whole class, the
+  child's reading group, a focus group tag scoped to the assigning teacher); both
+  `LearnerAuthService::findActivityOptions` (what is shown) and `Activity::isAssignedToLearner` (what may be
+  opened) use it, so they cannot disagree. This replaced "first source with results wins": a child now sees
+  everything given to them together. `ReadingLevel::levelChecks` only TELLS a teacher when a child reads two
+  levels away from the middle of the class; it never moves anyone. `ActivitySuggestions` suggests from the
+  teacher's own approved activities; `MatatagAlignmentResolver::cachedCodeFor` reads the cache only.
+- **Teacher/Parent.** `teachers.grades_handled` (a Teacher's own grades) and `learners.home_language`,
+  `supports`, `interests` are new nullable columns (migration `2026_10_05_000100_...`). Activities has two
+  tabs (Review, My activities). Only Teacher/Parent screens listed in the preview were touched.
+- **Speaker (read aloud).** `partials/speak.blade.php` uses the BROWSER's own speech synthesis, so nothing is
+  sent to a server or a third party (same privacy reasoning that rejected the Web Speech API recognition
+  earlier). Used on the Learner login, the first-login intro, the reading screens and the practice stage.
+  `tbSpeakWords` returns a stop function.
+- **Practice stage on a real activity.** Listen (Tara reads it), Your turn (two FREE tries), Read for real.
+  A try is scored for feedback only (`LearnerReadingService::recordPractice` reuses `recordFreeReattempt`):
+  no ReadingSession, no points, streak, level, word bank or notification. Counter is a cache key
+  `practice-tries:{learner}:{activity}` (12 hour TTL). A try that could not be heard does not use up a try.
+  A child who already read the activity for real, or has used both tries, starts at "Read for real";
+  `?stage=listen|try|real` picks one. Route `POST /learner/activity/{activity}/practice`.
+- **Warm-up on the first check.** The first item starts with a one word microphone check that listens locally
+  with Web Audio and records and sends NOTHING.
+- **"Not sure" words (`App\Support\NotSure`, `config/reading.php`).** A word the speech recognizer got wrong
+  but heard faintly (confidence below `unsure_confidence` 0.50) is marked "Not sure": it is shown in grey, left
+  out of the accuracy and out of the word bank, and never triggers the needs-attention flag. At most
+  `unsure_max_share` (25 percent) of the words can be not sure, least confident first, so it can never hide a
+  reading that is mostly wrong. A skipped word is never not sure. **PROVISIONAL:** both numbers were chosen
+  with synthesized voices; they need checking against real child recordings before the thesis relies on them,
+  and the team should say where the basis for them comes from. Results show "N of M words read right" and
+  "Not sure", plus points (the percentage and speed are for the teacher and parent screens).
+- **Tests.** `tests/Feature/AccessRevisionTest.php` (sign in, codes, teacher grades) and
+  `LearnerRevisionTest.php` (levels, groups, not sure, practice stage, Home); 68 tests pass in total.
+- **Not built yet from the preview:** the generator prompt constraints (B3: they belong in the teammate's
+  generator repository; the app can only send them in `teacher_notes`), Teacher Analytics Overview and CSV,
+  smart Alerts with suggestions, Open Repository ordered by the child's level, Phil-IRI labels on Parent
+  screens. (The curated first-check bank and the Games changes were built afterward: see the two sections
+  below.) **Not tested:** a real microphone or child voice (the test browser blocks it), the warm-up and
+  practice recording flows beyond a static render plus a real upload of a synthesized voice, Lottie motion
+  (hidden test tabs freeze it).
+- **Local only, not in the repo:** demo accounts (demo.teacher / demo.parent @example.com, password
+  `Demo1234!`, children Maria and Miguel, PIN 1234) were seeded into the local SQLite database; the local
+  `.env` has `READING_AI_URL` set. A Google OAuth client secret JSON was attached to a chat by mistake; it was
+  NOT used or copied anywhere and must never be committed.
+
+## Curated first-check bank (2026-10-05, BUILT LOCALLY, NOT PUSHED YET)
+
+The first-login reading check no longer calls the AI generator. Items come from a fixed, curriculum-coded
+bank, as the approved preview (B2) described: 3 variants x 7 rungs = 21 items, opening at once ("I'm Ready"
+used to wait 8 to 105 seconds on the generator; measured now: about 0.2 s).
+
+- **Where it lives.** Texts: `config/diagnostic_bank.php` (rungs 1 to 6) and the letter sets in
+  `config/diagnostic.php` (`letters.sets`, now three sets: S A T P I N / M D O G C B / H R E F L K). Per-rung
+  metadata (activity type, level, MATATAG codes with their guide wording, landing level, placement band) is the
+  `ladder` in `config/diagnostic.php`. `App\Services\DiagnosticBank::idsByRung()` makes the Activity rows the
+  first time a check needs them (`purpose = diagnostic`, `bundle_title = Reading check`, found again by exact
+  text; editing a text makes a NEW row and leaves the old one for the readings already saved against it).
+  Made under a cache lock so two children starting at once cannot each make a copy. No seeder, so it reaches
+  Railway with the code. The letters rows made earlier are backfilled once.
+- **New columns** (`2026_10_05_000200`): `activities.curriculum_code` (the code sent to the scoring service and
+  shown to teachers; `MatatagAlignmentResolver` uses it without asking the generator) and
+  `activities.check_rung` (`DiagnosticPlacement::rungOf` reads it first).
+- **The rungs and their basis.** 0 letters (EN2PWS-I-2 "Identify alphabet letter names"; names are what speech
+  recognition can check); 1 short CVC words (RL1PWS-I-5, EN2PWS-I-3); 2 short sentences (RL1CAT-III-1,
+  RL1VWK-I-3); 3 longer sentences (RL1CAT-III-1, EN2PWS-I-1); 4 to 6 stories of about 30, 60 and 100 words
+  (EN3CAT-I-1, plus EN3CAT-I-2 on 5 and 6). Landing level: 0-2 Beginning, 3-4 Developing, 5-6 Proficient. Code
+  wording was checked against the guides in `docs/manuscript/` (the English guide is plain text under a .pdf
+  name; the Grade 1 Reading and Literacy guide is scanned images, so its codes were read from page images).
+  Rungs 4 to 6 use Grade 3 as the grade tag because the codes are Grade 3; 70 percent narrative and 30 percent
+  informational per the Key Stage 1 guidance (two stories and one informational text per rung).
+- **How the texts were checked.** Every item was read back by two synthesized voices (Windows David and Zira)
+  through the REAL Reading-api, and reworded where the recognizer mixed words up (homophones such as sun/son,
+  bean/been, red/read, ripe/right, names such as Mia or Tess, plurals dropped). FINAL results (all 21 items, both
+  voices, 2026-10-05): rungs 2 and 3 (sentences) 100 percent for every item; rungs 4 to 6 (stories) 97 to 100
+  percent; the three word lists 100 percent; the three letter sets 100 percent except set A read by one voice
+  (83 percent: S heard as "as"). Word list C was changed after a first list scored 67 percent (cup/curb, pot/pod):
+  the final "cat map six leg fan log" was tested exactly as written at 100 percent with both voices.
+  Single-word lists are the recognizer's weakest case (isolated words with no context): word lists were
+  chosen from words both voices read back correctly. That limit is real for children too.
+- **HONEST LIMITS.** (1) The texts were written by the team, not by a curriculum committee: a Grade 1 and a
+  Grade 2 teacher should review them before the thesis relies on them. (2) Synthesized voices are not children.
+  (3) The rung 1 word lists will always be the noisiest measure. (4) Rungs 5 and 6 name EN3CAT-I-2
+  (comprehend stories) but the check only reads aloud; it does not score comprehension.
+- **Staircase changes.** A child on a rung they have not read yet now starts with its FIRST text (it used to
+  skip to the second); a revisited rung gives the next text, never the same one twice. Each rung's three texts
+  are rotated per child (`learner id + rung`), so children in a row do not all read the same text. When the check
+  finishes, `learners.reading_rung` is saved (0 to 6), which is what the four-step reading path on Home is worked
+  out from; `ReadingLevel::rungAfterLevelChange()` keeps it in line when a later practice reading moves the
+  level (up lands on the lowest rung of the new level, down on the highest). Children with no saved rung keep
+  working from `mastery_level`. A check already running on the old generated items finishes on them.
+- **Tests.** `tests/Feature/FirstCheckBankTest.php` (bank shape and lengths, codes, idempotent rows, an edited text
+  makes a new row, the scorer gets the item's own code, the check never touches the generator, rotation, a full
+  staircase with a revisit and the saved rung, a child who cannot read yet finishing on letters).
+
+## Practice Games with a voice + Balloon Pop (2026-10-05, BUILT LOCALLY, NOT PUSHED YET)
+
+From the approved preview (L6, L6b). Games stay free play: nothing a child says is saved, and nothing moves
+points, streak or level.
+
+- **Voice partial** `learner/games/_game-voice.blade.php`: `tarabasaSayWord` / `tarabasaSayLetter` use the
+  browser's own voice (letters are spoken by NAME, "ay", "bee", because the bare letter reads as the word "a");
+  `tarabasaListenForWord(word, {onListening, onChecking, onDone})` records about three seconds, checks on the
+  device that something was heard (otherwise it asks again without sending anything), then POSTs one clip. A
+  blocked or missing microphone, or an unreachable service, answers `unavailable` and the game carries on
+  without the speaking part.
+- **Word Builder:** a Listen button says the word (from the second word on it also says it by itself, because
+  browsers only allow that after a tap); after spelling, an optional "Now say it out loud" step with a
+  microphone and Skip. **Letter Match:** each card says its letter's name when turned over.
+- **Balloon Pop** (new, `learner/games/balloon-pop.blade.php`): five balloons show words, three are marked in
+  turn, the child says the marked word to pop it; two or more first-try pops make a clean round (next level);
+  3 rounds or one round at level 3 (same ending as the others); words come from the child's own Struggling
+  words first, then the level's word list (shared `GameController::wordLevels()`). Never says "wrong": if Tara
+  is not sure she asks once more, then pops the balloon and moves on. No microphone turns it into tap-to-pop.
+  `game_plays.game` accepts `balloon-pop` (`GamePlay::GAMES`); it counts toward the total-plays badges. No
+  resume-in-progress (rounds are about a minute).
+- **Server:** `POST /learner/games/check-word` (`GameController::checkWord`, throttled 90/min, behind the first
+  check) builds a throwaway unsaved Activity (`word_reading`, the child's own grade, that grade's code:
+  RL1PWS-I-5 / EN2PWS-I-3 / EN3PWS-I-2) and uses the normal `ReadingAiClient`. It answers ONLY `heard`, `again`
+  or `unavailable`: never "wrong", and never what the recognizer heard.
+- **Waking the scorer.** `ReadingAiClient::wake()` + `GET /learner/warm` (throttled; cached 4 minutes): the games,
+  the reading screens and the first-login welcome call it as they open, because Reading-api sleeps on free
+  hosting and the first recording used to wait up to a minute.
+- **MEASURED, NOT AS PROMISED:** the preview said a word is checked "in about two seconds". Real checks through
+  the live service took about 10 seconds each (service on free hosting, other requests running at the time), so
+  the copy says "a few seconds". Needs measuring again on Railway.
+- **Hub:** three cards (Listen / Speak chips, a New ribbon on Balloon Pop), the preview's wording, and the line
+  that what you say in a game is not graded.
+- **Tests.** `tests/Feature/PracticeGamesVoiceTest.php`.
+
+## Full system audit, smarter Analytics and Alerts, mistake patterns, speech accuracy, security (2026-10-06, BUILT LOCALLY, NOT PUSHED YET)
+
+The user asked for: the revised Teacher Analytics and Alerts screens, a full audit (login, sign up, UI, database,
+forms, API calls, permissions, responsiveness, broken links, error states, loading, slow internet, invalid input,
+many users at once, exposed keys, sensitive data), and a smarter AI ("not just generation, also the adaptive
+part") with accurate speech. Everything below is local and uncommitted; nothing is pushed until the user has
+looked at localhost and said go. Full suite at the end of this round: **173 tests, all passing**.
+
+### Teacher Analytics and Alerts (the revised screens)
+- **Analytics** (`AnalyticsController::teacherIndex`, default is the Overview, `?mode=learner|group` keep the old tabs):
+  class numbers, readings this week (assigned vs started by parents), reading levels in Phil-IRI names, words missed
+  most, and an assigned-activities table showing what each assignment produced since it was given. All numbers come
+  from `TeacherInsights`. `GET /teacher/analytics/report` is a class CSV (cells that start with `= + - @` are
+  neutralised against spreadsheet formula injection).
+- **Alerts** (`teacher/notifications`, `NotificationController`): `TeacherAlerts` makes three kinds. *Support*: the
+  last three readings all under 70% (latest within 14 days). *Ready to move up*: the last three all 90% or more.
+  *Gone quiet*: has read before, nothing for 7 days or more. Each has the evidence, one suggested step taken from the
+  Teacher's OWN approved activities (`ActivitySuggestions::forLearner`), a one-click assign
+  (`teacher.alerts.assign`) and Mark handled (`teacher.alerts.handled`, table `teacher_alert_actions`; a new reading
+  after it was handled opens it again). Routine session summaries are a collapsed list. The menu count is open
+  alerts (`TeacherNav`). Tests: `TeacherAnalyticsAlertsTest` (17).
+
+### Mistake patterns and the word bank (the "smart" part, rule based ON PURPOSE)
+- **This is NOT a trained model.** The project has no dataset of children's recordings, so nothing can be honestly
+  trained. It reads the data already collected, with rules a teacher can read, each tied to a MATATAG competency code.
+  Say this plainly if the adviser asks.
+- `App\Support\ErrorPatterns`: classifies each missed word into 9 kinds (small words skipped, word endings, vowel
+  sounds, first sounds, last sounds, letter blends, look-alike letters, words skipped, a different word), each with
+  teacher wording, parent wording, one tip and a curriculum code. A pattern is only reported with at least 3 readings
+  and 6 misses, only when it is 25% or more of the misses, and is called "early" until 5 readings.
+  `ErrorPatterns::forLearner($learner)` is the ONE way to get a child's profile (last 8 practice readings; the
+  first-check readings are left out). `fit()` scores how well an activity practises a pattern; `practisesPattern()`
+  says whether one word shows the spelling feature (blends, endings, small words only).
+- `App\Services\WordBank`: one row per word per child (unique index), Struggling then Improving then Mastered after
+  3 correct readings (spaced review), `practiceWords()` orders what the games use.
+- **Where it now steers what people see (all tested, `AdaptivePatternTest`, 15 tests):**
+  - Teacher: Alerts, Analytics and the suggested activity.
+  - Child's story list (`LearnerAuthService::applyPatternPractice`): moves the best fitting story up just behind the
+    recommender's own "Picked just for you" and tags it in kind words ("Practice word endings", never "mistake").
+    Never hides anything; says nothing when there is no clear pattern or no story fits (0.15 bar). The mobile list
+    has a `practice` field.
+  - Games (Word Builder, Balloon Pop): when a round needs filling up it prefers words showing the child's pattern.
+    HONEST LIMIT: the level lists are plain single words, so this only helps for LETTER BLENDS; for other patterns
+    nothing is singled out (the child's own missed words already come first through the word bank).
+  - Parent Progress: a **Reading level** card (Phil-IRI name plus a plain sentence, because "frustration level"
+    sounds harsh) and a **Practise at home** card (parent wording, one thing to try, words to practise together, the
+    curriculum code). Nothing is shown when there is no pattern.
+  - Parent activity browser (`RepositoryController::index`): best matches for the selected child first, tags
+    "Matches X's level" and "Practises Y", plus an "Only matches" switch (`?best=1`). Unchecked children get the plain list.
+
+### Speech accuracy
+- `App\Support\SpeechNormalizer` runs once where the scoring answer comes back (`ReadingAiClient::analyze`). It
+  accepts same-sound words (sun/son), spelling variants (mangoes/mangos), numbers (2/two), a missing apostrophe and
+  one word written as two (sand + castle); accuracy is recomputed and the service's own number is kept as
+  `accuracy_score_service`. Lists live in `config/reading_words.php`. Near misses (ripe/right, hit/hat, pin/pen) are
+  REAL mistakes and stay mistakes. `App\Support\NotSure` leaves faintly heard words out of the score.
+- **Reading-api's `constrain_vocabulary` option was tested and REJECTED**: it forgives real mistakes (a child reading
+  "hit pin tip" for "hat pen top" scored 100%). Do not turn it on.
+- Limits, stated plainly: Vosk scores words, so names and unlisted homophones can still be marked wrong; no real
+  child recording has ever been tested (synthesized voices only); a single word check takes about 10 seconds, not 2.
+  Tests: `SpeechAccuracyTest` (8).
+
+### Slow or dropping internet (recording screens)
+`learner/_recording-widget.blade.php` (used by the reading screen, the first check and Bookshelf re-read): before the
+recording is sent it asks our own `/up` (8 second wait). If the internet is down or the server is not answering the
+child sees "We could not reach the internet. Your reading is still here" with **Send Again** (no new reading needed)
+and "Read it again instead". After sending it says "Still working" at 20 seconds and "This is taking a long time" at
+60. A double tap sends once. Coming back with the Back button resets a screen stuck on "Checking". RESIDUAL RISK: if
+the connection dies in the middle of the upload the browser shows its own error page and that recording is lost.
+Fonts no longer block pages (`media="print" onload` swap on 18 pages), and the two outside script libraries are now
+hosted here (`public/vendor/lottie-web-5.12.2.min.js`, `cropper-1.6.2.min.js/.css`, both MIT, same versions as
+before) so a slow or blocked outside server cannot leave a page blank. The only outside request left is Google Fonts.
+
+### Security: what the audit found and fixed (each has a test)
+- **Admin password was public.** The old seeded Admin password was written in the public repo. `AdminSeeder` now reads
+  `ADMIN_PASSWORD` (12+ characters) and optional `ADMIN_EMAIL` from the environment, and `docker/entrypoint.sh` runs
+  `php artisan admin:sync` at every boot (it does nothing when the variable is not set). **Railway needs
+  `ADMIN_PASSWORD` set and a redeploy; treat the old password as burned.**
+- Gmail authorize page: reflected XSS and an open endpoint. Now admin only, with a state check, plain text.
+- **Linking an existing child no longer reveals who the child is** and now needs the child's 4 digit PIN, with a
+  rate limit; the existing guardians are notified. THIS DEVIATES from the actor prompt (code alone) and should be
+  told to the team. Teachers joining a child by code are throttled and the parent is notified.
+- A list in the address (`?x[]=`) used to crash login, activities, analytics, the report and the admin search with a 500.
+  Global `RejectNestedQuery` middleware answers 400 politely. Login with an array body no longer crashes.
+- `SecurityHeaders` middleware (nosniff, SAMEORIGIN, referrer policy, microphone allowed for this site only, camera and
+  location off, CSP with base-uri/object-src/frame-ancestors, HSTS only over https, no-store on signed-in pages) and a
+  Secure session cookie when the request is https. The CSP does NOT restrict scripts (inline scripts are used
+  throughout). Friendly error pages 400/403/404/419/429/500/503 that never print the exception message;
+  `docker/php-custom.ini` turns display_errors off; `/storage` is not served by the framework route.
+- A parent account without a profile used to 500; the add-a-child link page had `maxlength=8` that blocked the new
+  longer codes; the Admin dashboard loaded every account at once (now capped, with search).
+- Dependencies: `composer audit` flagged Laravel (debug page XSS) and league/commonmark (the app never renders
+  markdown); upgraded to laravel/framework 13.34.0 and commonmark 2.10.3, zero advisories now. The Docker image is
+  PHP 8.4 and every locked package supports it.
+- `.gitignore` blocks `client_secret*.json`, `*credentials*.json`, `service-account*.json`, `*.pem` (an attached Google
+  OAuth client secret was never used or committed; users should not attach secrets to chats). The entrypoint prints a
+  WARNING in the server log if `APP_DEBUG` is on.
+- Tests: `SecurityHardeningTest` (12), `ErrorPagesAndHeadersTest` (8), and `AccessAuditTest` which walks every page
+  as every role (IDOR probes, garbage in every field and in the address, dead links and forms).
+
+### Many people at the same moment (`ConcurrencySafetyTest`, 8 tests)
+Share to the Repository twice: one listing and the 2 credits once (transaction and row lock, plus a unique index on
+`open_repository_listings.activity_id`). Two teachers claiming one promoted child: one wins, the other gets 403.
+Generate activities: a credit is taken atomically only if one is left (never below zero, nothing saved without it) and
+only one request can be active per teacher (taken under a lock). Double unlock: a clear message, one row. Badges:
+`insertOrIgnore`, celebrated once. New learner code that clashes is drawn again.
+
+### New migrations this round
+`2026_10_05_000100` and `_000200` (see the two sections above), `2026_10_06_000100` (`teacher_alert_actions`),
+`2026_10_06_000200` (**rewrites existing rows**: merges a child's repeated word bank rows into one, keeping the oldest
+row and the strongest progress, then adds a unique index), `2026_10_06_000300` (**rewrites existing rows**: keeps the
+first Repository listing of each activity, moves any unlocks and ratings over so no parent loses what they unlocked,
+then adds a unique index). Both are tested and both columns are plain strings (safe unique indexes on MySQL).
+
+### Responsiveness
+Every screen of every role was measured for sideways overflow at 375, 768 and 1280 px in a real browser (data was
+sparse). One real bug: the landing page's Get Started menu was pushed past the screen edge on phones (page scrolled
+sideways, items cut off); fixed. Everything else measured clean.
+
+### NOT done, or still a risk (be candid, do not call this "ready")
+- **A real child with a real microphone has never tried any of it.** Synthesized voices only.
+- **A whole class recording at once.** `php artisan serve` runs 4 workers (`PHP_CLI_SERVER_WORKERS=4`); each recording
+  holds a worker for the 5 to 10 seconds Reading-api (one free Render instance) takes. 30 children pressing done
+  together means a queue of about a minute or more and other pages waiting behind it. Needs measuring on Railway, then
+  more workers or scoring in the background.
+- Reading-api has no authentication (teammate's service). Uploaded child photos still live on Railway's disk and
+  vanish on redeploy. Dragging cards on a touch screen is not supported (the Move to menu is the touch path).
+- Tab titles on the older screens still use a dash. Games' word lists are plain words, so pattern favouring is blends only.
+- Not run against the live host: everything here was tested locally and with the live teammate services only.
+
+## The revised-screens preview as one HTML file (built after the audit, NOT committed)
+
+The user asked for the approved preview (the Artifact "R8ZBrv9dtu2rCug8yxWSao") as an HTML FILE, updated to what was
+really built, with the real Lottie animations. It is `preview/TaraBasa-AI-Revised-Screens.html` (about 7 MB, one
+self-contained file, opens by double click; only the Google Fonts need internet). **It is untracked on purpose: do not
+`git add` it unless the user decides to.** Tabs: Overview, Sign in and sign up, Teacher, Parent, Learner, Behind the
+screens, References. 32 screens, 49 live frames, 24 real animations.
+- **How it is made (so it can be rebuilt).** Not kept in the repo. The real pages were captured with a throwaway
+  PHPUnit test (`actingAs`, sample data, `Http::fake` for Reading-api) and turned into self-contained documents; each
+  frame is an `<iframe srcdoc sandbox="allow-scripts">` (no `allow-same-origin`), the Lottie JSON is inlined, the sound
+  files are replaced by a silent clip, network calls and form submits are switched off inside a frame, and a click on a
+  frame turns it live. Red markers are measured inside each frame by a CSS selector or by visible text (`~text`). The
+  throwaway test and the build scripts live in the session scratchpad only; the test was deleted again.
+- **Every screen carries an "As built" box** saying what was built and where it differs from the approved preview. The
+  honest differences: the unified sign in has no number pad and no speaker (the child's own login page has both); the
+  practice stage has no 3 step progress bar (early wake, slow-network notes and Send Again were built instead); the
+  Parent Activities page orders best first with reasons and an "Only matches" switch; Balloon Pop checks a word in about
+  ten seconds, not two; the generator prompt limits (B3) need the teammate; recordings from real children are untested.
+  Three references were added after checking them online: OWASP Top 10:2021 (R21), the Dolch word list 1936 (R22) and
+  the Luhn check digit patent (R23). The licences table marks the unDraw illustration and the Lottie files as "To
+  confirm" (the sword-bird Lottie has no licence file; the user accepted that earlier).
+- **Checked.** Every frame loads, no script errors, all 89 red markers sit on their element inside their frame
+  (Teacher 35, Parent 17, Learner 27, Sign in 10); the final file's sandbox is
+  `allow-scripts` only; no real email, key or password is in it.
+- **Two real product bugs were found while preparing it, both fixed and tested:**
+  1. The avatar partials (`teacher/_avatar`, `parent/_avatar`, `learner/_badge-icon`) printed a whole model as JSON into
+     a `class` attribute when a caller already had a `$class` variable (a school class). That broke the initials
+     circles and made the Classes page 1.6 MB for ten learners (now 118 KB). They now use `$class` only when it is a
+     string. A regression test is in `TeacherRedesignTest`.
+  2. The first-login intro still said "This can take a minute" although the check opens at once from the curated bank;
+     it now says "Tara is picking the best story for you."
+- **Not done:** the preview has not been shown to the adviser or the team; real children and a real microphone still
+  have not tried any of it; Railway's trial had expired when this was written (the user will subscribe later, check
+  variables and the database after that, and nothing is pushed until then).
+
+## How to switch hosts: Railway <-> Render + TiDB (2026-10-05, BUILT LOCALLY, NOT PUSHED YET)
+
+**Why.** The Railway trial expired on 2026-10-05: both the app and MySQL showed "Service is offline" (the
+`mysql-volume` was still attached). The user said the live data is TEST DATA ONLY, so the plan is a FRESH start on a
+free stack, with no dump: the app on Render (free Docker web service) and the database on TiDB Cloud Starter (free,
+MySQL compatible). Railway stays a clean fallback: every change is additive and driven by environment variables.
+
+**What was added (all additive; `railway.json`, the Dockerfile and `docker/entrypoint.sh` were not touched for this).**
+`render.yaml` (a Blueprint listing every variable name; secrets are `sync: false`), `App\Queue\PlainLockDatabaseQueue`
++ `PlainLockDatabaseConnector` (registered in `AppServiceProvider`, switched on only by `QUEUE_POP_LOCK=plain`;
+unset, the queue is Laravel's own class, proven by `QueueLockForTidbTest`), `.env.render` in `.gitignore`.
+A local, gitignored `.env.render` holds every variable for Render (the blanks are the TiDB details and the new Gmail token).
+
+**What the audit found (so nobody redoes it).**
+- Already fine: the server binds `${PORT:-8080}`; `config/database.php` already has `MYSQL_ATTR_SSL_CA`; `/up` is the
+  health route; trusted proxies are `*`; learner codes are random plus a check digit (no sequential IDs);
+  migrations only create tables and add columns (33 foreign keys, TiDB supports them from v8.5; no FULLTEXT).
+- **`FOR UPDATE SKIP LOCKED` and TiDB.** TiDB's documentation lists it as unsupported and Laravel's database queue
+  asks for it on any server reporting MySQL 8.0.1 or newer, so the worker was expected to fail on TiDB. **TESTED
+  2026-10-06 on TiDB Cloud Starter v8.5.3: the syntax is ACCEPTED (not honoured, not an error), and a real job ran
+  through the worker both with and without the fix.** So `QUEUE_POP_LOCK=plain` is only a safeguard for a TiDB version
+  that rejects it; it is harmless to keep. (An earlier note here called it a blocker; that was from the docs, not a test.)
+- **Tested on the real TiDB (2026-10-06):** all 39 migrations ran (27 tables, 35 foreign keys; the 40th, `sessions`, was added the same day), `utf8mb4_unicode_ci`
+  is supported, TLS works with the system CA bundle, `admin:sync` created the Admin, and the connection from a Windows
+  PHP needs `MYSQL_ATTR_SSL_CA` pointed at a local CA bundle (e.g. `F:\php\extras\ssl\cacert.pem`), not the Linux path.
+- **A missing `sessions` table would have taken the whole site down on Render (found 2026-10-06, fixed).** The original
+  users migration never made it (Railway kept sessions in files), so the first run against TiDB with
+  `SESSION_DRIVER=database` returned a 500 on every page. New migration `2026_10_06_000400_create_sessions_table`
+  (guarded with `hasTable`, harmless on Railway) and `DatabaseSessionsTest` pin it.
+- **Region matters a lot: put the Render service in SINGAPORE** (`region: singapore` in `render.yaml`), the same AWS region
+  as the TiDB cluster (`ap-southeast-1`). A page makes about 15 to 25 queries (measured: parent dashboard 16, teacher
+  classes 18, teacher analytics 23). From the developer's machine one query takes about 0.3 s, so pages took 5 to 9 s
+  locally; a web service in another region (about 170 ms a query) would be 3 to 5 s a page. In the same region it should
+  be a few ms a query. A Render service's region cannot be changed after creation. NOT yet measured on Render itself.
+- **TiDB hands out ids in blocks**, so new rows start at 30001 and are not consecutive. Nothing in the app depends on
+  consecutive ids; only mention it if someone asks why ids jump.
+- **Real end-to-end run on TiDB (2026-10-06, local server on port 8124 pointed at the real `tarabasa` database, mail to
+  the log): 33 of 33 checks passed**: Admin sign in (database session survives the next request), Teacher sign up,
+  verification link from the mail, Admin approval, the six Teacher screens, Parent sign up and verification, the six
+  Parent screens, adding a child (gets a `TB26-xxxxx` code), the child's code and PIN sign in, the first-check intro, and
+  `/learner/warm`. A real Gmail API send to the sender's own inbox also went through. NOT run on TiDB: reading scoring and
+  activity generation (they need real audio and a Gemini call) and the live Render host.
+- **The full PHPUnit suite is impractical against TiDB from a home connection** (every query is about 0.3 s; the run had
+  not finished after 31 minutes). The suite runs on SQLite in a minute; only the parts where MySQL and TiDB could differ
+  (locks, unique indexes, the two data-merging migrations, the queue, sessions) were run on a separate TiDB database
+  `tarabasa_test`. Never point `RefreshDatabase` at the real `tarabasa` database: it drops every table.
+- **Mail is Gmail's own API over HTTPS (`MAIL_MAILER=gmail-api`), NOT Resend and NOT SMTP.** Render's free tier blocks
+  ports 25, 465 and 587. Resend would not work anyway (it cannot send from a gmail.com address; that was the DMARC
+  failure documented in `GmailApiTransport`).
+- Render's free disk is wiped whenever the service sleeps (after 15 idle minutes) or redeploys, so sessions MUST be
+  `SESSION_DRIVER=database`, and uploaded child photos vanish on every sleep (they fall back to the initial).
+- TiDB specifics: port 4000, TLS required (`MYSQL_ATTR_SSL_CA=/etc/ssl/certs/ca-certificates.crt`, the Dockerfile
+  installs certificates), free tier 5 GiB and 50M request units a month (new connections are refused when it runs out),
+  idle connections drop after about 340 s (the long-running worker reconnects by itself).
+- **The Gmail refresh token was found EXPIRED (`invalid_grant`) on 2026-10-05.** Cause: the Google OAuth consent screen
+  is in "Testing", which expires tokens after 7 days. Fix: set the consent screen to "In production", add
+  `http://localhost:8123/internal/gmail-authorize/callback` (and the Render `/auth/google/callback`) as authorized
+  redirect URIs, then, as the local Admin, open `/internal/gmail-authorize`, sign in as
+  `tarabasaai.noreply@gmail.com`, and put the printed token in `GMAIL_SEND_REFRESH_TOKEN`. Without this NO verification
+  email is sent on ANY host.
+
+**Railway -> Render + TiDB (fresh data).** (1) Fix the Gmail token. (2) Create the TiDB cluster and a database; fill
+`.env.render`. (3) From the local machine run `php artisan migrate --force --env=render` then `php artisan admin:sync
+--env=render` against TiDB (this proves the migrations on TiDB before anything is deployed). (4) Push (needs the user's
+explicit go; Render builds only pushed code). (5) Create the Render web service (Docker, free, **region Singapore**, branch
+`claude/admin-dashboard-approvals-62dcd0`, health check `/up`) and paste `.env.render` with Environment > Add from .env.
+(6) If the URL differs from `https://tarabasa-ai.onrender.com`, update `APP_URL`, `GOOGLE_REDIRECT_URI` and the Google
+console redirect URI. (7) Smoke test: Admin login; Teacher and Parent sign up with a real verification email; Admin
+approval; add a child; Learner code and PIN; first check; a reading; an adaptive update; Generate activities.
+
+**Back to Railway.** Point `DB_HOST/PORT/DATABASE/USERNAME/PASSWORD` at Railway's MySQL, unset `MYSQL_ATTR_SSL_CA` and
+`QUEUE_POP_LOCK` (`SESSION_DRIVER=database` is fine on MySQL), keep the same `APP_KEY`, mail and teammate-service
+variables, and set `APP_URL` to the Railway URL. To carry data back from TiDB: take a DATA-ONLY dump (no schema, because
+Railway's MySQL is 9.x and TiDB speaks 8.0), import it into a database whose schema was built by `php artisan migrate`
+(foreign key checks off, skipping `migrations`, `sessions`, `cache`, `cache_locks`, `jobs`, `failed_jobs`), and compare row
+counts per table. If the target schema is OLDER than the code, run only the migrations it already had, import, then run
+the rest (two of them de-duplicate rows and add unique indexes).
+
+**Known limits on the free stack.** About one minute to wake after a quiet period (plus the teammate services that
+also sleep); photos lost on every sleep; the worker stops while the service sleeps; TiDB's monthly quota.
+
+## Before pushing this round (checklist for the next session)
+
+The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.
+1. **Railway variables first:** set `ADMIN_PASSWORD` (12 or more characters, optionally `ADMIN_EMAIL`) and check
+   `APP_DEBUG=false`. Without `ADMIN_PASSWORD` the old public Admin password stays valid.
+2. **Migrations (all run by themselves from `docker/entrypoint.sh`, `migrate --force`):** `2026_10_05_000100` and
+   `_000200` only add nullable columns; `2026_10_06_000100` adds a table; `2026_10_06_000200` and `_000300` REWRITE
+   existing rows (word bank repeats merged, duplicate Repository listings merged with their unlocks and ratings kept)
+   and add unique indexes; `2026_10_06_000400` adds the `sessions` table (unused while `SESSION_DRIVER=file`).
+   Back up the live database (or at least look at the counts) before the first deploy.
+3. The bank makes its own rows (no seeder); the cache lock needs `cache_locks` (exists); `READING_AI_URL` is already
+   set; no other new Railway variable is needed. The Docker image installs from the upgraded `composer.lock`.
+4. Run `php -d memory_limit=1G artisan test` (186 tests), `php artisan view:cache`, lint changed PHP.
+5. After the deploy, check on the live site: a new child reaches the first reading item at once, the Games hub shows
+   Balloon Pop, `/learner/warm` answers 204, the Admin signs in with the NEW password, the server log shows the
+   queue worker starting, and one real reading goes through on a real phone with a real microphone.
+6. Tell the team about the link-by-PIN change (it differs from the actor prompt) and ask BldZeuz to add a `levels`
+   option to the generator and an API key to Reading-api.
 
 ## The user's working style
 

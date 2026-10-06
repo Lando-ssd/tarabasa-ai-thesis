@@ -1284,3 +1284,28 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
 
 .bs-emoji{ display:flex; align-items:center; justify-content:center; color:#ffffff; }
 .bs-emoji .badge-svg{ width:62px; height:62px; display:block; }
+
+/* ---- Reading path and "Why this one?" (October 2026 revision) ---- */
+.lv-num{ font-family:var(--font-game); font-weight:700; font-size:20px; width:34px; height:34px; border-radius:50%; background:#eef3f8; color:#5b6b7a; display:flex; align-items:center; justify-content:center; flex:none; }
+.lv-row.current .lv-num{ background:var(--blue-500); color:#fff; }
+.lv-name small{ display:block; margin-top:3px; font-family:var(--font-game); font-weight:500; font-size:15px; letter-spacing:.02em; text-transform:none; color:#7a8b9b; }
+.lv-row.current .lv-name small{ color:#4a7fb0; }
+
+.why-card{ display:flex; gap:14px; align-items:flex-start; margin:14px 0 6px; padding:14px 18px; border-radius:20px; background:#fff; border:2px solid #dfe8f1; box-shadow:0 4px 0 #e6edf4; }
+.why-speak{ flex:none; width:46px; height:46px; border-radius:50%; border:0; cursor:pointer; background:var(--blue-500); color:#fff; box-shadow:0 3px 0 var(--blue-700); display:flex; align-items:center; justify-content:center; }
+.why-speak svg{ width:24px; height:24px; fill:currentColor; }
+.why-speak:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--blue-700); }
+.why-copy b{ display:block; font-family:var(--font-game); font-weight:700; font-size:24px; color:#131f2b; margin-bottom:2px; }
+.why-copy p{ margin:0 0 8px; font-family:var(--font-game); font-weight:500; font-size:19px; line-height:1.4; color:#4a5f73; }
+.why-code{ display:inline-block; padding:5px 11px; border-radius:10px; background:#eef3f8; color:#5b6b7a; font:600 13.5px/1.2 'Inter',sans-serif; }
+.why-speak[hidden]{ display:none; }
+@media (max-width:900px){ .why-copy b{ font-size:21px; } .why-copy p{ font-size:17px; } }
+
+/* ---- Balloon Pop's card on the Games page: the same raised card, in the warm yellow family ---- */
+.gm-sun{ --top:#fff6dc; --bot:#ffe3a0; --rim:#fff0c8; --lip:#e0b455; --glow:rgba(190,130,20,.45); --inner:rgba(225,165,40,.24); --well:#ffd98a; --wtext:#7a4f05; --wshadow:rgba(185,125,20,.4); }
+.gm-sun .gm-icon{
+  background-image:radial-gradient(circle at 28% 22%, rgba(255,255,255,.8), rgba(255,255,255,0) 46%), linear-gradient(180deg,#ffb4a8,#ff7f6e);
+  background-color:transparent; --dlip:#cf4a3a; color:#fff;
+  box-shadow:0 6px 0 var(--dlip), 0 16px 20px -12px rgba(0,0,0,.3), inset 0 -7px 10px rgba(0,0,0,.08);
+}
+.gm-ribbon.new{ background:linear-gradient(180deg,#34c3a4,#1f9e83); box-shadow:0 3px 0 #0f6b58, inset 0 2px 0 rgba(255,255,255,.4); color:#fff; }

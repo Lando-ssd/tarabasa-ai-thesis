@@ -46,7 +46,7 @@
               <div class="field">
                 <label for="gGrade">Grade level</label>
                 <select id="gGrade" name="grade_level" data-af required>
-                  @foreach (['Grade 1', 'Grade 2', 'Grade 3'] as $g)<option @selected(old('grade_level', 'Grade 1') === $g)>{{ $g }}</option>@endforeach
+                  @foreach (auth()->user()->teacher->gradesAllowed() as $g)<option @selected(old('grade_level', 'Grade 1') === $g)>{{ $g }}</option>@endforeach
                 </select>
               </div>
               <div class="field">

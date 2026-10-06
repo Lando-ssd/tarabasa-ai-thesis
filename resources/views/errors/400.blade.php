@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'That did not work')
+@section('code', '400')
+@section('heading', 'That address is not valid')
+@section('message', 'Something in the link was not right. Go back and try again from the page you were on.')

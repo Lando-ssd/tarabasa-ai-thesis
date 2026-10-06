@@ -14,6 +14,11 @@ class Notification extends Model
 
     public const TYPE_LEVEL_CONFIRMED = 'Level Confirmed';
 
+    /** A parent tells every guardian when someone new is linked to their child, and when a teacher adds the child to a class. */
+    public const TYPE_GUARDIAN_LINKED = 'Guardian Linked';
+
+    public const TYPE_CLASS_JOINED = 'Class Joined';
+
     protected $fillable = [
         'recipient_user_id',
         'learner_id',

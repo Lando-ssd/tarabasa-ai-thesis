@@ -6,7 +6,8 @@
 <title>TaraBasa AI — Admin Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <style>
   :root{
     --sky-50:#eef6ff; --sky-100:#dcedff;
@@ -179,6 +180,14 @@
   <h1>Admin Dashboard</h1>
   <p class="sub">Verify Teacher registrations and manage account status.</p>
 
+  @if ($publishedPassword)
+    <div class="flash" style="background:#fdecec;border-color:#e9a1a1;color:#8f2020;font-weight:600" role="alert">
+      This Admin account still uses the password that was written in the code, and that password is public.
+      Anyone who can read the repository could sign in as Admin. Set <b>ADMIN_PASSWORD</b> (at least 12 characters)
+      in the host's settings and redeploy: the Admin password then changes by itself.
+    </div>
+  @endif
+
   @if (session('status'))
     <div class="flash">{{ session('status') }}</div>
   @endif
@@ -238,10 +247,18 @@
 
   <section class="panel">
     <h2>All Accounts</h2>
-    <p class="panel-sub">Every Teacher and Parent account. Deactivating blocks login immediately.</p>
+    <p class="panel-sub">Every Teacher and Parent account. Deactivating blocks login immediately.@if ($totalAccountCount > 100 && $accountQuery === '') Showing the newest 100 of {{ $totalAccountCount }}; search to find another.@endif</p>
+
+    @if ($totalAccountCount > 100 || $accountQuery !== '')
+      <form method="GET" action="{{ route('admin.dashboard') }}" class="search-box" style="margin-bottom:10px">
+        <input type="text" name="q" value="{{ $accountQuery }}" placeholder="Find any account by name or email…" autocomplete="off" maxlength="80">
+        <button type="submit" class="logout-btn" style="margin-left:8px">Search</button>
+        @if ($accountQuery !== '')<a href="{{ route('admin.dashboard') }}" style="margin-left:10px">Clear</a>@endif
+      </form>
+    @endif
 
     @if ($accounts->isEmpty())
-      <div class="empty-note">No accounts yet.</div>
+      <div class="empty-note">{{ $accountQuery !== '' ? 'No account matches that search.' : 'No accounts yet.' }}</div>
     @else
       @if ($accounts->count() > 5)
         <div class="search-box">

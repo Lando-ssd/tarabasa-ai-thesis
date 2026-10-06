@@ -2,6 +2,9 @@
   Letter Match: a memory match game. Find every capital letter and its small letter twin.
   Free play: no points, no streak, no level (see GameController). The look is shared with
   Word Builder in games/_game-look; only the cards are styled here.
+
+  Voice (games/_game-voice): a card says its letter's name when it is turned over, so the child
+  hears a letter and then looks for its small twin.
 --}}
 <!DOCTYPE html>
 <html lang="en">
@@ -12,7 +15,8 @@
 <title>Letter Match | TaraBasa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 @include('learner.games._game-look')
 <style>
   :root{
@@ -81,6 +85,7 @@
     <div id="playArea">
       <div class="mascot">@include('learner.games._owl-mascot', ['id' => 'lmOwlMain'])</div>
       <h1>Find the matching pairs!</h1>
+      <p class="say-note" id="hearNote" style="margin:-8px 0 16px;">Tap a card to turn it over and hear the letter.</p>
       <div class="grid" id="grid"></div>
     </div>
 
@@ -102,6 +107,7 @@
 </div>
 
 @include('learner.games._game-sounds')
+@include('learner.games._game-voice')
 @include('learner.games._game-finish', ['game' => 'letter-match'])
 
 <script>
@@ -263,6 +269,8 @@
     return 4;
   }
 
+  document.getElementById('hearNote').hidden = !window.tbCanSpeak;
+
   function renderGrid() {
     grid.style.gridTemplateColumns = 'repeat(' + pickColumns(cards.length) + ', 1fr)';
     grid.innerHTML = '';
@@ -288,6 +296,7 @@
 
     flipped.push(i);
     renderGrid();
+    window.tarabasaSayLetter(cards[i].display);
 
     if (flipped.length === 2) {
       locked = true;

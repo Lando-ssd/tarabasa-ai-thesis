@@ -6,8 +6,9 @@
 <title>TaraBasa AI — Choose your role</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<script src="{{ asset('vendor/lottie-web-5.12.2.min.js') }}"></script>
 <style>
   :root{
     --sky-50:#eef6ff; --sky-100:#dcedff;
@@ -74,7 +75,9 @@
   .dropdown-item .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
   .dropdown-item .dot.teacher{ background:var(--blue-500); }
   .dropdown-item .dot.parent{ background:var(--parent-teal); }
-  @media (max-width:400px){ .dropdown-menu{ right:-40px; } }
+  /* On a phone the menu stays under its button and inside the screen: a menu pushed past the edge
+     widened the whole page (a sideways scroll) and cut its own items off. */
+  @media (max-width:400px){ .dropdown-menu{ right:0; max-width:calc(100vw - 28px); } }
 
   /* ---------- Hero scene (layered) ---------- */
   .hero{
@@ -654,11 +657,13 @@
     .seesaw-stage{ left:46%; bottom:10%; width:50%; }
   }
 
-  /* ---------- Section 7 (final): "I'm a Learner!" card over the globe ----------
+  /* ---------- Section 7 (final): "Ready to start reading?" card over the globe ----------
      The closing section of the page. Starts on Section 6's own ending tone
      (#eef9f0) and fades to a pale sky, the owl peeks over the top edge of
      the card (behind it), and the animated globe fills the full width at the
      very bottom of the page, edge to edge, with the card overlapping its top. */
+  .finale-privacy{ color:inherit; text-decoration:underline; text-underline-offset:3px; }
+  .finale-privacy:hover{ text-decoration-thickness:2px; }
   .finale{
     position:relative;
     background:linear-gradient(180deg, #eef9f0 0%, #e3f1fc 45%, #d3e8fa 100%);
@@ -769,6 +774,7 @@
       0 5px 8px -3px rgba(150,60,0,.5);
   }
   .finale-pin-badge svg{ display:block; }
+  .finale-pin.plain{ padding:16px 52px; }
   /* No code yet? A quiet helper line under the button - links to the
      shared login page (the same page the header's own "Log in" opens),
      since there's no longer a separate grown-up section on this page to
@@ -902,8 +908,8 @@
         </a>
 
         <div class="nav-dropdown" data-dropdown>
-          <button type="button" class="nav-btn solid" aria-haspopup="true" aria-expanded="false" aria-label="Get Started" data-dropdown-trigger>
-            <span class="btn-label">Get Started</span>
+          <button type="button" class="nav-btn solid" aria-haspopup="true" aria-expanded="false" aria-label="Sign up" data-dropdown-trigger>
+            <span class="btn-label">Sign up</span>
           </button>
           <!-- No Admin option here — no self-registration for Admin accounts (Admin Actor Prompt). -->
           <div class="dropdown-menu" role="menu" aria-label="Sign up as" data-dropdown-menu>
@@ -1154,18 +1160,14 @@
         <svg class="finale-spark s2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4Z"/></svg>
         <svg class="finale-spark s3" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4Z"/></svg>
 
-        <h2 id="finaleTitle" class="finale-title">I'm a <span class="accent">Learner!</span></h2>
-        <p class="finale-body"><span>Read out loud, play games, and earn badges.</span> <span>Just your own code and a secret PIN, no email or password needed.</span></p>
+        <h2 id="finaleTitle" class="finale-title">Ready to start <span class="accent">reading?</span></h2>
+        <p class="finale-body"><span>Teachers and parents set it up in a few minutes.</span> <span>Children log in on the same page with their own code and a secret PIN.</span></p>
 
-        <!-- The child's own path: a plain real link, deliberately NOT gated. -->
-        <a class="finale-pin" href="{{ route('learner.login') }}">
-          <span class="finale-pin-badge" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><rect x="5" y="11" width="14" height="9.5" rx="2.6" fill="#fff"/><circle cx="12" cy="15.6" r="1.6" fill="#dd7014"/></svg>
-          </span>
-          <span>Enter my PIN</span>
-        </a>
+        <!-- One log in for everyone: the page itself works out whether a person is a grown-up
+             (email and password) or a child (learner code and PIN). -->
+        <a class="finale-pin plain" href="{{ route('login') }}"><span>Log in</span></a>
 
-        <p class="finale-help">No code yet? <a href="{{ route('login') }}">Ask your parent</a></p>
+        <p class="finale-help">New here? Sign up as a <a href="{{ route('register.teacher') }}">Teacher</a> or a <a href="{{ route('register.parent') }}">Parent</a></p>
       </div>
     </div>
 
@@ -1189,13 +1191,14 @@
       <div class="finale-end-line">
         <strong>Every child deserves to love reading.</strong>
         <small>AI powered, teacher verified reading support for Grade 1 to 3 Filipino learners.</small>
+        <small><a class="finale-privacy" href="{{ route('privacy') }}">Privacy</a></small>
       </div>
       <a class="finale-top-btn" id="backToTopBtn" href="#pageTop">Back to top</a>
     </div>
   </footer>
 
 <script>
-  // Get Started dropdown: closes on outside click / Escape.
+  // Sign up dropdown: closes on outside click / Escape.
   const dropdowns = document.querySelectorAll('[data-dropdown]');
   function closeAllDropdowns() {
     dropdowns.forEach(d => {

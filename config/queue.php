@@ -44,6 +44,9 @@ return [
             // second worker would take a job that is still being written and write it twice.
             'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 960),
             'after_commit' => false,
+            // Leave unset everywhere except a TiDB database, which has no "SKIP LOCKED":
+            // QUEUE_POP_LOCK=plain makes the worker take jobs with a plain "FOR UPDATE".
+            'pop_lock' => env('QUEUE_POP_LOCK'),
         ],
 
         'beanstalkd' => [

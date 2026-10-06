@@ -5,9 +5,9 @@
   the other) that stacks on phones. Never the word "test" (Placement Diagnostic
   patch, Part 4.1).
 
-  The wait while the reading passages are being written happens AFTER the button
-  is pressed, on this same screen with a friendly loading state, instead of a
-  blank white page before this screen could even appear.
+  The first check's items come from the curated bank (nothing is written by the AI any
+  more), so the button opens the first item at once. It still shows a loading state, in
+  case the connection is slow, instead of leaving a blank page.
 --}}
 <!DOCTYPE html>
 <html lang="en" data-page="diagnostic">
@@ -17,8 +17,9 @@
 <title>Let's Read Together | TaraBasa AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<script src="{{ asset('vendor/lottie-web-5.12.2.min.js') }}"></script>
 <link rel="stylesheet" href="{{ asset('css/learner-app.css') }}?v={{ substr(md5_file(public_path('css/learner-app.css')), 0, 12) }}">
 <style>
   html[data-page="diagnostic"]{ background:#ffffff; }
@@ -57,7 +58,12 @@
   .dx-bubble.b1{ width:6.2%; aspect-ratio:1; left:-2%; top:50%; }
   .dx-bubble.b2{ width:3.6%; aspect-ratio:1; left:-8.5%; top:54%; }
 
-  .dx-msg{ font-family:var(--font-game); font-weight:500; font-size:clamp(21px, 2vw, 30px); line-height:1.38; color:#2f455b; max-width:540px; margin:0 0 30px; }
+  .dx-msgrow{ display:flex; align-items:flex-start; gap:14px; max-width:600px; margin:0 0 30px; }
+  .dx-msg{ font-family:var(--font-game); font-weight:500; font-size:clamp(21px, 2vw, 30px); line-height:1.38; color:#2f455b; max-width:540px; margin:0; }
+  .dx-speak{ flex:none; width:52px; height:52px; border-radius:50%; border:0; cursor:pointer; background:#1c7ed6; color:#fff; box-shadow:0 4px 0 #0a3d73; display:flex; align-items:center; justify-content:center; }
+  .dx-speak svg{ width:26px; height:26px; fill:currentColor; }
+  .dx-speak:active{ transform:translateY(2px); box-shadow:0 2px 0 #0a3d73; }
+  .dx-speak[hidden]{ display:none; }
 
   .dx-go{ font-size:clamp(24px, 2.1vw, 32px); letter-spacing:.06em; padding:20px 64px 18px; border-radius:22px; text-decoration:none; display:inline-block; text-align:center; }
   .clay-btn.dx-go.orange{ box-shadow:0 7px 0 #b4560b, 0 18px 24px -10px rgba(180,86,11,.65), inset 0 2px 0 rgba(255,255,255,.45); }
@@ -79,7 +85,7 @@
     /* stacked: the cloud sits under Tara, so the bubbles rise straight up toward her */
     .dx-bubble.b1{ left:46.5%; top:-8%; width:6.5%; }
     .dx-bubble.b2{ left:44%; top:-15.5%; width:3.8%; }
-    .dx-msg{ margin-left:auto; margin-right:auto; }
+    .dx-msgrow{ margin-left:auto; margin-right:auto; text-align:left; }
     .dx-go{ width:100%; max-width:460px; padding:20px 24px 18px; }
     .dx-note{ text-align:left; }
   }
@@ -116,13 +122,18 @@
         <span class="dx-bubble b2" aria-hidden="true"></span>
       </div>
 
-      <p class="dx-msg">
-        @if ($startsWithLetters ?? false)
-          Tara the owl wants to hear you say your letters! There are no wrong answers. Just do your best.
-        @else
-          Tara the owl wants to hear you read! There are no wrong answers. Just do your best.
-        @endif
-      </p>
+      @php
+        $introLine = ($startsWithLetters ?? false)
+          ? 'Tara the owl wants to hear you say your letters! There are no wrong answers. Just do your best.'
+          : 'Tara the owl wants to hear you read! There are no wrong answers. Just do your best.';
+      @endphp
+      {{-- The speaker reads the welcome aloud in the browser's own voice, for a child who cannot read it yet. --}}
+      <div class="dx-msgrow">
+        <p class="dx-msg">{{ $introLine }}</p>
+        <button type="button" class="dx-speak" data-speak="Let's read together, {{ $learner->first_name }}! {{ $introLine }}" aria-label="Hear this message">
+          <svg viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-speaker-high"></use></svg>
+        </button>
+      </div>
 
       @if ($errors->has('diagnostic'))
         <p class="dx-note" role="alert">Tara could not find your story just now. Please tap the button to try again.</p>
@@ -145,7 +156,8 @@
   });
   if (reduceMotion) { tara.addEventListener('DOMLoaded', function () { tara.goToAndStop(0, true); }); }
 
-  // Writing the reading passages takes a while the first time. Say so, keep Tara jumping, and go on when it is ready.
+  // The first check's items come from a fixed bank, so the first one opens at once. The button still says it was
+  // heard (and a slow connection can still make the next page take a moment), without promising a long wait.
   var btn = document.getElementById('goBtn');
   var note = document.getElementById('waitNote');
   btn.addEventListener('click', function (e) {
@@ -153,13 +165,19 @@
     e.preventDefault();
     btn.setAttribute('aria-busy', 'true');
     btn.innerHTML = 'Getting your story ready<span class="dx-dots"></span>';
-    note.textContent = 'This can take a minute. Tara is picking the best story for you.';
+    note.textContent = 'Tara is picking the best story for you.';
     window.location.href = btn.href;
   });
   // coming back with the browser's back button must not leave the button stuck on "getting ready"
   window.addEventListener('pageshow', function (e) {
     if (e.persisted) { btn.removeAttribute('aria-busy'); btn.textContent = "I'm Ready"; note.textContent = ''; }
   });
+</script>
+@include('partials.speak')
+<script>
+  // Wake the scoring service as this screen opens, so it is already awake when the recording
+  // arrives (it sleeps on free hosting when idle). Quiet: nothing is shown and nothing can fail.
+  try { fetch(@json(route('learner.warm')), { credentials: 'same-origin' }).catch(function () {}); } catch (e) {}
 </script>
 </body>
 </html>

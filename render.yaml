@@ -1,0 +1,107 @@
+# Render Blueprint for TaraBasa AI (free web service, Docker).
+#
+# This file is only used by Render. Railway keeps deploying exactly as before from railway.json and
+# the same Dockerfile; nothing here changes how Railway builds or runs the app, so the two hosts can
+# be switched between by changing where the variables point (see "How to switch hosts" in CLAUDE.md).
+#
+# Values marked `sync: false` are secrets or per-account details: Render asks for them in its
+# dashboard when the Blueprint is created. They are never stored in this file.
+#
+# Database: TiDB Cloud (MySQL compatible, TLS required). The app's Dockerfile already installs the
+# system certificate bundle, so MYSQL_ATTR_SSL_CA points at it.
+
+services:
+  - type: web
+    name: tarabasa-ai
+    runtime: docker
+    plan: free
+    # Same region as the TiDB cluster (AWS ap-southeast-1, Singapore). A page makes about 15 to 25 database
+    # queries, so a web service in another region (about 170 ms per query) would take 3 to 5 seconds a page;
+    # in the same region it is a few milliseconds a query. A service's region cannot be changed later.
+    region: singapore
+    branch: claude/admin-dashboard-approvals-62dcd0
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    autoDeploy: true
+    envVars:
+      # ---- the app
+      - key: APP_NAME
+        value: TaraBasa AI
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false          # php artisan key:generate --show   (or the same key Railway used)
+      - key: APP_URL
+        sync: false          # https://<your-service-name>.onrender.com   (no trailing slash)
+      - key: LOG_CHANNEL
+        value: stderr        # so errors show in Render's log viewer
+      - key: LOG_LEVEL
+        value: warning
+      - key: BCRYPT_ROUNDS
+        value: "10"          # a free instance is small; 10 is still a sound cost and keeps logins quick
+
+      # ---- database: TiDB Cloud
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: MYSQL_ATTR_SSL_CA
+        value: /etc/ssl/certs/ca-certificates.crt
+
+      # ---- sessions, cache and the job queue all live in the database (the disk is wiped on every sleep)
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: QUEUE_POP_LOCK
+        value: plain         # TiDB has no "FOR UPDATE SKIP LOCKED"; see app/Queue/PlainLockDatabaseQueue.php
+
+      # ---- email: Gmail's own API over HTTPS (SMTP ports are blocked on Render's free tier)
+      - key: MAIL_MAILER
+        value: gmail-api
+      - key: MAIL_FROM_ADDRESS
+        value: tarabasaai.noreply@gmail.com
+      - key: MAIL_FROM_NAME
+        value: TaraBasa AI
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false          # https://<your-service-name>.onrender.com/auth/google/callback
+      - key: GMAIL_SEND_REFRESH_TOKEN
+        sync: false
+
+      # ---- the three teammate services (all on their own hosts, unchanged)
+      - key: ACTIVITY_AI_URL
+        value: https://acitvity-api.onrender.com
+      - key: ACTIVITY_AI_KEY
+        sync: false
+      - key: READING_AI_URL
+        value: https://reading-api-v5fp.onrender.com
+      - key: ADAPTIVE_RECOMMENDER_URL
+        value: https://adaptive-recommendator.onrender.com
+      - key: ADAPTIVE_RECOMMENDER_KEY
+        sync: false
+
+      # ---- an address people can write to about their information (shown on /privacy); optional
+      - key: PRIVACY_CONTACT_EMAIL
+        sync: false
+
+      # ---- the one Admin account (created or updated at every start; 12+ characters)
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

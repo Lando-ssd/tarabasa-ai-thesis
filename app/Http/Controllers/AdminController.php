@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Teacher;
 use App\Models\User;
+use App\Console\Commands\SyncAdminAccount;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -15,7 +18,7 @@ class AdminController extends Controller
      * Active Teachers, Total Accounts) — no learner/content stats belong
      * here, per Section 1's "smaller, more auditable Admin surface".
      */
-    public function dashboard(): View
+    public function dashboard(Request $request): View
     {
         $pendingTeachers = Teacher::with('user')
             ->where('status', 'Pending')
@@ -23,8 +26,18 @@ class AdminController extends Controller
 
         // Admin never appears in its own "All Accounts" list (Rule 1) —
         // structurally excluded by this query, not just hidden in the view.
-        $accounts = User::where('user_type', '!=', 'Admin')
+        // Only the newest are listed (with a search for the rest): a school platform can have
+        // thousands of accounts and a page that renders them all gets slower with every sign up.
+        $q = is_string($request->query('q')) ? trim($request->query('q')) : '';
+        $base = User::where('user_type', '!=', 'Admin');
+        $total = (clone $base)->count();
+        $accounts = $base
+            ->when($q !== '', fn ($query) => $query->where(function ($w) use ($q) {
+                $like = '%'.str_replace(['%', '_'], '', $q).'%'; // wildcards typed by the user mean nothing
+                $w->where('first_name', 'like', $like)->orWhere('last_name', 'like', $like)->orWhere('email', 'like', $like);
+            }))
             ->orderByDesc('created_at')
+            ->limit(100)
             ->get();
 
         return view('admin.dashboard', [
@@ -32,7 +45,11 @@ class AdminController extends Controller
             'accounts' => $accounts,
             'pendingTeacherCount' => $pendingTeachers->count(),
             'activeTeacherCount' => Teacher::where('status', 'Active')->count(),
-            'totalAccountCount' => $accounts->count(),
+            'totalAccountCount' => $total,
+            'accountQuery' => $q,
+            // The Admin password this code used to be created with is public (it was in the
+            // repository). While it is still in use the dashboard says so, loudly.
+            'publishedPassword' => Hash::check(SyncAdminAccount::PUBLISHED_PASSWORD, (string) $request->user()->password),
         ]);
     }
 

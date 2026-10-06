@@ -15,6 +15,10 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // An address people can write to about their information (shown on the privacy page). Optional:
+    // when it is not set, the page tells people to ask the school administrator or the team instead.
+    'privacy_contact' => env('PRIVACY_CONTACT_EMAIL'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Activity;
 use App\Models\GamePlay;
+use App\Models\Learner;
 use App\Models\PersonalWordBank;
 use App\Services\BadgeService;
+use App\Services\ReadingAiClient;
+use App\Support\NotSure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -93,12 +98,44 @@ class GameController extends Controller
         $grade = (int) substr($learner->grade_level, 6);
         $startLevel = max(1, min(3, $grade));
 
-        $strugglingWords = PersonalWordBank::where('learner_id', $learner->id)
-            ->where('mastery_status', 'Struggling')
-            ->pluck('word')
-            ->map(fn ($word) => strtolower(trim($word)))
-            ->unique()
-            ->values();
+        return view('learner.games.word-builder', [
+            'levels' => $this->wordLevels($learner),
+            'startLevel' => $startLevel,
+            'learnerCode' => $learner->learner_code,
+        ]);
+    }
+
+    /**
+     * Balloon Pop: a balloon shows a word and the child says it out loud to pop it. The words
+     * come from the same place as Word Builder's (the words this child missed in real readings,
+     * then the word list for the level), so the game practices what that child needs.
+     */
+    public function balloonPop(Request $request): View
+    {
+        $learner = $request->user('learner');
+        $grade = (int) substr($learner->grade_level, 6);
+
+        return view('learner.games.balloon-pop', [
+            'levels' => $this->wordLevels($learner),
+            'startLevel' => max(1, min(3, $grade)),
+            'checkUrl' => route('learner.games.check-word'),
+        ]);
+    }
+
+    /**
+     * The words a game can use at each of the three levels: the child's own Struggling words
+     * (from their real readings) bucketed by length, and that level's fixed word list.
+     *
+     * @return array<int, array{struggling: list<string>, fallback: list<string>, favoured: list<string>}>
+     */
+    private function wordLevels(Learner $learner): array
+    {
+        // Words the child missed first, then ones they are improving on that are due another look.
+        $strugglingWords = app(\App\Services\WordBank::class)->practiceWords($learner);
+
+        // When the child's own readings show a clear kind of mistake (see ErrorPatterns), the words
+        // from the level's list that practise it are offered first when a round needs filling up.
+        $pattern = \App\Support\ErrorPatterns::mainPattern(\App\Support\ErrorPatterns::forLearner($learner));
 
         $levels = [];
         foreach ([1, 2, 3] as $level) {
@@ -108,14 +145,63 @@ class GameController extends Controller
                     ->values()
                     ->all(),
                 'fallback' => self::WORD_LEVEL_LISTS[$level],
+                'favoured' => array_values(array_filter(
+                    self::WORD_LEVEL_LISTS[$level],
+                    fn ($word) => \App\Support\ErrorPatterns::practisesPattern($word, $pattern)
+                )),
             ];
         }
 
-        return view('learner.games.word-builder', [
-            'levels' => $levels,
-            'startLevel' => $startLevel,
-            'learnerCode' => $learner->learner_code,
+        return $levels;
+    }
+
+    /**
+     * One word the child said into a game, checked by the same service that scores readings. This
+     * is practice: nothing is saved (no reading session, no word bank, no points), and what the
+     * child said is not kept. The answer is only ever "heard" or "again", never "wrong": speech
+     * recognition is weaker for young children and for single words, so a game must not tell a child
+     * they are wrong when the machine may be. If the service cannot be reached the answer is
+     * "unavailable" and the game simply carries on without the speaking part.
+     */
+    public function checkWord(Request $request, ReadingAiClient $readingAi): JsonResponse
+    {
+        $data = $request->validate([
+            'word' => ['required', 'string', 'regex:/^[a-z]{2,12}$/'],
+            'audio' => ['required', 'file', 'max:2048'],
         ]);
+
+        $learner = $request->user('learner');
+        $grade = max(1, min(3, (int) substr($learner->grade_level, 6)));
+
+        // A throwaway, unsaved activity that only tells the service what it is listening to: one
+        // word, read aloud, at the child's own grade.
+        $activity = new Activity([
+            'grade_level' => 'Grade '.$grade,
+            'competency' => 'foundational_reading',
+            'activity_type' => 'word_reading',
+            'difficulty_tier' => 'Easy',
+            'curriculum_code' => [1 => 'RL1PWS-I-5', 2 => 'EN2PWS-I-3', 3 => 'EN3PWS-I-2'][$grade],
+            'reference_text' => $data['word'],
+            'passage_text' => $data['word'],
+        ]);
+        $activity->id = 0;
+
+        try {
+            $outcome = $readingAi->analyze($data['audio'], $activity);
+        } catch (ValidationException) {
+            return response()->json(['status' => 'unavailable']);
+        }
+
+        if ($outcome['unclear']) {
+            return response()->json(['status' => 'again']);
+        }
+
+        $feedback = NotSure::apply($outcome['result'])['accuracy']['word_feedback'] ?? [];
+        $heard = collect($feedback)->contains(
+            fn (array $w) => ($w['reference'] ?? null) === $data['word'] && ($w['status'] ?? null) === 'correct'
+        );
+
+        return response()->json(['status' => $heard ? 'heard' : 'again']);
     }
 
     private function wordLengthMatchesLevel(int $length, int $level): bool

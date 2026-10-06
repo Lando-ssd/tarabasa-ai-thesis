@@ -48,9 +48,11 @@ class AuthController extends Controller
             'school_name' => ['required', 'string', 'max:255'],
             'employee_id' => ['required', 'string', 'max:100'],
             'contact_number' => ['nullable', 'string', 'max:30'],
+            ...Teacher::gradeRules(),
         ]);
+        $grades = Teacher::gradesFromValidated($validated);
 
-        $user = DB::transaction(function () use ($validated) {
+        $user = DB::transaction(function () use ($validated, $grades) {
             $user = User::create([
                 'first_name' => $validated['first_name'],
                 'middle_initial' => $validated['middle_initial'] ?? null,
@@ -67,6 +69,7 @@ class AuthController extends Controller
                 'employee_id' => $validated['employee_id'],
                 'status' => 'Pending',
                 'free_generation_credits_remaining' => 2,
+                'grades_handled' => $grades,
             ]);
 
             return $user;
@@ -185,6 +188,20 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
+        // One log in for everyone. A learner code (like TB26-48293) typed in the first box, with the
+        // 4 digit PIN in the second box, signs the child straight in and opens their own dashboard
+        // (or the first reading check): nothing is typed twice. Same rules as the child's own page:
+        // the same lock-out, the same message for a wrong code and a wrong PIN.
+        // (A list or anything that is not text in the box is never a code: it falls through to the
+        // email rules below and is refused there, instead of crashing.)
+        $typed = $request->input('email');
+        if (is_string($typed) && \App\Support\LearnerCode::looksLikeCode($typed)) {
+            $request->validate(['password' => ['required', 'string']], ['password.required' => 'Type your 4 digit PIN.']);
+            $request->merge(['learner_code' => $typed, 'pin' => (string) $request->input('password')]);
+
+            return app(LearnerAuthController::class)->login($request, app(\App\Services\LearnerAuthService::class));
+        }
+
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
@@ -313,6 +330,14 @@ class AuthController extends Controller
         } catch (Throwable $e) {
             return redirect()->route('login', ['role' => $submittedRole])
                 ->withErrors(['email' => 'Google Sign-In didn\'t go through. Please try again, or log in with your email and password.']);
+        }
+
+        // Only trust an email address Google itself says it has verified: signing in by email is
+        // only safe if the person really owns that address.
+        $verified = data_get($googleUser->user ?? [], 'email_verified', data_get($googleUser->user ?? [], 'verified_email'));
+        if ($googleUser->getEmail() === null || $verified === false || $verified === 'false') {
+            return redirect()->route('login', ['role' => $submittedRole])
+                ->withErrors(['email' => 'Google could not confirm that email address. Please log in with your email and password.']);
         }
 
         $user = User::where('email', $googleUser->getEmail())->first();

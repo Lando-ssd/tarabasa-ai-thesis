@@ -162,11 +162,12 @@
     var state = readJson('actState') || {};
 
     var syncChips = function () {
-      $$('[data-load][aria-pressed]').forEach(function (c) {
+      $$('[data-load][aria-pressed], [data-load][aria-selected]').forEach(function (c) {
         var p; try { p = JSON.parse(c.getAttribute('data-load')); } catch (x) { return; }
         var on = Object.keys(p).every(function (k) { return String(state[k] == null ? '' : state[k]) === String(p[k]); });
-        c.setAttribute('aria-pressed', on ? 'true' : 'false');
+        c.setAttribute(c.hasAttribute('aria-selected') ? 'aria-selected' : 'aria-pressed', on ? 'true' : 'false');
       });
+      $$('[data-load-toggle]').forEach(function (c) { c.setAttribute('aria-pressed', state[c.getAttribute('data-load-toggle')] ? 'true' : 'false'); });
     };
 
     var load = function (patch) {
@@ -188,15 +189,24 @@
       e.preventDefault();
       try { load(JSON.parse(c.getAttribute('data-load'))); } catch (x) { /* fine */ }
     });
+    // A chip that switches one filter on and off (Not assigned yet), and a select that sets one.
+    document.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-load-toggle]');
+      if (!t) { return; }
+      var key = t.getAttribute('data-load-toggle'), patch = { page: 0 };
+      patch[key] = state[key] ? '' : 1;
+      load(patch);
+    });
+    document.addEventListener('change', function (e) {
+      var s = e.target, key = s.getAttribute && s.getAttribute('data-load-select');
+      if (!key) { return; }
+      var patch = { page: 0 }; patch[key] = s.value; load(patch);
+    });
 
     var qBox = $('#actQ'), qTimer;
     if (qBox) { qBox.addEventListener('input', function () { clearTimeout(qTimer); qTimer = setTimeout(function () { load({ q: qBox.value.trim(), page: 0, tray: 0 }); }, 220); }); }
     var gBox = $('#actGrade');
     if (gBox) { gBox.addEventListener('change', function () { load({ grade: gBox.value, page: 0, tray: 0 }); }); }
-
-    // A phone gets the list: dragging a card does not work well on touch, and every card has a
-    // "Move to" menu anyway.
-    if (window.matchMedia('(max-width:900px)').matches && state.view === 'board') { load({ view: 'list', page: 0 }); }
 
     // Put an activity in a level (or reject it): drag and drop, the "Move to" menu, or Approve.
     var place = function (url, body) {
@@ -210,7 +220,7 @@
 
     var dragged = null;
     document.addEventListener('dragstart', function (e) {
-      var c = e.target.closest ? e.target.closest('.bcard[draggable="true"]') : null;
+      var c = e.target.closest ? e.target.closest('.rvcard[draggable="true"], .bcard[draggable="true"]') : null;
       if (!c) { return; }
       dragged = { url: c.getAttribute('data-place-url'), status: c.getAttribute('data-status') };
       try { e.dataTransfer.setData('text/plain', dragged.url); e.dataTransfer.effectAllowed = 'move'; } catch (x) { /* fine */ }
@@ -237,6 +247,13 @@
     document.addEventListener('change', function (e) {
       var s = e.target;
       if (s.tagName === 'SELECT' && s.getAttribute('data-place-url') && s.value) { var v = s.value; s.value = ''; place(s.getAttribute('data-place-url'), { level: v }); }
+    });
+    // The Easy, Medium, Hard and Reject buttons on a draft card place it (placing also approves).
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-place-url][data-level]');
+      if (!b || b.disabled) { return; }
+      e.preventDefault();
+      place(b.getAttribute('data-place-url'), { level: b.getAttribute('data-level') });
     });
     // A plain button that posts in the background (Approve on a row, Restore).
     document.addEventListener('click', function (e) {
@@ -487,6 +504,49 @@
       if (s.tagName === 'SELECT' && s.name === 'activity_id' && s.closest('.win-view[data-view="assign"]')) { showPreview(s.closest('.win-view')); }
     });
   }
+
+  /* =====================================================
+     School-year selector and roster sorting
+     ===================================================== */
+  // One dropdown for the school year; closes on an outside click or Escape.
+  $$('[data-sy]').forEach(function (box) {
+    var btn = $('[data-sy-btn]', box), menu = $('[data-sy-menu]', box);
+    if (!btn || !menu) { return; }
+    var setOpen = function (open) { menu.hidden = !open; btn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+    btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(menu.hidden); });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) { setOpen(false); } });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { setOpen(false); } });
+  });
+
+  // Sort a roster without a round trip: last name, first name, reading level, recently active.
+  document.addEventListener('change', function (e) {
+    var sel = e.target;
+    var target = sel.getAttribute && sel.getAttribute('data-sort');
+    if (!target) { return; }
+    var list = $(target); if (!list) { return; }
+    var key = sel.value;
+    var rows = $$(':scope > [data-search]', list);
+    rows.sort(function (a, b) {
+      if (key === 'level') {
+        var d = parseInt(b.getAttribute('data-level'), 10) - parseInt(a.getAttribute('data-level'), 10);
+        return d !== 0 ? -d : a.getAttribute('data-last').localeCompare(b.getAttribute('data-last'));
+      }
+      if (key === 'active') {
+        var t = parseInt(b.getAttribute('data-active'), 10) - parseInt(a.getAttribute('data-active'), 10);
+        return t !== 0 ? t : a.getAttribute('data-last').localeCompare(b.getAttribute('data-last'));
+      }
+      var attr = key === 'first' ? 'data-first' : 'data-last';
+      return a.getAttribute(attr).localeCompare(b.getAttribute(attr));
+    });
+    rows.forEach(function (r) { list.appendChild(r); });
+  });
+
+  // A roster row is a div (so a level check can hold its own buttons): Enter and Space open it too.
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('lrow') && e.target.hasAttribute('data-goto')) {
+      e.preventDefault(); e.target.click();
+    }
+  });
 
   /* =====================================================
      Analytics, Promotions: pickers that filter as you go
