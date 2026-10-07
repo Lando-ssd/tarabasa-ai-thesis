@@ -43,6 +43,33 @@ class ServiceReply
     }
 
     /**
+     * How many seconds to wait before asking again after a temporary answer.
+     *
+     * A "slow down" (429) is a rule about HOW OFTEN we ask, so hammering again after 5 seconds only keeps
+     * the rule closed: it waits twice as long, and when the host says how long it wants ("Retry-After",
+     * in seconds or as a date) that is used instead, up to $max seconds. Every other temporary answer (a
+     * service that is waking up) waits $base seconds longer each time.
+     */
+    public static function pause(Response $response, int $try, int $base, int $max = 30): int
+    {
+        if ($response->status() === 429) {
+            $asked = trim((string) $response->header('Retry-After'));
+
+            if ($asked !== '') {
+                $seconds = ctype_digit($asked) ? (int) $asked : (int) ((strtotime($asked) ?: time()) - time());
+
+                if ($seconds > 0) {
+                    return min($seconds, $max);
+                }
+            }
+
+            return min($base * $try * 2, $max);
+        }
+
+        return min($base * $try, $max);
+    }
+
+    /**
      * The service's own words, when it gave any, in one line. Null when the body had nothing readable
      * (an empty answer, or a web page from the hosting).
      */

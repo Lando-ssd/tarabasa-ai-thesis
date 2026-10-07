@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ServiceFailure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -76,6 +77,8 @@ class AdaptiveRecommendatorClient
         } catch (ConnectionException $e) {
             Log::error('Adaptive Recommendator connection failed', ['path' => $path, 'error' => $e->getMessage()]);
 
+            ServiceFailure::record('recommender', null, 'The adaptive recommender is unreachable right now.', [], $path.' '.$e->getMessage());
+
             throw new \RuntimeException('The adaptive recommender is unreachable right now.');
         }
 
@@ -86,7 +89,10 @@ class AdaptiveRecommendatorClient
                 'body' => $response->body(),
             ]);
 
-            throw new \RuntimeException($this->friendlyApiError($response));
+            $shown = $this->friendlyApiError($response);
+            ServiceFailure::record('recommender', $response, mb_substr($path.': '.$shown, 0, 160), [$response->status()]);
+
+            throw new \RuntimeException($shown);
         }
 
         return $response->json();

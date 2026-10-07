@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
+use App\Models\ServiceFailure;
 use App\Support\ServiceReply;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -61,6 +62,7 @@ class ActivityAiClient
         // again a few seconds later is what a person would do. A real mistake in the request (401, 413,
         // 422 and so on) is never repeated, since it cannot get better.
         $response = null;
+        $trail = [];
 
         for ($try = 1; $try <= self::TEMPORARY_ERROR_TRIES; $try++) {
             try {
@@ -74,7 +76,14 @@ class ActivityAiClient
             } catch (ConnectionException $e) {
                 Log::error('Activity AI connection failed', ['error' => $e->getMessage()]);
 
-                throw new \RuntimeException('The activity generator is unreachable right now. Please try again in a moment.');
+                $shown = 'The activity generator is unreachable right now. Please try again in a moment.';
+                ServiceFailure::record('generator', null, $shown, $trail, $e->getMessage());
+
+                throw new \RuntimeException($shown);
+            }
+
+            if ($response->failed()) {
+                $trail[] = $response->status();
             }
 
             if (! $response->failed() || ! ServiceReply::isTransient($response) || $try === self::TEMPORARY_ERROR_TRIES) {
@@ -87,7 +96,7 @@ class ActivityAiClient
                 'page' => ServiceReply::snippet($response),
             ]);
 
-            sleep((int) config('services.retry_pause', self::TEMPORARY_ERROR_PAUSE) * $try);
+            sleep(ServiceReply::pause($response, $try, (int) config('services.retry_pause', self::TEMPORARY_ERROR_PAUSE)));
         }
 
         if ($response->failed()) {
@@ -98,7 +107,10 @@ class ActivityAiClient
                 'body' => mb_substr($response->body(), 0, 2000),
             ]);
 
-            throw new \RuntimeException($this->friendlyApiError($response));
+            $shown = $this->friendlyApiError($response);
+            ServiceFailure::record('generator', $response, $shown, $trail);
+
+            throw new \RuntimeException($shown);
         }
 
         $json = $response->json();

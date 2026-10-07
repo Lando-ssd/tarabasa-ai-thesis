@@ -136,6 +136,14 @@
   .search-box input::placeholder{ color:var(--slate-400); font-weight:500; }
 
   .table-scroll{ overflow-x:auto; }
+  .svc-list{ display:grid; gap:10px; }
+  .svc-item{ border:1px solid var(--line); border-radius:14px; padding:12px 14px; background:var(--bg-0); }
+  .svc-head{ display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; font-size:13px; font-weight:700; }
+  .svc-when{ color:var(--slate-600); font-weight:600; margin-left:auto; }
+  .svc-what{ margin:6px 0 0; font-size:13.5px; font-weight:500; }
+  .svc-item details{ margin-top:6px; font-size:12.5px; color:var(--slate-600); }
+  .svc-item summary{ cursor:pointer; font-weight:700; }
+  .svc-item pre{ white-space:pre-wrap; word-break:break-word; margin:6px 0 0; font:500 12px/1.5 ui-monospace,Consolas,monospace; color:var(--navy-900); background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 10px; max-height:180px; overflow:auto; }
 
   @media (max-width:640px){
     .topbar{ flex-wrap:wrap; gap:10px; }
@@ -197,6 +205,29 @@
     <div class="stat-card active"><div class="val">{{ $activeTeacherCount }}</div><div class="lbl">Active Teachers</div></div>
     <div class="stat-card total"><div class="val">{{ $totalAccountCount }}</div><div class="lbl">Total Accounts</div></div>
   </div>
+
+  @if ($serviceFailures->isNotEmpty())
+    <section class="panel" id="serviceProblems">
+      <h2>Recent service problems</h2>
+      <p class="panel-sub">When the activity generator, the reading checker or the adaptive recommender could not do what was asked, what they answered is written here (newest first, kept for 14 days). Times are Philippine time.</p>
+      <div class="svc-list">
+        @foreach ($serviceFailures as $f)
+          <div class="svc-item">
+            <div class="svc-head">
+              <span>{{ \App\Models\ServiceFailure::SERVICES[$f->service] ?? $f->service }}</span>
+              <span class="status-pill {{ $f->status && $f->status < 500 && $f->status !== 429 ? 'pending' : 'rejected' }}">{{ $f->status ? 'Answered '.$f->status : 'No answer' }}</span>
+              @if ($f->trail && str_contains($f->trail, ','))<span style="color:var(--slate-600);font-weight:600">tried {{ count(explode(',', $f->trail)) }} times: {{ $f->trail }}</span>@endif
+              <span class="svc-when">{{ $f->created_at?->timezone('Asia/Manila')->format('M j, g:i A') }}</span>
+            </div>
+            <p class="svc-what">{{ $f->what }}</p>
+            @if ($f->body)
+              <details><summary>What it sent back</summary><pre>{{ $f->body }}</pre></details>
+            @endif
+          </div>
+        @endforeach
+      </div>
+    </section>
+  @endif
 
   <section class="panel">
     <h2>Pending Teacher Approvals</h2>

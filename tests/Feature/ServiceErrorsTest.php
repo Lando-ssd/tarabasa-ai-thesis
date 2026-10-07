@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Activity;
+use App\Models\ServiceFailure;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Services\ActivityAiClient;
@@ -248,7 +249,7 @@ class ServiceErrorsTest extends TestCase
             $this->assertStringNotContainsString('unexpected', $message);
         }
 
-        $this->assertSame(3, $this->sentTo('reader.test/analyze'));
+        $this->assertSame(4, $this->sentTo('reader.test/analyze'));
     }
 
     public function test_a_rejected_recording_request_is_not_repeated_and_is_not_called_unclear(): void
@@ -273,5 +274,122 @@ class ServiceErrorsTest extends TestCase
 
         $this->assertTrue($outcome['unclear']);
         $this->assertSame(1, $this->sentTo('reader.test/analyze'));
+    }
+
+    // ----- waiting politely after a "slow down", and the diary of what went wrong
+
+    public function test_a_slow_down_waits_as_long_as_the_host_asks_but_never_more_than_the_cap(): void
+    {
+        $this->assertSame(12, ServiceReply::pause($this->reply(429, 'x', ['Retry-After' => '12']), 1, 5));
+        $this->assertSame(30, ServiceReply::pause($this->reply(429, 'x', ['Retry-After' => '600']), 1, 5), 'capped so a child is never left waiting for minutes');
+        $this->assertSame(1, ServiceReply::pause($this->reply(429, 'x', ['Retry-After' => gmdate('D, d M Y H:i:s \G\M\T', time() + 1)]), 1, 5), 'a date works too');
+    }
+
+    public function test_a_slow_down_without_a_stated_wait_waits_twice_as_long_as_a_waking_service(): void
+    {
+        $slowDown = $this->reply(429, 'x');
+        $waking = $this->reply(503, 'x');
+
+        $this->assertSame([10, 20, 30], [ServiceReply::pause($slowDown, 1, 5), ServiceReply::pause($slowDown, 2, 5), ServiceReply::pause($slowDown, 3, 5)]);
+        $this->assertSame([5, 10, 15], [ServiceReply::pause($waking, 1, 5), ServiceReply::pause($waking, 2, 5), ServiceReply::pause($waking, 3, 5)]);
+        $this->assertSame(0, ServiceReply::pause($waking, 3, 0), 'the test setting turns waiting off');
+    }
+
+    public function test_a_failed_reading_check_is_written_to_the_diary_with_everything_the_checker_said(): void
+    {
+        Http::fake(['reader.test/analyze' => Http::response('<html><body>Too Many Requests</body></html>', 429, ['Content-Type' => 'text/html'])]);
+
+        try {
+            app(ReadingAiClient::class)->analyze(UploadedFile::fake()->create('recording.webm', 20, 'audio/webm'), $this->activity());
+            $this->fail('should have thrown');
+        } catch (ValidationException) {
+        }
+
+        $row = ServiceFailure::first();
+        $this->assertNotNull($row);
+        $this->assertSame('reader', $row->service);
+        $this->assertSame(429, $row->status);
+        $this->assertSame('429,429,429,429', $row->trail, 'one status for every try, so the team can see it was not a single unlucky call');
+        $this->assertStringContainsString('text/html', $row->content_type);
+        $this->assertStringContainsString('error 429', $row->what);
+        $this->assertStringContainsString('Too Many Requests', $row->body);
+        $this->assertSame(1, ServiceFailure::count(), 'one row for the whole call, not one per try');
+    }
+
+    public function test_a_reading_check_that_works_leaves_nothing_in_the_diary(): void
+    {
+        Http::fake(['reader.test/analyze' => Http::sequence()->push('<html>waking</html>', 503)->push($this->goodAnswer(), 200)]);
+
+        app(ReadingAiClient::class)->analyze(UploadedFile::fake()->create('recording.webm', 20, 'audio/webm'), $this->activity());
+
+        $this->assertSame(0, ServiceFailure::count(), 'a hiccup that the retry fixed is not a problem worth the team attention');
+    }
+
+    public function test_a_checker_that_cannot_be_reached_is_written_to_the_diary_without_a_status(): void
+    {
+        Http::fake(['reader.test/analyze' => fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: timed out')]);
+
+        try {
+            app(ReadingAiClient::class)->analyze(UploadedFile::fake()->create('recording.webm', 20, 'audio/webm'), $this->activity());
+            $this->fail('should have thrown');
+        } catch (ValidationException) {
+        }
+
+        $row = ServiceFailure::first();
+        $this->assertSame('reader', $row->service);
+        $this->assertNull($row->status);
+        $this->assertStringContainsString('timed out', $row->body);
+    }
+
+    public function test_a_failed_generation_and_a_failed_recommendation_are_written_to_the_diary_too(): void
+    {
+        Http::fake(['generator.test/generate-bundle' => Http::response(['detail' => 'Invalid or missing X-App-Key.'], 401)]);
+
+        try {
+            app(ActivityAiClient::class)->generateBundle(['grade' => 1], 5);
+            $this->fail('should have thrown');
+        } catch (\RuntimeException) {
+        }
+
+        $row = ServiceFailure::where('service', 'generator')->first();
+        $this->assertSame(401, $row->status);
+        $this->assertStringContainsString('X-App-Key', $row->body);
+
+        config(['services.adaptive_recommender.url' => 'https://recommender.test', 'services.adaptive_recommender.key' => 'k']);
+        Http::fake(['recommender.test/*' => Http::response(['detail' => [['loc' => ['body', 'assessment_scores'], 'msg' => 'At least one assessment competency score is required']]], 422)]);
+
+        try {
+            app(\App\Services\AdaptiveRecommendatorClient::class)->initialize(['x' => 1]);
+            $this->fail('should have thrown');
+        } catch (\RuntimeException) {
+        }
+
+        $rec = ServiceFailure::where('service', 'recommender')->first();
+        $this->assertSame(422, $rec->status);
+        $this->assertStringContainsString('At least one assessment', $rec->body);
+    }
+
+    public function test_the_diary_keeps_only_the_last_two_weeks(): void
+    {
+        $old = ServiceFailure::create(['service' => 'reader', 'status' => 503, 'what' => 'old']);
+        \Illuminate\Support\Facades\DB::table('service_failures')->where('id', $old->id)->update(['created_at' => now()->subDays(15)]);
+
+        ServiceFailure::record('reader', null, 'new one', [], 'x');
+
+        $this->assertSame(['new one'], ServiceFailure::pluck('what')->all());
+    }
+
+    public function test_the_admin_sees_the_diary_on_the_dashboard_and_nothing_when_it_is_empty(): void
+    {
+        $admin = User::create(['first_name' => 'Ada', 'last_name' => 'Admin', 'email' => 'ada@example.com', 'password' => 'Passw0rd!', 'user_type' => 'Admin']);
+        $admin->forceFill(['email_verified_at' => now()])->save();
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()->assertDontSee('Recent service problems');
+
+        ServiceFailure::record('reader', $this->reply(429, '<script>alert(1)</script> Too Many Requests', ['Content-Type' => 'text/html']), 'The reading checker is waking up or busy right now (error 429).', [429, 429, 429, 429]);
+
+        $page = $this->get(route('admin.dashboard'))->assertOk();
+        $page->assertSee('Recent service problems')->assertSee('Reading checker')->assertSee('Answered 429')->assertSee('tried 4 times')->assertSee('Too Many Requests');
+        $this->assertStringNotContainsString('<script>alert(1)</script>', $page->getContent(), 'what a service sends back is shown as text, never run');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ServiceFailure;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Console\Commands\SyncAdminAccount;
@@ -47,6 +48,8 @@ class AdminController extends Controller
             'activeTeacherCount' => Teacher::where('status', 'Active')->count(),
             'totalAccountCount' => $total,
             'accountQuery' => $q,
+            // What the teammate services answered when a call failed (the newest 15, kept 14 days).
+            'serviceFailures' => ServiceFailure::orderByDesc('id')->limit(15)->get(),
             // The Admin password this code used to be created with is public (it was in the
             // repository). While it is still in use the dashboard says so, loudly.
             'publishedPassword' => Hash::check(SyncAdminAccount::PUBLISHED_PASSWORD, (string) $request->user()->password),
