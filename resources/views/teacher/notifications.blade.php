@@ -17,8 +17,8 @@
     use App\Models\Notification;
     use App\Support\ReadingLevel;
 
-    $chips = ['all' => 'All', 'support' => 'Needs support', 'up' => 'Ready to move up', 'quiet' => 'Quiet'];
-    $sections = ['support' => 'Needs support now', 'up' => 'Ready to move up', 'quiet' => 'Quiet'];
+    $chips = ['all' => 'All', 'support' => 'Needs support', 'up' => 'Moving up', 'quiet' => 'Quiet'];
+    $sections = ['support' => 'Needs support now', 'up' => 'Moving up', 'quiet' => 'Quiet'];
     $style = ['support' => ['need', 'attention', 'warning-circle'], 'up' => ['up', 'summary', 'trend-up'], 'quiet' => ['quiet', 'level', 'moon']];
     $pillFor = ['support' => 'warn', 'up' => 'ok', 'quiet' => 'amber'];
     $unreadRoutine = $routine->where('is_read', false)->count();
@@ -82,7 +82,7 @@
             <div class="sugline">@include('learner._badge-icon', ['icon' => 'lightbulb', 'class' => 'ico'])
               <span>
                 @if ($card)
-                  Offer a <b>{{ $sg['tier'] }}</b> activity next, for example <b>{{ $card['activity']->title }}</b>@if ($card['code']) ({{ $card['code'] }}, {{ lcfirst($card['skill']) }})@endif.
+                  @if (($a['variant'] ?? '') === 'moved')Give {{ $l->first_name }} a <b>{{ $sg['tier'] }}</b> activity for the new group, for example <b>{{ $card['activity']->title }}</b>@else Offer a <b>{{ $sg['tier'] }}</b> activity next, for example <b>{{ $card['activity']->title }}</b>@endif @if ($card['code']) ({{ $card['code'] }}, {{ lcfirst($card['skill']) }})@endif.
                 @else
                   You have no approved {{ strtolower($sg['tier']) }} activity left for {{ $l->first_name }}. <a href="{{ route('teacher.activities.index', ['generate' => 1]) }}">Generate one</a>.
                 @endif

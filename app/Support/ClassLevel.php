@@ -4,9 +4,14 @@ namespace App\Support;
 
 use App\Models\Learner;
 use App\Models\SchoolClass;
+use App\Models\Teacher;
 
 /**
  * The general reading level of a class, and whether a learner may be added to it.
+ *
+ * Two rules stand in the way, in this order. (1) Grade: a class holds ONE grade, so a Grade 2 learner cannot join a
+ * Grade 1 class (only a multigrade class, opened by a teacher who handles several grades, takes more than one grade).
+ * (2) Reading level: below.
  *
  * A teacher's own instruction: a class is taught at one general level, and a learner who already reads at a high level
  * cannot be added to it, even when they are in the same grade, because the class is not pitched for them. Such a child
@@ -35,12 +40,7 @@ class ClassLevel
             return null;
         }
 
-        return match (true) {
-            $readiness['rung'] <= 0 => 'non',
-            $readiness['rung'] <= 2 => 'frustration',
-            $readiness['rung'] <= 4 => 'instructional',
-            default => 'independent',
-        };
+        return ReadingLevel::bandForRung($readiness['rung']);
     }
 
     /**
@@ -66,6 +66,11 @@ class ClassLevel
      */
     public static function refusal(SchoolClass $class, Learner $learner): ?string
     {
+        // A multigrade class is meant to hold children at many levels, so it has no single level to protect.
+        if ($class->multigrade) {
+            return null;
+        }
+
         if (self::bandOf($learner) !== 'independent') {
             return null;
         }
@@ -81,5 +86,32 @@ class ClassLevel
             : "the general level of a {$class->grade_level} class ({$general['label']})";
 
         return "{$learner->first_name} reads at the Independent level, above {$where}. A learner who already reads this well cannot be added here, even in the same grade. They belong in a class taught at a higher level. Ask the school to place them in one.";
+    }
+
+    /**
+     * A class holds ONE grade. A Grade 2 learner cannot be added to a Grade 1 class, whoever types or scans the code. The
+     * one exception is a multigrade class (see SchoolClass::acceptsGrade), which takes any grade the teacher handles.
+     */
+    public static function gradeRefusal(Teacher $teacher, SchoolClass $class, Learner $learner): ?string
+    {
+        if ($class->acceptsGrade($learner->grade_level, $teacher)) {
+            return null;
+        }
+
+        if ($class->multigrade) {
+            return "{$learner->first_name} is in {$learner->grade_level}, and you do not handle {$learner->grade_level}. A multigrade class takes only the grades you handle: ".implode(' and ', $teacher->gradesAllowed()).'.';
+        }
+
+        $hint = $teacher->isMultigrade()
+            ? "Add {$learner->first_name} to one of your {$learner->grade_level} classes instead, or open a multigrade class if you teach the grades together."
+            : "Add {$learner->first_name} to a {$learner->grade_level} class instead.";
+
+        return "{$learner->first_name} is in {$learner->grade_level}, and {$class->name} is a {$class->grade_level} class. A class holds one grade only. {$hint}";
+    }
+
+    /** Everything that can stand in the way of putting this learner in this class: the grade first, then the reading level. */
+    public static function joinRefusal(Teacher $teacher, SchoolClass $class, Learner $learner): ?string
+    {
+        return self::gradeRefusal($teacher, $class, $learner) ?? self::refusal($class, $learner);
     }
 }

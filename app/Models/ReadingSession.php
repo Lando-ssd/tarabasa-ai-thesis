@@ -28,6 +28,8 @@ class ReadingSession extends Model
         'adaptive_subdomain',
         'level_before',
         'level_after',
+        'rung_before',
+        'rung_after',
         'flagged_needs_attention',
         'session_type',
         'initiated_by',

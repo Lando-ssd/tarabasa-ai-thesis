@@ -6331,6 +6331,46 @@ level (`ReadingLevel::rungAfterLevelChange`), so one reading could jump a whole 
   real child, a real microphone and a real class have not tried the new rule; "Independent" for the class guard follows rungs 5 and 6.
   The old whole-level jump is gone for everyone, but children who already jumped keep the level they have.
 
+## One grade per class, multigrade classes, and what happens when a child improves (2026-10-07, BUILT LOCALLY, NOT PUSHED YET)
+
+The user showed a live class (Grade 1) and reported a Grade 2 learner could be added to it, asked what should happen when a
+Frustration reader improves and is "still in the same class", and repeated that the roster search must say learners (it
+already did locally; the live site is simply older than the local commit `f2b4013`).
+- **A class holds ONE grade** (`SchoolClass::acceptsGrade`, `ClassLevel::gradeRefusal`, `ClassLevel::joinRefusal` = grade first,
+  then the Independent-reader level guard). Enforced on EVERY path that sets `learners.class_id`: typing a code, the QR scanner
+  (same endpoint, JSON 422 with the reason), Move to another class, and Promotions claim. A learner with no grade on record is
+  never turned away for it. The message names both grades and what to do ("Add Rosa to a Grade 2 class instead").
+- **Multigrade classes (`classes.multigrade`, migration `2026_10_07_220000`).** The registration question already asks whether a
+  teacher handles ONE grade or several ("A multigrade class has two or more grades"). A teacher who handles two or more grades
+  (`Teacher::isMultigrade()`) can tick "Multigrade class" when creating or editing a class; it then takes learners from any grade
+  that teacher handles (and skips the single-level guard, since it is meant to hold many levels). A forged multigrade flag from
+  a single-grade teacher is ignored. THIS IS OUR READING of "not unless the teacher can teach multi grade, so a specific class is
+  a specific grade only": a flag per class, so a multigrade teacher can still keep strict single-grade classes. The user has not
+  confirmed it.
+- **Editing a class** cannot change its grade, or untick multigrade, under learners it would no longer accept (a plain message
+  names them; nobody is moved or removed). The grade dropdown is locked while a normal class has learners. Old data that already
+  breaks the rule (a Grade 2 child in a Grade 1 class) is FLAGGED, not removed: a banner on the roster, a "Grade 2, other grade"
+  tag, and a note on the learner's page with the move option. The Move list only offers classes that take the child's grade.
+  Promotions: a released learner can be claimed into a class of that grade or a multigrade class of a teacher who handles it, and
+  the learner's grade is set to the grade they were PROMOTED to (`record->next_grade`), never copied from the class (a
+  multigrade class's own grade is only its main one). The menu's "Claim" count follows the same rule (`TeacherNav`).
+- **When a child improves (Frustration to Instructional) they stay in the same class.** A class is a grade; the reading groups
+  inside it come from each child's current level, so the child just appears in the next group, and group assignments follow them
+  (`ActivityAssignment::reachingLearner` already used the current group). New: every scored reading remembers `rung_before` /
+  `rung_after` (migration `2026_10_07_210000`, set in `LearnerReadingService`), `ReadingLevel::bandForRung`, and
+  `App\Support\LevelMoves::latestUp` (a move up that changes the Phil-IRI level, within 14 days, only while still true). The
+  teacher sees it three ways: a "Moved up to Instructional" tag under the child's name in the roster, a green note on the
+  learner's page ("stays in Sampaguita ... now reads with the Instructional reading group"), and a "moved up to the Instructional
+  level" item in Alerts (section and filter renamed "Moving up", same `up` kind, `variant => 'moved'`, with a suggested activity
+  for the NEW group's level). The session notice to teacher and parent adds "now at the Instructional level" only when the level
+  changed, not for a step inside the same level. Nothing moves anyone: the teacher can still assign anything.
+- **Honest limits.** Early promotion of a very strong Grade 1 child to a Grade 2 class is a school decision outside the app (the
+  yearly Promotions flow is the only way a child changes grade). Existing readings made before this have no rung_before/after, so
+  no "moved up" can be shown for them. The multigrade flag is our own design choice.
+- **Tests.** `tests/Feature/ClassGradeAndMovesTest.php` (10) plus updated `ClassLevelTest`; full suite 298 passing, also with the
+  teammate-service variables blank. Checked in a browser: refusal text, roster tags and banner, the moved-up note, the Alerts item,
+  and the locked grade dropdown with the multigrade box.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

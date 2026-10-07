@@ -19,7 +19,7 @@
         <div class="grid2">
           <div class="field"><label for="nc-name">Class name</label><input type="text" id="nc-name" name="name" data-af placeholder="e.g. Sampaguita" value="{{ $reopen ? old('name') : '' }}" required>@if ($reopen) @error('name')<span class="field-error">{{ $message }}</span>@enderror @endif</div>
           <div class="field"><label for="nc-section">Section</label><input type="text" id="nc-section" name="section" placeholder="e.g. Section A" value="{{ $reopen ? old('section') : '' }}" required>@if ($reopen) @error('section')<span class="field-error">{{ $message }}</span>@enderror @endif</div>
-          <div class="field"><label for="nc-grade">Grade level</label><select id="nc-grade" name="grade_level" required>@foreach (auth()->user()->teacher->gradesAllowed() as $g)<option @selected(old('grade_level') === $g)>{{ $g }}</option>@endforeach</select><span class="fhint">Only the grades you handle: {{ implode(' and ', auth()->user()->teacher->gradesAllowed()) }}. Change this in Profile.</span></div>
+          <div class="field"><label for="nc-grade">Grade level</label><select id="nc-grade" name="grade_level" required>@foreach (auth()->user()->teacher->gradesAllowed() as $g)<option @selected(old('grade_level') === $g)>{{ $g }}</option>@endforeach</select><span class="fhint">Only the grades you handle: {{ implode(' and ', auth()->user()->teacher->gradesAllowed()) }}. A class holds one grade, and only learners of that grade can be added. Change the grades you handle in Profile.</span>@if ($reopen) @error('grade_level')<span class="field-error">{{ $message }}</span>@enderror @endif</div>
           <div class="field"><label for="nc-year">School year</label>
             <select id="nc-year" name="school_year" required>
               <option value="{{ $currentYear }}" @selected(old('school_year', $currentYear) === $currentYear)>SY {{ $currentYear }} (current)</option>
@@ -27,6 +27,9 @@
             </select>
           </div>
         </div>
+        @if (auth()->user()->teacher->isMultigrade())
+          <div class="field"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="multigrade" value="1" @checked($reopen && old('multigrade'))> Multigrade class</label><span class="fhint">Tick this only if you teach {{ implode(' and ', auth()->user()->teacher->gradesAllowed()) }} together in this class. It then takes learners from any of those grades. Leave it unticked for a normal class of one grade.</span></div>
+        @endif
         <div class="field"><label for="nc-tag">Focus group <span class="opt">optional</span></label><input type="text" id="nc-tag" name="group_tag" placeholder="e.g. Basic Phonics" value="{{ $reopen ? old('group_tag') : '' }}"><span class="fhint">A label for what this class is working on. Give two classes the same focus to assign one activity to both at once. <b>It does not sort learners.</b> Reading groups inside the class are made automatically from reading levels.</span></div>
       </form>
     </div>

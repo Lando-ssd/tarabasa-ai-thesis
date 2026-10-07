@@ -105,7 +105,7 @@ class ClassLevelTest extends TestCase
         [$user, $t] = $this->teacher();
         $high = $this->klass($t, 'Grade 2', 'Higher');
         $low = $this->klass($t, 'Grade 1', 'Lower');
-        $strong = $this->kid(null, 6);
+        $strong = $this->kid(null, 6, ['grade_level' => 'Grade 2']);
         $middle = $this->kid(null, 3);
         $starter = $this->kid(null, 0);
         $this->actingAs($user);

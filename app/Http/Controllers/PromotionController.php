@@ -42,11 +42,13 @@ class PromotionController extends Controller
             ->orderBy('released_at')
             ->get();
 
-        // Only this Teacher's own current-year classes matching the
-        // required next_grade are valid claim targets for each record.
+        // Only this Teacher's own current-year classes that take the
+        // required next_grade are valid claim targets for each record: a
+        // class of that grade, or a multigrade class of a teacher who
+        // handles that grade.
         $matchingClassesByRecord = $pendingRecords->mapWithKeys(
             fn (PromotionRecord $record) => [
-                $record->id => $myCurrentClasses->where('grade_level', $record->next_grade)->values(),
+                $record->id => $myCurrentClasses->filter(fn (SchoolClass $c) => $c->acceptsGrade($record->next_grade, $teacher))->values(),
             ]
         );
 
@@ -120,11 +122,10 @@ class PromotionController extends Controller
 
         $class = SchoolClass::where('teacher_id', $teacher->id)
             ->where('id', $validated['class_id'])
-            ->where('grade_level', $record->next_grade)
             ->where('school_year', SchoolClass::currentSchoolYear())
             ->first();
 
-        abort_unless($class, 403, 'That class is not a valid claim target.');
+        abort_unless($class && $class->acceptsGrade($record->next_grade, $teacher), 403, 'That class is not a valid claim target.');
 
         // Two teachers pressing Claim for the same learner at the same moment: only one can win.
         // The record is locked and its status read again inside the lock; the other is told it is gone.
@@ -141,9 +142,11 @@ class PromotionController extends Controller
                 'claimed_into_class_id' => $class->id,
             ]);
 
+            // The learner's grade is the grade they were promoted to, never copied from the class: a multigrade class
+            // holds several grades, and its own grade is only its main one.
             $locked->learner->update([
                 'class_id' => $class->id,
-                'grade_level' => $class->grade_level,
+                'grade_level' => $record->next_grade,
             ]);
 
             return true;

@@ -8,6 +8,7 @@ use App\Models\Notification;
 use App\Models\PersonalWordBank;
 use App\Models\ReadingSession;
 use App\Support\NotSure;
+use App\Support\ReadingLevel;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -229,6 +230,8 @@ class LearnerReadingService
             'word_feedback' => $result['accuracy']['word_feedback'] ?? null,
             'level_before' => $levelBefore,
             'level_after' => $levelAfter,
+            'rung_before' => $progress['rungBefore'],
+            'rung_after' => $progress['rungAfter'],
             'flagged_needs_attention' => $accuracy < 70,
             'session_type' => 'Practice',
             'initiated_by' => $initiatedBy,
@@ -392,7 +395,12 @@ class LearnerReadingService
         $accuracy = round($session->accuracy_percent);
         $summary = "{$learner->first_name} read \"{$activity->title}\" with {$accuracy}% accuracy";
         if ($progress['moved'] === 'up') {
-            $summary .= ", and moved up to {$progress['rungLabelAfter']} ({$progress['stepAfter']}).";
+            $summary .= ", and moved up to {$progress['rungLabelAfter']} ({$progress['stepAfter']})";
+            // When the move crosses into a higher reading level, say so: the child joins the next reading group in their class.
+            $after = ReadingLevel::bandForRung($progress['rungAfter']);
+            $summary .= $after !== ReadingLevel::bandForRung($progress['rungBefore'])
+                ? ', now at the '.ReadingLevel::bandShort($after).' level.'
+                : '.';
         } elseif ($progress['moved'] === 'down') {
             $summary .= ", and was moved back to {$progress['rungLabelAfter']} for more practice.";
         } else {

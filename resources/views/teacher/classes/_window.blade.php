@@ -22,6 +22,9 @@
     $meta = $c->section.' · SY '.$c->school_year.' · '.$nLearners.' '.($nLearners === 1 ? 'learner' : 'learners');
     $ins = $insights[$c->id];
     $others = $classes->where('id', '!=', $c->id);
+    $tch = auth()->user()->teacher;
+    // Learners already in this class whose grade it does not take (old data): shown so they can be moved to a class of their own grade.
+    $offGrade = $c->learners->reject(fn ($x) => $c->acceptsGrade($x->grade_level, $tch));
 @endphp
 <dialog id="class-{{ $c->id }}" class="win" data-class="{{ $c->id }}" data-grade="{{ $c->grade_level }}" aria-label="{{ $c->name }}" @if ($auto) data-autoopen data-autoview="{{ $startView }}" @endif>
   <div class="win-in">
@@ -30,7 +33,7 @@
     <section class="win-view" data-view="learners" @if ($startView !== 'learners') hidden @endif>
       <header class="win-head">
         <div class="win-titles">
-          <div class="tags"><span class="pill">{{ $c->grade_level }}</span>@if ($c->group_tag)<span class="pill blue" title="Focus group">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']){{ $c->group_tag }}</span>@endif @if ($past)<span class="pill amber">Read only</span>@endif</div>
+          <div class="tags"><span class="pill">{{ $c->grade_level }}</span>@if ($c->multigrade)<span class="pill blue" title="Learners from {{ implode(' and ', $tch->gradesAllowed()) }} can be in this class">Multigrade</span>@endif @if ($c->group_tag)<span class="pill blue" title="Focus group">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']){{ $c->group_tag }}</span>@endif @if ($past)<span class="pill amber">Read only</span>@endif</div>
           <h2>{{ $c->name }}</h2>
           <p class="win-meta">{{ $meta }}</p>
         </div>
@@ -38,6 +41,9 @@
       </header>
       <div class="win-tabs">@include('teacher.classes._tabs', ['active' => 'learners', 'nLearners' => $nLearners, 'nActs' => $acts->count()])</div>
       <div class="win-body">
+        @if ($offGrade->isNotEmpty() && ! $past)
+          <div class="help">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>{{ $offGrade->count() === 1 ? 'One learner is' : $offGrade->count().' learners are' }} in a different grade.</b> {{ $offGrade->take(3)->map(fn ($x) => $x->first_name.' ('.$x->grade_level.')')->implode(', ') }}{{ $offGrade->count() > 3 ? ' and more' : '' }}. This is a {{ $c->grade_level }} class, and a class holds one grade. Open each learner and move them to a class of their own grade.</div></div>
+        @endif
         <div class="toolbar">
           <div class="search">
             @include('learner._badge-icon', ['icon' => 'magnifying-glass', 'class' => 'ico'])
@@ -75,13 +81,22 @@
                   $lv = \App\Support\ReadingLevel::forAdult($l);
                   $flag = $ins['flags'][$l->id] ?? null;
                   $lastRead = $l->readingSessions->where('session_type', '!=', 'Diagnostic')->max('timestamp');
+                  $moved = \App\Support\LevelMoves::latestUp($l->readingSessions, $l);
+                  $gradeOff = ! $c->acceptsGrade($l->grade_level, $tch);
               @endphp
               <div class="lrow {{ $flag ? 'flag' : '' }}" role="button" tabindex="0" data-goto="learner-{{ $l->id }}"
                    data-search="{{ strtolower($l->first_name.' '.$l->last_name.' '.$l->learner_code) }}"
                    data-last="{{ mb_strtolower($l->last_name.' '.$l->first_name) }}" data-first="{{ mb_strtolower($l->first_name.' '.$l->last_name) }}"
                    data-level="{{ \App\Support\ReadingLevel::BAND_ORDER[$lv['band']] ?? 9 }}" data-active="{{ $lastRead ? $lastRead->timestamp : 0 }}">
                 @include('teacher._avatar', ['learner' => $l])
-                <span class="lname"><b>{{ $l->last_name }}, {{ $l->first_name }}</b><small>{{ $l->learner_code }}</small></span>
+                <span class="lname"><b>{{ $l->last_name }}, {{ $l->first_name }}</b><small>{{ $l->learner_code }}</small>
+                  @if ($moved || $gradeOff || $c->multigrade)
+                    <span class="ltags">
+                      @if ($moved)<span class="pill ok" title="Improved from {{ $moved['fromLabel'] }} to {{ $moved['toLabel'] }} on {{ $moved['at']->format('M j') }}. Stays in this class and joins the {{ $moved['toLabel'] }} reading group.">Moved up to {{ $moved['toLabel'] }}</span>@endif
+                      @if ($gradeOff)<span class="pill amber" title="This is a {{ $c->grade_level }} class">{{ $l->grade_level }}, other grade</span>@elseif ($c->multigrade)<span class="pill">{{ $l->grade_level }}</span>@endif
+                    </span>
+                  @endif
+                </span>
                 <span class="lv"><span class="pill {{ $lv['class'] }}">{{ $lv['label'] }}</span>@if ($lv['step'])<small>{{ $lv['step'] }}</small>@endif</span>
                 @if ($flag)
                   <div class="lflag">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<span>{{ $flag['text'] }}</span>@unless ($past)<button type="button" class="btn small ghost" data-goto="learner-{{ $l->id }}">Choose</button>@endunless</div>
@@ -99,7 +114,7 @@
     <section class="win-view" data-view="groups" @if ($startView !== 'groups') hidden @endif>
       <header class="win-head">
         <div class="win-titles">
-          <div class="tags"><span class="pill">{{ $c->grade_level }}</span>@if ($c->group_tag)<span class="pill blue" title="Focus group">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']){{ $c->group_tag }}</span>@endif @if ($past)<span class="pill amber">Read only</span>@endif</div>
+          <div class="tags"><span class="pill">{{ $c->grade_level }}</span>@if ($c->multigrade)<span class="pill blue" title="Learners from {{ implode(' and ', $tch->gradesAllowed()) }} can be in this class">Multigrade</span>@endif @if ($c->group_tag)<span class="pill blue" title="Focus group">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']){{ $c->group_tag }}</span>@endif @if ($past)<span class="pill amber">Read only</span>@endif</div>
           <h2>{{ $c->name }}</h2>
           <p class="win-meta">{{ $meta }}</p>
         </div>
@@ -149,7 +164,7 @@
     <section class="win-view" data-view="acts" @if ($startView !== 'acts') hidden @endif>
       <header class="win-head">
         <div class="win-titles">
-          <div class="tags"><span class="pill">{{ $c->grade_level }}</span>@if ($c->group_tag)<span class="pill blue" title="Focus group">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']){{ $c->group_tag }}</span>@endif @if ($past)<span class="pill amber">Read only</span>@endif</div>
+          <div class="tags"><span class="pill">{{ $c->grade_level }}</span>@if ($c->multigrade)<span class="pill blue" title="Learners from {{ implode(' and ', $tch->gradesAllowed()) }} can be in this class">Multigrade</span>@endif @if ($c->group_tag)<span class="pill blue" title="Focus group">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']){{ $c->group_tag }}</span>@endif @if ($past)<span class="pill amber">Read only</span>@endif</div>
           <h2>{{ $c->name }}</h2>
           <p class="win-meta">{{ $meta }}</p>
         </div>
@@ -263,8 +278,13 @@
             @csrf
             <input type="hidden" name="form" value="class"><input type="hidden" name="target_class_id" value="{{ $c->id }}"><input type="hidden" name="view" value="add">
             <p class="note" style="margin:0 0 14px">Ask the parent for the Learner Code, like TB26-48293. Type only the last 5 characters (48293). Pasting the whole code works too. A learner can only be in one class at a time.</p>
-            @php $gl = \App\Support\ClassLevel::general($c); @endphp
-            <p class="note" style="margin:0 0 14px">This class is taught at the {{ $gl['label'] }} level{{ $gl['source'] === 'grade' ? ' (the usual level for '.$c->grade_level.')' : ' (the middle level of its learners)' }}. A learner who already reads at the Independent level cannot be added to a class taught at a lower level, even in the same grade. They belong in a class taught at a higher level.</p>
+            @if ($c->multigrade)
+              <p class="note" style="margin:0 0 14px">This is a multigrade class. Learners from {{ implode(' and ', $tch->gradesAllowed()) }} can be added, and the reading groups inside it follow each child's reading level, not the grade.</p>
+            @else
+              @php $gl = \App\Support\ClassLevel::general($c); @endphp
+              <p class="note" style="margin:0 0 14px">This is a {{ $c->grade_level }} class, and a class holds one grade: only {{ $c->grade_level }} learners can be added.@if ($tch->isMultigrade()) Learners of another grade you handle go in a class of their own grade, or in a multigrade class.@endif</p>
+              <p class="note" style="margin:0 0 14px">This class is taught at the {{ $gl['label'] }} level{{ $gl['source'] === 'grade' ? ' (the usual level for '.$c->grade_level.')' : ' (the middle level of its learners)' }}. A learner who already reads at the Independent level cannot be added to a class taught at a lower level, even in the same grade. They belong in a class taught at a higher level.</p>
+            @endif
             <div class="field">
               <label for="code-{{ $c->id }}">Learner Code</label>
               <div class="codebox"><span class="pre">TB..-</span><input type="text" id="code-{{ $c->id }}" name="learner_code" data-af placeholder="48293" maxlength="10" autocomplete="off" spellcheck="false" value="{{ $isTarget && old('view') === 'add' ? old('learner_code') : '' }}"></div>
@@ -292,8 +312,15 @@
             <div class="grid2">
               <div class="field"><label for="en-{{ $c->id }}">Class name</label><input type="text" id="en-{{ $c->id }}" name="name" value="{{ $editing ? old('name') : $c->name }}" required>@if ($editing) @error('name')<span class="field-error">{{ $message }}</span>@enderror @endif</div>
               <div class="field"><label for="es-{{ $c->id }}">Section</label><input type="text" id="es-{{ $c->id }}" name="section" value="{{ $editing ? old('section') : $c->section }}" required>@if ($editing) @error('section')<span class="field-error">{{ $message }}</span>@enderror @endif</div>
-              <div class="field"><label for="eg-{{ $c->id }}">Grade level</label><select id="eg-{{ $c->id }}" name="grade_level" required>@foreach (array_unique([...auth()->user()->teacher->gradesAllowed(), $c->grade_level]) as $g)<option @selected(($editing ? old('grade_level') : $c->grade_level) === $g)>{{ $g }}</option>@endforeach</select></div>
+              @php $lockGrade = ! $c->multigrade && $nLearners > 0; @endphp
+              <div class="field"><label for="eg-{{ $c->id }}">Grade level</label><select id="eg-{{ $c->id }}" name="grade_level" required @disabled($lockGrade)>@foreach (array_unique([...$tch->gradesAllowed(), $c->grade_level]) as $g)<option @selected(($editing ? old('grade_level') : $c->grade_level) === $g)>{{ $g }}</option>@endforeach</select>
+                @if ($lockGrade)<input type="hidden" name="grade_level" value="{{ $c->grade_level }}"><span class="fhint">A class holds one grade, so the grade cannot change while learners are in it.</span>@endif
+                @if ($editing) @error('grade_level')<span class="field-error">{{ $message }}</span>@enderror @endif
               </div>
+              </div>
+            @if ($tch->isMultigrade() || $c->multigrade)
+              <div class="field"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="multigrade" value="1" @checked($editing ? old('multigrade') : $c->multigrade)> Multigrade class</label><span class="fhint">Tick this only if you teach {{ implode(' and ', $tch->gradesAllowed()) }} together in this class. A normal class holds one grade.</span>@if ($editing) @error('multigrade')<span class="field-error">{{ $message }}</span>@enderror @endif</div>
+            @endif
             <div class="field"><label for="et-{{ $c->id }}">Focus group <span class="opt">optional</span></label><input type="text" id="et-{{ $c->id }}" name="group_tag" value="{{ $editing ? old('group_tag') : $c->group_tag }}"><span class="fhint">A label for what this class is working on. Give two classes the same focus to assign one activity to both at once. It does not sort learners: reading groups inside the class are made automatically from reading levels.</span></div>
           </form>
         </div>
@@ -312,6 +339,10 @@
           $hist = $l->promotionHistorySummary();
           $lv = \App\Support\ReadingLevel::forAdult($l);
           $flag = $ins['flags'][$l->id] ?? null;
+          // Where this child may be moved: only classes that take their grade. A class holds one grade.
+          $moveTo = $others->filter(fn ($o) => $o->acceptsGrade($l->grade_level, $tch));
+          $movedUp = \App\Support\LevelMoves::latestUp($l->readingSessions, $l);
+          $childGradeOff = ! $c->acceptsGrade($l->grade_level, $tch);
       @endphp
       <section class="win-view" data-view="learner-{{ $l->id }}" hidden>
         <header class="win-head">
@@ -324,6 +355,12 @@
           <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
         </header>
         <div class="win-body">
+          @if ($movedUp)
+            <div class="help good">@include('learner._badge-icon', ['icon' => 'trend-up', 'class' => 'ico'])<div><b>{{ $l->first_name }} moved up to the {{ $movedUp['toLabel'] }} level.</b> {{ $l->first_name }} improved from {{ $movedUp['fromLabel'] }} on {{ $movedUp['at']->format('M j') }}, after repeated strong readings. {{ $l->first_name }} stays in {{ $c->name }}, because a class is a grade and a child's reading level never moves them out of it. {{ $l->first_name }} now reads with the {{ $movedUp['toLabel'] }} reading group, so activities given to that group reach {{ $l->first_name }} from now on. Anything given to the whole class or to {{ $l->first_name }} directly still reaches them.</div></div>
+          @endif
+          @if ($childGradeOff && ! $past)
+            <div class="help">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>{{ $l->first_name }} is in {{ $l->grade_level }}, and {{ $c->name }} is a {{ $c->grade_level }} class.</b> A class holds one grade. @if ($moveTo->isNotEmpty())Move {{ $l->first_name }} to a {{ $l->grade_level }} class below.@else Open a {{ $l->grade_level }} class (Classes, New class) and move {{ $l->first_name }} into it.@endif</div></div>
+          @endif
           <div class="facts">
             <div class="fact"><b>{{ $practice->count() }}</b><span>Sessions</span></div>
             <div class="fact"><b>{{ $avg === null ? '0%' : round($avg).'%' }}</b><span>Avg score</span></div>
@@ -392,16 +429,16 @@
           </div>
           <div class="block"><span class="eyebrow">Reading level over time</span><p>{{ $l->proficiencyTrajectorySummary() }}</p></div>
           @if ($flag)
-            <div class="help">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>Level check.</b> {{ $flag['text'] }} You decide: give {{ $flag['direction'] === 'above' ? 'higher' : 'easier' }} activities (assign them to this class's {{ strtolower(\App\Support\ReadingLevel::GROUPS[\App\Support\ReadingLevel::groupOf($l) ?? 'instructional']['title']) }} group in Reading groups), or move {{ $l->first_name }} to another of your classes below.</div></div>
+            <div class="help">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>Level check.</b> {{ $flag['text'] }} You decide: give {{ $flag['direction'] === 'above' ? 'higher' : 'easier' }} activities (assign them to this class's {{ strtolower(\App\Support\ReadingLevel::GROUPS[\App\Support\ReadingLevel::groupOf($l) ?? 'instructional']['title']) }} group in Reading groups)@if ($moveTo->isNotEmpty()), or move {{ $l->first_name }} to another of your {{ $l->grade_level }} classes below @endif.</div></div>
           @endif
           @unless ($past)
-            @if ($others->isNotEmpty())
-              <div class="block"><span class="eyebrow">Move to another class</span>
+            @if ($moveTo->isNotEmpty())
+              <div class="block"><span class="eyebrow">Move to another {{ $c->multigrade ? '' : $l->grade_level.' ' }}class</span>
                 <form method="POST" action="{{ route('teacher.classes.move-learner', [$c, $l]) }}" data-busy="Moving" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
                   @csrf
                   <input type="hidden" name="form" value="class"><input type="hidden" name="target_class_id" value="{{ $c->id }}"><input type="hidden" name="view" value="learner-{{ $l->id }}">
                   <select name="to_class_id" class="mini wide" aria-label="Class to move to">
-                    @foreach ($others as $o)<option value="{{ $o->id }}">{{ $o->name }} ({{ $o->grade_level }}, {{ $o->section }})</option>@endforeach
+                    @foreach ($moveTo as $o)<option value="{{ $o->id }}">{{ $o->name }} ({{ $o->grade_level }}, {{ $o->section }})</option>@endforeach
                   </select>
                   <button type="submit" class="btn small ghost">Move</button>
                 </form>

@@ -147,6 +147,17 @@ class ReadingLevel
         };
     }
 
+    /** The Phil-IRI band a ladder step belongs to: 0 Non-reader, 1 and 2 Frustration, 3 and 4 Instructional, 5 and 6 Independent. */
+    public static function bandForRung(int $rung): string
+    {
+        return match (true) {
+            $rung <= 0 => 'non',
+            $rung <= 2 => 'frustration',
+            $rung <= 4 => 'instructional',
+            default => 'independent',
+        };
+    }
+
     public static function bandLabel(string $band): string
     {
         return [

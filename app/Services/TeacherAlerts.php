@@ -13,6 +13,7 @@ use App\Support\ActivityFit;
 use App\Support\ErrorPatterns;
 use Illuminate\Validation\ValidationException;
 use App\Support\LearnerClock;
+use App\Support\LevelMoves;
 use App\Support\ReadingLevel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -107,7 +108,7 @@ class TeacherAlerts
             $sessions = $recent->get($learner->id, collect());
             $last3 = $sessions->take(self::IN_A_ROW);
 
-            $alert = $this->supportAlert($learner, $last3) ?? $this->upAlert($learner, $last3);
+            $alert = $this->supportAlert($learner, $last3) ?? $this->movedAlert($learner, $sessions) ?? $this->upAlert($learner, $last3);
             if ($alert) {
                 $alerts->push($alert + ['sessions' => $sessions]);
             }
@@ -199,6 +200,40 @@ class TeacherAlerts
         ];
     }
 
+    /**
+     * Good news the app has already acted on: the child improved enough to cross into the next reading level (for example
+     * Frustration to Instructional). They STAY in their class (a class is a grade) and now sit in the next reading group,
+     * so the teacher is told, with a suggested activity for the new group.
+     *
+     * @param  Collection<int, ReadingSession>  $sessions  newest first
+     */
+    private function movedAlert(Learner $learner, Collection $sessions): ?array
+    {
+        $move = LevelMoves::latestUp($sessions, $learner, self::FRESH_DAYS);
+
+        if ($move === null) {
+            return null;
+        }
+
+        $first = $learner->first_name;
+        $class = $learner->schoolClass;
+
+        return [
+            'kind' => 'up',
+            'variant' => 'moved',
+            'learner' => $learner,
+            'class' => $class,
+            'title' => $first.' '.$learner->last_name.' moved up to the '.$move['toLabel'].' level',
+            'band' => $move['to'],
+            'evidence' => 'From '.$move['fromLabel'].' to '.$move['toLabel'],
+            'why' => $first.' improved after repeated strong readings. '.$first.' stays in '.($class?->name ?? 'the class').': a class is a grade, so improving never moves a child out of it. '
+                .$first.' now reads with the '.$move['toLabel'].' reading group, so activities given to that group reach '.$first.' from now on. Anything given to the whole class, or to '.$first.' directly, still does.',
+            'pattern' => null,
+            'profile' => null,
+            'evidence_at' => $move['at'],
+        ];
+    }
+
     /** @param  Collection<int, ReadingSession>  $last3 newest first */
     private function upAlert(Learner $learner, Collection $last3): ?array
     {
@@ -281,11 +316,18 @@ class TeacherAlerts
             $card = $this->suggestions->forLearner($teacher, $learner, $tier, $alert['profile']);
             $tip = $main ? ErrorPatterns::CATEGORIES[$main]['tip'] : 'Read it together one to one for five minutes.';
         } else {
-            // One step above where they read now; a child with no level yet is offered Medium.
-            $tier = match ($group) {
-                'instructional', 'independent' => 'Hard',
-                default => 'Medium',
-            };
+            // Ready to move up: one step above where they read now (a child with no level yet is offered Medium).
+            // Already moved up: an activity for the reading group they have just joined.
+            $tier = ($alert['variant'] ?? 'ready') === 'moved'
+                ? match ($alert['band']) {
+                    'independent' => 'Hard',
+                    'instructional' => 'Medium',
+                    default => 'Easy',
+                }
+                : match ($group) {
+                    'instructional', 'independent' => 'Hard',
+                    default => 'Medium',
+                };
             $card = $this->suggestions->forLearner($teacher, $learner, $tier);
             $tip = null;
         }

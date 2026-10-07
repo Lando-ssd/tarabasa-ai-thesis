@@ -64,6 +64,12 @@ class Teacher extends Model
         return $this->grades_handled ? array_values(array_intersect($all, $this->grades_handled)) : $all;
     }
 
+    /** A teacher who handles two or more grades may open a multigrade class (see SchoolClass::acceptsGrade). */
+    public function isMultigrade(): bool
+    {
+        return count($this->gradesAllowed()) >= 2;
+    }
+
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class);

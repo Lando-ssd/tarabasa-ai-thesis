@@ -387,6 +387,8 @@ class LearnerRevisionTest extends TestCase
         $this->assertSame(2, $kid->reading_rung, 'one step, not a jump to the lowest step of the next level');
         $this->assertSame('Beginning', $kid->mastery_level, 'short sentences are still inside Beginning');
         $this->assertNotNull($kid->rung_changed_at);
+        $saved = ReadingSession::where('learner_id', $kid->id)->orderByDesc('id')->first();
+        $this->assertSame([1, 2], [$saved->rung_before, $saved->rung_after], 'each reading remembers the step before and after, so a move up can be shown to the teacher');
         $this->assertTrue($kid->rung_changed_at->isAfter(now()->subMinute()), 'the count starts again from this move');
         $this->assertTrue(
             \App\Models\Notification::where('message', 'like', '%moved up to Short sentences (Sentence Reader)%')->exists(),
