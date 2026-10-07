@@ -71,6 +71,10 @@
       <p class="id-hint" id="idHint">Teachers and parents: your email. Children: the learner code from your parent.</p>
       <p class="id-hint ok" id="idOk" hidden>Looks like a learner code. Type your PIN below.</p>
       <p class="id-hint warn" id="idBad" hidden>That code does not look right. Check it and try again.</p>
+      {{-- A child can scan the QR code on their card instead of typing the code (see partials/card-scan). --}}
+      <button type="button" class="scan-link" data-card-scan-open>
+        <svg viewBox="0 0 256 256" width="18" height="18" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-qr-code"></use></svg>Scan my learner card
+      </button>
     </div>
 
     <div class="field">
@@ -112,6 +116,11 @@
   </div>
 
   <style>
+    .scan-link{ margin-top:10px; display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border-radius:12px; border:1.5px solid var(--line); background:#fff; color:var(--blue-600); font:700 13.5px/1 'Inter',sans-serif; cursor:pointer; }
+    .scan-link svg{ fill:currentColor; flex:none; }
+    .scan-link:hover{ border-color:var(--blue-500); }
+    .scan-link:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }
+    #email.cs-scanned{ border-color:var(--success); background:#e9f7f3; }
     .id-hint{ margin:4px 0 0; font-size:12px; color:var(--slate-600); font-weight:500; line-height:1.4; }
     .id-hint.ok{ color:var(--success); font-weight:700; }
     .id-hint.warn{ color:var(--amber); font-weight:700; }
@@ -191,4 +200,5 @@
       });
     })();
   </script>
+  @include('partials.card-scan', ['target' => '#email', 'focus' => '#password', 'speak' => false, 'owl' => false])
 @endsection

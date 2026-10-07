@@ -42,6 +42,19 @@
   .speak-btn:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--blue-700); }
   .speak-btn[hidden]{ display:none; }
 
+  /* "Scan my card": the first thing to do. Typing the code stays right below it. */
+  .scan-btn{ width:100%; display:flex; align-items:center; justify-content:center; gap:12px; min-height:68px; padding:14px 18px 12px; border:2px solid #d97a1a; border-radius:20px; cursor:pointer;
+    background:linear-gradient(#f9a544,#ef8d2a); color:#fff; font:800 22px/1 'Baloo 2',sans-serif; letter-spacing:.05em; text-transform:uppercase; text-shadow:0 1px 0 rgba(0,0,0,.18);
+    box-shadow:0 5px 0 #b4560b, 0 18px 26px -14px rgba(180,86,11,.55), inset 0 2px 0 rgba(255,255,255,.35); transition:transform .12s ease; }
+  .scan-btn svg{ width:34px; height:34px; fill:currentColor; flex:none; }
+  .scan-btn:hover{ transform:translateY(-2px); } .scan-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #b4560b, inset 0 2px 0 rgba(255,255,255,.35); }
+  .scan-hint{ margin:10px 0 0; font-size:15px; font-weight:600; color:var(--slate-600); }
+  .or{ display:flex; align-items:center; gap:12px; margin:20px 0 16px; color:var(--slate-400); font:700 13px/1 'Inter',sans-serif; letter-spacing:.16em; text-transform:uppercase; }
+  .or::before,.or::after{ content:''; flex:1; height:2px; background:var(--line); }
+  input[type="text"].cs-scanned{ border-color:#1f9e83; background:#e9f7f3; color:#0f6a55; }
+  .after-scan{ margin:10px 0 0; font-size:17px; font-weight:700; color:#0f6a55; }
+  .pin-box.next{ border-color:var(--blue-500); background:#fff; box-shadow:0 0 0 5px rgba(28,126,214,.14); }
+
   .field{ margin-bottom:22px; text-align:center; }
   input[type="text"]{
     width:100%; font:800 32px/1 'Baloo 2',sans-serif; letter-spacing:.06em; padding:20px 18px; border:2.5px solid var(--line);
@@ -85,8 +98,8 @@
   <div class="hero-lottie" id="heroLottie" role="img" aria-label="Children holding up letters, ready to read"></div>
 
   <h1>Hi there!</h1>
-  <p class="sub">Type your code, then your secret PIN.
-    <button type="button" class="speak-btn" data-speak="Hi there! Type your code, then your secret PIN." aria-label="Hear this">
+  <p class="sub">Scan your card, then type your secret PIN.
+    <button type="button" class="speak-btn" data-speak="Hi there! Scan your card, then type your secret PIN." aria-label="Hear this">
       <svg viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-speaker-high"></use></svg>
     </button>
   </p>
@@ -95,11 +108,19 @@
     <div class="inline-error">{{ $errors->first() }}</div>
   @endif
 
+  <button type="button" class="scan-btn" data-card-scan-open>
+    <svg viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-qr-code"></use></svg>Scan my card
+  </button>
+  <p class="scan-hint">Hold your card up to the camera.</p>
+
+  <div class="or"><span>or type your code</span></div>
+
   <form method="POST" action="{{ route('learner.login.submit') }}" id="learnerLoginForm">
     @csrf
     <div class="field">
       <input type="text" name="learner_code" id="learner_code" placeholder="TB26-48293" maxlength="12" autocapitalize="characters" spellcheck="false"
-             value="{{ old('learner_code') }}" autocomplete="off" autofocus required>
+             value="{{ old('learner_code') }}" autocomplete="off" required>
+      <p class="after-scan" id="afterScan" hidden>Card scanned. Now your secret PIN.</p>
     </div>
 
     <div class="field">
@@ -133,6 +154,16 @@
   const pinHidden = document.getElementById('pin');
 
   boxes.forEach(box => box.addEventListener('click', () => pinInput.focus()));
+
+  // After "Scan my card" fills the code in, say so and light up the first PIN box. Typing the code by hand clears that.
+  const codeInput = document.getElementById('learner_code'), afterScan = document.getElementById('afterScan');
+  codeInput.addEventListener('input', (e) => {
+    if (e.isTrusted) { codeInput.classList.remove('cs-scanned'); }
+    const scanned = codeInput.classList.contains('cs-scanned');
+    afterScan.hidden = !scanned;
+    boxes.forEach((box, i) => box.classList.toggle('next', scanned && i === 0 && !pinInput.value));
+  });
+  pinInput.addEventListener('input', () => boxes.forEach(box => box.classList.remove('next')));
 
   pinInput.addEventListener('input', (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 4);
@@ -171,5 +202,6 @@
   })();
 </script>
 @include('partials.speak')
+@include('partials.card-scan', ['target' => '#learner_code', 'focus' => '#pinInput', 'speak' => true, 'owl' => true])
 </body>
 </html>

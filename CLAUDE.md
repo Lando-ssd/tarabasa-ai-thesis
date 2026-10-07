@@ -6280,6 +6280,18 @@ Not built (asked for teacher only): scanning on the child's own login page.
 that is not ours, one with a wrong check digit, an unknown code and an already enrolled child; the photo option and a blocked
 camera message work. NOT tested: a real phone or webcam, and real printing.
 
+**"Scan my card" on the child's login (2026-10-07, approved from a preview first).** `resources/views/partials/card-scan.blade.php` is one
+camera sheet (Tara peeking over it, a frame, a sweeping line, a green tick and the code on success, plain messages for "not our card",
+a scratched card and a blocked or missing camera) used by the child's own login (`learner/login`, the new primary button, with
+"or type your code" below; the typing box no longer autofocuses) and by the general sign in (`auth/login`, a small "Scan my learner
+card" button under the first box). It ONLY fills in the code field (the child still types the secret PIN; the QR never holds it; no
+name is shown) after checking the code's check digit on the device, then the page's own scripts take over (the general sign in
+switches to learner mode and focuses the PIN; the child's login says "Card scanned. Now your secret PIN." and lights the first PIN
+box). Same jsQR as the teacher's scanner, loaded only when the sheet opens; the camera stops on close, Escape, a hidden page and
+`pagehide`. `SecurityHeaders` allows `camera=(self)` on `login`, `learner/login` and the class screens only. Tested locally with a
+fake camera: rejects a foreign QR and a wrong check digit, reads a real card, fills the code, logs in with the PIN, blocked and
+no-camera messages work. NOT tested: a real tablet camera and real children.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

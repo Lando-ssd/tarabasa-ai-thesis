@@ -40,8 +40,9 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        // The camera is only for the Teacher's QR scanner on the class screens (Add learner); everywhere else it stays off.
-        $camera = $request->is('teacher/classes', 'teacher/classes/*') ? '(self)' : '()';
+        // The camera is only for the QR scanners: the Teacher's Add learner (class screens) and a child's "Scan my card" on
+        // the two login pages. Everywhere else it stays off.
+        $camera = $request->is('teacher/classes', 'teacher/classes/*', 'learner/login', 'login') ? '(self)' : '()';
         $response->headers->set('Permissions-Policy', "microphone=(self), camera={$camera}, geolocation=(), payment=(), usb=(), interest-cohort=()");
         $response->headers->set('Content-Security-Policy', "base-uri 'self'; object-src 'none'; frame-ancestors 'self'");
 

@@ -74,7 +74,9 @@ class ErrorPagesAndHeadersTest extends TestCase
         $res->assertHeader('X-Content-Type-Options', 'nosniff')->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $this->assertStringContainsString('microphone=(self)', $res->headers->get('Permissions-Policy'));
-        $this->assertStringContainsString('camera=()', $res->headers->get('Permissions-Policy'));
+        // The two login pages may use the camera (a child's "Scan my card"); a page with no scanner may not.
+        $this->assertStringContainsString('camera=(self)', $res->headers->get('Permissions-Policy'));
+        $this->assertStringContainsString('camera=()', $this->get('/')->headers->get('Permissions-Policy'));
         $this->assertStringContainsString("frame-ancestors 'self'", $res->headers->get('Content-Security-Policy'));
         $this->assertNull($res->headers->get('Strict-Transport-Security'), 'HSTS only over https');
 

@@ -114,7 +114,7 @@ class AccessRevisionTest extends TestCase
     {
         $this->get(route('login'))->assertOk()->assertSee('Email or learner code')->assertSee('Forgot password?');
         // The child's own page keeps its look (the children holding letters) and gains a speaker.
-        $this->get(route('learner.login'))->assertOk()->assertSee('Type your code, then your secret PIN.')->assertSee('animations/tarabasa-learner-login-hero.json', false)->assertSee('data-speak', false);
+        $this->get(route('learner.login'))->assertOk()->assertSee('Scan your card, then type your secret PIN.')->assertSee('animations/tarabasa-learner-login-hero.json', false)->assertSee('data-speak', false);
         $this->get(route('landing'))->assertOk()->assertSee('Sign up')->assertDontSee('Get Started')->assertDontSee("I'm a");
     }
 

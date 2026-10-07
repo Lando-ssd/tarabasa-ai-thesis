@@ -120,4 +120,26 @@ class LearnerQrTest extends TestCase
         $this->assertStringContainsString('camera=(self)', $this->get(route('teacher.classes.index'))->headers->get('Permissions-Policy'));
         $this->assertStringContainsString('camera=()', $this->get(route('teacher.dashboard'))->headers->get('Permissions-Policy'));
     }
+
+    public function test_the_childs_login_has_a_scan_my_card_button_and_still_lets_the_code_be_typed(): void
+    {
+        $page = $this->get(route('learner.login'))->assertOk();
+
+        $page->assertSee('Scan my card')->assertSee('Scan your card, then type your secret PIN.')->assertSee('or type your code')
+            ->assertSee('data-card-scan-open', false)->assertSee('id="csRoot"', false)->assertSee('data-target="#learner_code"', false)->assertSee('data-focus="#pinInput"', false)
+            ->assertSee('vendor/jsQR-1.4.0.js', false)->assertSee('name="learner_code"', false)->assertSee('Got it!')->assertSee('I cannot see your card');
+        $this->assertStringNotContainsString('autofocus', $page->getContent(), 'the typing box no longer pops the keyboard up over the scan button');
+    }
+
+    public function test_the_general_sign_in_has_a_small_scan_link_that_fills_the_same_box(): void
+    {
+        $this->get(route('login'))->assertOk()->assertSee('Scan my learner card')->assertSee('data-target="#email"', false)->assertSee('data-focus="#password"', false)->assertSee('name="email"', false);
+    }
+
+    public function test_the_camera_is_allowed_on_the_two_login_pages_and_nowhere_else_public(): void
+    {
+        $this->assertStringContainsString('camera=(self)', $this->get(route('learner.login'))->headers->get('Permissions-Policy'));
+        $this->assertStringContainsString('camera=(self)', $this->get(route('login'))->headers->get('Permissions-Policy'));
+        $this->assertStringContainsString('camera=()', $this->get(route('landing'))->headers->get('Permissions-Policy'));
+    }
 }
