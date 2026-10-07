@@ -7,6 +7,7 @@ use App\Models\ActivityAssignment;
 use App\Models\Learner;
 use App\Models\SchoolClass;
 use App\Services\ActivitySuggestions;
+use App\Support\ActivityFit;
 use App\Support\ReadingLevel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -102,11 +103,26 @@ class ClassController extends Controller
                 'id' => $l->id, 'name' => $l->first_name.' '.$l->last_name, 'code' => $l->learner_code,
                 'classId' => $c->id, 'className' => $c->name, 'sy' => $c->school_year,
             ]))->values(),
-            'approved' => $approved->map(fn (Activity $a) => [
-                'id' => $a->id, 'title' => $a->title, 'tier' => $a->difficulty_tier, 'grade' => $a->grade_level,
-                'type' => $a->typeLabel(), 'words' => $a->word_count, 'passage' => $a->passage_text,
-                'long' => config("activity_levels.info.{$a->difficulty_tier}.long"),
-            ])->values(),
+            'approved' => $approved->map(function (Activity $a) use ($classes, $isPastYear) {
+                // How this activity fits each class (only when it is not a plain fit), so the Assign window can say so
+                // before the button is pressed. The server checks again when it is pressed.
+                $fit = [];
+                if (! $isPastYear) {
+                    foreach ($classes as $c) {
+                        $f = ActivityFit::forAudience($a, $c->learners, 'this class');
+                        if (in_array($f['verdict'], [ActivityFit::BLOCKED, ActivityFit::CAUTION], true)) {
+                            $fit[$c->id] = ['v' => $f['verdict'], 'n' => $f['note']];
+                        }
+                    }
+                }
+
+                return [
+                    'id' => $a->id, 'title' => $a->title, 'tier' => $a->difficulty_tier, 'grade' => $a->grade_level,
+                    'type' => $a->typeLabel(), 'words' => $a->word_count, 'passage' => $a->passage_text,
+                    'long' => config("activity_levels.info.{$a->difficulty_tier}.long"),
+                    'fit' => (object) $fit,
+                ];
+            })->values(),
             'taken' => collect($classActivities)->map(fn ($rows) => $rows->map(fn ($r) => $r['activity']->id)->values())->all(),
         ];
 
@@ -124,7 +140,8 @@ class ClassController extends Controller
             'approvedActivities' => $approved,
             'levelInfo' => config('activity_levels.info'),
             'openClassId' => (int) $request->query('open', 0),
-            'openTab' => in_array($request->query('tab'), ['learners', 'groups', 'acts'], true) ? $request->query('tab') : 'learners',
+            'openTab' => (in_array($request->query('tab'), ['learners', 'groups', 'acts'], true) || preg_match('/^learner-\d+$/', (string) $request->query('tab')))
+                ? $request->query('tab') : 'learners',
         ]);
     }
 
@@ -263,8 +280,9 @@ class ClassController extends Controller
             includeTeacher: false
         );
 
-        return $this->backToClass($class, 'learners')
-            ->with('status', "{$learner->first_name} {$learner->last_name} added to \"{$class->name}\".");
+        // Open the new learner's own page straight away: what the parent shared and where the child reads now.
+        return $this->backToClass($class, 'learner-'.$learner->id)
+            ->with('status', "{$learner->first_name} {$learner->last_name} added to \"{$class->name}\". Here is what the parent shared.");
     }
 
     /**
@@ -311,6 +329,23 @@ class ClassController extends Controller
                 : 'That activity is already assigned to this class.']);
         }
 
+        // Can the learners who would receive it read it? Decided here, on the server, so the note on the screen
+        // cannot be skipped: an activity far too long for them cannot be forced through (see ActivityFit).
+        $learners = $class->learners()->get();
+        if ($band) {
+            $learners = ReadingLevel::groups($learners)[$band];
+        }
+        $audience = $band ? 'the '.strtolower(ReadingLevel::GROUPS[$band]['title']).' group' : 'this class';
+        $fit = ActivityFit::forAudience($activity, $learners, $audience);
+
+        if ($fit['verdict'] === ActivityFit::BLOCKED) {
+            if (($validated['return'] ?? null) === 'activities') {
+                return redirect()->route('teacher.activities.index', ['tab' => 'mine'])->with('classError', $fit['note']);
+            }
+
+            throw ValidationException::withMessages(['activity_id' => $fit['note']]);
+        }
+
         ActivityAssignment::create([
             'activity_id' => $activity->id,
             'class_id' => $class->id,
@@ -319,7 +354,7 @@ class ClassController extends Controller
         ]);
 
         $who = $band ? 'the '.strtolower(ReadingLevel::GROUPS[$band]['title']).' group in '.$class->name : $class->name;
-        $message = "\"{$activity->title}\" assigned to {$who}.";
+        $message = "\"{$activity->title}\" assigned to {$who}.".($fit['verdict'] === ActivityFit::CAUTION ? ' Note: '.$fit['note'] : '');
 
         if (($validated['return'] ?? null) === 'activities') {
             return redirect()->route('teacher.activities.index', ['tab' => 'mine'])->with('status', $message);

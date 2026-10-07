@@ -167,7 +167,8 @@
           <div data-panel="class">
             <div class="opt-list">
               @forelse ($assignClasses as $c)
-                <label class="opt-row" style="cursor:pointer"><input type="radio" name="assign_class_id" value="{{ $c->id }}" style="width:auto"><span><b>{{ $c->name }}</b><small>{{ $c->grade_level }} · {{ $c->section }}</small></span></label>
+                @php $f = $fitClass[$c->id]; @endphp
+                <label class="opt-row" style="cursor:pointer"><input type="radio" name="assign_class_id" value="{{ $c->id }}" style="width:auto" data-fit="{{ $f['verdict'] }}" data-fit-note="{{ $f['note'] }}"><span><b>{{ $c->name }}@include('teacher._fit-pill', ['verdict' => $f['verdict']])</b><small>{{ $c->grade_level }} · {{ $c->section }}</small></span></label>
               @empty
                 <p class="note">You have no classes for this school year yet.</p>
               @endforelse
@@ -176,7 +177,8 @@
           <div data-panel="group" hidden>
             <div class="opt-list">
               @forelse ($assignGroupTags as $tag)
-                <label class="opt-row" style="cursor:pointer"><input type="radio" name="assign_group_tag" value="{{ $tag }}" style="width:auto" disabled><span><b>{{ $tag }}</b><small>Every class that uses this tag</small></span></label>
+                @php $f = $fitGroup[$tag]; @endphp
+                <label class="opt-row" style="cursor:pointer"><input type="radio" name="assign_group_tag" value="{{ $tag }}" style="width:auto" disabled data-fit="{{ $f['verdict'] }}" data-fit-note="{{ $f['note'] }}"><span><b>{{ $tag }}@include('teacher._fit-pill', ['verdict' => $f['verdict']])</b><small>Every class that uses this tag</small></span></label>
               @empty
                 <p class="note">None of your classes has a group tag yet. Add one when you edit a class.</p>
               @endforelse
@@ -190,11 +192,13 @@
             </div>
             <div class="opt-list" id="al-{{ $id }}">
               @foreach ($assignLearners as $l)
-                <label class="opt-row" style="cursor:pointer" data-search="{{ strtolower($l->first_name.' '.$l->last_name.' '.$l->learner_code) }}" @if ($loop->index >= 5) hidden @endif><input type="radio" name="assign_learner_id" value="{{ $l->id }}" style="width:auto" disabled><span><b>{{ $l->first_name }} {{ $l->last_name }}</b><small>{{ $l->learner_code }} · {{ $l->schoolClass->name ?? '' }}</small></span></label>
+                @php $f = $fitLearner[$l->id]; @endphp
+                <label class="opt-row" style="cursor:pointer" data-search="{{ strtolower($l->first_name.' '.$l->last_name.' '.$l->learner_code) }}" @if ($loop->index >= 5) hidden @endif><input type="radio" name="assign_learner_id" value="{{ $l->id }}" style="width:auto" disabled data-fit="{{ $f['verdict'] }}" data-fit-note="{{ $f['note'] }}"><span><b>{{ $l->first_name }} {{ $l->last_name }}@include('teacher._fit-pill', ['verdict' => $f['verdict']])</b><small>{{ $l->learner_code }} · {{ $l->schoolClass->name ?? '' }}</small></span></label>
               @endforeach
             </div>
             <p class="note" data-empty hidden>No learner matches.</p>
           </div>
+          <div data-fit-box style="margin-top:12px"></div>
         </form>
       </div>
       <footer class="win-foot">

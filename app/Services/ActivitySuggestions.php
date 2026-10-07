@@ -7,6 +7,7 @@ use App\Models\ActivityAssignment;
 use App\Models\Learner;
 use App\Models\SchoolClass;
 use App\Models\Teacher;
+use App\Support\ActivityFit;
 use App\Support\ErrorPatterns;
 use App\Support\ReadingLevel;
 use Illuminate\Support\Collection;
@@ -58,6 +59,43 @@ class ActivitySuggestions
             ->pluck('activity_id');
     }
 
+    /** Topics a Parent said the children like, as words to look for in an activity's title and topic. */
+    private const INTEREST_WORDS = [
+        'animals' => ['animal', 'pet', 'dog', 'cat', 'bird', 'farm', 'fish'],
+        'food' => ['food', 'fruit', 'rice', 'eat', 'cook', 'market', 'mango'],
+        'family' => ['family', 'mother', 'father', 'nanay', 'tatay', 'home', 'sister', 'brother'],
+        'vehicles' => ['vehicle', 'car', 'jeep', 'bus', 'boat', 'train', 'plane', 'tricycle'],
+        'nature' => ['nature', 'tree', 'plant', 'river', 'rain', 'flower', 'garden', 'sea'],
+    ];
+
+    /**
+     * A small bonus (at most 4) when an activity's title or topic is about something the learners like, as the
+     * Parent said when adding them. It only breaks a tie between activities that already fit; it never decides
+     * the level or the length.
+     *
+     * @param  iterable<Learner>  $learners
+     */
+    private function interestScore(Activity $activity, iterable $learners): float
+    {
+        $text = mb_strtolower($activity->title.' '.$activity->topic);
+        $likes = 0;
+        $total = 0;
+
+        foreach ($learners as $learner) {
+            $total++;
+            foreach ((array) $learner->interests as $interest) {
+                foreach (self::INTEREST_WORDS[$interest] ?? [] as $word) {
+                    if (str_contains($text, $word)) {
+                        $likes++;
+                        continue 2;
+                    }
+                }
+            }
+        }
+
+        return $total === 0 ? 0.0 : 4 * ($likes / $total);
+    }
+
     /** What to show as one suggestion. */
     private function card(Activity $activity, string $why): array
     {
@@ -87,17 +125,22 @@ class ActivitySuggestions
 
         $focus = $learners->map(fn (Learner $l) => $l->focusSubdomain())->filter()->countBy()->sortDesc()->keys()->first();
 
+        // Only an activity every child in the group can read (see ActivityFit): the level name alone says how hard it
+        // is for its grade, not whether THIS group can read it. A group with no suitable activity gets none, and the
+        // screen says so, rather than being handed one that is too long.
         $pool = $this->approved($teacher)
             ->where('difficulty_tier', $tier)
-            ->reject(fn (Activity $a) => $given->contains($a->id));
+            ->reject(fn (Activity $a) => $given->contains($a->id))
+            ->filter(fn (Activity $a) => ActivityFit::suitsAll($a, $learners))
+            ->values();
 
-        $ranked = $pool->sortByDesc(function (Activity $a) use ($class, $focus) {
+        $ranked = $pool->sortByDesc(function (Activity $a) use ($class, $focus, $learners) {
             $score = $a->grade_level === $class->grade_level ? 10 : 0;
             if ($focus && $this->alignment->subdomainFor($a) === $focus) {
                 $score += 5;
             }
 
-            return $score;
+            return $score + 6 * ActivityFit::closeness($a, $learners) + $this->interestScore($a, $learners);
         })->take($limit)->values();
 
         $n = $learners->count();
@@ -206,16 +249,21 @@ class ActivitySuggestions
 
         $pool = $this->approved($teacher)
             ->where('difficulty_tier', $tier)
-            ->reject(fn (Activity $a) => $given->contains($a->id) || $direct->contains($a->id));
+            ->reject(fn (Activity $a) => $given->contains($a->id) || $direct->contains($a->id))
+            ->filter(fn (Activity $a) => ActivityFit::forLearner($a, $learner)['verdict'] !== ActivityFit::BLOCKED)
+            ->values();
 
         // When there is a pattern in the child's mistakes (see ErrorPatterns), the activity that
         // practises it best, and contains the most words they have actually missed, comes first.
         $pattern = $patterns ? ErrorPatterns::mainPattern($patterns) : null;
         $missed = $patterns['missedWords'] ?? [];
 
-        $pick = $pool->sortByDesc(function (Activity $a) use ($learner, $focus, $pattern, $missed) {
+        $one = collect([$learner]);
+        $pick = $pool->sortByDesc(function (Activity $a) use ($learner, $one, $focus, $pattern, $missed) {
             return ($a->grade_level === $learner->grade_level ? 10 : 0)
                 + ($focus && $this->alignment->subdomainFor($a) === $focus ? 5 : 0)
+                + 6 * ActivityFit::closeness($a, $one)
+                + $this->interestScore($a, $one)
                 + ($pattern !== null || $missed !== [] ? 12 * ErrorPatterns::fit($a, $pattern, $missed) : 0);
         })->first();
 

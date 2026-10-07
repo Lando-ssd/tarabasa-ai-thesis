@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\GenerateActivitiesJob;
+use App\Support\ActivityFit;
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
 use App\Models\ActivityGeneration;
@@ -256,13 +257,25 @@ class ActivityController extends Controller
             ->reject(fn ($class) => SchoolClass::isYearPast($class->school_year))
             ->values();
 
+        $learners = Learner::whereIn('class_id', $classes->pluck('id'))->with(['schoolClass', 'readingSessions'])->orderBy('first_name')->get();
+        $tags = $classes->pluck('group_tag')->filter()->unique()->values();
+
+        // How this activity fits each place it could be given (see ActivityFit): said next to each choice, and
+        // checked again on the server when Assign is pressed.
+        $fitClass = $classes->mapWithKeys(fn ($c) => [$c->id => ActivityFit::forAudience($activity, $learners->where('class_id', $c->id), $c->name)]);
+        $fitGroup = $tags->mapWithKeys(fn ($tag) => [$tag => ActivityFit::forAudience($activity, $learners->whereIn('class_id', $classes->where('group_tag', $tag)->pluck('id')), 'the '.$tag.' group')]);
+        $fitLearner = $learners->mapWithKeys(fn ($l) => [$l->id => ActivityFit::forLearner($activity, $l)]);
+
         return view('teacher.activities._window', [
             'activity' => $activity->load('assignments.learner', 'assignments.schoolClass', 'repositoryListing.ratings'),
             'teacher' => $teacher,
             'locked' => $teacher->status !== 'Active',
             'assignClasses' => $classes,
-            'assignGroupTags' => $classes->pluck('group_tag')->filter()->unique()->values(),
-            'assignLearners' => Learner::whereIn('class_id', $classes->pluck('id'))->with('schoolClass')->orderBy('first_name')->get(),
+            'assignGroupTags' => $tags,
+            'assignLearners' => $learners,
+            'fitClass' => $fitClass,
+            'fitGroup' => $fitGroup,
+            'fitLearner' => $fitLearner,
             'levelInfo' => config('activity_levels.info'),
         ]);
     }
@@ -428,6 +441,25 @@ class ActivityController extends Controller
             abort_if(! $hasTag, 403, 'That group tag is not used by any of your classes.');
         }
 
+        // Can the learners who would receive it read it? Decided on the server (see ActivityFit): an activity far
+        // too long for them cannot be forced through, whichever screen the Teacher gave it from.
+        if (isset($targets['learner_id'])) {
+            $audience = collect([$learner]);
+            $audienceName = $learner->first_name;
+        } elseif (isset($targets['class_id'])) {
+            $audience = $class->learners()->get();
+            $audienceName = $class->name;
+        } else {
+            $audience = Learner::whereHas('schoolClass', fn ($q) => $q->where('teacher_id', $teacher->id)->where('group_tag', $targets['group_tag']))->get();
+            $audienceName = 'the '.$targets['group_tag'].' group';
+        }
+
+        $fit = ActivityFit::forAudience($activity, $audience, $audienceName);
+
+        if ($fit['verdict'] === ActivityFit::BLOCKED) {
+            throw ValidationException::withMessages(['assign_target' => $fit['note']]);
+        }
+
         ActivityAssignment::create([
             'activity_id' => $activity->id,
             'learner_id' => $targets['learner_id'] ?? null,
@@ -436,7 +468,7 @@ class ActivityController extends Controller
             'assigned_by_teacher_id' => $teacher->id,
         ]);
 
-        return back()->with('status', "\"{$activity->title}\" assigned.");
+        return back()->with('status', "\"{$activity->title}\" assigned.".($fit['verdict'] === ActivityFit::CAUTION ? ' Note: '.$fit['note'] : ''));
     }
 
     /**

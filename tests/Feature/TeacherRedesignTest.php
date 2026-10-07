@@ -356,7 +356,7 @@ class TeacherRedesignTest extends TestCase
         $this->actingAs($user);
         $url = route('teacher.classes.join-learner', $class);
 
-        $this->post($url, ['learner_code' => '12345'])->assertRedirect()->assertSessionHas('status', 'Rosa Cruz added to "Rizal".');
+        $this->post($url, ['learner_code' => '12345'])->assertRedirect()->assertSessionHas('status', 'Rosa Cruz added to "Rizal". Here is what the parent shared.');
         $this->assertSame($class->id, $a->fresh()->class_id);
         $this->post($url, ['learner_code' => ' tb-67890 '])->assertRedirect();
         $this->assertSame($class->id, $b->fresh()->class_id);

@@ -54,7 +54,8 @@
       @endforeach
     @endif
 
-    <div class="credits">Icons by <a href="https://icons8.com" target="_blank" rel="noopener">Icons8</a></div>
+    {{-- The "Icons by Icons8" line was removed at the owner's request (2026-10-07). This empty block keeps the space under the road. --}}
+    <div class="credits" aria-hidden="true"></div>
   </div>
 
   <div class="right-rail">

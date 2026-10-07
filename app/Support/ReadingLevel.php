@@ -76,13 +76,54 @@ class ReadingLevel
     {
         $rung = self::rung($learner);
 
+        return $rung === null ? null : self::stepForRung($rung);
+    }
+
+    /** The step (1 to 4) a ladder rung belongs to. */
+    public static function stepForRung(int $rung): int
+    {
         return match (true) {
-            $rung === null => null,
-            $rung === 0 => 1,
+            $rung <= 0 => 1,
             $rung === 1 => 2,
             $rung <= 3 => 3,
             default => 4,
         };
+    }
+
+    public static function stepNameForRung(int $rung): string
+    {
+        return self::STEPS[self::stepForRung($rung)]['name'];
+    }
+
+    /**
+     * Where the child is for the purpose of choosing activities for them: the rung from the first reading check when
+     * there is one; otherwise, for a child who has not read the check yet, the rung the Parent's own description and
+     * answers put them on (the same rule the check starts from, DiagnosticPlacement::startingRung); otherwise an
+     * estimate from the stored level. Null when nothing is known at all.
+     *
+     * @return null|array{rung:int, source:'check'|'parent'|'estimate', sourceText:string}
+     */
+    public static function readiness(Learner $learner): ?array
+    {
+        if ($learner->reading_rung !== null) {
+            return ['rung' => (int) $learner->reading_rung, 'source' => 'check', 'sourceText' => 'from the first reading check'];
+        }
+
+        $checked = $learner->relationLoaded('readingSessions')
+            ? $learner->readingSessions->contains('session_type', 'Diagnostic')
+            : $learner->readingSessions()->where('session_type', 'Diagnostic')->exists();
+
+        if (! $checked && ($learner->reading_stage !== null || is_array($learner->placement_answers))) {
+            $rung = array_search(DiagnosticPlacement::startingRung($learner), DiagnosticPlacement::ladder(), true);
+
+            if ($rung !== false) {
+                return ['rung' => (int) $rung, 'source' => 'parent', 'sourceText' => 'from what the parent shared, no first reading check yet'];
+            }
+        }
+
+        $estimate = self::rung($learner);
+
+        return $estimate === null ? null : ['rung' => $estimate, 'source' => 'estimate', 'sourceText' => 'estimated from the reading level'];
     }
 
     public static function stepName(Learner $learner): string

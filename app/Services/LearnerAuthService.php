@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\ActivityAssignment;
 use App\Models\Learner;
 use App\Models\OpenRepositoryListing;
+use App\Support\ActivityFit;
 use App\Support\ErrorPatterns;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
@@ -108,7 +109,15 @@ class LearnerAuthService
             ->concat($unlockedActivities->map(fn ($activity) => ['activity' => $activity, 'source' => 'Extra Practice']))
             ->values();
 
-        return $this->applyPatternPractice($learner, $this->applyAdaptiveRecommendation($learner, $options));
+        // An activity far too long for where this child is now (see ActivityFit) is never the one "picked just for
+        // you" and never put first: the ones they can read come first, and the long one waits at the end, marked
+        // "for later". It is not hidden, so nothing a teacher gave is lost; it is simply not what a child who is still
+        // learning to sound out words meets first.
+        [$ready, $later] = $options->partition(fn (array $o) => ActivityFit::forLearner($o['activity'], $learner)['verdict'] !== ActivityFit::BLOCKED);
+
+        return $this->applyPatternPractice($learner, $this->applyAdaptiveRecommendation($learner, $ready->values()))
+            ->concat($later->map(fn (array $o) => $o + ['later' => true])->values())
+            ->values();
     }
 
     /**

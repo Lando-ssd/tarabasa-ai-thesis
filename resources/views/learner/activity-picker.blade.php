@@ -56,11 +56,12 @@
                 <span class="rd-tag {{ $isExtra ? 'green' : 'blue' }}">{{ $isExtra ? 'Extra Practice' : 'Assigned by your Teacher' }}</span>
                 @if (! empty($option['practice']))<span class="rd-tag green">{{ $option['practice'] }}</span>@endif
                 @if ($difficulty)<span class="rd-tag">{{ $difficulty }}</span>@endif
+                @if (! empty($option['later']))<span class="rd-tag lilac">A bigger one for later</span>@endif
                 <span class="rd-tag lilac">About {{ $minutes }} {{ $minutes === 1 ? 'minute' : 'minutes' }}</span>
               </div>
             </div>
           </div>
-          <p class="rd-line">{{ $skill ? 'Practice: '.$skill.'. ' : '' }}Tara is cheering for you!</p>
+          <p class="rd-line">{{ ! empty($option['later']) ? 'Read the shorter ones first. Tara will tell you when this one is ready for you!' : (($skill ? 'Practice: '.$skill.'. ' : '').'Tara is cheering for you!') }}</p>
           <a class="clay-btn {{ $isPicked ? 'orange' : 'blue' }}" style="display:inline-block;text-decoration:none;" href="{{ route('learner.activity.show', $activity) }}">Start Reading</a>
         </div>
       @endforeach

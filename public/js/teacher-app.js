@@ -287,7 +287,16 @@
       $$('input', p).forEach(function (i) { if (i.type === 'radio') { i.disabled = !on; if (!on) { i.checked = false; } } });
     });
     var go = $('[data-assign-go]', form.closest('.win-view') || document);
-    if (go) { go.disabled = !$('input[type="radio"]:checked:not(:disabled)', form); }
+    var picked = $('input[type="radio"]:checked:not(:disabled)', form);
+    var verdict = picked ? picked.getAttribute('data-fit') : '', note = picked ? picked.getAttribute('data-fit-note') : '';
+    var box = $('[data-fit-box]', form);
+    if (box) {
+      box.innerHTML = (picked && (verdict === 'blocked' || verdict === 'caution') && note)
+        ? '<div class="fit ' + esc(verdict) + '" role="' + (verdict === 'blocked' ? 'alert' : 'status') + '"><b>' + (verdict === 'blocked' ? 'This activity cannot be assigned here' : 'This activity is a stretch here') + '</b>' + esc(note) + '</div>'
+        : '';
+    }
+    // Too long for the learners it is going to: the button stays off (the server refuses it too).
+    if (go) { go.disabled = !picked || verdict === 'blocked'; }
   }
   document.addEventListener('click', function (e) {
     var chip = e.target.closest('[data-assign-type]');
@@ -481,7 +490,8 @@
       var pool = CD.approved.filter(function (a) { return taken.indexOf(String(a.id)) < 0 && (level === 'all' || a.tier === level); });
       var same = pool.filter(function (a) { return a.grade === grade; }), other = pool.filter(function (a) { return a.grade !== grade; });
       var sel = $('select[name="activity_id"]', view), keep = sel.value;
-      var grp = function (label, list) { return list.length ? '<optgroup label="' + esc(label) + '">' + list.map(function (a) { return '<option value="' + a.id + '"' + (String(a.id) === keep ? ' selected' : '') + '>' + esc(a.title + ' (' + a.tier + ', ' + a.words + ' words)') + '</option>'; }).join('') + '</optgroup>' : ''; };
+      var fitOf = function (a) { return (a.fit && a.fit[cid]) || null; };
+      var grp = function (label, list) { return list.length ? '<optgroup label="' + esc(label) + '">' + list.map(function (a) { var f = fitOf(a); return '<option value="' + a.id + '"' + (String(a.id) === keep ? ' selected' : '') + '>' + esc(a.title + ' (' + a.tier + ', ' + a.words + ' words)' + (f ? (f.v === 'blocked' ? ', too long for this class' : ', a stretch for some') : '')) + '</option>'; }).join('') + '</optgroup>' : ''; };
       sel.innerHTML = '<option value="">Choose an activity</option>' + grp(grade + ' activities', same) + grp('Other grades', other);
       $('[data-assign-hint]', view).textContent = pool.length ? pool.length + ' approved ' + (pool.length === 1 ? 'activity' : 'activities') + ' to choose from.' : 'Nothing left to assign at this level. Approve more drafts on the Activities screen.';
       showPreview(view);
@@ -490,7 +500,12 @@
     var showPreview = function (view) {
       var sel = $('select[name="activity_id"]', view), box = $('[data-preview]', view), go = $('[data-assign-go]', view);
       var a = CD.approved.filter(function (x) { return String(x.id) === sel.value; })[0];
-      go.disabled = !a;
+      var cid = view.closest('dialog').getAttribute('data-class'), f = a && a.fit && a.fit[cid];
+      // Whether the learners in this class can read it. An activity far too long cannot be assigned (the server
+      // refuses it too); a stretch can, with a note.
+      var fitBox = $('[data-assign-fit]', view);
+      if (fitBox) { fitBox.innerHTML = f ? '<div class="fit ' + esc(f.v) + '" role="' + (f.v === 'blocked' ? 'alert' : 'status') + '"><b>' + (f.v === 'blocked' ? 'This activity cannot be assigned to this class' : 'This activity is a stretch for some learners') + '</b>' + esc(f.n) + '</div>' : ''; }
+      go.disabled = !a || !!(f && f.v === 'blocked');
       box.innerHTML = a ? '<div class="card" style="box-shadow:none;padding:16px"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><span class="pill t-' + a.tier.toLowerCase() + '">' + esc(a.tier) + '</span><span class="pill">' + esc(a.type) + '</span><span class="pill">' + a.words + ' words</span></div><div class="block" style="margin-bottom:8px"><span class="eyebrow">Reading text</span><div class="passage" style="margin-top:6px;font-size:16px">' + esc(a.passage) + '</div></div><p class="note" style="margin:0"><b>' + esc(a.tier) + '</b>: ' + esc(a.long) + '</p></div>' : '';
     };
     document.addEventListener('click', function (e) {

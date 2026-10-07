@@ -133,7 +133,7 @@
                     @forelse ($ins['suggestions'][$key] ?? [] as $sg)
                       @include('teacher._suggestion', ['s' => $sg, 'class' => $c, 'band' => $key, 'view' => 'groups'])
                     @empty
-                      <p class="pg-empty">No approved activity of your own fits this group yet, or it has all been given.</p>
+                      <p class="pg-empty">None of your approved activities is short enough for this group, or they have all been given. Generate Easy activities for this grade and approve them, and they will be suggested here.</p>
                     @endforelse
                   @endif
                 @endunless
@@ -157,6 +157,7 @@
       </header>
       <div class="win-tabs">@include('teacher.classes._tabs', ['active' => 'acts', 'nLearners' => $nLearners, 'nActs' => $acts->count()])</div>
       <div class="win-body">
+        @if ($isTarget && old('view') === 'acts' && $errors->has('activity_id'))<div class="form-error-banner" role="alert">{{ $errors->first('activity_id') }}</div>@endif
         <div class="toolbar">
           <span class="note" style="flex:1">{{ $acts->isEmpty() ? '' : $acts->count().' '.($acts->count() === 1 ? 'activity' : 'activities').' for this class.' }}</span>
           @unless ($past)
@@ -217,6 +218,7 @@
               <select id="ca-{{ $c->id }}" name="activity_id" data-af required></select>
               <span class="fhint" data-assign-hint></span>
             </div>
+            <div data-assign-fit></div>
             <div data-preview></div>
           </form>
         </div>
@@ -300,6 +302,35 @@
             <div class="fact"><b>{{ $practice->count() }}</b><span>Sessions</span></div>
             <div class="fact"><b>{{ $avg === null ? '0%' : round($avg).'%' }}</b><span>Avg score</span></div>
             <div class="fact"><b>{{ $l->readingDayStreak() }}</b><span>Days in a row</span></div>
+          </div>
+          @php $pf = \App\Support\LearnerProfile::forTeacher($l); @endphp
+          <div class="block profile">
+            <span class="eyebrow">What the parent shared</span>
+            <dl class="pf">
+              <div><dt>How the parent describes {{ $l->first_name }}'s reading</dt><dd>{{ $pf['stage'] ?? 'Not given' }}</dd></div>
+              @if ($pf['language'])<div><dt>Home language</dt><dd>{{ $pf['language'] }}</dd></div>@endif
+              @if ($pf['supports'])<div><dt>What helps most</dt><dd>{{ implode(', ', $pf['supports']) }}</dd></div>@endif
+              @if ($pf['interests'])<div><dt>Topics {{ $l->first_name }} likes</dt><dd>{{ implode(', ', $pf['interests']) }}</dd></div>@endif
+            </dl>
+            @if ($pf['answers'])
+              <details class="pf-more"><summary>The parent's answers to the three questions</summary>
+                <ul>@foreach ($pf['answers'] as $qa)<li>{{ $qa['question'] }} <b>{{ $qa['answer'] }}</b></li>@endforeach</ul>
+              </details>
+            @endif
+          </div>
+          <div class="block profile">
+            <span class="eyebrow">Where {{ $l->first_name }} reads now</span>
+            @if ($pf['check']['done'])
+              <p><b>{{ $pf['check']['step'] }}</b> step, {{ $pf['check']['band'] }}. From the first reading check, then updated by each reading.</p>
+            @else
+              <p>The first reading check has not been done yet. It starts at {{ $pf['startsAt'] ?? 'the first step' }}, from what the parent shared, and moves up or down by itself.</p>
+            @endif
+            @if ($pf['mismatch'])<p class="note" style="margin-top:6px">{{ $pf['mismatch'] }}</p>@endif
+            <div class="bestfit">
+              <b>What suits {{ $l->first_name }} now</b>
+              <span>{{ $pf['bestFit']['step'] }}: {{ $pf['bestFit']['skill'] }} ({{ $pf['bestFit']['code'] }}). {{ ucfirst($pf['bestFit']['level']) }} activities, {{ $pf['bestFit']['words'] }}.</span>
+              <span>{{ $pf['bestFit']['advice'] }}</span>
+            </div>
           </div>
           <div class="block"><span class="eyebrow">Grade history</span>
             @if (! empty($hist['chain']))

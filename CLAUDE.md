@@ -5365,8 +5365,9 @@ Reading mint, Games lilac, Badges gold, Bookshelf peach); the profile chip tints
 from `<body data-theme="blue|pink">` = `learners.theme_color`, chosen by the Parent
 in the child wizard (existing learners default to blue). Below 900px the sidebar is
 a bottom tab bar and Home stacks. "Switch" is a POST to `learner.logout` -> the
-Learner login. Sidebar icons are Icons8 free-tier: they REQUIRE an attribution link
-(a small "Icons by Icons8" line is on Home); do not drop it. `--font-game` is
+Learner login. Sidebar icons are Icons8 free-tier, whose licence asks for an attribution link
+(the small "Icons by Icons8" line on Home was REMOVED at the owner's explicit request on 2026-10-07; the four sidebar images are still
+Icons8 files, so either keep that risk knowingly, pay for an Icons8 licence, or swap them for the Phosphor icons already in the app). `--font-game` is
 Bahnschrift (Windows only) with Barlow Semi Condensed as the web-font fallback.
 - **Real day streak** (`Learner::readingDayStreak()`): consecutive days with a
   real Practice reading, derived and never written back. The stored `streak`
@@ -6176,6 +6177,58 @@ the rest (two of them de-duplicate rows and add unique indexes).
 
 **Known limits on the free stack.** About one minute to wake after a quiet period (plus the teammate services that
 also sleep); photos lost on every sleep; the worker stops while the service sleeps; TiDB's monthly quota.
+
+## Live fixes after the move to Render (2026-10-07): sleeping services, the failure diary, and "can this child read it?"
+
+**Real cause of "error 429" on the first reading check (found, fixed, confirmed live).** The three teammate services run on free
+hosting that sleeps after about 15 minutes. A recording (a POST with a body) sent to a SLEEPING service is turned away at once by
+Render's front door with a plain-text "Too Many Requests" (a Go-style `text/plain` answer, not the checker's own code, which has no
+rate limit) and does NOT wake it; a GET that STAYS CONNECTED (the health page) is held 20 to 40 seconds and wakes it. The old wake-up
+ping gave up after 3 to 5 seconds, which very likely cancelled the wake-up. Generation failed the same way on 2026-10-06 (0 to 1
+second "no explanation" failures). Fix: `App\Support\ServiceWake` asks the health page and WAITS for the answer, `ReadingAiClient`
+does that before sending a recording unless the checker answered in the last 8 minutes and again after any refused attempt, and
+`wake()` (reading screens, the Generate window) now starts a background `WakeServiceJob` that stays connected as long as it takes.
+`config('services.reading_ai.ready_wait')` / `activity_ai.ready_wait` (default 100 s, `READING_AI_READY_WAIT`, tests set 0).
+A 429 waits 10, 20, 30 s (or the host's Retry-After, capped at 30) and the checker is tried 4 times (`ServiceReply::pause`).
+Confirmed live: after this the first check finished and a practice reading was scored (66.67 percent).
+
+**The failure diary (use it before asking anyone for logs).** `service_failures` table + `App\Models\ServiceFailure`: every FINAL
+failure of the generator, reading checker or recommender is written (status, every status seen while retrying, content type, the
+answer body, 14 days). The Admin dashboard shows "Recent service problems" with a "Check the services now" button; `php artisan
+services:check` (`App\Services\ServiceCheck`) runs from the app server at every start (docker/entrypoint.sh, in the background) and
+writes one `check` row: the server's public address, the checker's health page, two silent recordings (short and as long as a real
+reading; a 422 "Audio is silent" proves the request got through), the generator and the recommender. The live database can be read
+directly with `.env.render` (do not write to it) to see these rows.
+
+**The recommender mismatch is still OPEN.** Render runs Adaptive_Recommendator 1.0.0 (competency keyed); the app was built for 2.0.0
+(subdomain keyed), so `/initialize` answers 422 ("assessment_scores") and the diary records it every time a first check finishes;
+`subdomain_states` stays empty and Home shows "Your path is getting ready". Needs the teammate to redeploy version 2, or a version 1
+adapter (not built). Reading-api on Render is 3.0.0 and ignores the extra fields.
+
+**"Can this child read it?" (`App\Support\ActivityFit`, `config/activity_fit.php`).** Asked by a teacher: a 69 word Hard timed reading
+could be assigned to a Grade 1 class whose learner could not read words, and the AI suggested long readings to Grade 1 children.
+The activity's level (Easy/Medium/Hard) only says how hard it is for ITS GRADE. Now `ReadingLevel::readiness($learner)` says where the
+CHILD is (the first check's rung; or, before any check, the rung the Parent's description and answers put them on, the same rule the
+check starts from; or an estimate from the level) and `ActivityFit` compares the activity's word count with the words a child at
+that rung reads comfortably or as a stretch (limits anchored on the first check's own texts: 6/10, 10/14, 16/24, 28/40, 45/60, 75/100,
+130/170 for rungs 0 to 6; sentences and stories count 1.6 times for rungs 0 and 1). Verdicts: ok, caution (a stretch: can be assigned,
+with a note), blocked (too long: CANNOT be assigned), unknown (no data: no limit). A whole class or group is blocked when at least 20
+percent of its known learners could not read it (so assign it to the reading group that can). It is enforced on the SERVER in every
+place an activity is given: the class window (`ClassController::assignActivity`), the activity window (`ActivityController::assign`:
+learner, class or group tag) and the alerts' one click assign (`TeacherAlerts::assign`); and shown before the button is pressed (a
+note and a disabled button in both Assign windows, "Too long" / "A stretch" tags). There is NO override: the teacher asked that it
+cannot be forced; if teachers need one, add it deliberately. The limits are the team's own choices (PROVISIONAL, a Grade 1 and a
+Grade 2 teacher should review them). Suggestions (`ActivitySuggestions`) now only offer activities no child in the group is blocked
+from, closest to a comfortable length first, then the learners' liked topics (a small tie breaker); the child's own picker puts a
+too long assigned activity LAST, marked "A bigger one for later", never "Picked just for you". Nothing a teacher assigned is hidden.
+
+**The parent's profile for the teacher (`App\Support\LearnerProfile`).** The learner's page inside the class window now shows "What the
+parent shared" (the Parent's description of the reading, home language, what helps, liked topics, the three grade questions with
+their answers), "Where the child reads now" (the step, the Phil-IRI level, or where the not yet done first check will start, and a
+note when the check and the parent are two or more rungs apart, naming the check as the more recent measure) and "What suits the
+child now" (the MATATAG step and code, the activity level, how many words is comfortable, and a short way to teach it). After a
+teacher adds a learner by code, the class window opens on that learner's page (`tab=learner-N`). Rule based, not a trained model,
+and not a replacement for the teacher's judgment.
 
 ## Before pushing this round (checklist for the next session)
 
