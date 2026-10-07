@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ServiceFailure extends Model
 {
-    public const SERVICES = ['generator' => 'Activity generator', 'reader' => 'Reading checker', 'recommender' => 'Adaptive recommender', 'check' => 'Service check'];
+    public const SERVICES = ['generator' => 'Activity generator', 'reader' => 'Reading checker', 'recommender' => 'Adaptive recommender', 'mail' => 'Email sending', 'check' => 'Service check'];
 
     public $timestamps = false;
 

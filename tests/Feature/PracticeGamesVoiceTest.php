@@ -248,4 +248,22 @@ class PracticeGamesVoiceTest extends TestCase
         (new \App\Jobs\WakeServiceJob('reader'))->handle();
         $this->assertFalse(\App\Support\ServiceWake::isKnownAwake('reader'));
     }
+
+    public function test_the_childs_pages_wake_the_sleeping_services_from_the_browser_and_never_print_a_key(): void
+    {
+        $this->child();
+        config([
+            'services.adaptive_recommender.url' => 'https://recommender.test', 'services.adaptive_recommender.key' => 'RECOMMENDER-SECRET-KEY',
+            'services.activity_ai.url' => 'https://generator.test', 'services.activity_ai.key' => 'GENERATOR-SECRET-KEY',
+        ]);
+
+        // A request from this server cannot wake a sleeping Render service, so the page asks the health pages itself.
+        foreach ([route('learner.dashboard'), route('learner.games.index'), route('learner.games.balloon-pop')] as $url) {
+            $page = $this->get($url)->assertOk();
+            $page->assertSee('tb-wake:', false)->assertSee('https:\/\/reading.test\/health', false);
+            $this->assertStringNotContainsString('SECRET-KEY', $page->getContent(), 'a key is never put on a page');
+        }
+
+        $this->get(route('learner.dashboard'))->assertSee('https:\/\/recommender.test\/health', false)->assertDontSee('generator.test', false);
+    }
 }

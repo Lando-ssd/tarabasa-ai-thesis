@@ -139,6 +139,10 @@
     if (!url || warmed) { return; }
     warmed = true;
     try { fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); } catch (x) { /* fine */ }
+    // A request from this app's own server cannot wake a sleeping Render service (it is turned away at once), but one
+    // from the teacher's browser can: ask the generator's public health page from here. Nothing is sent but the request.
+    var direct = d.getAttribute('data-wake-direct');
+    if (direct) { try { fetch(direct, { mode: 'no-cors', cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' }).catch(function () {}); } catch (x) { /* fine */ } }
   }
 
   window.addEventListener('DOMContentLoaded', function () {

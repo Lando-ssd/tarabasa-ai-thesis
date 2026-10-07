@@ -129,3 +129,4 @@
   try { fetch(@json(route('learner.warm')), { credentials: 'same-origin' }).catch(function () {}); } catch (e) {}
 })();
 </script>
+@include('partials.wake-from-browser', ['wake' => ['reader']])

@@ -316,7 +316,8 @@ class LearnerDiagnosticService
         // last (which cannot tell "names every letter" from "reads sentences").
         $this->initializeAdaptiveRecommendation(
             $learner,
-            DiagnosticPlacement::score($landedTier, $lastAccuracy)
+            DiagnosticPlacement::score($landedTier, $lastAccuracy),
+            $landedTier
         );
 
         $this->clearState($learner);
@@ -340,9 +341,9 @@ class LearnerDiagnosticService
         ];
     }
 
-    private function initializeAdaptiveRecommendation(Learner $learner, float $placementScore): void
+    private function initializeAdaptiveRecommendation(Learner $learner, float $placementScore, ?string $rung = null): void
     {
-        app(AdaptiveLearningService::class)->initializeFromDiagnostic($learner, $placementScore);
+        app(AdaptiveLearningService::class)->initializeFromDiagnostic($learner, $placementScore, $rung);
     }
 
     private function putState(Learner $learner, array $state): void

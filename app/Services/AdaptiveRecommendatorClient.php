@@ -7,6 +7,7 @@ use App\Support\ServiceReply;
 use App\Support\ServiceWake;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -49,6 +50,49 @@ class AdaptiveRecommendatorClient
     public function recommend(array $payload): array
     {
         return $this->post('/recommend', $payload);
+    }
+
+    /**
+     * Which contract the deployed service speaks: 1 (three grouped competencies) or 2 (MATATAG subdomains). The team
+     * redeployed an older version (1.0.0) than the one this app was first built for (2.0.0) without notice, so the app
+     * asks, once in a while, instead of assuming. ADAPTIVE_RECOMMENDER_API (1, 2 or auto) can force it.
+     * Null when it cannot be told (the service is asleep, or answers with no version): callers then use version 2,
+     * and a service that is really asleep refuses the call anyway.
+     */
+    public function apiMajor(): ?int
+    {
+        $forced = (string) config('services.adaptive_recommender.api', 'auto');
+
+        if (in_array($forced, ['1', '2'], true)) {
+            return (int) $forced;
+        }
+
+        $known = Cache::get('recommender-api-major');
+
+        if ($known !== null) {
+            return (int) $known;
+        }
+
+        $url = config('services.adaptive_recommender.url');
+
+        if (! $url) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(8)->get(rtrim($url, '/').'/health');
+            $version = $response->successful() ? (string) $response->json('version') : '';
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! preg_match('/^(\d+)\./', $version, $m)) {
+            return null;
+        }
+
+        Cache::put('recommender-api-major', (int) $m[1], now()->addHours(6));
+
+        return (int) $m[1];
     }
 
     private function post(string $path, array $payload): array

@@ -15,8 +15,12 @@
  * 60 and 100 words. `comfortable` is about one and a half times that (a little more than the check, still easy);
  * `stretch` about twice (hard but possible with help); above `stretch` it is too long and cannot be assigned.
  *
- * PROVISIONAL: these are the team's own choices from the check's texts, not figures from the curriculum guides. A
- * Grade 1 and a Grade 2 teacher should review them (see CLAUDE.md), and they can be changed here without touching code.
+ * Settled defaults for the thesis build, cross-checked against the activity generator's own length bands
+ * (config/activity_levels.php): a rung's comfortable length sits inside the band of the level that rung reads
+ * (rung 2: Grade 1 sentences up to 22 words; rung 3: Grade 2 sentences up to 36; rung 4: Grade 1 stories up to 65;
+ * rung 5: Grade 2 stories up to 100; rung 6: Grade 3 stories up to 130). They are the team's own figures, not official
+ * DepEd numbers (the curriculum guides give no word counts), so they are kept in this one file: change them here, without
+ * touching code, if a teacher's experience says otherwise.
  */
 return [
 

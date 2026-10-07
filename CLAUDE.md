@@ -6200,10 +6200,29 @@ writes one `check` row: the server's public address, the checker's health page, 
 reading; a 422 "Audio is silent" proves the request got through), the generator and the recommender. The live database can be read
 directly with `.env.render` (do not write to it) to see these rows.
 
-**The recommender mismatch is still OPEN.** Render runs Adaptive_Recommendator 1.0.0 (competency keyed); the app was built for 2.0.0
-(subdomain keyed), so `/initialize` answers 422 ("assessment_scores") and the diary records it every time a first check finishes;
-`subdomain_states` stays empty and Home shows "Your path is getting ready". Needs the teammate to redeploy version 2, or a version 1
-adapter (not built). Reading-api on Render is 3.0.0 and ignores the extra fields.
+**The recommender version mismatch is SETTLED (2026-10-07), no longer waiting on the teammate.** Render runs
+Adaptive_Recommendator 1.0.0 (three grouped competencies); the app was first built for 2.0.0 (MATATAG subdomains), so every call was
+refused (422) and no child's learning path filled. `AdaptiveRecommendatorClient::apiMajor()` now asks the service's `/health` for
+its version (cached 6 hours; `ADAPTIVE_RECOMMENDER_API=1|2|auto` forces it) and `AdaptiveLearningService` speaks the matching
+contract: in version 1 mode it sends competency keyed state and the three Reading-api scores (accuracy, speed, prosody; the quiz
+score for comprehension), keeps the service's own states in `competency_states` / `next_recommended_competency`, and TRANSLATES them
+into `subdomain_states` / `next_recommended_subdomain` (foundational reading and fluency both count under Phonics and Word Study,
+comprehension under Comprehending and Analyzing Text, the rest stay unassessed) so every screen is unchanged. Version 2 mode is
+untouched. Verified against the live service: a starting score of 39 became 50.89 after one reading, the service's own formula.
+Reading-api on Render is 3.0.0 and ignores the extra fields.
+
+**A Render service cannot wake another sleeping Render service (found 2026-10-07).** The app's startup check got an instant
+"429 Too Many Requests" from the sleeping recommender, and a request from a normal computer 45 seconds later was still held 23 seconds
+(so the first one had not woken it). A normal connection is held while the service starts and then answered, so the PAGE now wakes
+the services itself: `partials/wake-from-browser.blade.php` (child's pages: checker and recommender; the games: checker) and
+`data-wake-direct` on the Generate window (generator) make one bare `GET /health` from the visitor's browser (`no-cors`, no
+cookie, no key, at most every 2 minutes per service per tab). The server side wake (`WakeServiceJob`, `ServiceWake::await`) stays as
+a second line: it notices the moment the browser's wake worked. The services' health addresses (not keys) are on the page.
+
+**Email failures are visible now.** `GmailApiTransport` writes a `mail` row to the diary (the status and Google's answer, never the
+recipient) when a send or the token refresh fails, and `services:check` / the Admin button also test, without sending anything, that
+the stored Gmail refresh token still gets an access token (the token itself is never written down). Registration still never fails
+because of a mail problem. If every account stays "unverified", read the diary first.
 
 **"Can this child read it?" (`App\Support\ActivityFit`, `config/activity_fit.php`).** Asked by a teacher: a 69 word Hard timed reading
 could be assigned to a Grade 1 class whose learner could not read words, and the AI suggested long readings to Grade 1 children.

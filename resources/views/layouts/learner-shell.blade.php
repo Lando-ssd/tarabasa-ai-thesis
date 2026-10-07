@@ -34,5 +34,6 @@
 </div>
 @include('partials.speak')
 @stack('scripts')
+@include('partials.wake-from-browser', ['wake' => ['reader', 'recommender']])
 </body>
 </html>

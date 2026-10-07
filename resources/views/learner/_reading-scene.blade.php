@@ -497,5 +497,6 @@
   // arrives (it sleeps on free hosting when idle). Quiet: nothing is shown and nothing can fail.
   try { fetch(@json(route('learner.warm')), { credentials: 'same-origin' }).catch(function () {}); } catch (e) {}
 </script>
+@include('partials.wake-from-browser', ['wake' => ['reader', 'recommender']])
 </body>
 </html>

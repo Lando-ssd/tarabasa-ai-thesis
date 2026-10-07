@@ -57,7 +57,7 @@ return [
     'reading_ai' => [
         'url' => env('READING_AI_URL'),
         // How long a recording waits for a sleeping checker to wake before it is sent (0 turns waiting off).
-        'ready_wait' => (int) env('READING_AI_READY_WAIT', 100),
+        'ready_wait' => (int) env('READING_AI_READY_WAIT', 60),
     ],
 
     // Teammate's deployed Adaptive_Recommendator (deterministic, stateless
@@ -66,6 +66,8 @@ return [
     'adaptive_recommender' => [
         'url' => env('ADAPTIVE_RECOMMENDER_URL'),
         'key' => env('ADAPTIVE_RECOMMENDER_KEY'),
+        // Which contract the deployed service speaks: 1, 2 or auto (ask its health page).
+        'api' => env('ADAPTIVE_RECOMMENDER_API', 'auto'),
     ],
 
     // "Continue with Google" on Login. Empty by default — until real

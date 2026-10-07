@@ -66,7 +66,22 @@ class ServiceCheck
             $lines[] = 'Adaptive recommender: not configured (ADAPTIVE_RECOMMENDER_URL is empty)';
         }
 
-        foreach ($probes as [$who, $what, $call, $good]) {
+        // Email: can the app still sign in to Gmail to send? Asked by exchanging the stored refresh token for a short
+        // access token, which sends nothing and emails nobody. The token that comes back is never written down.
+        $gmail = config('services.gmail_send');
+
+        if (config('mail.default') === 'gmail-api' && ! empty($gmail['refresh_token'])) {
+            $probes[] = ['Email (Gmail)', 'sign in with the stored token', fn () => Http::asForm()->timeout(20)->post('https://oauth2.googleapis.com/token', [
+                'client_id' => $gmail['client_id'], 'client_secret' => $gmail['client_secret'], 'refresh_token' => $gmail['refresh_token'], 'grant_type' => 'refresh_token',
+            ]), [200], true];
+        } elseif (config('mail.default') === 'gmail-api') {
+            $lines[] = 'Email (Gmail): not configured (GMAIL_SEND_REFRESH_TOKEN is empty), so no email can be sent';
+            $problems++;
+        }
+
+        foreach ($probes as $probe) {
+            [$who, $what, $call, $good] = $probe;
+            $hideBody = $probe[4] ?? false;
             $started = microtime(true);
 
             try {
@@ -74,7 +89,9 @@ class ServiceCheck
                 $response = $call();
                 $ms = (int) round((microtime(true) - $started) * 1000);
                 $ok = in_array($response->status(), $good, true);
-                $said = ServiceReply::detail($response) ?? ServiceReply::snippet($response);
+                // An answer that carries a secret (the Gmail access token) is never repeated.
+                $said = $hideBody ? ($ok ? '' : (string) ($response->json('error') ?? '').' '.(string) ($response->json('error_description') ?? '')) : (ServiceReply::detail($response) ?? ServiceReply::snippet($response));
+                $said = trim($said);
                 $lines[] = sprintf('%s, %s: %s (%s) in %.1f s%s', $who, $what, $ok ? 'OK' : 'PROBLEM', $response->status(), $ms / 1000, $said !== '' ? ', it said: '.mb_substr($said, 0, 120) : '');
             } catch (\Throwable $e) {
                 $ok = false;

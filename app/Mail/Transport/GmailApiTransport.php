@@ -2,6 +2,7 @@
 
 namespace App\Mail\Transport;
 
+use App\Models\ServiceFailure;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Mailer\Exception\TransportException;
@@ -48,6 +49,9 @@ class GmailApiTransport extends AbstractTransport
                 'body' => $response->body(),
             ]);
 
+            // The team reads these on the Admin dashboard ("Recent service problems"). The recipient is not written down.
+            ServiceFailure::record('mail', $response, "Gmail would not send an email (error {$response->status()}). The person was not emailed.");
+
             throw new TransportException('Gmail API rejected the message: '.$response->body());
         }
     }
@@ -66,6 +70,8 @@ class GmailApiTransport extends AbstractTransport
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
+
+            ServiceFailure::record('mail', $response, "The app could not sign in to Gmail to send email (error {$response->status()}). The sign in token may have expired; make a new one.");
 
             throw new TransportException('Could not refresh the Gmail API access token: '.$response->body());
         }

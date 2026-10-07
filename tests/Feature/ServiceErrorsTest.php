@@ -591,4 +591,62 @@ class ServiceErrorsTest extends TestCase
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\WakeServiceJob::class, 1);
         \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\WakeServiceJob::class, fn ($j) => $j->service === 'generator');
     }
+
+    // ----- email: a failed send is visible to the team, and the check says whether the app can still sign in to Gmail
+
+    private function gmailSettings(): void
+    {
+        config(['mail.default' => 'gmail-api', 'services.gmail_send' => ['client_id' => 'cid', 'client_secret' => 'csecret', 'refresh_token' => 'rtoken']]);
+    }
+
+    public function test_an_email_that_could_not_be_sent_is_written_to_the_diary_without_the_recipient(): void
+    {
+        $this->gmailSettings();
+        Http::fake(['oauth2.googleapis.com/token' => Http::response(['error' => 'invalid_grant', 'error_description' => 'Token has been expired or revoked.'], 400)]);
+
+        try {
+            \Illuminate\Support\Facades\Mail::mailer('gmail-api')->raw('Hello', fn ($m) => $m->to('parent.private@example.com')->subject('Verify'));
+            $this->fail('the send should have failed');
+        } catch (\Throwable $e) {
+            $this->assertStringContainsString('Could not refresh the Gmail API access token', $e->getMessage());
+        }
+
+        $row = ServiceFailure::where('service', 'mail')->first();
+        $this->assertNotNull($row);
+        $this->assertSame(400, $row->status);
+        $this->assertStringContainsString('could not sign in to Gmail', $row->what);
+        $this->assertStringContainsString('invalid_grant', $row->body);
+        $this->assertStringNotContainsString('parent.private@example.com', $row->what.$row->body, 'who was being emailed is never written down');
+    }
+
+    public function test_the_service_check_says_when_the_app_can_sign_in_to_gmail_and_never_repeats_the_token(): void
+    {
+        $this->gmailSettings();
+        $this->fakeAllServices();
+        Http::fake(['oauth2.googleapis.com/token' => Http::response(['access_token' => 'SECRET-ACCESS-TOKEN', 'expires_in' => 3599, 'scope' => 'gmail.send'], 200)]);
+
+        $result = app(\App\Services\ServiceCheck::class)->runAndRecord();
+
+        $text = implode("\n", $result['lines']);
+        $this->assertStringContainsString('Email (Gmail), sign in with the stored token: OK (200)', $text);
+        $this->assertSame(0, $result['problems']);
+        $this->assertStringNotContainsString('SECRET-ACCESS-TOKEN', $text.json_encode(ServiceFailure::all()->toArray()), 'the token is never written anywhere');
+    }
+
+    public function test_the_service_check_reports_an_expired_gmail_token_and_a_missing_one(): void
+    {
+        $this->gmailSettings();
+        $this->fakeAllServices();
+        Http::fake(['oauth2.googleapis.com/token' => Http::response(['error' => 'invalid_grant', 'error_description' => 'Token has been expired or revoked.'], 400)]);
+
+        $expired = app(\App\Services\ServiceCheck::class)->run();
+        $this->assertSame(1, $expired['problems']);
+        $this->assertStringContainsString('PROBLEM (400)', implode("\n", $expired['lines']));
+        $this->assertStringContainsString('invalid_grant', implode("\n", $expired['lines']));
+
+        config(['services.gmail_send.refresh_token' => null]);
+        $missing = app(\App\Services\ServiceCheck::class)->run();
+        $this->assertSame(1, $missing['problems']);
+        $this->assertStringContainsString('GMAIL_SEND_REFRESH_TOKEN is empty', implode("\n", $missing['lines']));
+    }
 }

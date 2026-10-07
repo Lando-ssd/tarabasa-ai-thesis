@@ -9,7 +9,7 @@
     $out = $teacher->free_generation_credits_remaining <= 0;
     $firstComp = old('competency', array_key_first($competencies));
 @endphp
-<dialog id="genDlg" class="win" aria-label="Generate activities" data-warm-url="{{ route('teacher.activities.warm') }}" @if ($openGenerate) data-autoopen @endif>
+<dialog id="genDlg" class="win" aria-label="Generate activities" data-warm-url="{{ route('teacher.activities.warm') }}" data-wake-direct="{{ config('services.activity_ai.url') ? rtrim(config('services.activity_ai.url'), '/').'/health' : '' }}" @if ($openGenerate) data-autoopen @endif>
   <div class="win-in wide">
     <header class="win-head">
       <div class="win-titles"><h2>Generate activities</h2><p class="win-meta">Pick the skill to build, then how many of each level you need.</p></div>
