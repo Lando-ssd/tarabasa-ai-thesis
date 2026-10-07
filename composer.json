@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.4",
         "aws/aws-sdk-php": "^3.395",
+        "bacon/bacon-qr-code": "^3.1",
         "laravel/framework": "^13.17",
         "laravel/sanctum": "^4.3",
         "laravel/socialite": "^5.31",

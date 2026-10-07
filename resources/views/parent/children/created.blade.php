@@ -42,6 +42,9 @@
   .code-box .label{ font-size:12px; font-weight:700; color:var(--slate-600); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
   .code-box .code{ font-family:'Baloo 2',sans-serif; font-size:28px; font-weight:700; color:var(--blue-700); letter-spacing:.03em; margin-bottom:6px; }
   .code-box .hint{ font-size:12.5px; color:var(--slate-600); font-weight:500; }
+  .qr-box{ margin-top:-6px; }
+  .qr-box .qr{ width:200px; max-width:100%; margin:6px auto 10px; background:#fff; border-radius:12px; padding:0; line-height:0; }
+  .qr-box .qr svg{ width:100%; height:auto; display:block; }
   .code-box .parts{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:12px 0 12px; }
   .code-box .parts div{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 4px; font-size:10.5px; font-weight:600; color:var(--slate-600); line-height:1.3; }
   .code-box .parts b{ display:block; font:700 16px/1.2 'Baloo 2',sans-serif; color:var(--blue-700); }
@@ -95,6 +98,13 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="1.8"/></svg>
         <span id="copyBtnLabel">Copy code</span>
       </button>
+    </div>
+
+    <div class="code-box qr-box">
+      <div class="label">QR code</div>
+      <div class="qr" aria-hidden="false">{!! \App\Support\LearnerQr::svg($learner->learner_code, 200) !!}</div>
+      <div class="hint">{{ $learner->first_name }}'s teacher can scan this to add {{ $learner->first_name }} to the class, instead of typing the code. It holds the code only, never the PIN.</div>
+      <a class="copy-btn" href="{{ route('parent.children.card', $learner) }}" target="_blank" rel="noopener" style="text-decoration:none">Print {{ $learner->first_name }}'s card</a>
     </div>
 
     <div class="nav-row">

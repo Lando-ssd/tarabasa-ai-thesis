@@ -235,6 +235,30 @@
           <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
         </header>
         <div class="win-body">
+          {{-- Scan: the camera reads each learner's QR code (on the parent's phone or the printed card) and adds them at once. --}}
+          <div class="scan" data-scan data-scan-url="{{ route('teacher.classes.join-learner', $c) }}" data-done-url="{{ route('teacher.classes.index', ['school_year' => $c->school_year, 'open' => $c->id, 'tab' => 'learners']) }}" data-jsqr="{{ asset('vendor/jsQR-1.4.0.js') }}" data-class-name="{{ $c->name }}">
+            <p class="note" style="margin:0 0 12px">Scan each learner's QR code, on the parent's phone or on the printed card. Scan the whole class one after another: each child is added as soon as the code is read.</p>
+            <div class="scan-actions">
+              <button type="button" class="btn" data-scan-start>@include('learner._badge-icon', ['icon' => 'qr-code', 'class' => 'ico']) Scan QR codes</button>
+              <label class="btn ghost small scan-photo">@include('learner._badge-icon', ['icon' => 'camera', 'class' => 'ico']) Use a photo of the code<input type="file" accept="image/*" capture="environment" class="sr" data-scan-photo></label>
+            </div>
+            <div class="scan-stage" data-scan-stage hidden>
+              <div class="scan-video">
+                <video playsinline muted aria-label="Camera view" data-scan-video></video>
+                <div class="scan-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+              </div>
+              <p class="scan-status" role="status" aria-live="polite" data-scan-status>Starting the camera...</p>
+              <div class="scan-actions">
+                <button type="button" class="btn ghost small" data-scan-stop>Stop camera</button>
+              </div>
+            </div>
+            <p class="scan-msg" role="status" aria-live="polite" data-scan-msg></p>
+            <ul class="scan-list" aria-label="Learners added" data-scan-list></ul>
+            <button type="button" class="btn small" data-scan-done hidden>Done, show the class</button>
+          </div>
+
+          <div class="or"><span>or type the code</span></div>
+
           <form id="add-form-{{ $c->id }}" method="POST" action="{{ route('teacher.classes.join-learner', $c) }}" data-busy="Adding">
             @csrf
             <input type="hidden" name="form" value="class"><input type="hidden" name="target_class_id" value="{{ $c->id }}"><input type="hidden" name="view" value="add">

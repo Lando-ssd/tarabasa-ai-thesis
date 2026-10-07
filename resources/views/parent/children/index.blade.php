@@ -49,7 +49,21 @@
         <div class="code-row">
           <div><small>Learner code</small><code>{{ $learner->learner_code }}</code></div>
           <button class="btn ghost small copy" type="button" data-copy="{{ $learner->learner_code }}">@include('learner._badge-icon', ['icon' => 'copy', 'class' => 'ico']) Copy</button>
+          <button class="btn ghost small" type="button" data-qr-open="qr-{{ $learner->id }}">@include('learner._badge-icon', ['icon' => 'qr-code', 'class' => 'ico']) QR</button>
         </div>
+        <dialog id="qr-{{ $learner->id }}" class="qr-dlg" aria-label="QR code for {{ $learner->first_name }}">
+          <div class="qr-in">
+            <button type="button" class="qr-x" data-qr-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+            <h3>{{ $learner->first_name }}'s QR code</h3>
+            <div class="qr-img">{!! \App\Support\LearnerQr::svg($learner->learner_code, 320) !!}</div>
+            <code class="qr-code">{{ $learner->learner_code }}</code>
+            <p>Show this to {{ $learner->first_name }}'s teacher. They scan it with TaraBasa (Add learner) to put {{ $learner->first_name }} in the class, instead of typing the code. It holds the code only, never the PIN.</p>
+            <div class="qr-actions">
+              <a class="btn small" href="{{ route('parent.children.card', $learner) }}" target="_blank" rel="noopener">@include('learner._badge-icon', ['icon' => 'printer', 'class' => 'ico']) Print card</a>
+              <button type="button" class="btn ghost small" data-qr-close>Close</button>
+            </div>
+          </div>
+        </dialog>
         <div class="foot">
           <a href="{{ route('parent.progress', ['learner_id' => $learner->id]) }}" class="btn ghost small">See progress</a>
         </div>
@@ -66,6 +80,14 @@
 
 @push('scripts')
 <script>
+  // The QR window of each child: opens from the QR button, closes with Close, Escape or a tap outside.
+  document.querySelectorAll('[data-qr-open]').forEach(function (button) {
+    button.addEventListener('click', function () { var d = document.getElementById(button.dataset.qrOpen); if (d && d.showModal) { d.showModal(); } });
+  });
+  document.querySelectorAll('dialog.qr-dlg').forEach(function (d) {
+    d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-qr-close]')) { d.close(); } });
+  });
+
   // The copy buttons: copy the Learner Code, and say so on the button for a moment.
   document.querySelectorAll('[data-copy]').forEach(function (button) {
     button.addEventListener('click', function () {

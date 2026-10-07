@@ -273,3 +273,16 @@ a.nav-item, a.tab, a.chip, a.btn, a.link{ text-decoration:none; }
 a.me-av{ text-decoration:none; }
 .src .label{ display:block; }
 .name-row{ align-items:end; }
+
+/* ---------- a child's QR code window (My Children) ---------- */
+.qr-dlg{ border:0; padding:0; border-radius:22px; width:min(92vw,380px); background:#fff; color:var(--ink); box-shadow:0 30px 70px -20px rgba(15,40,70,.45); }
+.qr-dlg::backdrop{ background:rgba(21,40,58,.5); }
+.qr-in{ position:relative; padding:24px 22px 20px; text-align:center; }
+.qr-in h3{ margin:0 0 12px; font:700 28px/1.1 var(--font-game); }
+.qr-img{ width:min(70vw,290px); margin:0 auto 10px; line-height:0; border:2px solid var(--line); border-radius:16px; overflow:hidden; background:#fff; }
+.qr-img svg{ width:100%; height:auto; display:block; }
+.qr-code{ display:block; margin-bottom:10px; font:700 26px/1.1 var(--font-game); letter-spacing:.08em; color:var(--blue-ink); }
+.qr-in p{ margin:0 0 14px; color:var(--muted); font-size:14px; line-height:1.5; }
+.qr-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+.qr-x{ position:absolute; top:12px; right:12px; width:38px; height:38px; display:grid; place-items:center; border:2px solid var(--line); border-radius:12px; background:#fff; color:var(--muted); cursor:pointer; font-size:20px; }
+.code-row .btn.small{ white-space:nowrap; }

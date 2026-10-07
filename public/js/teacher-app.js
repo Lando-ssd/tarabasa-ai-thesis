@@ -608,3 +608,180 @@
     $('select', dlg).innerHTML = classes.map(function (c) { return '<option value="' + c.id + '">' + esc(c.label) + '</option>'; }).join('');
   };
 })();
+
+/* =====================================================
+   The QR scanner in Add learner. The camera reads each learner's QR code (it holds the Learner Code and nothing
+   else), checks the code's check digit on the device, and adds the learner to the class through the same server
+   route the typed form uses, so every rule (a learner is in one class only, the parents are told, a wrong code is
+   limited) is the server's. It keeps scanning so a whole class can be added one after another.
+   jsQR (public/vendor, Apache 2.0) is loaded only when a teacher starts scanning.
+   ===================================================== */
+(function () {
+  var roots = document.querySelectorAll('[data-scan]');
+  if (!roots.length) { return; }
+
+  // The same check digit the server makes (App\Support\LearnerCode::checkDigit): Luhn over the year and four digits.
+  function checkDigit(digits) {
+    var sum = 0, dbl = true;
+    for (var i = digits.length - 1; i >= 0; i--) {
+      var d = parseInt(digits.charAt(i), 10);
+      if (dbl) { d *= 2; if (d > 9) { d -= 9; } }
+      sum += d; dbl = !dbl;
+    }
+    return String((10 - (sum % 10)) % 10);
+  }
+  // text from a QR code -> {code} or {error}: only a real TaraBasa Learner Code passes.
+  function parseCode(text) {
+    var t = String(text || '').toUpperCase().replace(/\s+/g, '');
+    var m = t.match(/TB(\d{2})-?(\d{4})(\d)(?!\d)/);
+    if (m) {
+      if (checkDigit(m[1] + m[2]) !== m[3]) { return { error: 'That code looks damaged or mistyped (its check digit does not match). Try again, or ask the parent for the card.' }; }
+      return { code: 'TB' + m[1] + '-' + m[2] + m[3] };
+    }
+    var o = t.match(/TB-([0-9A-Z]{5})(?![0-9A-Z])/);
+    if (o) { return { code: 'TB-' + o[1] }; }
+    return { error: 'That is not a TaraBasa learner code.' };
+  }
+  function loadJsQR(url) {
+    return new Promise(function (resolve, reject) {
+      if (window.jsQR) { return resolve(window.jsQR); }
+      var s = document.createElement('script');
+      s.src = url; s.onload = function () { window.jsQR ? resolve(window.jsQR) : reject(new Error('no decoder')); };
+      s.onerror = function () { reject(new Error('could not load the decoder')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  roots.forEach(function (root) {
+    var q = function (sel) { return root.querySelector(sel); };
+    var startBtn = q('[data-scan-start]'), stopBtn = q('[data-scan-stop]'), doneBtn = q('[data-scan-done]'), photo = q('[data-scan-photo]');
+    var stage = q('[data-scan-stage]'), video = q('[data-scan-video]'), statusEl = q('[data-scan-status]'), msg = q('[data-scan-msg]'), list = q('[data-scan-list]');
+    var stream = null, timer = null, busy = false, added = 0, decode = null;
+    var recent = {}; // code -> time, so one held-up card is not sent twice
+    var canvas = document.createElement('canvas'), ctx = canvas.getContext('2d', { willReadFrequently: true });
+    var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+    function setStatus(t) { statusEl.textContent = t; }
+    // What happened, told where the teacher is looking: under the camera, or (a photo, no camera) under the buttons.
+    function say(t, err) { setStatus(t); if (stage.hidden) { setMsg(t, err); } }
+    function setMsg(t, err) { msg.textContent = t || ''; msg.classList.toggle('err', !!err); }
+    function flash(kind) { stage.classList.remove('ok', 'bad'); stage.classList.add(kind); setTimeout(function () { stage.classList.remove(kind); }, 900); }
+    function item(text, err) {
+      var li = document.createElement('li'); if (err) { li.className = 'err'; }
+      li.textContent = text; list.insertBefore(li, list.firstChild);
+    }
+
+    function stop() {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+      try { video.srcObject = null; } catch (e) { /* fine */ }
+      stage.hidden = true; startBtn.hidden = false;
+    }
+    function finish() {
+      stop();
+      // The roster behind this window is out of date once someone was added: show the class again.
+      if (added > 0) { window.location.href = root.getAttribute('data-done-url'); }
+    }
+
+    // One decoded text: check it, then add the learner through the server.
+    function handle(text) {
+      var parsed = parseCode(text), now = Date.now();
+      var key = parsed.code || text;
+      if (recent[key] && now - recent[key] < 4000) { return; }
+      recent[key] = now;
+
+      if (parsed.error) { flash('bad'); say(parsed.error, true); return; }
+
+      busy = true; say('Adding ' + parsed.code + '...');
+      var body = new FormData(); body.append('learner_code', parsed.code); body.append('_token', csrf);
+      return fetch(root.getAttribute('data-scan-url'), { method: 'POST', body: body, credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, message: 'Something went wrong. Please try again.' }; }); })
+        .then(function (j) {
+          if (j && j.ok) {
+            added++; doneBtn.hidden = false; flash('ok'); item(j.name + ' added to ' + root.getAttribute('data-class-name'), false);
+            say(j.name + ' added. Scan the next learner.');
+            try { if (navigator.vibrate) { navigator.vibrate(60); } } catch (e) { /* fine */ }
+          } else {
+            flash('bad'); var m = (j && j.message) || 'That learner could not be added.';
+            item(parsed.code + ': ' + m, true); say(m, true);
+          }
+        })
+        .catch(function () { flash('bad'); say('Could not reach the server. Check the internet and scan again.', true); delete recent[key]; })
+        .then(function () { busy = false; });
+    }
+
+    function frame() {
+      if (busy || !video.videoWidth) { return; }
+      var scale = Math.min(1, 640 / video.videoWidth);
+      canvas.width = Math.round(video.videoWidth * scale); canvas.height = Math.round(video.videoHeight * scale);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      var hit = decode(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+      if (hit && hit.data) { handle(hit.data); }
+    }
+
+    startBtn.addEventListener('click', function () {
+      setMsg('');
+      if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setMsg('This browser cannot use the camera here (it needs a secure https connection). Use a photo of the code, or type the code below.', true); return;
+      }
+      startBtn.hidden = true; stage.hidden = false; setStatus('Starting the camera...');
+      loadJsQR(root.getAttribute('data-jsqr')).then(function (fn) {
+        decode = fn;
+        return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+      }).then(function (s) {
+        stream = s; video.srcObject = s;
+        return video.play();
+      }).then(function () {
+        setStatus('Point the camera at a learner\'s QR code.');
+        timer = setInterval(frame, 120);
+      }).catch(function (e) {
+        stop();
+        var name = e && e.name;
+        setMsg(name === 'NotAllowedError' || name === 'SecurityError'
+          ? 'The camera is blocked. Allow the camera for this site in your browser settings, then try again. You can also use a photo of the code, or type the code below.'
+          : name === 'NotFoundError' || name === 'OverconstrainedError'
+            ? 'No camera was found on this device. Use a photo of the code, or type the code below.'
+            : 'The camera could not start. Use a photo of the code, or type the code below.', true);
+      });
+    });
+    stopBtn.addEventListener('click', stop);
+    doneBtn.addEventListener('click', finish);
+
+    // A photo of the code (a computer without a camera, or a code that is hard to scan live).
+    photo.addEventListener('change', function () {
+      var file = photo.files && photo.files[0]; photo.value = '';
+      if (!file) { return; }
+      setMsg('Reading the photo...');
+      loadJsQR(root.getAttribute('data-jsqr')).then(function (fn) {
+        decode = fn;
+        return new Promise(function (resolve, reject) {
+          var url = URL.createObjectURL(file), img = new Image();
+          img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+          img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('image')); };
+          img.src = url;
+        });
+      }).then(function (img) {
+        var hit = null;
+        [1200, 800, 500].some(function (max) {
+          var s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+          canvas.width = Math.round(img.naturalWidth * s); canvas.height = Math.round(img.naturalHeight * s);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          var d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          hit = decode(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
+          return !!(hit && hit.data);
+        });
+        if (!hit || !hit.data) { setMsg('No QR code was found in that photo. Hold the camera steady and fill the frame with the code, then try again.', true); return; }
+        setMsg('');
+        return handle(hit.data);
+      }).catch(function () { setMsg('That photo could not be read. Try again, or type the code below.', true); });
+    });
+
+    // Leaving the screen switches the camera off: another view of the window, closing it, or the page going away.
+    document.addEventListener('click', function (e) { if (stream && e.target.closest('[data-goto], [data-close]') && !root.contains(e.target)) { stop(); } });
+    var dlg = root.closest('dialog');
+    if (dlg) { dlg.addEventListener('close', function () { stop(); if (added > 0) { window.location.href = root.getAttribute('data-done-url'); } }); }
+    document.addEventListener('visibilitychange', function () { if (document.hidden && stream) { stop(); setMsg('The camera was switched off because you left the page.'); } });
+    window.addEventListener('pagehide', stop);
+  });
+})();

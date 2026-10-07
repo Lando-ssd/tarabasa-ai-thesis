@@ -239,6 +239,8 @@ Route::middleware(['auth', 'parent'])->prefix('parent')->name('parent.')->group(
     Route::post('/children', [LearnerController::class, 'store'])->name('children.store');
     Route::get('/children/link', [LearnerController::class, 'showLink'])->name('children.link');
     Route::post('/children/link', [LearnerController::class, 'storeLink'])->name('children.link.submit');
+    // The child's printable card with their QR code (only for a child the Parent is linked to).
+    Route::get('/children/{learner}/card', [LearnerController::class, 'card'])->whereNumber('learner')->name('children.card');
 
     // Progress — Parent Actor Prompt Step 7.
     Route::get('/progress', [AnalyticsController::class, 'parentIndex'])->name('progress');

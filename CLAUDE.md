@@ -6258,6 +6258,28 @@ child now" (the MATATAG step and code, the activity level, how many words is com
 teacher adds a learner by code, the class window opens on that learner's page (`tab=learner-N`). Rule based, not a trained model,
 and not a replacement for the teacher's judgment.
 
+## Learner QR codes and the teacher's scanner (2026-10-07)
+
+**What a QR holds.** `App\Support\LearnerQr` makes it on OUR server (bacon/bacon-qr-code, an inline SVG, error correction Q, full quiet
+zone; no outside QR service ever sees a code). It holds ONLY the Learner Code (TB26-48293, or an old TB-12345), never the PIN or a
+name. It does not sign anyone in (the PIN is still needed); a teacher who scans it joins the child to their class exactly as typing
+the code does (same limits, same notice to the parents).
+
+**Where.** Parent: the "all set" page after adding a child shows the QR and "Print card"; My Children has a QR button per child that
+opens a window with the QR; `GET /parent/children/{learner}/card` (`parent.children.card`, only for a linked parent, 403 otherwise)
+is the A6 printable card (name, code, QR, never the PIN). Teacher: Add learner (class window) has "Scan QR codes", "Use a photo of the
+code" and the typed field below. The scanner (`public/js/teacher-app.js`, jsQR 1.4.0 vendored in `public/vendor`, Apache 2.0, loaded
+only when scanning starts) checks the code's check digit on the device, then POSTs to the normal join route asking for JSON
+(`ClassController::joinLearner` answers `{ok,name,code}` or `{ok:false,message}` for `Accept: application/json`), keeps scanning so a
+whole class is added in a row, lists each result, and "Done" reloads the class. The camera is switched off on Stop, on leaving the
+view, on closing the window and when the page is hidden. `SecurityHeaders` allows `camera=(self)` only on `/teacher/classes*`.
+Not built (asked for teacher only): scanning on the child's own login page.
+
+**Verified locally** with the real decoder: every child's QR (6, including an old style code) decodes to exactly the code at 90, 120,
+200, 400 and 800 pixels; a fake camera showing QR images added three children in a row (one with an old style code), refused a QR
+that is not ours, one with a wrong check digit, an unknown code and an already enrolled child; the photo option and a blocked
+camera message work. NOT tested: a real phone or webcam, and real printing.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

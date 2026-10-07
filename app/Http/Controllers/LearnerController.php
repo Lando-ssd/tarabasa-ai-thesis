@@ -238,6 +238,19 @@ class LearnerController extends Controller
         return view('parent.children.link');
     }
 
+    /**
+     * The child's card: their name, Learner Code and QR code on one printable page. The QR holds the code only
+     * (never the PIN). Only a Parent linked to the child can open it.
+     */
+    public function card(Request $request, Learner $learner): View
+    {
+        $linked = $request->user()->parentProfile?->learners()->whereKey($learner->id)->exists();
+
+        abort_unless($linked, 403, 'That child is not linked to your account.');
+
+        return view('parent.children.card', ['learner' => $learner]);
+    }
+
     public function storeLink(Request $request): RedirectResponse
     {
         $validated = $request->validate([

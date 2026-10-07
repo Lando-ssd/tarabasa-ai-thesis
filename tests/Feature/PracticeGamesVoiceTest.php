@@ -235,7 +235,7 @@ class PracticeGamesVoiceTest extends TestCase
     public function test_the_wake_up_job_stays_connected_to_the_health_page_and_never_fails_when_the_service_is_down(): void
     {
         Cache::flush();
-        config(['services.reading_ai.ready_wait' => 1, 'services.retry_pause' => 0]);
+        config(['services.reading_ai.url' => 'https://reading.test', 'services.reading_ai.ready_wait' => 1, 'services.retry_pause' => 0]); // never the real service
 
         Http::fake(['reading.test/health' => Http::response(['status' => 'ok'])]);
         (new \App\Jobs\WakeServiceJob('reader'))->handle();

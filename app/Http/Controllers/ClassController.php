@@ -9,6 +9,7 @@ use App\Models\SchoolClass;
 use App\Services\ActivitySuggestions;
 use App\Support\ActivityFit;
 use App\Support\ReadingLevel;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -219,7 +220,7 @@ class ClassController extends Controller
      * Every code starts with TB-, so the window only asks for the last 5 characters; a whole
      * pasted code (TB-12345) is accepted too.
      */
-    public function joinLearner(Request $request, SchoolClass $class): RedirectResponse
+    public function joinLearner(Request $request, SchoolClass $class): RedirectResponse|JsonResponse
     {
         $teacher = $request->user()->teacher;
 
@@ -240,20 +241,20 @@ class ClassController extends Controller
         if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($joinKey, 10)) {
             $minutes = (int) ceil(\Illuminate\Support\Facades\RateLimiter::availableIn($joinKey) / 60);
 
-            return back()->withErrors(['learner_code' => "Too many codes that did not match. Please wait {$minutes} ".($minutes === 1 ? 'minute' : 'minutes').' and try again.'])->withInput();
+            return $this->joinFailure($request, "Too many codes that did not match. Please wait {$minutes} ".($minutes === 1 ? 'minute' : 'minutes').' and try again.');
         }
 
         $typed = trim($validated['learner_code']);
         $tail = strtoupper(preg_replace('/^TB[0-9]{0,2}-?/i', '', preg_replace('/\s+/', '', $typed)));
 
         if (! \App\Support\LearnerCode::looksLikeCode($typed) && ! preg_match('/^[A-Z0-9]{5}$/', $tail)) {
-            return back()->withErrors(['learner_code' => 'Type the last 5 characters of the Learner Code, like 48293.'])->withInput();
+            return $this->joinFailure($request, 'Type the last 5 characters of the Learner Code, like 48293.');
         }
 
         $matches = \App\Support\LearnerCode::matching(\App\Support\LearnerCode::looksLikeCode($typed) ? $typed : $tail);
 
         if ($matches->count() > 1) {
-            return back()->withErrors(['learner_code' => 'More than one learner ends in those characters. Type the whole code, like TB26-48293.'])->withInput();
+            return $this->joinFailure($request, 'More than one learner ends in those characters. Type the whole code, like TB26-48293.');
         }
 
         $learner = $matches->first();
@@ -261,13 +262,13 @@ class ClassController extends Controller
         if (! $learner) {
             \Illuminate\Support\Facades\RateLimiter::hit($joinKey, 900);
 
-            return back()->withErrors(['learner_code' => 'No learner found with that code. Check it and try again.'])->withInput();
+            return $this->joinFailure($request, 'No learner found with that code. Check it and try again.');
         }
 
         if ($learner->class_id !== null) {
             \Illuminate\Support\Facades\RateLimiter::hit($joinKey, 900);
 
-            return back()->withErrors(['learner_code' => 'This learner is already enrolled in a class.'])->withInput();
+            return $this->joinFailure($request, 'This learner is already enrolled in a class.');
         }
 
         $learner->update(['class_id' => $class->id]);
@@ -280,9 +281,24 @@ class ClassController extends Controller
             includeTeacher: false
         );
 
+        // The QR scanner adds a whole class in one go and reads this answer instead of following a redirect.
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'name' => "{$learner->first_name} {$learner->last_name}", 'code' => $learner->learner_code, 'learnerId' => $learner->id]);
+        }
+
         // Open the new learner's own page straight away: what the parent shared and where the child reads now.
         return $this->backToClass($class, 'learner-'.$learner->id)
             ->with('status', "{$learner->first_name} {$learner->last_name} added to \"{$class->name}\". Here is what the parent shared.");
+    }
+
+    /** A refused code: back to the form with the message, or a JSON answer for the scanner. */
+    private function joinFailure(Request $request, string $message): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => false, 'message' => $message], 422);
+        }
+
+        return back()->withErrors(['learner_code' => $message])->withInput();
     }
 
     /**
