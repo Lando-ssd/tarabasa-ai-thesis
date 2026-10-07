@@ -251,4 +251,20 @@ class SecurityHardeningTest extends TestCase
         $this->get(route('admin.dashboard', ['q' => 'p7@example']))->assertOk()->assertSee('Person7');
         $this->get(route('admin.dashboard', ['q' => ['x']]))->assertStatus(400); // a list in the address is refused everywhere
     }
+
+    public function test_a_visitor_who_is_not_signed_in_cannot_tell_which_activity_numbers_exist(): void
+    {
+        [, $teacher] = $this->activeTeacher();
+        $activity = \App\Models\Activity::create([
+            'created_by_teacher_id' => $teacher->id, 'grade_level' => 'Grade 1', 'competency' => 'foundational_reading', 'competency_label' => 'Foundational Reading',
+            'activity_type' => 'word_reading', 'difficulty_tier' => 'Easy', 'ai_difficulty_tier' => 'Easy', 'title' => 'Words', 'instructions' => 'Read.',
+            'passage_text' => 'cat dog', 'word_count' => 2, 'status' => 'Approved',
+        ]);
+
+        foreach (['/learner/activity/%s', '/learner/bookshelf/%s/reread'] as $pattern) {
+            // a real number and a number nobody has must answer the same way: send them to the child sign in
+            $this->get(sprintf($pattern, $activity->id))->assertRedirect(route('learner.login'));
+            $this->get(sprintf($pattern, 99999999))->assertRedirect(route('learner.login'));
+        }
+    }
 }

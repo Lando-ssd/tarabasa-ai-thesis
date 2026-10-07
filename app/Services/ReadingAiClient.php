@@ -6,6 +6,7 @@ use App\Models\Activity;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\UploadedFile;
+use App\Support\ServiceReply;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,12 @@ use Illuminate\Validation\ValidationException;
  */
 class ReadingAiClient
 {
+    /** How many times a temporary hosting error (502, 503, 504, 429) is asked again before giving up. */
+    private const TEMPORARY_ERROR_TRIES = 3;
+
+    /** Seconds to wait before the 2nd try, doubled for the 3rd (5, 10). */
+    private const TEMPORARY_ERROR_PAUSE = 5;
+
     /**
      * Returns ['unclear' => true] when the audio genuinely couldn't be
      * scored — either Reading-api's own real silent-audio rejection (a
@@ -50,7 +57,7 @@ class ReadingAiClient
         // Kept LONGER than the HTTP timeout below (120s) so a slow call
         // ends as the friendly ConnectionException handled here, not as
         // PHP's uncatchable "Maximum execution time" fatal (a raw 500).
-        set_time_limit(150);
+        set_time_limit(190);
 
         // Reading-api v4 (MATATAG) requires the activity's curriculum context
         // on every call and answers a plain 422 "Field required" without it.
@@ -78,16 +85,37 @@ class ReadingAiClient
             $fields['comprehension_score'] = $comprehensionScore;
         }
 
-        try {
-            $response = Http::timeout(120)
-                ->attach('file', fopen($audio->getRealPath(), 'r'), $filename)
-                ->post(rtrim($url, '/').'/analyze', $fields);
-        } catch (ConnectionException $e) {
-            Log::error('Reading AI connection failed', ['error' => $e->getMessage()]);
+        // A sleeping, restarting or busy service on free hosting answers with a quick 502, 503, 504 or
+        // 429 (a plain web page). The child has just read a whole passage, so asking again a few
+        // seconds later is far kinder than sending them back to read it again. A real problem with the
+        // request (422, 413 and so on) is never repeated.
+        $response = null;
 
-            throw ValidationException::withMessages([
-                'audio' => 'The reading checker is unreachable right now. Please try again in a moment.',
+        for ($try = 1; $try <= self::TEMPORARY_ERROR_TRIES; $try++) {
+            try {
+                // The recording is opened again for every try: the first one read it to the end.
+                $response = Http::timeout(120)
+                    ->attach('file', fopen($audio->getRealPath(), 'r'), $filename)
+                    ->post(rtrim($url, '/').'/analyze', $fields);
+            } catch (ConnectionException $e) {
+                Log::error('Reading AI connection failed', ['error' => $e->getMessage()]);
+
+                throw ValidationException::withMessages([
+                    'audio' => 'The reading checker is unreachable right now. Please try again in a moment.',
+                ]);
+            }
+
+            if (! $response->failed() || ! ServiceReply::isTransient($response) || $try === self::TEMPORARY_ERROR_TRIES) {
+                break;
+            }
+
+            Log::warning('Reading AI answered with a temporary error, trying again', [
+                'status' => $response->status(),
+                'attempt' => $try,
+                'page' => ServiceReply::snippet($response),
             ]);
+
+            sleep((int) config('services.retry_pause', self::TEMPORARY_ERROR_PAUSE) * $try);
         }
 
         // A 422 is ambiguous: Reading-api sends it both for genuinely
@@ -103,7 +131,9 @@ class ReadingAiClient
         if ($response->failed()) {
             Log::error('Reading AI request failed', [
                 'status' => $response->status(),
-                'body' => $response->body(),
+                'host' => parse_url($url, PHP_URL_HOST),
+                'content_type' => $response->header('Content-Type'),
+                'body' => mb_substr($response->body(), 0, 2000),
             ]);
 
             throw ValidationException::withMessages([
@@ -167,12 +197,6 @@ class ReadingAiClient
      */
     private function friendlyApiError(Response $response): string
     {
-        $detail = $response->json('detail');
-
-        if (is_string($detail) && $detail !== '') {
-            return 'Reading check failed: '.$detail;
-        }
-
-        return 'Reading check failed (the service returned an unexpected error). Please try again.';
+        return ServiceReply::message($response, 'Reading check', 'The reading checker is waking up or busy right now');
     }
 }

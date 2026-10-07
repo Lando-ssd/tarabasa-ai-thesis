@@ -23,6 +23,14 @@ class ActivityGenerationBackgroundTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The job waits for a sleeping generator to wake before it asks for activities. No real waiting here.
+        config(['services.activity_ai.ready_wait' => 1, 'services.retry_pause' => 0]);
+    }
+
     private int $seq = 0;
 
     private function teacher(string $status = 'Active', int $credits = 2): array
@@ -62,9 +70,15 @@ class ActivityGenerationBackgroundTest extends TestCase
         ];
     }
 
+    /** Requests that went to the real generation address (the quick "is it awake?" check before it is not counted). */
+    private function generateCalls(): int
+    {
+        return collect(Http::recorded())->filter(fn ($pair) => str_ends_with($pair[0]->url(), '/generate-bundle'))->count();
+    }
+
     private function fakeGenerator(): void
     {
-        config(['services.activity_ai.url' => 'https://gen.test', 'services.activity_ai.key' => 'k']);
+        config(['services.activity_ai.url' => 'https://gen.test', 'services.activity_ai.key' => 'k', 'services.activity_ai.ready_wait' => 1, 'services.retry_pause' => 0]);
         Http::fake(['gen.test/*' => Http::response($this->bundle())]);
     }
 
@@ -157,8 +171,8 @@ class ActivityGenerationBackgroundTest extends TestCase
         $this->assertSame(1, $teacher->fresh()->free_generation_credits_remaining);
 
         // One call, asking for the most wanted in any one level.
-        Http::assertSentCount(1);
-        Http::assertSent(fn ($r) => $r['variants_per_level'] === 2 && $r['grade'] === 2 && $r['topic'] === 'Animals');
+        $this->assertSame(1, $this->generateCalls());
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/generate-bundle') && $r['variants_per_level'] === 2 && $r['grade'] === 2 && $r['topic'] === 'Animals');
     }
 
     public function test_a_failed_request_costs_nothing_and_says_so(): void
@@ -186,7 +200,7 @@ class ActivityGenerationBackgroundTest extends TestCase
         (new GenerateActivitiesJob($generation->id))->handle(app(ActivityAiClient::class));
         (new GenerateActivitiesJob($generation->id))->handle(app(ActivityAiClient::class));
 
-        Http::assertSentCount(1);
+        $this->assertSame(1, $this->generateCalls());
         $this->assertSame(3, Activity::count());
         $this->assertSame(1, $teacher->fresh()->free_generation_credits_remaining);
     }
@@ -266,7 +280,7 @@ class ActivityGenerationBackgroundTest extends TestCase
 
         // And watching again never writes it a second time.
         $this->getJson(route('teacher.activities.generation', $generation))->assertJson(['status' => 'Done']);
-        Http::assertSentCount(1);
+        $this->assertSame(1, $this->generateCalls());
     }
 
     public function test_dismissing_a_finished_request_removes_the_notice_but_not_a_running_one(): void

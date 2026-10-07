@@ -25,6 +25,14 @@ class TeacherRedesignTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The generation job waits for a sleeping generator before it asks for activities. No real waiting in tests.
+        config(['services.activity_ai.ready_wait' => 1, 'services.retry_pause' => 0]);
+    }
+
     private int $seq = 0;
 
     private function teacher(string $status = 'Active'): array
@@ -221,8 +229,8 @@ class TeacherRedesignTest extends TestCase
         $this->assertSame(1, $teacher->fresh()->free_generation_credits_remaining);
 
         // The service was asked for the largest number wanted, on one call.
-        Http::assertSentCount(1);
-        Http::assertSent(fn ($r) => $r['variants_per_level'] === 2 && $r['grade'] === 2 && $r['competency'] === 'foundational_reading');
+        $this->assertSame(1, collect(Http::recorded())->filter(fn ($pair) => str_ends_with($pair[0]->url(), '/generate-bundle'))->count(), 'one real generation request (the wake-up check is not counted)');
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/generate-bundle') && $r['variants_per_level'] === 2 && $r['grade'] === 2 && $r['competency'] === 'foundational_reading');
     }
 
     public function test_generate_needs_a_level_and_a_credit_and_a_failure_costs_nothing(): void
@@ -279,7 +287,7 @@ class TeacherRedesignTest extends TestCase
             'levels' => ['Medium' => 1], 'teacher_notes' => 'Use animals.',
         ])->assertSessionHasNoErrors();
 
-        Http::assertSent(fn ($r) => str_starts_with($r['teacher_notes'], 'Use animals.')
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/generate-bundle') && str_starts_with($r['teacher_notes'], 'Use animals.')
             && str_contains($r['teacher_notes'], '2 texts the AI called Hard placed in Medium by the teacher')
             && strlen($r['teacher_notes']) <= 1000);
         // Only the teacher's own words are saved on the activity.

@@ -41,7 +41,13 @@ return [
     'activity_ai' => [
         'url' => env('ACTIVITY_AI_URL'),
         'key' => env('ACTIVITY_AI_KEY'),
+        // How long the background job waits for the sleeping generator to wake before it sends the real request.
+        'ready_wait' => (int) env('ACTIVITY_AI_READY_WAIT', 100),
     ],
+
+    // Seconds to wait before asking a teammate service again after a temporary hosting error (502, 503, 504,
+    // 429). Left empty, each client uses its own default (5 to 8 seconds). Tests set it to 0.
+    'retry_pause' => env('SERVICE_RETRY_PAUSE'),
 
     // Teammate's deployed Reading-api (Vosk-based). No key here on
     // purpose — the real deployed service has no authentication of any

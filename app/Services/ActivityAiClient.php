@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
+use App\Support\ServiceReply;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -16,6 +17,15 @@ use Illuminate\Support\Facades\Log;
  */
 class ActivityAiClient
 {
+    /** How many times a temporary hosting error (502, 503, 504, 429) is asked again before giving up. */
+    private const TEMPORARY_ERROR_TRIES = 4;
+
+    /** Seconds to wait before the 2nd try, doubled and tripled for the later ones (8, 16, 24). */
+    private const TEMPORARY_ERROR_PAUSE = 8;
+
+    /** The most time those waits can add up to (8 + 16 + 24), plus a little room. */
+    private const TEMPORARY_ERROR_BUDGET = 60;
+
     /**
      * Returns the decoded bundle response array on success. Throws a
      * plain \RuntimeException with a friendly message on any real
@@ -44,26 +54,48 @@ class ActivityAiClient
         // execution time exceeded" is an uncatchable fatal error — a raw
         // 500 page (seen on the first-login diagnostic) instead of the
         // friendly "unreachable, try again" message the catch below gives.
-        set_time_limit($timeout * $attempts + 30);
+        set_time_limit($timeout * $attempts + 30 + self::TEMPORARY_ERROR_BUDGET);
 
-        try {
-            // A request that hangs (the service sometimes never answers) is
-            // tried again when the caller allows it, instead of holding a child
-            // on a waiting screen for the full timeout.
-            $response = Http::withHeaders(['X-App-Key' => $key])
-                ->timeout($timeout)
-                ->retry($attempts, 500, when: fn ($e) => $e instanceof ConnectionException, throw: false)
-                ->post(rtrim($url, '/').'/generate-bundle', $payload);
-        } catch (ConnectionException $e) {
-            Log::error('Activity AI connection failed', ['error' => $e->getMessage()]);
+        // A free host answers a service that is waking up, restarting or busy with a quick 502, 503, 504
+        // or 429 (a plain web page, not the service's own message). That is not a real failure: asking
+        // again a few seconds later is what a person would do. A real mistake in the request (401, 413,
+        // 422 and so on) is never repeated, since it cannot get better.
+        $response = null;
 
-            throw new \RuntimeException('The activity generator is unreachable right now. Please try again in a moment.');
+        for ($try = 1; $try <= self::TEMPORARY_ERROR_TRIES; $try++) {
+            try {
+                // A request that hangs (the service sometimes never answers) is
+                // tried again when the caller allows it, instead of holding a child
+                // on a waiting screen for the full timeout.
+                $response = Http::withHeaders(['X-App-Key' => $key])
+                    ->timeout($timeout)
+                    ->retry($attempts, 500, when: fn ($e) => $e instanceof ConnectionException, throw: false)
+                    ->post(rtrim($url, '/').'/generate-bundle', $payload);
+            } catch (ConnectionException $e) {
+                Log::error('Activity AI connection failed', ['error' => $e->getMessage()]);
+
+                throw new \RuntimeException('The activity generator is unreachable right now. Please try again in a moment.');
+            }
+
+            if (! $response->failed() || ! ServiceReply::isTransient($response) || $try === self::TEMPORARY_ERROR_TRIES) {
+                break;
+            }
+
+            Log::warning('Activity AI answered with a temporary error, trying again', [
+                'status' => $response->status(),
+                'attempt' => $try,
+                'page' => ServiceReply::snippet($response),
+            ]);
+
+            sleep((int) config('services.retry_pause', self::TEMPORARY_ERROR_PAUSE) * $try);
         }
 
         if ($response->failed()) {
             Log::error('Activity AI request failed', [
                 'status' => $response->status(),
-                'body' => $response->body(),
+                'host' => parse_url($url, PHP_URL_HOST),
+                'content_type' => $response->header('Content-Type'),
+                'body' => mb_substr($response->body(), 0, 2000),
             ]);
 
             throw new \RuntimeException($this->friendlyApiError($response));
@@ -99,6 +131,42 @@ class ActivityAiClient
         } catch (\Throwable $e) {
             // Expected while it is still waking: the request reached it, which is the point.
         }
+    }
+
+    /**
+     * Waits (up to $seconds) until the generator answers its health page, which is how a sleeping free
+     * service is known to be awake. For the background job only: nobody is watching a screen there, so
+     * waiting is free, and it keeps the real request from landing on a service that is still starting.
+     * Never throws; the answer is whether it came up in time, and the caller goes on either way.
+     */
+    public function awaitReady(int $seconds = 100): bool
+    {
+        $url = config('services.activity_ai.url');
+
+        if (! $url) {
+            return false;
+        }
+
+        $deadline = microtime(true) + $seconds;
+
+        do {
+            try {
+                $response = Http::timeout(max(5, (int) min(60, $deadline - microtime(true))))->get(rtrim($url, '/').'/health');
+
+                if ($response->successful()) {
+                    return true;
+                }
+
+                Log::warning('Activity AI health check answered', ['status' => $response->status(), 'page' => ServiceReply::snippet($response)]);
+            } catch (\Throwable $e) {
+                Log::warning('Activity AI health check did not answer', ['error' => $e->getMessage()]);
+            }
+
+            // Never faster than 4 checks a second, whatever the setting: this must not hammer a waking service.
+            usleep(max(250000, (int) config('services.retry_pause', 5) * 1000000));
+        } while (microtime(true) < $deadline);
+
+        return false;
     }
 
     /**
@@ -228,16 +296,6 @@ class ActivityAiClient
      */
     private function friendlyApiError(Response $response): string
     {
-        $detail = $response->json('detail');
-
-        if (is_array($detail) && isset($detail['message'])) {
-            return 'Activity generation failed: '.$detail['message'];
-        }
-
-        if (is_string($detail) && $detail !== '') {
-            return 'Activity generation failed: '.$detail;
-        }
-
-        return 'Activity generation failed (the service returned an unexpected error). Please try again.';
+        return ServiceReply::message($response, 'Activity generation', 'The activity generator is waking up or busy right now');
     }
 }

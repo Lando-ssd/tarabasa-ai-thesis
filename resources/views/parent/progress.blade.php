@@ -37,7 +37,12 @@
   <div class="card adaptive" style="margin-top:16px">
     <div class="eyebrow">@include('learner._badge-icon', ['icon' => 'target', 'class' => 'ico']) Adaptive focus</div>
     @if (empty($focus))
-      <p class="headline" style="font-size:20px">{{ $selectedLearner->first_name }} has not finished the first reading check yet. This fills in once they do.</p>
+      {{-- Two different reasons for an empty card: the first check is not done, or it is done but the adaptive path has not started. --}}
+      @if ($selectedLearner->reading_rung === null)
+        <p class="headline" style="font-size:20px">{{ $selectedLearner->first_name }} has not finished the first reading check yet. This fills in once they do.</p>
+      @else
+        <p class="headline" style="font-size:20px">{{ $selectedLearner->first_name }} finished the first reading check. The learning path has not started yet. It fills in as {{ $selectedLearner->first_name }} reads.</p>
+      @endif
     @else
       <p class="headline">
         @if ($upNext)

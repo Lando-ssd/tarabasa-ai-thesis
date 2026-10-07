@@ -190,7 +190,11 @@
       <div class="card adaptive">
         <div class="eyebrow">@include('learner._badge-icon', ['icon' => 'target', 'class' => 'ico']) Adaptive focus</div>
         @if (empty($focus))
-          <p class="headline">{{ $l->first_name }} has not finished the first reading check yet.</p>
+          @if ($l->reading_rung === null)
+            <p class="headline">{{ $l->first_name }} has not finished the first reading check yet.</p>
+          @else
+            <p class="headline">{{ $l->first_name }} finished the first reading check. The learning path has not started yet. It fills in as {{ $l->first_name }} reads.</p>
+          @endif
         @else
           <p class="headline">@if ($upNext)Now practicing: <b>{{ $upNext['label'] }}</b>@if ($upNext['difficultyWord']) ({{ $upNext['difficultyWord'] }})@endif @else No specific focus right now.@endif</p>
           <div class="skill-chips">@foreach ($focus as $item)<span class="skill {{ $item['isUpNext'] ? 'on' : '' }}">{{ $item['label'] }}</span>@endforeach</div>

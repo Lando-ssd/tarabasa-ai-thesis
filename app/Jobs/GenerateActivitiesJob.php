@@ -67,6 +67,11 @@ class GenerateActivitiesJob implements ShouldQueue
 
         $wanted = $generation->levels;
 
+        // The generator sleeps on free hosting. Nobody is watching a screen in here, so wait (up to
+        // about 100 seconds) until it answers its health page before the real request, instead of
+        // sending that request at a service that is still starting.
+        $activityAi->awaitReady((int) config('services.activity_ai.ready_wait', 100));
+
         try {
             $data = $activityAi->generateBundle([
                 'grade' => (int) substr($generation->grade_level, 6),

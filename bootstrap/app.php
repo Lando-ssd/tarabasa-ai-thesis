@@ -25,6 +25,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // Frame protection, referrer and microphone policy, no-store for signed-in pages (see the class).
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
+        // The child's "are you signed in?" check must run BEFORE Laravel looks up the activity in the address.
+        // It is a custom check, so Laravel did not know its place and looked the activity up first: someone
+        // who was not signed in got "not found" for an activity number that does not exist but a redirect
+        // to sign in for one that does, which let them count which numbers exist.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\EnsureLearnerLoggedIn::class,
+        );
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'teacher' => \App\Http\Middleware\EnsureUserIsTeacher::class,
