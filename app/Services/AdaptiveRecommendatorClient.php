@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\ServiceFailure;
+use App\Support\ServiceReply;
+use App\Support\ServiceWake;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -80,6 +82,13 @@ class AdaptiveRecommendatorClient
             ServiceFailure::record('recommender', null, 'The adaptive recommender is unreachable right now.', [], $path.' '.$e->getMessage());
 
             throw new \RuntimeException('The adaptive recommender is unreachable right now.');
+        }
+
+        // A real answer proves it is awake; a temporary refusal means it is not (the next reading screen wakes it).
+        if (ServiceReply::isTransient($response)) {
+            ServiceWake::forget('recommender');
+        } else {
+            ServiceWake::markAwake('recommender');
         }
 
         if ($response->failed()) {

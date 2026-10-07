@@ -504,4 +504,91 @@ class ServiceErrorsTest extends TestCase
         $this->assertStringContainsString('ran a moment ago', session('status'));
         $this->assertSame(1, ServiceFailure::where('service', 'check')->count());
     }
+
+    // ----- a sleeping service is woken by a request that stays connected, then the real request is sent
+
+    /** The requests that went to the reading checker, in order (the side lookup of curriculum codes is not counted). */
+    private function readerCalls(): array
+    {
+        return collect(Http::recorded())
+            ->map(fn ($pair) => $pair[0])
+            ->filter(fn (Request $r) => str_contains($r->url(), 'reader.test'))
+            ->map(fn (Request $r) => $r->method().' '.parse_url($r->url(), PHP_URL_PATH))
+            ->values()->all();
+    }
+
+    private function wakeUpSettings(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        config(['services.reading_ai.ready_wait' => 1, 'services.activity_ai.ready_wait' => 1]);
+    }
+
+    public function test_a_recording_waits_for_a_checker_that_may_be_asleep_before_it_is_sent(): void
+    {
+        $this->wakeUpSettings();
+        Http::fake(['reader.test/health' => Http::response(['status' => 'ok'], 200), 'reader.test/analyze' => Http::response($this->goodAnswer(), 200)]);
+
+        $outcome = app(ReadingAiClient::class)->analyze(UploadedFile::fake()->create('recording.webm', 20, 'audio/webm'), $this->activity());
+
+        $this->assertFalse($outcome['unclear']);
+        $this->assertSame(['GET /health', 'POST /analyze'], $this->readerCalls());
+        $this->assertTrue(\App\Support\ServiceWake::isKnownAwake('reader'));
+    }
+
+    public function test_a_checker_that_answered_a_moment_ago_is_not_asked_about_its_health_again(): void
+    {
+        $this->wakeUpSettings();
+        \App\Support\ServiceWake::markAwake('reader');
+        Http::fake(['reader.test/analyze' => Http::response($this->goodAnswer(), 200)]);
+
+        app(ReadingAiClient::class)->analyze(UploadedFile::fake()->create('recording.webm', 20, 'audio/webm'), $this->activity());
+
+        $this->assertSame(0, $this->sentTo('reader.test/health'));
+        $this->assertSame(1, $this->sentTo('reader.test/analyze'));
+    }
+
+    public function test_a_refused_recording_wakes_the_checker_properly_and_is_sent_again_without_losing_the_child_reading(): void
+    {
+        $this->wakeUpSettings();
+        \App\Support\ServiceWake::markAwake('reader'); // believed awake, but it went back to sleep
+        Http::fake([
+            'reader.test/health' => Http::response(['status' => 'ok'], 200),
+            'reader.test/analyze' => Http::sequence()->push('Too Many Requests', 429, ['Content-Type' => 'text/plain'])->push($this->goodAnswer(), 200),
+        ]);
+
+        $outcome = app(ReadingAiClient::class)->analyze(UploadedFile::fake()->create('recording.webm', 20, 'audio/webm'), $this->activity());
+
+        $this->assertFalse($outcome['unclear']);
+        $this->assertSame(2, $this->sentTo('reader.test/analyze'));
+        $this->assertSame(1, $this->sentTo('reader.test/health'), 'after the refusal the health page is asked and waited for');
+        $this->assertSame(0, ServiceFailure::count(), 'a refusal that the wake-up fixed is not a problem worth the team attention');
+        $this->assertSame(['POST /analyze', 'GET /health', 'POST /analyze'], $this->readerCalls());
+    }
+
+    public function test_a_checker_that_does_not_wake_in_time_does_not_stop_the_recording_being_sent(): void
+    {
+        $this->wakeUpSettings();
+        Http::fake(['reader.test/health' => Http::response('<html>starting</html>', 503), 'reader.test/analyze' => Http::response($this->goodAnswer(), 200)]);
+
+        $outcome = app(ReadingAiClient::class)->analyze(UploadedFile::fake()->create('recording.webm', 20, 'audio/webm'), $this->activity());
+
+        $this->assertFalse($outcome['unclear']);
+        $this->assertSame(1, $this->sentTo('reader.test/analyze'));
+    }
+
+    public function test_the_generator_is_woken_in_the_background_once_in_a_while_when_the_generate_window_opens(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        config(['queue.default' => 'database']);
+        \Illuminate\Support\Facades\Queue::fake();
+        Http::fake();
+
+        $client = app(ActivityAiClient::class);
+        $client->wake();
+        $client->wake();
+
+        Http::assertNothingSent();
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\WakeServiceJob::class, 1);
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\WakeServiceJob::class, fn ($j) => $j->service === 'generator');
+    }
 }

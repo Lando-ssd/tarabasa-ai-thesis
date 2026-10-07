@@ -105,6 +105,12 @@ class LearnerReadingController extends Controller
     {
         $readingAi->wake();
 
+        // The adaptive recommender sleeps the same way and is asked right after a reading is scored.
+        if (config('services.adaptive_recommender.url') && ! \App\Support\ServiceWake::isKnownAwake('recommender')
+            && \Illuminate\Support\Facades\Cache::add('recommender-wake-requested', true, now()->addMinutes(2))) {
+            \App\Jobs\WakeServiceJob::start('recommender');
+        }
+
         return response()->noContent();
     }
 }

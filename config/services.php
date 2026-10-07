@@ -56,6 +56,8 @@ return [
     // teammate outside of this codebase.
     'reading_ai' => [
         'url' => env('READING_AI_URL'),
+        // How long a recording waits for a sleeping checker to wake before it is sent (0 turns waiting off).
+        'ready_wait' => (int) env('READING_AI_READY_WAIT', 100),
     ],
 
     // Teammate's deployed Adaptive_Recommendator (deterministic, stateless

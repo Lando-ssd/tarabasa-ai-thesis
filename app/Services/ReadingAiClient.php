@@ -7,7 +7,9 @@ use App\Models\ServiceFailure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\UploadedFile;
+use App\Jobs\WakeServiceJob;
 use App\Support\ServiceReply;
+use App\Support\ServiceWake;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -58,7 +60,7 @@ class ReadingAiClient
         // Kept LONGER than the HTTP timeout below (120s) so a slow call
         // ends as the friendly ConnectionException handled here, not as
         // PHP's uncatchable "Maximum execution time" fatal (a raw 500).
-        set_time_limit(250);
+        set_time_limit(400);
 
         // Reading-api v4 (MATATAG) requires the activity's curriculum context
         // on every call and answers a plain 422 "Field required" without it.
@@ -93,6 +95,15 @@ class ReadingAiClient
         $response = null;
         $trail = [];
 
+        // A sleeping checker turns a recording away at once ("429 Too Many Requests", or an empty error) and the
+        // recording does NOT wake it: only a request that stays connected does (see ServiceWake). So unless this
+        // server saw the checker answer a few minutes ago, the health page is asked first and waited for.
+        $wait = (int) config('services.reading_ai.ready_wait', 100);
+
+        if ($wait > 0 && ! ServiceWake::isKnownAwake('reader')) {
+            $this->awaitReady($wait);
+        }
+
         for ($try = 1; $try <= self::TEMPORARY_ERROR_TRIES; $try++) {
             try {
                 // The recording is opened again for every try: the first one read it to the end.
@@ -122,7 +133,20 @@ class ReadingAiClient
                 'page' => ServiceReply::snippet($response),
             ]);
 
+            // Whatever was known about the checker is no longer true. Ask its health page and wait for the answer
+            // (this is what wakes it); only when that does not work is there a plain pause before the next try.
+            ServiceWake::forget('reader');
+
+            if ($wait > 0 && $this->awaitReady(min($wait, 60))) {
+                continue;
+            }
+
             sleep(ServiceReply::pause($response, $try, (int) config('services.retry_pause', self::TEMPORARY_ERROR_PAUSE)));
+        }
+
+        // Any real answer (even a rejection of the recording) proves the checker is awake.
+        if (! ServiceReply::isTransient($response)) {
+            ServiceWake::markAwake('reader');
         }
 
         // A 422 is ambiguous: Reading-api sends it both for genuinely
@@ -171,17 +195,21 @@ class ReadingAiClient
     {
         $url = config('services.reading_ai.url');
 
-        if (! $url || Cache::has('reading-api-awake')) {
+        if (! $url || ServiceWake::isKnownAwake('reader') || ! Cache::add('reading-api-wake-requested', true, now()->addMinutes(2))) {
             return;
         }
 
-        Cache::put('reading-api-awake', true, now()->addMinutes(4));
+        // In the background: staying connected to the health page for as long as it takes is what wakes it.
+        WakeServiceJob::start('reader');
+    }
 
-        try {
-            Http::timeout(5)->get(rtrim($url, '/').'/health');
-        } catch (\Throwable) {
-            // Asleep and slow to answer is exactly the case this exists for; nothing to report.
-        }
+    /**
+     * Asks the checker's health page and waits (up to $seconds) for the answer, which wakes it when it is asleep.
+     * Never throws; false when it did not come up in time (the caller sends the recording anyway).
+     */
+    public function awaitReady(int $seconds = 100): bool
+    {
+        return ServiceWake::await(config('services.reading_ai.url'), 'reader', $seconds);
     }
 
     /**

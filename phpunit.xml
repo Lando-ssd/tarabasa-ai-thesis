@@ -28,6 +28,9 @@
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
+        <!-- Tests never wait for a sleeping teammate service to wake (they fake the answers). -->
+        <env name="READING_AI_READY_WAIT" value="0"/>
+        <env name="ACTIVITY_AI_READY_WAIT" value="0"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

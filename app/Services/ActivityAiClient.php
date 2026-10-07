@@ -6,7 +6,10 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use App\Models\ServiceFailure;
+use App\Jobs\WakeServiceJob;
 use App\Support\ServiceReply;
+use App\Support\ServiceWake;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -96,7 +99,22 @@ class ActivityAiClient
                 'page' => ServiceReply::snippet($response),
             ]);
 
+            // Ask the health page and wait for the answer (that is what wakes a sleeping service); only if that does
+            // not work is there a plain pause before the next try.
+            ServiceWake::forget('generator');
+
+            $wait = (int) config('services.activity_ai.ready_wait', 100);
+
+            if ($wait > 0 && $this->awaitReady(min($wait, 60))) {
+                continue;
+            }
+
             sleep(ServiceReply::pause($response, $try, (int) config('services.retry_pause', self::TEMPORARY_ERROR_PAUSE)));
+        }
+
+        // Any real answer proves the generator is awake.
+        if (! ServiceReply::isTransient($response)) {
+            ServiceWake::markAwake('generator');
         }
 
         if ($response->failed()) {
@@ -128,21 +146,18 @@ class ActivityAiClient
      * Wake the generator if it is asleep. Its free hosting sleeps when idle and a cold start can
      * take a minute, which on top of a generation can pass the wait we allow. The Generate window
      * calls this the moment it opens, so the service is waking while the teacher fills the form.
-     * Never throws and never waits long: the answer does not matter, only that the request lands.
+     * Only a request that STAYS CONNECTED wakes it (a ping that gives up after a few seconds very likely does
+     * not), so the waiting is done by a background job. Never throws and never makes the page wait.
      */
     public function wake(): void
     {
         $url = config('services.activity_ai.url');
 
-        if (! $url) {
+        if (! $url || ServiceWake::isKnownAwake('generator') || ! Cache::add('activity-api-wake-requested', true, now()->addMinutes(2))) {
             return;
         }
 
-        try {
-            Http::timeout(3)->get(rtrim($url, '/').'/health');
-        } catch (\Throwable $e) {
-            // Expected while it is still waking: the request reached it, which is the point.
-        }
+        WakeServiceJob::start('generator');
     }
 
     /**
@@ -153,32 +168,7 @@ class ActivityAiClient
      */
     public function awaitReady(int $seconds = 100): bool
     {
-        $url = config('services.activity_ai.url');
-
-        if (! $url) {
-            return false;
-        }
-
-        $deadline = microtime(true) + $seconds;
-
-        do {
-            try {
-                $response = Http::timeout(max(5, (int) min(60, $deadline - microtime(true))))->get(rtrim($url, '/').'/health');
-
-                if ($response->successful()) {
-                    return true;
-                }
-
-                Log::warning('Activity AI health check answered', ['status' => $response->status(), 'page' => ServiceReply::snippet($response)]);
-            } catch (\Throwable $e) {
-                Log::warning('Activity AI health check did not answer', ['error' => $e->getMessage()]);
-            }
-
-            // Never faster than 4 checks a second, whatever the setting: this must not hammer a waking service.
-            usleep(max(250000, (int) config('services.retry_pause', 5) * 1000000));
-        } while (microtime(true) < $deadline);
-
-        return false;
+        return ServiceWake::await(config('services.activity_ai.url'), 'generator', $seconds);
     }
 
     /**

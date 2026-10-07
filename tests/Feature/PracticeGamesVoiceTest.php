@@ -200,26 +200,52 @@ class PracticeGamesVoiceTest extends TestCase
         ])->assertNotFound();
     }
 
-    public function test_opening_a_voice_screen_wakes_the_scoring_service_once_in_a_while(): void
+    public function test_opening_a_voice_screen_starts_waking_the_scoring_service_in_the_background_once_in_a_while(): void
     {
         $this->child();
         Cache::flush();
-        Http::fake(['reading.test/health' => Http::response(['status' => 'ok'])]);
+        config(['queue.default' => 'database', 'services.adaptive_recommender.url' => 'https://recommender.test']);
+        \Illuminate\Support\Facades\Queue::fake();
+        Http::fake();
 
         $this->get(route('learner.warm'))->assertNoContent();
         $this->get(route('learner.warm'))->assertNoContent();
         $this->get(route('learner.warm'))->assertNoContent();
 
-        Http::assertSentCount(1);
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/health'));
+        // the page itself never talks to the service (that would hold the child's screen); a background job does
+        Http::assertNothingSent();
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\WakeServiceJob::class, 2); // the checker once, the recommender once
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\WakeServiceJob::class, fn ($j) => $j->service === 'reader');
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\WakeServiceJob::class, fn ($j) => $j->service === 'recommender');
     }
 
-    public function test_the_wake_up_never_fails_a_page_when_the_service_is_down(): void
+    public function test_a_service_known_to_be_awake_is_not_woken_again(): void
     {
         $this->child();
         Cache::flush();
-        Http::fake(['reading.test/health' => fn () => throw new ConnectionException('asleep')]);
+        config(['queue.default' => 'database']);
+        \Illuminate\Support\Facades\Queue::fake();
+        \App\Support\ServiceWake::markAwake('reader');
 
         $this->get(route('learner.warm'))->assertNoContent();
+
+        \Illuminate\Support\Facades\Queue::assertNotPushed(\App\Jobs\WakeServiceJob::class, fn ($j) => $j->service === 'reader');
+    }
+
+    public function test_the_wake_up_job_stays_connected_to_the_health_page_and_never_fails_when_the_service_is_down(): void
+    {
+        Cache::flush();
+        config(['services.reading_ai.ready_wait' => 1, 'services.retry_pause' => 0]);
+
+        Http::fake(['reading.test/health' => Http::response(['status' => 'ok'])]);
+        (new \App\Jobs\WakeServiceJob('reader'))->handle();
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/health'));
+        $this->assertTrue(\App\Support\ServiceWake::isKnownAwake('reader'), 'after it answered, nobody asks again for a while');
+
+        Cache::flush();
+        config(['services.reading_ai.url' => 'https://down.test']); // a different host, because the first stub for a host wins
+        Http::fake(['down.test/health' => fn () => throw new ConnectionException('asleep')]);
+        (new \App\Jobs\WakeServiceJob('reader'))->handle();
+        $this->assertFalse(\App\Support\ServiceWake::isKnownAwake('reader'));
     }
 }
