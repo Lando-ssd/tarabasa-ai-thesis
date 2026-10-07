@@ -32,6 +32,17 @@ class ServiceCheck
         $ip = $this->publicAddress();
         $lines[] = 'This server reaches the internet as: '.($ip ?? 'unknown (could not ask)');
 
+        // Not a teammate service, but a thing only this server can prove: it can draw a learner's QR code (the QR library
+        // and the PHP extension it needs are installed here). Nothing is stored; the picture is thrown away.
+        try {
+            $qr = \App\Support\LearnerQr::svg('TB26-00005', 120);
+            $lines[] = 'QR codes: '.(str_starts_with($qr, '<svg ') && strlen($qr) > 500 ? 'OK (this server can draw a learner QR code)' : 'PROBLEM (the QR code came out empty)');
+            $problems += (str_starts_with($qr, '<svg ') && strlen($qr) > 500) ? 0 : 1;
+        } catch (\Throwable $e) {
+            $lines[] = 'QR codes: PROBLEM (this server cannot draw a learner QR code: '.mb_substr($e->getMessage(), 0, 120).')';
+            $problems++;
+        }
+
         $reader = config('services.reading_ai.url');
         $generator = config('services.activity_ai.url');
         $recommender = config('services.adaptive_recommender.url');

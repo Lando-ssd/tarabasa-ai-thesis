@@ -418,6 +418,7 @@ class ServiceErrorsTest extends TestCase
         $this->assertStringContainsString('every service answered normally', $result['summary']);
         $text = implode("\n", $result['lines']);
         $this->assertStringContainsString('203.0.113.7', $text, 'the address this server uses to reach the internet is written down');
+        $this->assertStringContainsString('QR codes: OK', $text, 'the server proves it can draw a learner QR code');
         $this->assertStringContainsString('POST /analyze (short silent recording): OK (422)', $text, 'a silence rejection means the request got through');
 
         $row = ServiceFailure::where('service', 'check')->first();
