@@ -152,6 +152,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/teachers/{teacher}/activate', [AdminController::class, 'activateTeacher'])->name('teachers.activate');
     Route::post('/teachers/{teacher}/reject', [AdminController::class, 'rejectTeacher'])->name('teachers.reject');
     Route::post('/users/{user}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
+    // Asks the three teammate services, from this server, whether they answer (see App\Services\ServiceCheck).
+    Route::post('/service-check', [AdminController::class, 'checkServices'])->name('service-check');
 });
 
 // Class Management — 'teacher' confirms user_type = Teacher (blocks Parent/

@@ -57,6 +57,25 @@ class AdminController extends Controller
     }
 
     /**
+     * "Check the services now": asks the activity generator, the reading checker and the adaptive recommender from
+     * this very server whether they answer, and writes the result to the diary shown on this dashboard.
+     */
+    public function checkServices(\App\Services\ServiceCheck $check): RedirectResponse
+    {
+        // A sleeping free service can take a minute to answer its first request.
+        set_time_limit(300);
+
+        // One check at a time, and not again within a minute (it asks three outside services and writes a row).
+        if (! \Illuminate\Support\Facades\Cache::add('service-check-running', true, 60)) {
+            return back()->with('status', 'A check ran a moment ago. Please wait a minute, then look at "Recent service problems" below.');
+        }
+
+        $result = $check->runAndRecord();
+
+        return back()->with('status', $result['summary'].' The details are in "Recent service problems" below.');
+    }
+
+    /**
      * Sets a Teacher's verification status to Active. Takes effect
      * immediately on their next request if already logged in — nothing
      * is cached in the session, every gated action re-checks the DB.

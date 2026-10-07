@@ -379,17 +379,129 @@ class ServiceErrorsTest extends TestCase
         $this->assertSame(['new one'], ServiceFailure::pluck('what')->all());
     }
 
-    public function test_the_admin_sees_the_diary_on_the_dashboard_and_nothing_when_it_is_empty(): void
+    public function test_the_admin_sees_the_diary_on_the_dashboard_and_an_honest_empty_note_when_it_is_empty(): void
     {
         $admin = User::create(['first_name' => 'Ada', 'last_name' => 'Admin', 'email' => 'ada@example.com', 'password' => 'Passw0rd!', 'user_type' => 'Admin']);
         $admin->forceFill(['email_verified_at' => now()])->save();
 
-        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()->assertDontSee('Recent service problems');
+        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()->assertSee('Recent service problems')->assertSee('Nothing has gone wrong')->assertSee('Check the services now');
 
         ServiceFailure::record('reader', $this->reply(429, '<script>alert(1)</script> Too Many Requests', ['Content-Type' => 'text/html']), 'The reading checker is waking up or busy right now (error 429).', [429, 429, 429, 429]);
 
         $page = $this->get(route('admin.dashboard'))->assertOk();
         $page->assertSee('Recent service problems')->assertSee('Reading checker')->assertSee('Answered 429')->assertSee('tried 4 times')->assertSee('Too Many Requests');
         $this->assertStringNotContainsString('<script>alert(1)</script>', $page->getContent(), 'what a service sends back is shown as text, never run');
+    }
+
+    // ----- the service check (asks the three services from this server)
+
+    private function fakeAllServices(int $analyzeStatus = 422, mixed $analyzeBody = null, array $analyzeHeaders = []): void
+    {
+        config(['services.adaptive_recommender.url' => 'https://recommender.test', 'services.adaptive_recommender.key' => 'k']);
+
+        Http::fake([
+            'api.ipify.org*' => Http::response('203.0.113.7', 200),
+            'reader.test/health' => Http::response(['status' => 'ok', 'model_loaded' => true], 200),
+            'reader.test/analyze' => Http::response($analyzeBody ?? ['detail' => 'Audio is silent or nearly silent.'], $analyzeStatus, $analyzeHeaders),
+            'generator.test/health' => Http::response(['status' => 'ok'], 200),
+            'recommender.test/health' => Http::response(['status' => 'ok'], 200),
+        ]);
+    }
+
+    public function test_the_service_check_says_all_is_fine_when_every_service_answers_normally(): void
+    {
+        $this->fakeAllServices();
+
+        $result = app(\App\Services\ServiceCheck::class)->runAndRecord();
+
+        $this->assertSame(0, $result['problems']);
+        $this->assertStringContainsString('every service answered normally', $result['summary']);
+        $text = implode("\n", $result['lines']);
+        $this->assertStringContainsString('203.0.113.7', $text, 'the address this server uses to reach the internet is written down');
+        $this->assertStringContainsString('POST /analyze (short silent recording): OK (422)', $text, 'a silence rejection means the request got through');
+
+        $row = ServiceFailure::where('service', 'check')->first();
+        $this->assertNotNull($row);
+        $this->assertStringContainsString('every service answered normally', $row->what);
+        $this->assertStringContainsString('Reading checker, GET /health: OK (200)', $row->body);
+
+        // the probe is a real, tiny WAV recording and carries no child data
+        Http::assertSent(fn (Request $r) => $r->url() === 'https://reader.test/analyze'
+            && $r->hasFile('file', null, 'check.wav')
+            && str_starts_with(collect($r->data())->firstWhere('name', 'file')['contents'] ?? '', 'RIFF'));
+    }
+
+    public function test_the_service_check_reports_a_429_from_the_hosting_with_what_it_said(): void
+    {
+        $this->fakeAllServices(429, 'Too Many Requests', ['Content-Type' => 'text/plain; charset=utf-8']);
+
+        $result = app(\App\Services\ServiceCheck::class)->runAndRecord();
+
+        $this->assertSame(2, $result['problems'], 'both recording sizes are refused');
+        $this->assertStringContainsString('2 of 5 checks had a problem', $result['summary']);
+        $this->assertStringContainsString('POST /analyze (short silent recording): PROBLEM (429)', implode("\n", $result['lines']));
+        $this->assertStringContainsString('Too Many Requests', implode("\n", $result['lines']));
+    }
+
+    public function test_the_service_check_survives_a_service_that_does_not_answer_and_one_that_is_not_set_up(): void
+    {
+        config(['services.adaptive_recommender.url' => null]);
+        Http::fake([
+            'api.ipify.org*' => fn () => throw new \Illuminate\Http\Client\ConnectionException('no internet'),
+            'reader.test/health' => fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: timed out'),
+            'reader.test/analyze' => Http::response(['detail' => 'Audio is silent or nearly silent.'], 422),
+            'generator.test/health' => Http::response('<html>Bad gateway</html>', 502),
+        ]);
+
+        $result = app(\App\Services\ServiceCheck::class)->run();
+
+        $text = implode("\n", $result['lines']);
+        $this->assertSame(2, $result['problems']);
+        $this->assertStringContainsString('POST /analyze (silent recording as long as a real reading): OK (422)', $text);
+        $this->assertStringContainsString('unknown (could not ask)', $text);
+        $this->assertStringContainsString('PROBLEM (no answer)', $text);
+        $this->assertStringContainsString('PROBLEM (502)', $text);
+        $this->assertStringContainsString('Adaptive recommender: not configured', $text);
+    }
+
+    public function test_the_service_check_command_writes_the_result_for_the_dashboard(): void
+    {
+        $this->fakeAllServices();
+
+        $this->artisan('services:check')->assertSuccessful();
+
+        $this->assertSame(1, ServiceFailure::where('service', 'check')->count());
+    }
+
+    public function test_only_the_admin_can_press_the_check_button(): void
+    {
+        $this->fakeAllServices();
+
+        $this->post(route('admin.service-check'))->assertRedirect(route('login'));
+
+        $teacher = User::create(['first_name' => 'Tess', 'last_name' => 'Teacher', 'email' => 'tess@example.com', 'password' => 'Passw0rd!', 'user_type' => 'Teacher']);
+        $teacher->forceFill(['email_verified_at' => now()])->save();
+        $this->actingAs($teacher)->post(route('admin.service-check'))->assertForbidden();
+        $this->assertSame(0, ServiceFailure::count());
+
+        $admin = User::create(['first_name' => 'Ada', 'last_name' => 'Admin', 'email' => 'ada@example.com', 'password' => 'Passw0rd!', 'user_type' => 'Admin']);
+        $admin->forceFill(['email_verified_at' => now()])->save();
+        $this->actingAs($admin)->post(route('admin.service-check'))->assertRedirect()->assertSessionHas('status');
+
+        $page = $this->get(route('admin.dashboard'))->assertOk();
+        $page->assertSee('Service check')->assertSee('All fine')->assertSee('What each check found');
+    }
+
+    public function test_pressing_the_check_button_twice_in_a_minute_only_checks_once(): void
+    {
+        $this->fakeAllServices();
+        $admin = User::create(['first_name' => 'Ada', 'last_name' => 'Admin', 'email' => 'ada@example.com', 'password' => 'Passw0rd!', 'user_type' => 'Admin']);
+        $admin->forceFill(['email_verified_at' => now()])->save();
+
+        $this->actingAs($admin)->post(route('admin.service-check'))->assertSessionHas('status');
+        $second = $this->post(route('admin.service-check'));
+
+        $this->assertStringContainsString('ran a moment ago', session('status'));
+        $this->assertSame(1, ServiceFailure::where('service', 'check')->count());
     }
 }

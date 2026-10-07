@@ -22,6 +22,11 @@ php artisan migrate --force
 # ADMIN_PASSWORD is not set). `|| true`: a wrong value must never stop the site from starting.
 php artisan admin:sync || true
 
+# Ask the three teammate services, from this server, whether they answer, and write the result to the diary on the
+# Admin dashboard ("Recent service problems"). In the background and never fatal: a sleeping free service can take a
+# minute to answer and must not delay the site starting.
+(php artisan services:check --quiet || true) &
+
 # php artisan serve is single-threaded by default — it can only handle one
 # request at a time. That's fatal in production: while it's blocked on a
 # slow real external API call (Gemini for activity generation, Vosk for

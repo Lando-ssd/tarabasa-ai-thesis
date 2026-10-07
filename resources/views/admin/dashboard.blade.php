@@ -206,28 +206,38 @@
     <div class="stat-card total"><div class="val">{{ $totalAccountCount }}</div><div class="lbl">Total Accounts</div></div>
   </div>
 
-  @if ($serviceFailures->isNotEmpty())
-    <section class="panel" id="serviceProblems">
-      <h2>Recent service problems</h2>
-      <p class="panel-sub">When the activity generator, the reading checker or the adaptive recommender could not do what was asked, what they answered is written here (newest first, kept for 14 days). Times are Philippine time.</p>
+  <section class="panel" id="serviceProblems">
+    <h2>Recent service problems</h2>
+    <p class="panel-sub">When the activity generator, the reading checker or the adaptive recommender could not do what was asked, what they answered is written here (newest first, kept for 14 days). Times are Philippine time. The app also checks all three by itself every time it starts.</p>
+    <form method="POST" action="{{ route('admin.service-check') }}" style="margin:0 0 14px" data-loading="Checking, this can take a minute">
+      @csrf
+      <button type="submit" class="btn-sm btn-activate">Check the services now</button>
+    </form>
+    @if ($serviceFailures->isEmpty())
+      <div class="empty-note">Nothing has gone wrong in the last 14 days.</div>
+    @else
       <div class="svc-list">
         @foreach ($serviceFailures as $f)
           <div class="svc-item">
             <div class="svc-head">
               <span>{{ \App\Models\ServiceFailure::SERVICES[$f->service] ?? $f->service }}</span>
-              <span class="status-pill {{ $f->status && $f->status < 500 && $f->status !== 429 ? 'pending' : 'rejected' }}">{{ $f->status ? 'Answered '.$f->status : 'No answer' }}</span>
+              @if ($f->service === 'check')
+                <span class="status-pill {{ str_contains((string) $f->what, 'every service answered') ? 'active' : 'pending' }}">{{ str_contains((string) $f->what, 'every service answered') ? 'All fine' : 'Has problems' }}</span>
+              @else
+                <span class="status-pill {{ $f->status && $f->status < 500 && $f->status !== 429 ? 'pending' : 'rejected' }}">{{ $f->status ? 'Answered '.$f->status : 'No answer' }}</span>
+              @endif
               @if ($f->trail && str_contains($f->trail, ','))<span style="color:var(--slate-600);font-weight:600">tried {{ count(explode(',', $f->trail)) }} times: {{ $f->trail }}</span>@endif
               <span class="svc-when">{{ $f->created_at?->timezone('Asia/Manila')->format('M j, g:i A') }}</span>
             </div>
             <p class="svc-what">{{ $f->what }}</p>
             @if ($f->body)
-              <details><summary>What it sent back</summary><pre>{{ $f->body }}</pre></details>
+              <details @if ($f->service === 'check' && $loop->first) open @endif><summary>{{ $f->service === 'check' ? 'What each check found' : 'What it sent back' }}</summary><pre>{{ $f->body }}</pre></details>
             @endif
           </div>
         @endforeach
       </div>
-    </section>
-  @endif
+    @endif
+  </section>
 
   <section class="panel">
     <h2>Pending Teacher Approvals</h2>
@@ -351,6 +361,14 @@
         btn.dataset.originalText = btn.textContent;
         btn.textContent = '…';
       }
+    });
+  });
+
+  // "Check the services now" asks three services and can take a minute: say so instead of looking frozen.
+  document.querySelectorAll('form[data-loading]').forEach(form => {
+    form.addEventListener('submit', function () {
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn) { btn.disabled = true; btn.textContent = form.dataset.loading + '...'; }
     });
   });
 
