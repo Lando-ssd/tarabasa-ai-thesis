@@ -26,7 +26,9 @@ use Illuminate\Support\Facades\DB;
  *
  * Three kinds, each with the evidence behind it and one suggested step taken from the Teacher's
  * OWN approved activities (never anything outside what they approved):
- *  - support: the last three readings were all under 70 percent, the latest within two weeks;
+ *  - support: the last three readings were all under 70 percent, OR the latest reading was flagged for extra support
+ *    (under 70 percent, the same line the app flags a reading at and tells the Teacher about at once), the latest within
+ *    two weeks. A learner with a single 25 percent reading is not made to wait for two more bad ones;
  *  - up: the last three readings were all 90 percent or above, the latest within two weeks (the
  *    same 90 percent the app itself uses to move a reader up a step), so the strong readers are
  *    seen too and not left in a beginner group;
@@ -82,6 +84,7 @@ class TeacherAlerts
 
         // The recent readings of everyone, newest first, in one query.
         $recent = ReadingSession::whereIn('learner_id', $ids)
+            ->with('activity:id,title')
             ->where('session_type', '!=', 'Diagnostic')
             ->where('timestamp', '>=', now()->subDays(60))
             ->orderByDesc('timestamp')->orderByDesc('id')
@@ -132,14 +135,28 @@ class TeacherAlerts
     /** @param  Collection<int, ReadingSession>  $last3 newest first */
     private function supportAlert(Learner $learner, Collection $last3): ?array
     {
-        if ($last3->count() < self::IN_A_ROW || $last3->contains(fn ($s) => (float) $s->accuracy_percent >= self::SUPPORT_BELOW)) {
+        $latest = $last3->first();
+
+        if ($latest === null || $this->at($latest)->lt(now()->subDays(self::FRESH_DAYS))) {
             return null;
         }
 
-        $newest = $this->at($last3->first());
-        if ($newest->lt(now()->subDays(self::FRESH_DAYS))) {
+        $threeLow = $last3->count() >= self::IN_A_ROW && ! $last3->contains(fn ($s) => (float) $s->accuracy_percent >= self::SUPPORT_BELOW);
+
+        // The app itself flags a reading under 70 percent for extra support and tells the Teacher at once (the Home
+        // banner). The Alerts page must agree: a child whose latest reading was flagged needs attention even with
+        // only one reading, instead of being invisible until two more bad ones arrive.
+        $latestFlagged = $latest->accuracy_percent !== null && ((bool) $latest->flagged_needs_attention || (float) $latest->accuracy_percent < self::SUPPORT_BELOW);
+
+        if (! $threeLow && ! $latestFlagged) {
             return null;
         }
+
+        if (! $threeLow) {
+            return $this->flaggedReadingAlert($learner, $latest);
+        }
+
+        $newest = $this->at($last3->first());
 
         $oldest = $this->at($last3->last());
         $days = max(1, (int) ceil($oldest->diffInHours($newest) / 24));
@@ -157,6 +174,28 @@ class TeacherAlerts
             'pattern' => $this->patternLine($profile),
             'profile' => $profile,
             'evidence_at' => $newest,
+        ];
+    }
+
+    /** The latest reading alone was flagged for extra support. */
+    private function flaggedReadingAlert(Learner $learner, ReadingSession $reading): array
+    {
+        $accuracy = (int) round($reading->accuracy_percent);
+        $title = $reading->activity?->title;
+        $single = collect([$reading]);
+        $profile = ErrorPatterns::profile($single);
+
+        return [
+            'kind' => 'support',
+            'learner' => $learner,
+            'class' => $learner->schoolClass,
+            'title' => $learner->first_name.' '.$learner->last_name.' needs support',
+            'band' => ReadingLevel::band($learner),
+            'evidence' => 'Latest reading '.$accuracy.'%, under '.self::SUPPORT_BELOW.'%',
+            'why' => $learner->first_name.' scored '.$accuracy.'%'.($title ? ' on "'.$title.'"' : '').' and the app flagged it for extra support. '.$this->missedLine($learner, $single),
+            'pattern' => $this->patternLine($profile),
+            'profile' => $profile,
+            'evidence_at' => $this->at($reading),
         ];
     }
 
@@ -315,7 +354,7 @@ class TeacherAlerts
         $some = $counts->keys()->take(3)->all();
 
         return $some === []
-            ? $learner->first_name.' scored low on all three readings.'
+            ? $learner->first_name.($sessions->count() === 1 ? ' scored low on this reading.' : ' scored low on all '.$this->list([$sessions->count()]).' readings.')
             : $learner->first_name."'s most missed words were ".$this->list(array_map(fn ($w) => "'{$w}'", $some)).'.';
     }
 

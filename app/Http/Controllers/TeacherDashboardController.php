@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\Notification;
 use App\Models\SchoolClass;
+use App\Services\TeacherAlerts;
 use App\Support\TeacherNav;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -23,12 +24,9 @@ class TeacherDashboardController extends Controller
         $user = $request->user();
         $teacher = $user->teacher;
 
-        $needsAttention = Notification::where('recipient_user_id', $user->id)
-            ->where('type', Notification::TYPE_NEEDS_ATTENTION)
-            ->where('is_read', false)
-            ->with('learner')
-            ->orderByDesc('timestamp')
-            ->get();
+        // The same alerts the Alerts page shows (one per learner, support first), so the banner and the page can
+        // never disagree about who needs attention.
+        $needsAttention = app(TeacherAlerts::class)->forTeacher($teacher, withSuggestions: false)->where('kind', 'support')->values();
 
         $activities = Activity::where('created_by_teacher_id', $teacher->id)->get(['id', 'status']);
 
@@ -51,6 +49,7 @@ class TeacherDashboardController extends Controller
             'unreadNotifications' => $counts['unread'],
             'needsAttentionCount' => $needsAttention->count(),
             'latestNeedsAttention' => $needsAttention->first(),
+            'needsAttentionText' => $needsAttention->first() ? $needsAttention->first()['title'].'. '.$needsAttention->first()['why'] : null,
         ]);
     }
 }

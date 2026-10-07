@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
 use App\Models\Learner;
+use App\Models\Notification;
 use App\Models\PersonalWordBank;
 use App\Models\ReadingSession;
 use App\Models\SchoolClass;
@@ -206,31 +207,57 @@ class TeacherAnalyticsAlertsTest extends TestCase
         $page->assertDontSee('The one they read</b>', false);
     }
 
-    public function test_alerts_need_three_readings_all_low_and_recent(): void
+    public function test_a_flagged_latest_reading_is_an_alert_at_once_and_a_recovered_or_old_one_is_not(): void
     {
         [$user, $teacher] = $this->teacher();
         $class = $this->klass($teacher);
         $a = $this->activity($teacher);
         $alerts = app(TeacherAlerts::class);
 
+        // A single reading the app flagged (under 70 percent) used to be invisible on the Alerts page until two more
+        // bad ones arrived, while the Home banner already said "needs attention".
+        $one = $this->kid($class);
+        $this->read($one, $a, 25, 0);
+
         $two = $this->kid($class);
         $this->read($two, $a, 40, 1);
         $this->read($two, $a, 40, 0);
 
-        $mixed = $this->kid($class);
-        $this->read($mixed, $a, 40, 2);
-        $this->read($mixed, $a, 85, 1);
-        $this->read($mixed, $a, 40, 0);
+        $recovered = $this->kid($class);
+        $this->read($recovered, $a, 40, 2);
+        $this->read($recovered, $a, 40, 1);
+        $this->read($recovered, $a, 85, 0);
 
         $stale = $this->kid($class);
         foreach ([40, 41, 42] as $i => $v) {
             $this->read($stale, $a, $v, 30 + $i);
         }
 
-        $kinds = $alerts->forTeacher($teacher, false)->where('kind', 'support')->pluck('learner.id');
-        $this->assertSame([], $kinds->all(), 'two readings, a mix, and old readings are not alerts');
+        $support = $alerts->forTeacher($teacher, false)->where('kind', 'support');
+        $this->assertEqualsCanonicalizing([$one->id, $two->id], $support->pluck('learner.id')->all(), 'a flagged latest reading alerts; a recovered or an old one does not');
+        $this->assertSame('Latest reading 25%, under 70%', $support->firstWhere('learner.id', $one->id)['evidence']);
+        $this->assertStringContainsString('scored 25% on "Easy Farm Words"', $support->firstWhere('learner.id', $one->id)['why']);
         // The stale child has not read for a month, so the quiet alert is the one that applies.
         $this->assertTrue($alerts->forTeacher($teacher, false)->where('kind', 'quiet')->pluck('learner.id')->contains($stale->id));
+    }
+
+    public function test_the_home_banner_and_the_alerts_page_agree_about_who_needs_attention(): void
+    {
+        [$user, $teacher] = $this->teacher();
+        $class = $this->klass($teacher);
+        $kid = $this->kid($class, ['first_name' => 'Sarah']);
+        $a = $this->activity($teacher, 'Easy', ['title' => 'Letter M Sound']);
+        $this->read($kid, $a, 25, 0);
+        // The routine "needs attention" notices (two of them, from two flagged readings) used to be what the banner
+        // counted: "2 learners need attention" for one learner, linked to a page that showed nothing.
+        Notification::create(['recipient_user_id' => $user->id, 'learner_id' => $kid->id, 'type' => Notification::TYPE_NEEDS_ATTENTION, 'message' => 'Sarah needs attention (1).', 'timestamp' => now()]);
+        Notification::create(['recipient_user_id' => $user->id, 'learner_id' => $kid->id, 'type' => Notification::TYPE_NEEDS_ATTENTION, 'message' => 'Sarah needs attention (2).', 'timestamp' => now()]);
+        $this->actingAs($user);
+
+        $this->get(route('teacher.dashboard'))->assertOk()->assertSee('1 learner needs attention')->assertDontSee('2 learners need attention')->assertSee('Sarah');
+        $this->get(route('teacher.notifications.index', ['filter' => 'support']))->assertOk()->assertSee('Sarah')->assertSee('needs support')->assertSee('Latest reading 25%');
+        $this->get(route('teacher.analytics.index'))->assertOk()->assertSee('Need support');
+        $this->assertSame(1, app(TeacherAlerts::class)->openCount($teacher));
     }
 
     public function test_three_readings_at_90_or_above_flag_good_news_with_a_harder_activity(): void

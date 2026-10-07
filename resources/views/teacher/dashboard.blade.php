@@ -21,8 +21,8 @@
 @elseif ($needsAttentionCount > 0)
   <div class="alert">
     <span class="alert-ico">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])</span>
-    <div><b>{{ $needsAttentionCount }} {{ $needsAttentionCount === 1 ? 'learner needs' : 'learners need' }} attention</b><span class="d">{{ $latestNeedsAttention->message }}</span></div>
-    <a class="btn small" href="{{ route('teacher.notifications.index', ['filter' => 'attention']) }}">View</a>
+    <div><b>{{ $needsAttentionCount }} {{ $needsAttentionCount === 1 ? 'learner needs' : 'learners need' }} attention</b><span class="d">{{ $needsAttentionText }}</span></div>
+    <a class="btn small" href="{{ route('teacher.notifications.index', ['filter' => 'support']) }}">View</a>
   </div>
 @endif
 

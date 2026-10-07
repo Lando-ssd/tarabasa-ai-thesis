@@ -6219,6 +6219,15 @@ the services itself: `partials/wake-from-browser.blade.php` (child's pages: chec
 cookie, no key, at most every 2 minutes per service per tab). The server side wake (`WakeServiceJob`, `ServiceWake::await`) stays as
 a second line: it notices the moment the browser's wake worked. The services' health addresses (not keys) are on the page.
 
+**Alerts and the Home banner now agree (2026-10-07).** A teacher saw "2 learners need attention" on Home (a flagged 25 percent
+reading) while the Alerts page said "Nothing needs your attention". Two different rules: Home counted unread "needs attention"
+NOTIFICATIONS (two flagged readings of ONE learner counted as 2 learners, and its View link opened a filter the page did not
+know), Alerts needed three bad readings in a row. Now `TeacherAlerts::supportAlert` also fires when the LATEST reading was
+flagged (under 70 percent, the same line the app flags at), fresh within 14 days, even with a single reading (evidence "Latest
+reading 25%, under 70%"; three in a row keeps its stronger evidence; a later good reading clears it; "Mark handled" hides it
+until the child reads again). The Home banner is built from the same open support alerts (one per learner) and links to
+`?filter=support`; the menu count and Analytics' "Need support" already read the same engine.
+
 **Email failures are visible now.** `GmailApiTransport` writes a `mail` row to the diary (the status and Google's answer, never the
 recipient) when a send or the token refresh fails, and `services:check` / the Admin button also test, without sending anything, that
 the stored Gmail refresh token still gets an access token (the token itself is never written down). Registration still never fails
