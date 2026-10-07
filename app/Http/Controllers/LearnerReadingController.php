@@ -58,6 +58,7 @@ class LearnerReadingController extends Controller
             'wordCounts' => $outcome['wordCounts'] ?? null,
             'comprehension' => $outcome['comprehension'],
             'newBadges' => $outcome['newBadges'],
+            'progress' => $outcome['progress'] ?? null,
         ]);
     }
 

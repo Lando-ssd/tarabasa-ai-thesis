@@ -7,8 +7,16 @@
   A level that moved says so plainly. A level that stayed the same says nothing.
 --}}
 @php
+    // A step moves one at a time and only on repeated strong readings (ReadingProgression). A move up is celebrated by its
+    // name; a move back is never announced to a child (the activities simply fit better); between moves, a child sees how
+    // many strong readings they have toward growing, never a percentage.
     $levelLine = null;
-    if ($levelChanged) {
+    $p = $progress ?? null;
+    if ($p && $p['moved'] === 'up') {
+        $levelLine = $p['stepChanged'] ? 'Level up! You are now a '.$p['stepAfter'] : 'You got stronger as a '.$p['stepAfter'].'!';
+    } elseif ($p && $p['moved'] === null && $p['have'] > 0 && $p['nextStep'] !== null) {
+        $levelLine = 'Strong readings toward growing: '.$p['have'].' of '.$p['need'];
+    } elseif (! $p && $levelChanged) {
         $levelLine = $levelWentUp ? 'Level up! You are now '.$levelAfter : 'Your level is now '.$levelAfter;
     }
 

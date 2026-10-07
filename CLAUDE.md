@@ -6292,6 +6292,45 @@ box). Same jsQR as the teacher's scanner, loaded only when the sheet opens; the 
 fake camera: rejects a foreign QR and a wrong check digit, reads a real card, fills the code, logs in with the PIN, blocked and
 no-camera messages work. NOT tested: a real tablet camera and real children.
 
+## Gradual reading progression, the class's general level, and teaching notes (2026-10-07, BUILT LOCALLY, NOT PUSHED YET)
+
+The user's complaint: reading six words perfectly once made a child a "Sentence Reader". Cause: a single reading at 90 percent or
+more moved the stored level (Beginning / Developing / Proficient), and a level change put the child on the LOWEST step of the next
+level (`ReadingLevel::rungAfterLevelChange`), so one reading could jump a whole level and several steps of the four step path.
+- **New rule** (`config/progression.php`, `App\Services\ReadingProgression`, replaces `adjustMasteryLevel`). Up = at least 3 strong
+  readings (90 percent or more, and at least `min_words[rung]` words: 4, 6, 10, 17, 27, 45 for rungs 0 to 5) of at least 2 different
+  activities, among the last 5 readings made after the child's last move; it moves ONE rung. Down = two weak readings (under 70)
+  in a row of texts that were not too long for the child (`ActivityFit` not BLOCKED), also ONE rung; one weak reading never moves
+  anyone. The stored level now FOLLOWS the rung (`levelForRung`: 0-2 Beginning, 3-4 Developing, 5-6 Proficient), so it changes only when
+  a step crosses an edge. New column `learners.rung_changed_at` (migration `2026_10_07_200000`, cast to datetime, set by the first check
+  and by every move); only readings after it count, so a move can never be re-used as evidence. **The numbers are the team's own**,
+  chosen from Phil-IRI (oral reading accuracy bands), the National Reading Panel (2000, repeated oral reading) and the first check's
+  texts; a teacher or the adviser may want to change them: they are all in the one config file.
+- **What the child sees** (`reading-results`): "Level up! You are now a Sentence Reader" only on a real move up; between moves "Strong
+  readings toward growing: N of 3"; a move back is never announced (the activities just fit better). The controller passes `progress`;
+  the mobile API returns it too (`progress`). Teacher and parent alerts say "moved up to Short sentences (Sentence Reader)".
+- **Tested live** (Reading-api, synthesized voice, a disposable learner at rung 1, deleted afterwards): readings of 100, 100 and 66.67
+  percent changed nothing; a fourth at 100 moved the child from rung 1 to rung 2 exactly, level stayed Beginning, `rung_changed_at` set.
+- **Class general level** (`App\Support\ClassLevel`): a teacher's instruction. A learner who already reads at the Independent level
+  (measured: first check or readings, never what the parent said) cannot be added to a class taught below that, even in the same grade.
+  A class's general level is the middle level of its learners once three have a level; before that the usual one for its grade
+  (Grade 1 Instructional, Grade 2 and 3 Independent; `ClassLevel::GRADE_DEFAULT`, the team's guess, change it if a teacher says so).
+  Applies to typing a code, the QR scanner (same endpoint, JSON 422 with the reason) and Move to another class. The Add learner window
+  tells the teacher the class's general level. It never moves or removes a child already in a class.
+- **Teaching notes** (`config/teaching_path.php`, shown through `LearnerProfile::forTeacher` on each learner's page): per rung, what the
+  child is learning (with the MATATAG codes the first check already uses), three teaching moves, what to watch for, and a "ready when"
+  line written from `config/progression.php` so the teacher reads exactly what the app measures; plus a progress bar toward the next
+  step and, when there is enough evidence, "What the readings show" (the child's main mistake pattern from `ErrorPatterns`, one tip and
+  its curriculum code). The advice is the team's own summary (National Reading Panel 2000, Ehri 2005, Pearson and Gallagher 1983): a
+  Grade 1 and a Grade 2 teacher should review it before the thesis relies on it. A test checks every code in it exists in the first check.
+- **Alerts:** "Ready to move up" now ignores readings the app already used to move the child (`rung_changed_at`) and says that if the
+  app has not moved the child yet, the readings were too short or from one activity.
+- **Roster:** the search box says "Search learners"; each row shows the uploaded photo, else the picture the child chose, else initials
+  (the photo hides itself if the file is gone, because uploads live on the server's disk and a redeploy can wipe them).
+- **Not done / honest limits:** the first reading check still places a child in at most 3 items (that is placement, not practice); a
+  real child, a real microphone and a real class have not tried the new rule; "Independent" for the class guard follows rungs 5 and 6.
+  The old whole-level jump is gone for everyone, but children who already jumped keep the level they have.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

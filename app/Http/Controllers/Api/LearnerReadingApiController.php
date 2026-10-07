@@ -49,6 +49,7 @@ class LearnerReadingApiController extends Controller
             'levelBefore' => $outcome['levelBefore'],
             'levelAfter' => $outcome['levelAfter'],
             'levelChanged' => $outcome['levelChanged'],
+            'progress' => $outcome['progress'],
             'levelWentUp' => $outcome['levelWentUp'],
             'pointsEarned' => $outcome['pointsEarned'],
             'wordBreakdown' => $outcome['wordBreakdown'],

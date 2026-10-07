@@ -271,6 +271,11 @@ class ClassController extends Controller
             return $this->joinFailure($request, 'This learner is already enrolled in a class.');
         }
 
+        // A class is taught at one general level: a learner who already reads well above it cannot be added, even in the same grade.
+        if ($refusal = \App\Support\ClassLevel::refusal($class->loadMissing('learners'), $learner)) {
+            return $this->joinFailure($request, $refusal);
+        }
+
         $learner->update(['class_id' => $class->id]);
 
         // The child's guardians are told, so a child is never added to a class without them knowing.
@@ -403,6 +408,10 @@ class ClassController extends Controller
 
         if (! $target) {
             throw ValidationException::withMessages(['to_class_id' => 'Choose one of your other classes.']);
+        }
+
+        if ($refusal = \App\Support\ClassLevel::refusal($target->loadMissing('learners'), $learner)) {
+            throw ValidationException::withMessages(['to_class_id' => $refusal]);
         }
 
         $learner->update(['class_id' => $target->id]);

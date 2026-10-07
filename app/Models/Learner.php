@@ -55,6 +55,7 @@ class Learner extends Model implements AuthenticatableContract
         'supports',
         'interests',
         'reading_rung',
+        'rung_changed_at',
     ];
 
     protected $hidden = [
@@ -75,6 +76,8 @@ class Learner extends Model implements AuthenticatableContract
             'subdomain_states' => 'array',
             // The Parent's own answers at sign up; see DiagnosticPlacement.
             'placement_answers' => 'array',
+            // When the child last moved on the reading ladder (ReadingProgression counts only readings after it).
+            'rung_changed_at' => 'datetime',
             // What helps this child (the Parent ticks), and what they like reading about.
             'supports' => 'array',
             'interests' => 'array',

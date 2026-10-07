@@ -31,7 +31,6 @@ use Illuminate\Support\Facades\Log;
  */
 class LearnerReadingService
 {
-    private const MASTERY_TIERS = ['Beginning', 'Developing', 'Proficient'];
 
     public const MAX_UNCLEAR_ATTEMPTS = 3;
 
@@ -203,8 +202,11 @@ class LearnerReadingService
         $prosodyScore = $result['prosody']['prosody_score'] ?? null;
         $comprehensionScore = $comprehension['score'] ?? null;
 
-        $levelBefore = $learner->mastery_level;
-        $levelAfter = $this->adjustMasteryLevel($levelBefore, $accuracy);
+        // One reading never moves a child a whole level. The step moves one at a time, on repeated strong readings of
+        // real length (or two weak ones in a row), and the stored level follows the step. See ReadingProgression.
+        $progress = app(ReadingProgression::class)->evaluate($learner, $activity, $accuracy);
+        $levelBefore = $progress['levelBefore'];
+        $levelAfter = $progress['levelAfter'];
         $pointsEarned = (int) round($accuracy / 2);
 
         $initiatedBy = $activity->initiatedBySourceFor($learner);
@@ -237,18 +239,16 @@ class LearnerReadingService
 
         $learner->update([
             'mastery_level' => $levelAfter,
-            // Keep the child's reading path step in line with a level that just moved.
-            'reading_rung' => \App\Support\ReadingLevel::rungAfterLevelChange($learner, $levelAfter),
             'points' => $learner->points + $pointsEarned,
             'streak' => $learner->streak + 1,
-        ]);
+        ] + ($progress['moved'] ? ['reading_rung' => $progress['rungAfter'], 'rung_changed_at' => now()] : []));
 
         app(AdaptiveLearningService::class)->recordAttempt($learner, $activity, $session, $result, $comprehensionScore);
 
-        $this->notifyForSession($learner, $activity, $session);
+        $this->notifyForSession($learner, $activity, $session, $progress);
 
         $levelChanged = $levelBefore !== $levelAfter;
-        $levelWentUp = $accuracy >= 90;
+        $levelWentUp = $progress['moved'] === 'up';
 
         // Checked after the streak/mastery_level update above, so the
         // service sees the Learner's real new values (a fresh streak of
@@ -257,7 +257,7 @@ class LearnerReadingService
         // same-tier no-op at the Proficient ceiling) earns the badge,
         // the same distinction the results screen itself already draws
         // between levelChanged and levelWentUp.
-        $newBadges = app(BadgeService::class)->checkAfterPracticeReading($learner->fresh(), $levelChanged && $levelWentUp);
+        $newBadges = app(BadgeService::class)->checkAfterPracticeReading($learner->fresh(), $levelWentUp);
 
         $breakdown = $this->buildWordBreakdown(
             $result['accuracy']['word_feedback'] ?? [],
@@ -273,6 +273,7 @@ class LearnerReadingService
             'levelAfter' => $levelAfter,
             'levelChanged' => $levelChanged,
             'levelWentUp' => $levelWentUp,
+            'progress' => $progress,
             'pointsEarned' => $pointsEarned,
             'wordBreakdown' => $breakdown['words'],
             'extraWordsSaid' => $breakdown['extraWordsSaid'],
@@ -386,28 +387,14 @@ class LearnerReadingService
         return $maxLen > 0 && (1 - (levenshtein($reference, $spoken) / $maxLen)) >= 0.5;
     }
 
-    private function adjustMasteryLevel(?string $currentLevel, float $accuracy): string
-    {
-        $index = array_search($currentLevel, self::MASTERY_TIERS, true);
-        if ($index === false) {
-            $index = 0;
-        }
-
-        if ($accuracy >= 90) {
-            $index = min($index + 1, count(self::MASTERY_TIERS) - 1);
-        } elseif ($accuracy < 70) {
-            $index = max($index - 1, 0);
-        }
-
-        return self::MASTERY_TIERS[$index];
-    }
-
-    private function notifyForSession(Learner $learner, Activity $activity, ReadingSession $session): void
+    private function notifyForSession(Learner $learner, Activity $activity, ReadingSession $session, array $progress): void
     {
         $accuracy = round($session->accuracy_percent);
         $summary = "{$learner->first_name} read \"{$activity->title}\" with {$accuracy}% accuracy";
-        if ($session->level_before !== $session->level_after) {
-            $summary .= ", and moved to {$session->level_after}!";
+        if ($progress['moved'] === 'up') {
+            $summary .= ", and moved up to {$progress['rungLabelAfter']} ({$progress['stepAfter']}).";
+        } elseif ($progress['moved'] === 'down') {
+            $summary .= ", and was moved back to {$progress['rungLabelAfter']} for more practice.";
         } else {
             $summary .= '.';
         }

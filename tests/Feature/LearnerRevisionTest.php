@@ -332,8 +332,8 @@ class LearnerRevisionTest extends TestCase
         $this->assertFalse((bool) $session->flagged_needs_attention);
         $this->assertSame(0, PersonalWordBank::count(), 'a word the app did not hear well is never put in the child\'s word bank');
         $this->assertTrue($session->word_feedback[3]['unsure']);
-        // 100% moves a Developing reader up.
-        $this->assertSame('Proficient', $kid->fresh()->mastery_level);
+        // One perfect reading no longer moves a child a whole level: that takes several strong readings (ReadingProgression).
+        $this->assertSame('Developing', $kid->fresh()->mastery_level);
     }
 
     // ------------------------------------------------------------- Home
@@ -349,5 +349,48 @@ class LearnerRevisionTest extends TestCase
             ->assertSee('Why this one?')->assertSee('RL1PWS-I-1');
         // Same animations as before: the flame, the star and the flying owl are still the live ones.
         $page->assertSee('owl-bird.json', false)->assertSee('flame-icon.json', false);
+    }
+
+    // ------------------------------------------------------------- growing one step at a time
+
+    public function test_a_perfect_reading_shows_how_many_strong_readings_are_still_needed_and_moves_nobody(): void
+    {
+        [$kid, $activity] = $this->loggedInChild();
+        $kid->update(['reading_rung' => 1, 'mastery_level' => 'Beginning', 'rung_changed_at' => now()->subDay()]);
+        Http::fake(['reading.test/analyze' => Http::response($this->analysis(['accuracy' => 100.0]))]);
+
+        $this->post(route('learner.activity.record', $activity), ['audio' => $this->audio()])->assertOk()
+            ->assertSee('Strong readings toward growing: 1 of 3')->assertDontSee('Level up!');
+
+        $kid->refresh();
+        $this->assertSame(1, $kid->reading_rung, 'six or eight words read perfectly once is not a step up');
+        $this->assertSame('Beginning', $kid->mastery_level);
+    }
+
+    public function test_the_third_strong_reading_of_different_activities_moves_the_child_up_exactly_one_step(): void
+    {
+        [$kid, $activity] = $this->loggedInChild();
+        $kid->update(['reading_rung' => 1, 'mastery_level' => 'Beginning', 'rung_changed_at' => now()->subDay()]);
+        $teacher = Teacher::first();
+        foreach ([30, 20] as $minutesAgo) {
+            $other = $this->activity($teacher, ['title' => "Other {$minutesAgo}"]);
+            $row = ReadingSession::create(['learner_id' => $kid->id, 'activity_id' => $other->id, 'session_type' => 'Practice', 'initiated_by' => 'Teacher', 'accuracy_percent' => 95, 'level_before' => 'Beginning', 'level_after' => 'Beginning']);
+            $row->timestamp = now()->subMinutes($minutesAgo);
+            $row->save();
+        }
+        Http::fake(['reading.test/analyze' => Http::response($this->analysis(['accuracy' => 100.0]))]);
+
+        $this->post(route('learner.activity.record', $activity), ['audio' => $this->audio()])->assertOk()
+            ->assertSee('Level up! You are now a Sentence Reader');
+
+        $kid->refresh();
+        $this->assertSame(2, $kid->reading_rung, 'one step, not a jump to the lowest step of the next level');
+        $this->assertSame('Beginning', $kid->mastery_level, 'short sentences are still inside Beginning');
+        $this->assertNotNull($kid->rung_changed_at);
+        $this->assertTrue($kid->rung_changed_at->isAfter(now()->subMinute()), 'the count starts again from this move');
+        $this->assertTrue(
+            \App\Models\Notification::where('message', 'like', '%moved up to Short sentences (Sentence Reader)%')->exists(),
+            'the teacher is told the child moved, and to which step'
+        );
     }
 }

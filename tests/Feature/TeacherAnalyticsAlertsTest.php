@@ -278,6 +278,28 @@ class TeacherAnalyticsAlertsTest extends TestCase
             ->assertSee('Rain on the Roof')->assertSee('Assign next level');
     }
 
+    public function test_readings_the_app_has_already_used_to_move_a_child_are_not_a_ready_to_move_up_alert(): void
+    {
+        [$user, $teacher] = $this->teacher();
+        $class = $this->klass($teacher, ['name' => 'Sampaguita']);
+        $ana = $this->kid($class, ['first_name' => 'Ana', 'last_name' => 'Reyes', 'mastery_level' => 'Developing', 'reading_rung' => 3]);
+        $used = $this->activity($teacher, 'Medium', ['title' => 'Medium done']);
+        foreach ([[93, 3], [95, 2], [94, 0]] as [$v, $d]) {
+            $this->read($ana, $used, $v, $d);
+        }
+        $this->actingAs($user);
+
+        // Moved a moment after the last of those readings: the three readings were the proof, not news.
+        $ana->update(['rung_changed_at' => now()]);
+        $this->get(route('teacher.notifications.index'))->assertOk()->assertDontSee('Ana Reyes is ready to move up');
+        $this->assertSame(0, app(TeacherAlerts::class)->openCount($teacher));
+
+        // Moved long before: these readings are new evidence, and the teacher is told what to try.
+        $ana->update(['rung_changed_at' => now()->subDays(30)]);
+        $this->get(route('teacher.notifications.index'))->assertOk()->assertSee('Ana Reyes is ready to move up')
+            ->assertSee('from at least two different activities');
+    }
+
     public function test_a_learner_who_has_gone_quiet_is_listed_without_a_suggestion(): void
     {
         [$user, $teacher] = $this->teacher();

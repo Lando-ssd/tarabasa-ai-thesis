@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Http\Controllers\LearnerController;
 use App\Models\Learner;
+use App\Services\ReadingProgression;
 
 /**
  * What a Teacher is shown about a learner who joins their class: what the Parent said when adding the child, where the
@@ -92,6 +93,68 @@ class LearnerProfile
             'startsAt' => $startsAt,
             'mismatch' => $mismatch,
             'bestFit' => self::bestFit($learner, $readiness),
+            'teach' => self::teach($learner, $readiness),
+            'pattern' => self::pattern($learner),
+            'progress' => $checkDone || $learner->reading_rung !== null ? app(ReadingProgression::class)->progress($learner) : null,
+        ];
+    }
+
+    /**
+     * The kind of mistake the child keeps making across their recent readings (ErrorPatterns), in a teacher's words with
+     * one thing to try and the curriculum competency it practises. Null when there is not enough evidence: a few
+     * mistakes are not a pattern, and nothing is invented.
+     *
+     * @return null|array{says:string, tip:string, code:string, codeText:string, early:bool, examples:list<string>, readings:int}
+     */
+    private static function pattern(Learner $learner): ?array
+    {
+        $profile = ErrorPatterns::forLearner($learner);
+        $main = ErrorPatterns::mainPattern($profile);
+
+        if ($main === null) {
+            return null;
+        }
+
+        $category = ErrorPatterns::CATEGORIES[$main];
+
+        return [
+            'says' => $category['teacher'],
+            'tip' => $category['tip'],
+            'code' => $category['code'],
+            'codeText' => $category['codeText'],
+            'early' => $profile['early'],
+            'examples' => $profile['top'][0]['examples'] ?? [],
+            'readings' => $profile['readings'],
+        ];
+    }
+
+    /**
+     * How to teach at the child's step, from config/teaching_path.php, with the "ready for the next step" line written from
+     * the same numbers the app counts (config/progression.php), so what the teacher reads is what is being measured.
+     *
+     * @param  null|array{rung:int, source:string, sourceText:string}  $readiness
+     * @return array{focus:string, moves:list<string>, ready:string, watch:string, basis:string}
+     */
+    private static function teach(Learner $learner, ?array $readiness): array
+    {
+        $rung = $readiness['rung'] ?? 2;
+        $path = config("teaching_path.rungs.{$rung}");
+        $min = config("progression.min_words.{$rung}");
+
+        $ready = $path['ready'] ?? sprintf(
+            'Reads %d words or more at %d percent or better, %d times, in at least %d different activities. One reading is never enough to move a child.',
+            $min,
+            config('progression.up_accuracy'),
+            config('progression.up_readings'),
+            config('progression.up_distinct_activities'),
+        );
+
+        return [
+            'focus' => $path['focus'],
+            'moves' => $path['moves'],
+            'ready' => $ready,
+            'watch' => $path['watch'],
+            'basis' => config('teaching_path.basis'),
         ];
     }
 

@@ -527,6 +527,14 @@ table.rep{ width:100%; border-collapse:collapse; font-size:13.5px; } table.rep t
 .profile .pf-more li{ margin:4px 0; }
 .profile .bestfit{ margin-top:10px; padding:10px 14px; border-radius:14px; background:var(--green-bg); border:2px solid #b7e2d6; color:#0f6a55; display:grid; gap:4px; font-size:14px; line-height:1.45; }
 .profile .bestfit b{ font-size:14.5px; }
+/* Progress toward the next step, and how to teach this step (config/teaching_path.php). */
+.profile .stepbar{ margin-top:10px; padding:10px 14px; border-radius:14px; background:#fff; border:2px solid var(--line, #dbe7f1); display:grid; gap:6px; font-size:14px; line-height:1.45; }
+.profile .stepbar .track{ display:flex; gap:6px; }
+.profile .stepbar .seg{ flex:1; height:10px; border-radius:6px; background:#e3edf5; }
+.profile .stepbar .seg.on{ background:var(--blue-ink, #1f6fb2); }
+.profile .teachhow{ margin-top:10px; font-size:14px; } .profile .teachhow summary{ cursor:pointer; color:var(--blue-ink); font-weight:600; }
+.profile .teachhow ol{ margin:6px 0 6px 18px; padding:0; } .profile .teachhow li{ margin:4px 0; }
+.profile .teachhow p{ margin:4px 0; } .profile .teachhow .basis{ color:var(--muted); font-size:12.5px; }
 
 /* The note about whether an activity can be read by the learners it is going to (ActivityFit). */
 .fit{ margin:0 0 12px; padding:10px 14px; border-radius:14px; font-size:14.5px; line-height:1.45; border:2px solid; }

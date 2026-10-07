@@ -29,6 +29,9 @@ class ReadingLevel
         4 => ['name' => 'Story Reader', 'skill' => 'Reading Stories', 'blurb' => 'Read stories and answer questions', 'code' => 'EN3CAT-I-1', 'codeText' => 'English Grade 3 EN3CAT-I-1 and EN3CAT-I-2: read with speed, accuracy and expression, and understand stories'],
     ];
 
+    /** What each of the seven rungs reads, in plain words (teachers and parents; a child sees the four step names). */
+    public const RUNG_LABELS = [0 => 'Letters', 1 => 'Words', 2 => 'Short sentences', 3 => 'Sentences', 4 => 'Short stories', 5 => 'Stories', 6 => 'Longer stories'];
+
     /** The three stored levels, as the ladder rungs each covers (the ladder is in config/diagnostic.php). */
     public const TIER_RUNGS = ['Beginning' => [0, 2], 'Developing' => [3, 4], 'Proficient' => [5, 6]];
 

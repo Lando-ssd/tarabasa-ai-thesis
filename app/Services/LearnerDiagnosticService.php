@@ -300,6 +300,7 @@ class LearnerDiagnosticService
         $rungIndex = array_search($landedTier, DiagnosticPlacement::ladder(), true);
         if ($rungIndex !== false) {
             $update['reading_rung'] = $rungIndex;
+            $update['rung_changed_at'] = now(); // readings after this day count toward the next step
         }
 
         $learner->update($update);

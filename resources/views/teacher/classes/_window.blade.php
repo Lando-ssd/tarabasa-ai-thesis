@@ -41,8 +41,8 @@
         <div class="toolbar">
           <div class="search">
             @include('learner._badge-icon', ['icon' => 'magnifying-glass', 'class' => 'ico'])
-            <label class="sr" for="rq-{{ $c->id }}">Search this class</label>
-            <input type="search" id="rq-{{ $c->id }}" placeholder="Search this class" autocomplete="off" data-filter="#roster-{{ $c->id }}">
+            <label class="sr" for="rq-{{ $c->id }}">Search learners</label>
+            <input type="search" id="rq-{{ $c->id }}" placeholder="Search learners" autocomplete="off" data-filter="#roster-{{ $c->id }}">
           </div>
           @if ($nLearners > 1)
             <div class="sortrow">
@@ -263,6 +263,8 @@
             @csrf
             <input type="hidden" name="form" value="class"><input type="hidden" name="target_class_id" value="{{ $c->id }}"><input type="hidden" name="view" value="add">
             <p class="note" style="margin:0 0 14px">Ask the parent for the Learner Code, like TB26-48293. Type only the last 5 characters (48293). Pasting the whole code works too. A learner can only be in one class at a time.</p>
+            @php $gl = \App\Support\ClassLevel::general($c); @endphp
+            <p class="note" style="margin:0 0 14px">This class is taught at the {{ $gl['label'] }} level{{ $gl['source'] === 'grade' ? ' (the usual level for '.$c->grade_level.')' : ' (the middle level of its learners)' }}. A learner who already reads at the Independent level cannot be added to a class taught at a lower level, even in the same grade. They belong in a class taught at a higher level.</p>
             <div class="field">
               <label for="code-{{ $c->id }}">Learner Code</label>
               <div class="codebox"><span class="pre">TB..-</span><input type="text" id="code-{{ $c->id }}" name="learner_code" data-af placeholder="48293" maxlength="10" autocomplete="off" spellcheck="false" value="{{ $isTarget && old('view') === 'add' ? old('learner_code') : '' }}"></div>
@@ -355,6 +357,31 @@
               <span>{{ $pf['bestFit']['step'] }}: {{ $pf['bestFit']['skill'] }} ({{ $pf['bestFit']['code'] }}). {{ ucfirst($pf['bestFit']['level']) }} activities, {{ $pf['bestFit']['words'] }}.</span>
               <span>{{ $pf['bestFit']['advice'] }}</span>
             </div>
+            @if ($pf['progress'])
+              @php $pg = $pf['progress']; @endphp
+              <div class="stepbar">
+                <b>@if ($pg['atTop']) {{ $l->first_name }} is on the top step @else Toward {{ $pg['nextRungLabel'] }} @endif</b>
+                @unless ($pg['atTop'])
+                  <div class="track" aria-hidden="true">@for ($i = 1; $i <= $pg['need']; $i++)<span class="seg {{ $i <= $pg['have'] ? 'on' : '' }}"></span>@endfor</div>
+                  <span>{{ $pg['have'] }} of {{ $pg['need'] }} strong readings so far at {{ $pg['rungLabel'] }}. {{ $l->first_name }} moves up one step only after {{ $pg['need'] }} strong readings of different activities, so one good reading never moves a child.</span>
+                @endunless
+              </div>
+            @endif
+            @if ($pf['pattern'])
+              @php $pt = $pf['pattern']; @endphp
+              <div class="stepbar">
+                <b>What the readings show</b>
+                <span>Over the last {{ $pt['readings'] }} readings, {{ $l->first_name }} {{ $pt['says'] }}@if ($pt['examples']) (for example {{ implode(', ', $pt['examples']) }})@endif.@if ($pt['early']) This is an early sign, so it may change as {{ $l->first_name }} reads more.@endif</span>
+                <span><b>Try:</b> {{ $pt['tip'] }} ({{ $pt['code'] }}: {{ $pt['codeText'] }})</span>
+              </div>
+            @endif
+            <details class="teachhow"><summary>How to teach this step</summary>
+              <p><b>What {{ $l->first_name }} is learning:</b> {{ $pf['teach']['focus'] }}</p>
+              <ol>@foreach ($pf['teach']['moves'] as $move)<li>{{ $move }}</li>@endforeach</ol>
+              <p><b>Ready for the next step when:</b> {{ $pf['teach']['ready'] }}</p>
+              <p><b>Watch for:</b> {{ $pf['teach']['watch'] }}</p>
+              <p class="basis">Basis: {{ $pf['teach']['basis'] }}</p>
+            </details>
           </div>
           <div class="block"><span class="eyebrow">Grade history</span>
             @if (! empty($hist['chain']))

@@ -211,6 +211,12 @@ class TeacherAlerts
             return null;
         }
 
+        // Readings the app has already used to move the child (ReadingProgression) are not news: after a move the count
+        // starts again, so only readings made after the child's last move can say they are ready for the next one.
+        if ($learner->rung_changed_at !== null && $this->at($last3->last())->lte($learner->rung_changed_at)) {
+            return null;
+        }
+
         $accuracies = $last3->reverse()->map(fn ($s) => (int) round($s->accuracy_percent))->values();
 
         return [
@@ -220,7 +226,7 @@ class TeacherAlerts
             'title' => $learner->first_name.' '.$learner->last_name.' is ready to move up',
             'band' => ReadingLevel::band($learner),
             'evidence' => self::IN_A_ROW.' readings at '.self::UP_AT.'% or above',
-            'why' => $learner->first_name."'s last three readings scored ".$this->list($accuracies->map(fn ($v) => $v.'%')->all()).'. The app moves a reader up one step after repeated readings at '.self::UP_AT.'% or above.',
+            'why' => $learner->first_name."'s last three readings scored ".$this->list($accuracies->map(fn ($v) => $v.'%')->all()).'. The app moves a reader up one step after '.self::IN_A_ROW.' readings at '.self::UP_AT.'% or above that are long enough for the step and come from at least two different activities. If it has not moved '.$learner->first_name.' yet, those readings were too short or from one activity, so a harder activity is the next step to try.',
             'pattern' => null,
             'profile' => null,
             'evidence_at' => $newest,
