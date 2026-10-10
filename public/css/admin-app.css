@@ -1,0 +1,84 @@
+/* =========================================================
+   The Admin screens: the Teacher app's look (public/css/teacher-app.css is loaded first) plus the few pieces only
+   the Admin needs: the "needs you" list, person cards, the accounts table, health cards and the activity log.
+   ========================================================= */
+
+.nav-count.red{ background:var(--danger); }
+.tiles-gap{ margin-top:16px; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.pill.mute{ background:#eef3f8; color:#6b8196; }
+.tinypill{ font-size:13px; padding:3px 9px 2px; margin-left:6px; }
+
+/* ---------- Overview: needs you ---------- */
+.item.need.red{ border-color:#f0b3b3; background:#fffafa; }
+.item.need.amber{ border-color:#f0d28a; background:#fffcf3; }
+.item.need{ align-items:flex-start; padding:12px 14px; }
+.item.need .item-ico{ margin-top:2px; }
+.item.need .item-title{ font-size:21px; }
+div.item.need{ cursor:default; }
+
+/* ---------- Approvals: a card per person ---------- */
+.people{ display:flex; flex-direction:column; gap:14px; }
+.person{ display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto; gap:8px 22px; align-items:start; }
+.person h3{ margin-bottom:8px; }
+.facts{ display:grid; grid-template-columns:max-content minmax(0,1fr); gap:3px 14px; margin:0; font-size:14.5px; }
+.facts dt{ color:var(--soft); font-weight:600; }
+.facts dd{ margin:0; word-break:break-word; }
+.person-side{ display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
+.gate{ margin:0; color:var(--amber); font-size:13.5px; line-height:1.4; }
+.person-acts{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+.person-acts form{ margin:0; }
+.btn.danger{ color:var(--danger); }
+.field select{ width:100%; }
+
+/* ---------- Accounts table ---------- */
+.tcard{ padding:8px 8px 4px; }
+.tw{ overflow-x:auto; }
+.tw table{ width:100%; border-collapse:collapse; font-size:14.5px; min-width:660px; }
+.tw th{ text-align:left; padding:12px 12px 10px; font:600 14px/1 var(--font-game); letter-spacing:.1em; text-transform:uppercase; color:var(--soft); border-bottom:2px solid var(--line); white-space:nowrap; }
+.tw td{ padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.tw tbody tr:last-child td{ border-bottom:0; }
+.tw tr.dim td{ opacity:.62; }
+.tw td b{ display:block; font-size:15.5px; }
+.tw .mail{ display:block; color:var(--muted); font-size:13px; word-break:break-all; }
+.tw .nowrap{ white-space:nowrap; color:var(--muted); }
+.tw .acts{ white-space:nowrap; text-align:right; }
+.tw .acts .btn + .btn, .tw .acts form + .btn, .tw .acts .btn + form{ margin-left:6px; }
+.pager{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:12px 8px 8px; color:var(--muted); font-size:14px; }
+.pager-btns{ display:flex; gap:8px; }
+
+/* ---------- System health ---------- */
+.now{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.now-text{ min-width:240px; flex:1; }
+.svc-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.svc h3{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+.svc p{ margin:0 0 8px; }
+.svc-does{ color:var(--muted); }
+.svc-now{ font-weight:600; }
+.svc-if{ color:var(--soft); font-size:14px; }
+.svc.problem{ border-color:#f0b3b3; }
+.svc.asleep{ border-color:#f0d28a; }
+.svc-more{ margin-top:6px; font-size:13.5px; color:var(--muted); }
+.svc-more summary{ cursor:pointer; font-weight:600; }
+.svc-more ul{ margin:6px 0 0; padding-left:18px; }
+.svc-more li{ margin:3px 0; word-break:break-word; }
+
+/* ---------- activity log and problems ---------- */
+.logs{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+.logl{ display:grid; grid-template-columns:160px minmax(0,1fr); gap:14px; padding:12px 4px; border-bottom:1px solid var(--line); }
+.logs .logl:last-child{ border-bottom:0; }
+.logl time{ color:var(--soft); font-size:13.5px; padding-top:2px; }
+.logl .reason{ color:var(--muted); font-size:14px; margin-left:6px; }
+.logl details{ margin-top:6px; }
+.logl summary, .tech summary{ cursor:pointer; font-weight:600; color:var(--blue-ink); font-size:14px; }
+.logl pre, .tech pre{ margin:8px 0 0; padding:12px; background:#f5f9ff; border:2px solid var(--line); border-radius:12px; font:12.5px/1.5 ui-monospace,Consolas,monospace; white-space:pre-wrap; word-break:break-word; color:var(--ink); }
+
+@media (max-width:900px){
+  /* A wide table must scroll inside its own box, never widen the page: the single column may shrink below its content. */
+  .shell{ grid-template-columns:minmax(0,1fr); }
+  .main-col, .main, .wrap, .tcard{ min-width:0; max-width:100%; }
+  .person{ grid-template-columns:minmax(0,1fr); }
+  .person-acts{ justify-content:flex-start; }
+  .svc-grid{ grid-template-columns:minmax(0,1fr); }
+  .logl{ grid-template-columns:minmax(0,1fr); gap:2px; }
+}

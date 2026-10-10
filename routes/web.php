@@ -148,10 +148,18 @@ Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
 // user_type = Admin. A Teacher or Parent hitting these URLs directly
 // gets a 403 from EnsureUserIsAdmin, not just a hidden nav link.
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    // The five Admin screens (Overview keeps its old name, "admin.dashboard", because the sign in sends the Admin there).
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/approvals', [AdminController::class, 'approvals'])->name('approvals');
+    Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
+    Route::get('/health', [AdminController::class, 'health'])->name('health');
+    Route::get('/log', [AdminController::class, 'log'])->name('log');
+
     Route::post('/teachers/{teacher}/activate', [AdminController::class, 'activateTeacher'])->name('teachers.activate');
     Route::post('/teachers/{teacher}/reject', [AdminController::class, 'rejectTeacher'])->name('teachers.reject');
+    Route::post('/teachers/{teacher}/reopen', [AdminController::class, 'reopenTeacher'])->name('teachers.reopen');
     Route::post('/users/{user}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
+    Route::post('/users/{user}/resend-verification', [AdminController::class, 'resendVerification'])->middleware('throttle:20,1')->name('users.resend-verification');
     // Asks the three teammate services, from this server, whether they answer (see App\Services\ServiceCheck).
     Route::post('/service-check', [AdminController::class, 'checkServices'])->name('service-check');
 });

@@ -235,7 +235,7 @@ class SecurityHardeningTest extends TestCase
         $this->get(route('admin.dashboard'))->assertOk()->assertDontSee('still uses the password');
     }
 
-    public function test_the_admin_dashboard_lists_only_the_newest_accounts_and_can_search_for_the_rest(): void
+    public function test_the_admin_accounts_screen_lists_a_page_at_a_time_and_can_search_for_the_rest(): void
     {
         $admin = User::create(['first_name' => 'T', 'last_name' => 'A', 'email' => 'a@example.com', 'password' => 'x-long-private-password', 'user_type' => 'Admin']);
         foreach (range(1, 130) as $i) {
@@ -243,13 +243,14 @@ class SecurityHardeningTest extends TestCase
         }
 
         $this->actingAs($admin);
-        $page = $this->get(route('admin.dashboard'))->assertOk();
-        $page->assertSee('Showing the newest 100 of 130')->assertSee('Find any account');
-        $this->assertLessThanOrEqual(100, substr_count($page->getContent(), 'Lister'));
+        $page = $this->get(route('admin.accounts'))->assertOk();
+        $page->assertSee('Showing 1 to 25 of 130')->assertSee('Search by name or email');
+        $this->assertSame(25, substr_count($page->getContent(), '<tr class='), 'a page shows 25 accounts, never every account');
+        $this->get(route('admin.accounts', ['page' => 6]))->assertOk()->assertSee('Showing 126 to 130 of 130');
 
-        $this->get(route('admin.dashboard', ['q' => 'Person7@']))->assertOk(); // junk-ish search does not crash
-        $this->get(route('admin.dashboard', ['q' => 'p7@example']))->assertOk()->assertSee('Person7');
-        $this->get(route('admin.dashboard', ['q' => ['x']]))->assertStatus(400); // a list in the address is refused everywhere
+        $this->get(route('admin.accounts', ['q' => 'Person7@']))->assertOk(); // junk-ish search does not crash
+        $this->get(route('admin.accounts', ['q' => 'p7@example']))->assertOk()->assertSee('Person7');
+        $this->get(route('admin.accounts', ['q' => ['x']]))->assertStatus(400); // a list in the address is refused everywhere
     }
 
     public function test_a_visitor_who_is_not_signed_in_cannot_tell_which_activity_numbers_exist(): void
