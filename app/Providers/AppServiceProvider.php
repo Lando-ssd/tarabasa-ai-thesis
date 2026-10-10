@@ -39,6 +39,12 @@ class AppServiceProvider extends ServiceProvider
             $view->with('navUnread', $counts['unread'])->with('navClaim', $counts['claim']);
         });
 
+        // And the Admin menu: teachers waiting for approval and services with a real problem.
+        View::composer('layouts.admin-shell', function ($view) {
+            $counts = auth()->check() ? \App\Support\AdminNav::counts() : ['waiting' => 0, 'health' => 0];
+            $view->with('navWaiting', $counts['waiting'])->with('navHealth', $counts['health']);
+        });
+
         // Laravel's database queue connector, with one optional switch (QUEUE_POP_LOCK=plain) for a
         // database that has no "FOR UPDATE SKIP LOCKED" (TiDB). Without the switch it returns
         // Laravel's own queue, so nothing changes on any other host.

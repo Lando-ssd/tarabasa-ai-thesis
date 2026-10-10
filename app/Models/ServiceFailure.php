@@ -16,7 +16,7 @@ class ServiceFailure extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['service', 'status', 'trail', 'content_type', 'what', 'body'];
+    protected $fillable = ['service', 'status', 'trail', 'content_type', 'what', 'body', 'details'];
 
     protected $casts = ['created_at' => 'datetime'];
 
@@ -27,7 +27,7 @@ class ServiceFailure extends Model
      * @param  ?Response  $response  null when the service never answered at all
      * @param  array<int,int|string>  $trail  every status seen, in order (a retry adds one each time)
      */
-    public static function record(string $service, ?Response $response, string $what, array $trail = [], ?string $note = null): void
+    public static function record(string $service, ?Response $response, string $what, array $trail = [], ?string $note = null, ?array $details = null): void
     {
         try {
             self::create([
@@ -37,6 +37,8 @@ class ServiceFailure extends Model
                 'content_type' => $response ? mb_substr((string) $response->header('Content-Type'), 0, 80) : null,
                 'what' => mb_substr($what, 0, 160),
                 'body' => mb_substr($note ?? ($response ? $response->body() : ''), 0, 1500),
+                // What a service check found, as data (see App\Services\ServiceCheck). Null for every other row.
+                'details' => $details !== null ? json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
             ]);
 
             self::where('created_at', '<', now()->subDays(self::KEEP_DAYS))->delete();

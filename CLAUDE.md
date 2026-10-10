@@ -6371,7 +6371,7 @@ already did locally; the live site is simply older than the local commit `f2b401
   teammate-service variables blank. Checked in a browser: refusal text, roster tags and banner, the moved-up note, the Alerts item,
   and the locked grade dropdown with the multigrade box.
 
-## One grade per class with NO exception, the Non-reader alert, and the DepEd basis (2026-10-10, BUILT LOCALLY, NOT PUSHED YET)
+## One grade per class with NO exception, the Non-reader alert, and the DepEd basis (2026-10-10, PUSHED as 136917a and live on Render)
 
 The user answered the open questions. Their rule: a class is only for ONE grade ("Grade 1 is only for Grade 1, Grade 2 only for Grade 2,
 Grade 3 only for Grade 3"), even when the teacher handles several grades; they asked for the sign up and class creation to carry it, and a
@@ -6402,7 +6402,7 @@ message or warning when a teacher tries to merge grades. So the "Multigrade clas
   Said kindly: "where reading instruction begins, not a mark against" the child. Tests: `NonReaderAlertTest` (7).
 - **Rule based, still not a trained model** (the user asked to "train the AI more"): the "training" is more curriculum knowledge, not machine learning:
   the DepEd references above, an element of reading per step, and the alert. State this plainly; there is no dataset of children's recordings to train on.
-- **Admin redesign: PREVIEW ONLY, not built.** Artifact `https://claude.ai/artifact/8rPvNjawdcUcoFLui1b91u` (source in the session scratchpad, not the
+- **Admin redesign: BUILT on 2026-10-10 night (see the section "Admin rebuilt" below).** The notes that follow describe what it fixed. Artifact `https://claude.ai/artifact/8rPvNjawdcUcoFLui1b91u` (source in the session scratchpad, not the
   repo) shows a left-menu Admin (Overview, Approvals, Accounts, System health, Activity log) and a "What changes" list. Problems found in the current
   `admin/dashboard` + `AdminController`: one long standalone page; service problems above the approvals; a Rejected teacher can never be reopened; no
   confirmation or reason on approve/reject; `rejectTeacher`/`activateTeacher` do not check the teacher is Pending (callable on an Active one by URL);
@@ -6411,6 +6411,44 @@ message or warning when a teacher tries to merge grades. So the "Multigrade clas
   `<pre>` dumps for service problems; stat tiles not clickable; no record of who did what. WAITING for the user's yes or no on: block Approve until the
   email is verified, show the rejection reason to the teacher, add an `admin_actions` log table, and account deletion (Data Privacy Act) which is not built.
 - **Tests:** full suite 307 passing (ClassGradeAndMovesTest rewritten for the one-grade rule, NonReaderAlertTest new).
+
+## Admin rebuilt (2026-10-10 night, PUSHED to this live branch on 2026-10-11)
+
+The user showed the live Admin Dashboard ("still the same ui and a lot of errors") and said to fix the Admin first. They never answered the four
+yes/no questions of the preview, so the preview's RECOMMENDED answers were built (they can be flipped): (1) Approve is blocked until the teacher's
+email is verified, (2) the rejection reason is shown to the teacher at sign in, (3) an Activity log table exists, (4) account deletion is NOT built (still
+open: Data Privacy Act).
+- **Why the live screen showed "a lot of errors".** Every service check at app start got `429 Too Many Requests` from the three sleeping teammate services
+  (a request from another Render service does not wake them, see `partials/wake-from-browser`), and each one was counted as a PROBLEM, 14 rows of it. Now
+  `App\Services\ServiceCheck` classifies every probe as `ok`, `asleep` (a 429 or a timeout from a teammate service: "no answer yet", NOT a problem) or
+  `problem` (anything else, and Gmail is never "asleep"), writes the result as data in the new `service_failures.details` column and keeps only the newest
+  30 check rows. System health's "Check now" first wakes the services FROM THE ADMIN'S BROWSER (a bare no-cors GET of each `/health`, up to 75 s, then
+  submits the form), so the server's own check then gets real answers. Tested locally: after the browser wake the check said "every service answered
+  normally" (reader 1.5 s, generator 0.7 s). Old check rows without details are hidden from "Problems in the last 14 days" (most were this noise).
+- **The five screens** (`layouts/admin-shell`, `admin/_sidebar`, `_tabbar`, `public/css/admin-app.css` on top of `teacher-app.css`/`teacher-app.js`):
+  Overview (`admin.dashboard`, "Needs you" in order: teachers waiting, email problem, real service problems, the old public Admin password; four clickable
+  tiles; latest actions), Approvals (Waiting/Rejected tabs, a card per teacher with email verified or not, "Send the email again", Approve and Reject open
+  windows, Reject needs a listed reason and "Other" needs a note, Rejected has Reopen), Accounts (one search, one filter, 25 a page, Verification and Account
+  as two named columns, unverified pill, Deactivate asks for an optional note), System health (a card per service: Reading checker, Activity generator,
+  Adaptive recommender, Email sending, each with what it does, what happens if it is down, and Working / Asleep / Needs you; Reconnect Gmail; problems list;
+  technical details), Activity log (who did what, with the reason). The menu shows the waiting count and a RED count only for a real problem.
+- **Server rules** (`AdminController`, all tested): only a Pending teacher can be approved or rejected, only Rejected can be reopened, approve needs
+  `email_verified_at`, an Admin can never be a target (403), resend verification is once a minute per person, every change writes `admin_actions`
+  (names are copied into the row so it still reads after an account is deleted). A rejected teacher's sign in message now ends with "Reason: ..."
+  (`teachers.rejection_reason`, `AuthController::reasonLoginBlocked`, also used by Google sign in).
+- **New:** migrations `2026_10_10_200000` (teachers.rejection_reason), `_200100` (admin_actions), `_200200` (service_failures.details), models `AdminAction`,
+  support `AdminHealth` (cards, problems, wake URLs) and `AdminNav` (menu counts, a view composer in `AppServiceProvider`), routes `admin.approvals`,
+  `admin.accounts`, `admin.health`, `admin.log`, `admin.teachers.reopen`, `admin.users.resend-verification`. The old `admin/dashboard.blade.php` is gone.
+  Tests: `tests/Feature/AdminRedesignTest.php` (18) and three updated old tests (SecurityHardeningTest, ServiceErrorsTest, AccessAuditTest); full suite 342 passing.
+- **Looked at in a real browser** (local data, desktop and 375 px): all five screens, approve, reject with a missing note (refused) and with a reason, the
+  Check now wake. One layout bug found and fixed: the Accounts table made the phone page wider than the screen (now it scrolls inside its own box).
+- **Local Admin login:** `audit.admin@example.com` exists in the local database; its password was set to a local test value tonight. To set your own:
+  run `php artisan admin:sync` with `ADMIN_PASSWORD` in the environment. Local sample data used for the checks was removed afterwards.
+- **Shipped.** Committed on the live branch (`claude/admin-dashboard-approvals-62dcd0`) by cherry-picking the Admin commit from a temporary branch, with the
+  full test suite run on this branch first. The three migrations run by themselves at boot. After a deploy, open System health and press "Check now" once.
+  The mobile work lives on the separate branch `mobile-app`, which does NOT deploy.
+- **Still open:** account deletion (decision), a rejection reason cannot be edited, no bulk actions, Reconnect Gmail still ends in "copy the code into
+  GMAIL_SEND_REFRESH_TOKEN and redeploy" (a person has to paste it; the app cannot write host settings), and `ADMIN_PASSWORD` is still not set on Render.
 
 ## Before pushing this round (checklist for the next session)
 

@@ -272,7 +272,10 @@ class AuthController extends Controller
         // A Rejected Teacher gets a clear, specific rejection message even
         // though their credentials are correct — per the Admin Actor Prompt.
         if ($user->user_type === 'Teacher' && $user->teacher && $user->teacher->status === 'Rejected') {
-            return 'Your teacher registration was not approved. Contact your school\'s TaraBasa admin.';
+            // The Admin's reason, when they gave one, so the teacher knows what to fix or whom to show proof to.
+            $reason = trim((string) $user->teacher->rejection_reason);
+
+            return 'Your teacher registration was not approved.'.($reason !== '' ? ' Reason: '.rtrim($reason, '.').'.' : '').' Contact your school\'s TaraBasa admin.';
         }
 
         return null;

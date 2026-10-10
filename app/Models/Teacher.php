@@ -17,6 +17,7 @@ class Teacher extends Model
         'status',
         'free_generation_credits_remaining',
         'grades_handled',
+        'rejection_reason',
     ];
 
     protected function casts(): array

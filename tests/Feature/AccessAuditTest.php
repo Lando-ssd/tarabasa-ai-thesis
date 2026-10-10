@@ -537,7 +537,7 @@ class AccessAuditTest extends TestCase
     {
         $pages = [
             [null, ['/', '/login', '/register/teacher', '/register/parent', '/forgot-password', '/learner/login']],
-            ['admin', ['/admin/dashboard']],
+            ['admin', ['/admin/dashboard', '/admin/approvals', '/admin/approvals?tab=rejected', '/admin/accounts', '/admin/accounts?filter=teachers&q=a', '/admin/health', '/admin/log']],
             ['teacherA', ['/teacher/dashboard', '/teacher/classes', '/teacher/activities', '/teacher/analytics', '/teacher/analytics?mode=learner', '/teacher/analytics?mode=group', '/teacher/promotions', '/teacher/notifications', '/teacher/profile']],
             ['teacherPending', ['/teacher/dashboard', '/teacher/classes', '/teacher/activities', '/teacher/notifications']],
             ['parentA', ['/parent/dashboard', '/parent/children', '/parent/children/create', '/parent/children/link', '/parent/progress', '/parent/repository', '/parent/notifications', '/parent/profile']],

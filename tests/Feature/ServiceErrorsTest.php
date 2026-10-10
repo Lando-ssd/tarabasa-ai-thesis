@@ -379,17 +379,17 @@ class ServiceErrorsTest extends TestCase
         $this->assertSame(['new one'], ServiceFailure::pluck('what')->all());
     }
 
-    public function test_the_admin_sees_the_diary_on_the_dashboard_and_an_honest_empty_note_when_it_is_empty(): void
+    public function test_the_admin_sees_the_diary_on_system_health_and_an_honest_empty_note_when_it_is_empty(): void
     {
         $admin = User::create(['first_name' => 'Ada', 'last_name' => 'Admin', 'email' => 'ada@example.com', 'password' => 'Passw0rd!', 'user_type' => 'Admin']);
         $admin->forceFill(['email_verified_at' => now()])->save();
 
-        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()->assertSee('Recent service problems')->assertSee('Nothing has gone wrong')->assertSee('Check the services now');
+        $this->actingAs($admin)->get(route('admin.health'))->assertOk()->assertSee('Problems in the last 14 days')->assertSee('Nothing has gone wrong')->assertSee('Check now');
 
         ServiceFailure::record('reader', $this->reply(429, '<script>alert(1)</script> Too Many Requests', ['Content-Type' => 'text/html']), 'The reading checker is waking up or busy right now (error 429).', [429, 429, 429, 429]);
 
-        $page = $this->get(route('admin.dashboard'))->assertOk();
-        $page->assertSee('Recent service problems')->assertSee('Reading checker')->assertSee('Answered 429')->assertSee('tried 4 times')->assertSee('Too Many Requests');
+        $page = $this->get(route('admin.health'))->assertOk();
+        $page->assertSee('Problems in the last 14 days')->assertSee('Reading checker')->assertSee('Answered 429')->assertSee('tried 4 times')->assertSee('Too Many Requests');
         $this->assertStringNotContainsString('<script>alert(1)</script>', $page->getContent(), 'what a service sends back is shown as text, never run');
     }
 
@@ -432,16 +432,42 @@ class ServiceErrorsTest extends TestCase
             && str_starts_with(collect($r->data())->firstWhere('name', 'file')['contents'] ?? '', 'RIFF'));
     }
 
-    public function test_the_service_check_reports_a_429_from_the_hosting_with_what_it_said(): void
+    public function test_the_service_check_calls_a_429_from_the_hosting_no_answer_yet_not_a_problem(): void
     {
+        // Free hosting turns a request from another hosted service away with a plain "Too Many Requests" while the
+        // service sleeps. That is not a broken service, so it is not counted as a problem.
         $this->fakeAllServices(429, 'Too Many Requests', ['Content-Type' => 'text/plain; charset=utf-8']);
 
         $result = app(\App\Services\ServiceCheck::class)->runAndRecord();
 
-        $this->assertSame(2, $result['problems'], 'both recording sizes are refused');
-        $this->assertStringContainsString('2 of 5 checks had a problem', $result['summary']);
-        $this->assertStringContainsString('POST /analyze (short silent recording): PROBLEM (429)', implode("\n", $result['lines']));
+        $this->assertSame(0, $result['problems'], 'a sleeping service is not a problem');
+        $this->assertSame(2, $result['notices'], 'both recording sizes got no answer yet');
+        $this->assertStringContainsString('nothing is broken', $result['summary']);
+        $this->assertStringContainsString('POST /analyze (short silent recording): NO ANSWER YET (429)', implode("\n", $result['lines']));
         $this->assertStringContainsString('Too Many Requests', implode("\n", $result['lines']));
+
+        $states = collect($result['checks'])->where('key', 'reader')->pluck('state', 'what')->all();
+        $this->assertSame('asleep', $states['POST /analyze (short silent recording)']);
+        $this->assertSame('ok', $states['GET /health'], 'the health page still answered');
+    }
+
+    public function test_a_429_from_something_that_is_not_a_sleeping_service_is_still_a_problem(): void
+    {
+        // Gmail's token page answering 429 is a real refusal, not a sleeping service.
+        config(['mail.default' => 'gmail-api', 'services.gmail_send.refresh_token' => 'r', 'services.gmail_send.client_id' => 'c', 'services.gmail_send.client_secret' => 's']);
+        $this->fakeAllServices();
+        Http::fake([
+            'api.ipify.org*' => Http::response('203.0.113.7', 200),
+            'oauth2.googleapis.com/*' => Http::response(['error' => 'rate_limit'], 429),
+            'reader.test/*' => Http::response(['status' => 'ok'], 200),
+            'generator.test/*' => Http::response(['status' => 'ok'], 200),
+            'recommender.test/*' => Http::response(['status' => 'ok'], 200),
+        ]);
+
+        $result = app(\App\Services\ServiceCheck::class)->run();
+
+        $this->assertSame(1, $result['problems']);
+        $this->assertSame('problem', collect($result['checks'])->firstWhere('key', 'mail')['state']);
     }
 
     public function test_the_service_check_survives_a_service_that_does_not_answer_and_one_that_is_not_set_up(): void
@@ -457,12 +483,14 @@ class ServiceErrorsTest extends TestCase
         $result = app(\App\Services\ServiceCheck::class)->run();
 
         $text = implode("\n", $result['lines']);
-        $this->assertSame(2, $result['problems']);
+        $this->assertSame(1, $result['problems'], 'only the 502 is a real problem');
+        $this->assertSame(1, $result['notices'], 'a timeout on a service that sleeps is no answer yet');
         $this->assertStringContainsString('POST /analyze (silent recording as long as a real reading): OK (422)', $text);
         $this->assertStringContainsString('unknown (could not ask)', $text);
-        $this->assertStringContainsString('PROBLEM (no answer)', $text);
+        $this->assertStringContainsString('NO ANSWER YET (no answer)', $text);
         $this->assertStringContainsString('PROBLEM (502)', $text);
         $this->assertStringContainsString('Adaptive recommender: not configured', $text);
+        $this->assertSame('off', collect($result['checks'])->firstWhere('key', 'recommender')['state']);
     }
 
     public function test_the_service_check_command_writes_the_result_for_the_dashboard(): void
@@ -489,8 +517,9 @@ class ServiceErrorsTest extends TestCase
         $admin->forceFill(['email_verified_at' => now()])->save();
         $this->actingAs($admin)->post(route('admin.service-check'))->assertRedirect()->assertSessionHas('status');
 
-        $page = $this->get(route('admin.dashboard'))->assertOk();
-        $page->assertSee('Service check')->assertSee('All fine')->assertSee('What each check found');
+        // A check that found nothing wrong is not listed as a problem; its result is the newest line on System health.
+        $page = $this->get(route('admin.health'))->assertOk();
+        $page->assertSee('every service answered normally')->assertSee('Working')->assertSee('Technical details from the newest check');
     }
 
     public function test_pressing_the_check_button_twice_in_a_minute_only_checks_once(): void
