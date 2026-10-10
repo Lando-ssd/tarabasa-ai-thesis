@@ -6497,7 +6497,7 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   Home, Reading list and record, results, Badges; Games and Bookshelf last. (4) The user decides when to push; use a NEW branch
   (`mobile-app`), never the branch Render deploys, and say plainly that `main` is 112 commits behind it.
 
-## Admin rebuilt (2026-10-10 night, BUILT LOCALLY, NOT PUSHED; belongs on the LIVE branch, not `mobile-app`)
+## Admin rebuilt (2026-10-10 night, PUSHED to the live branch on 2026-10-11 as 66ebc30)
 
 The user showed the live Admin Dashboard ("still the same ui and a lot of errors") and said to fix the Admin first. They never answered the four
 yes/no questions of the preview, so the preview's RECOMMENDED answers were built (they can be flipped): (1) Approve is blocked until the teacher's
@@ -6529,10 +6529,9 @@ open: Data Privacy Act).
   Check now wake. One layout bug found and fixed: the Accounts table made the phone page wider than the screen (now it scrolls inside its own box).
 - **Local Admin login:** `audit.admin@example.com` exists in the local database; its password was set to a local test value tonight. To set your own:
   run `php artisan admin:sync` with `ADMIN_PASSWORD` in the environment. Local sample data used for the checks was removed afterwards.
-- **To ship it:** it must go to the LIVE branch (`claude/admin-dashboard-approvals-62dcd0`), because only that branch deploys. This worktree is on `mobile-app`.
-  Plan when the user says "push it now": commit ONLY the Admin files on a new branch from `mobile-app`, switch to the live branch, cherry-pick it there
-  (leave `CLAUDE.md` out of the cherry-pick and write its Admin note on the live branch by hand), run the full tests on the live branch, push, then check Render.
-  The three migrations run by themselves at boot. After the deploy open System health and press "Check now" once.
+- **Shipped.** The Admin commit was cherry-picked from a temporary branch (`admin-redesign`, `c23211a`) onto the live branch as `66ebc30` (full suite 325 passing
+  there) and pushed. `mobile-app` carries the same Admin code (identical files, so a later merge of `mobile-app` into the live branch only conflicts in this
+  notes file). After a deploy, open System health and press "Check now" once.
 - **Still open:** account deletion (decision), a rejection reason cannot be edited, no bulk actions, Reconnect Gmail still ends in "copy the code into
   GMAIL_SEND_REFRESH_TOKEN and redeploy" (a person has to paste it; the app cannot write host settings), and `ADMIN_PASSWORD` is still not set on Render.
 
