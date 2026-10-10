@@ -75,45 +75,13 @@ class LearnerAuthController extends Controller
     {
         $learner = $request->user('learner');
 
-        // This week's reading, in the child's own days. The goal dial and the
-        // growth chart both come from this one collection so they can never
-        // disagree about which readings count or where the week starts.
-        $clock = \App\Support\LearnerClock::now();
-        $weeklySessions = $learner->thisWeeksPracticeReadingSessions();
-        $weeklyCount = $weeklySessions->count();
-        $weeklyTarget = (int) config('reading_goals.weekly_target');
-
-        $perDay = $weeklySessions->countBy(fn ($s) => \App\Support\LearnerClock::local($s->timestamp)->dayOfWeekIso);
-        $labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-        $growthDays = collect(range(1, 7))->map(fn (int $isoDay) => [
-            'label' => $labels[$isoDay - 1],
-            'count' => $perDay->get($isoDay, 0),
-            'isToday' => $isoDay === $clock->dayOfWeekIso,
-            'isFuture' => $isoDay > $clock->dayOfWeekIso,
-        ]);
-
-        // The streak popover's week row runs Sunday to Saturday.
-        $readingDays = $learner->practiceReadingDays()->flip();
-        $sunday = $clock->copy()->startOfWeek(\Illuminate\Support\Carbon::SUNDAY);
-        $streakWeek = collect(range(0, 6))->map(function (int $offset) use ($sunday, $readingDays) {
-            $date = $sunday->copy()->addDays($offset);
-
-            return ['label' => ['S', 'M', 'T', 'W', 'T', 'F', 'S'][$offset], 'done' => $readingDays->has($date->toDateString())];
-        });
-
+        // The day streak, this week's goal and the growth chart come from one shared helper,
+        // the same one the phone API uses, so the two can never disagree.
         return view('learner.dashboard', [
             'learner' => $learner,
             'journeyRows' => $learner->subdomainProgressSummary(),
             'hasJourneyData' => $learner->subdomain_states !== null,
-            'dayStreak' => $learner->readingDayStreak(),
-            'streakWeek' => $streakWeek,
-            'weeklyCount' => $weeklyCount,
-            'weeklyTarget' => $weeklyTarget,
-            'weeklyMet' => $weeklyCount >= $weeklyTarget,
-            'growthDays' => $growthDays,
-            'growthScale' => max(3, (int) $growthDays->max('count')),
-        ]);
+        ] + \App\Support\LearnerHome::for($learner));
     }
 
     /**
@@ -158,14 +126,7 @@ class LearnerAuthController extends Controller
      */
     private function activityScreen(Learner $learner, Activity $activity, ?string $stage): View
     {
-        $left = app(LearnerReadingService::class)->practiceTriesLeft($learner, $activity);
-        $start = in_array($stage, ['listen', 'try', 'real'], true)
-            ? $stage
-            : ($activity->hasCompletedPracticeReadingFor($learner) ? 'real' : 'listen');
-
-        if ($start === 'try' && $left === 0) {
-            $start = 'real';
-        }
+        $practice = app(LearnerReadingService::class)->practiceStage($learner, $activity, $stage);
 
         return view('learner.activity-found', [
             'activity' => $activity,
@@ -173,8 +134,8 @@ class LearnerAuthController extends Controller
             'practice' => [
                 'tryUrl' => route('learner.activity.practice', $activity),
                 'realUrl' => route('learner.activity.record', $activity),
-                'triesLeft' => $left,
-                'startAt' => $start,
+                'triesLeft' => $practice['triesLeft'],
+                'startAt' => $practice['startAt'],
             ],
         ]);
     }

@@ -90,6 +90,27 @@ class LearnerReadingService
     }
 
     /**
+     * Where the practice stage of a reading starts: Listen, Your turn (two free tries) or Read for real. A child who
+     * has already read this activity for real goes straight to reading, and so does one whose tries are used up;
+     * $stage (listen, try or real) picks one on purpose. The website and the phone API both ask this one place.
+     *
+     * @return array{triesLeft:int, startAt:'listen'|'try'|'real'}
+     */
+    public function practiceStage(Learner $learner, Activity $activity, ?string $stage = null): array
+    {
+        $left = $this->practiceTriesLeft($learner, $activity);
+        $start = in_array($stage, ['listen', 'try', 'real'], true)
+            ? $stage
+            : ($activity->hasCompletedPracticeReadingFor($learner) ? 'real' : 'listen');
+
+        if ($start === 'try' && $left === 0) {
+            $start = 'real';
+        }
+
+        return ['triesLeft' => $left, 'startAt' => $start];
+    }
+
+    /**
      * One practice try before the real reading. It is a free attempt (recordFreeReattempt): the same
      * word by word feedback, nothing saved. A try that could not be heard does not use up a try.
      */

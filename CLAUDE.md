@@ -6371,7 +6371,7 @@ already did locally; the live site is simply older than the local commit `f2b401
   teammate-service variables blank. Checked in a browser: refusal text, roster tags and banner, the moved-up note, the Alerts item,
   and the locked grade dropdown with the multigrade box.
 
-## One grade per class with NO exception, the Non-reader alert, and the DepEd basis (2026-10-10, BUILT LOCALLY, NOT PUSHED YET)
+## One grade per class with NO exception, the Non-reader alert, and the DepEd basis (2026-10-10, PUSHED as 136917a and live on Render)
 
 The user answered the open questions. Their rule: a class is only for ONE grade ("Grade 1 is only for Grade 1, Grade 2 only for Grade 2,
 Grade 3 only for Grade 3"), even when the teacher handles several grades; they asked for the sign up and class creation to carry it, and a
@@ -6411,6 +6411,91 @@ message or warning when a teacher tries to merge grades. So the "Multigrade clas
   `<pre>` dumps for service problems; stat tiles not clickable; no record of who did what. WAITING for the user's yes or no on: block Approve until the
   email is verified, show the rejection reason to the teacher, add an `admin_actions` log table, and account deletion (Data Privacy Act) which is not built.
 - **Tests:** full suite 307 passing (ClassGradeAndMovesTest rewritten for the one-grade rule, NonReaderAlertTest new).
+
+## Mobile app, Part 2 started: the Expo project in `mobile/` (2026-10-10, PUSHED to the branch `mobile-app`, not to the live branch)
+
+**Branches, so nobody pushes to the wrong one.** Render deploys ONLY `claude/admin-dashboard-approvals-62dcd0` (at `136917a` when the mobile
+work was pushed). All mobile work, and the phone API changes that came with it, live on `mobile-app`, which does not deploy. This worktree
+(`sleepy-rhodes-2f3ecb`) was switched to `mobile-app`. A fix for the live website belongs on the live branch (switch to it, or use another
+worktree), and `mobile-app` is merged into it only when the user says so. `main` is about 112 commits behind the live branch; do not clone
+or branch from `main`. The website's Home now uses `App\Support\LearnerHome` and the practice stage rule uses
+`LearnerReadingService::practiceStage`: both are website code too, so merging `mobile-app` changes the live site (covered by tests).
+
+The user said "lets start the react js for mobile" and asked whether it can work. It can. "react js" is read as React Native with
+Expo (the stack recorded in "Mobile app, Part 1"; an older memory note said the adviser had not signed off on it, so ask once if the
+adviser's answer matters). Learner only, as scoped in Part 1. The manuscript still names Kotlin: that is a documentation item for the team.
+- **What exists.** `mobile/` is a standalone Expo SDK 57 / React Native 0.86 / TypeScript project (created with `create-expo-app
+  --template blank-typescript`; its own `.gitignore` keeps `node_modules`, `.expo` and `.env*.local` out of git; the template's nested
+  `.claude/settings.json` and `LICENSE` were deleted, `AGENTS.md` kept). `mobile` is in `.dockerignore` so the server image never carries it.
+  Expo has changed a lot between versions: read the versioned docs (`https://docs.expo.dev/versions/v57.0.0/`) before writing code that
+  touches an Expo or React Native API, as the template's `AGENTS.md` says.
+- **The phone check screen (no design yet, on purpose).** `mobile/src/config.ts` (server address from `EXPO_PUBLIC_API_URL`, default the
+  live Render URL; 90 s timeout, 240 s for uploads because the free host sleeps), `src/storage.ts` (SecureStore on a phone,
+  `localStorage` only in the browser preview), `src/api.ts` (fetch client with the Bearer token, friendly errors, every endpoint below,
+  multipart upload of a recording), `src/RecorderButton.tsx` (expo-audio, m4a/AAC, asks for the microphone, stops by itself at 60 s),
+  `src/PhoneCheck.tsx` (five plain cards: reach/wake the server, microphone record and play back, read an activity with a practice try
+  and a real reading and the quiz, or the first reading check for a child who has none, camera QR scan of a learner card, the phone's
+  read aloud voice and a Lottie), `App.tsx` (code + PIN sign in, then the cards). It is a checklist for a tester on a real phone, NOT the
+  app design. `mobile/.env.local` (untracked) points the browser preview at `http://localhost:8123`; the APK builds take the address
+  from a process variable (see `mobile/HANDOVER.md`). `.claude/launch.json` has a `mobile-web` entry (Expo web on port 8081).
+  `mobile/HANDOVER.md` (how to run, build and the team rules) and `mobile/PHONE-TEST-CHECKLIST.md` (what a tester taps and reports) exist.
+- **The phone API was brought up to the website's logic (2026-10-10 night, 17 new tests in `tests/Feature/MobileApiTest.php`).** The login
+  payload now has `dayStreak`, `themeColor` and `readingStep {step, name}` (the four step path; `streak` is still the old stored counter,
+  kept for compatibility). `GET /api/learner/dashboard` adds `readingPath` (4 steps, the child's marked), `streak {days, week}`,
+  `weeklyGoal {done, target, met}`, `growth {days, scale}` (all from the new shared `App\Support\LearnerHome`, which the website's Home
+  now also uses) plus the 100 badges. `GET /api/learner/activities/{id}` adds `instructions`, `wordCount`, `quizQuestions` (the question and
+  its choices ONLY, never the answer or explanation) and `practice {triesLeft, startAt}` (`LearnerReadingService::practiceStage`, shared with
+  the website). New `POST /api/learner/activities/{id}/practice` (free, unscored, two tries, `no_tries_left` after) and `GET /api/learner/warm`
+  (204, wakes the scoring service and the recommender; throttled). The quiz is marked on the server from the picked choice text sent in
+  `answers[i]`. Full suite 324 passing (307 + 17).
+- **Verified for real.** Browser preview of the Expo web build against the local server (Maria `TB26-43708`): sign in, the new fields,
+  "Reach the server" (0.5 s), the activity list. A scripted run exactly like the phone calls it, with a real synthesized voice and the
+  real Reading-api, on a disposable local child (deleted afterwards): login, warm, Home, list, detail, a free practice try (66.67
+  percent, nothing saved), a real reading (66.67 percent, 33 points, the week's goal and the day streak moved to 1, four badges earned),
+  logout. The practice try took 36 s (the scoring service was asleep) and the real reading 12 s. A second scripted run did the FIRST
+  READING CHECK through the phone API (a new child who had none): the home call answered `403 diagnostic_required` first, three items
+  opened instantly from the curated bank (words, short sentences, longer sentences), each scored in 10 to 17 s, the check finished at
+  Developing, Sentence Reader, with three badges, and Home then opened. Test files were WAV: there is no ffmpeg
+  here, so the phone's m4a/AAC upload is NOT proven yet (Reading-api documents m4a as accepted, so it is expected to work).
+- **Design preview (waiting for the user's five answers):** Artifact `https://claude.ai/artifact/WsvHtotrivVLgqX3hSFdJh` (source
+  `TaraBasa-Phone-App-Preview.html` in the session scratchpad, not in the repo): eight sample screens (sign in with Scan my card, first
+  check intro, reading with the three stages, results, Home, pick a story, badges, waiting and no internet), what changes from the website,
+  the first version's scope, the basis (WCAG 2.2 SC 2.5.8, Android 48dp, MATATAG, Phil-IRI), and five yes/no questions (five place bottom
+  bar, Scan my card as the main sign in, no Games or Bookshelf in the first version, the blue/pink choice, the app name and placeholder icon).
+- **Still missing in the API:** the Games finish call and Games words, Bookshelf and re-read, the first check warm up, avatar photos.
+- **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
+  about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
+  environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`
+  as a reading screen opens. A phone needs the live server's address (a phone on another network cannot reach the computer's local copy).
+  Uploaded avatar photos vanish on a redeploy, so use the initial as fallback. Android can be given to others as an APK (free); Expo's
+  current page says an iPhone needs a paid Apple developer account even for Expo Go. The user has NO phone: the real-device check is the
+  teammate's Android phone, by sending an APK (`mobile/PHONE-TEST-CHECKLIST.md`). Expo's own doc examples are not always current
+  (`StyleSheet.absoluteFillObject` no longer exists in React Native 0.86): trust `tsc --noEmit`.
+- **Build tools on this computer (nothing system wide was changed).** Java 17 (Eclipse Temurin 17.0.20.1, checksum verified) is unzipped in
+  `D:\tools\jdk-17`; Gradle's cache is `D:\tools\gradle-home`; the Android SDK is the existing one in `%LOCALAPPDATA%\Android\Sdk`
+  (platform 36, build tools 36.1.0, NDK 27.1 installed by the first build, about 2.2 GB on C:). `mobile/android-env.local.ps1` (untracked)
+  sets them for one PowerShell window. A first APK build took 31 minutes; `D:\tools\apk-out\` holds the APKs (outside the repo).
+  No Android emulator was set up (it needs Android Studio or the Google command-line tools; the computer has 7.7 GB of RAM).
+- **Dependencies:** `npm audit --omit=dev` shows 21 advisories (7 moderate, 14 high), all in Expo's own build tools (cli, metro, config
+  plugins), which run on the developer's computer and are not inside the installed app. `npm audit fix --force` would break Expo: leave
+  them and update Expo when a new SDK is out.
+- **The test APK to send:** `D:\tools\apk-out\TaraBasa-AI-0.1.1-test2.apk` (36.7 MB, arm64 only, package `com.tarabasaai.app`, versionCode 2,
+  SHA-256 `d2fedafea799c227a973378afdc590ceed1ee335646324edb3105307f821626d`, built 2026-10-10 in 8.9 minutes), with
+  `PHONE-TEST-CHECKLIST.md` next to it. It points at the live server (checked: the bundle holds `tarabasa-ai.onrender.com` and not
+  `localhost:8123`), asks for CAMERA and RECORD_AUDIO, and scans QR codes on the device (ML Kit models inside, no outside service). The first test
+  file (`...0.1.0-test1.apk`) only has the sign in screen; ignore it. Minor cleanup before a real release: the manifest also carries
+  SYSTEM_ALERT_WINDOW and USE_BIOMETRIC/USE_FINGERPRINT (from Expo's modules), the release is signed with the debug key, the icon is
+  Expo's placeholder, and CAMERA/microphone are listed as required hardware (a phone without them cannot install it).
+- **Deadline:** the user said next month, most likely the first week (so about three weeks from 2026-10-10). Demo core: sign in, first
+  reading check, Home, reading and recording, results, Badges. Cut first if time runs short: Games, Bookshelf, the quiz, the weekly goal,
+  the text size control.
+- **Next, in order.** (1) The user sends the APK (`D:\tools\apk-out\TaraBasa-AI-0.1.1-test2.apk`, if its build finished) and a test child's
+  code and PIN to the teammate, who runs `mobile/PHONE-TEST-CHECKLIST.md` on an Android phone. The user must first make the test child on
+  the LIVE site (a test parent, a made up child; Claude may not create accounts on live sites). (2) The user approves or changes the
+  mobile design preview (an Artifact made the same night, see the memory note), reusing the web Learner look. (3) Fix what the phone test
+  finds, then build the screens in slices, extending the API only as each needs it: sign in (type or scan the card), first reading check,
+  Home, Reading list and record, results, Badges; Games and Bookshelf last. (4) The user decides when to push; use a NEW branch
+  (`mobile-app`), never the branch Render deploys, and say plainly that `main` is 112 commits behind it.
 
 ## Before pushing this round (checklist for the next session)
 

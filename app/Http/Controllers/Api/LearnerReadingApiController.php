@@ -14,10 +14,10 @@ use Illuminate\Http\Request;
  * Mobile Learner API — real Practice reading submission. Thin JSON
  * wrapper over LearnerReadingService, the exact same logic
  * LearnerReadingController (web) calls — see CLAUDE.md's "Mobile API
- * layer" entry. The comprehension quiz's 'answers' field is accepted
- * here for forward-compatibility but is a flagged fast-follow — no MVP
- * mobile screen sends it yet, since the activity-detail endpoint doesn't
- * expose follow_up_questions to build that screen from.
+ * layer" entry. For a comprehension activity the app sends the picked
+ * choice text per question in 'answers'; the score is worked out here on
+ * the server against the stored answers (the activity detail endpoint
+ * only ever sends the questions and their choices).
  */
 class LearnerReadingApiController extends Controller
 {
@@ -58,6 +58,43 @@ class LearnerReadingApiController extends Controller
             'wordCounts' => $outcome['wordCounts'] ?? null,
             'comprehension' => $outcome['comprehension'],
             'newBadges' => $outcome['newBadges'],
+        ]);
+    }
+
+    /**
+     * A practice try before the real reading (the website's "Your turn" stage). Free and unscored: the child
+     * gets the same word by word feedback, nothing is saved, and no points, streak or level move. Two tries
+     * at most; a try that could not be heard does not use one up.
+     */
+    public function submitPractice(Request $request, Activity $activity, ReadingAiClient $readingAi, LearnerReadingService $service): JsonResponse
+    {
+        $learner = $request->user();
+
+        abort_unless($activity->isAccessibleByLearner($learner), 403);
+
+        if ($service->practiceTriesLeft($learner, $activity) === 0) {
+            return response()->json(['status' => 'no_tries_left', 'triesLeft' => 0]);
+        }
+
+        $validated = $request->validate([
+            'audio' => ['required', 'file', 'max:15360'],
+        ]);
+
+        $outcome = $service->recordPractice($learner, $activity, $validated['audio'], $readingAi);
+
+        if ($outcome['status'] === 'unclear') {
+            return response()->json(['status' => 'unclear', 'triesLeft' => $outcome['triesLeft']]);
+        }
+
+        return response()->json([
+            'status' => 'scored',
+            'activityId' => $activity->id,
+            'accuracy' => $outcome['accuracy'],
+            'wordBreakdown' => $outcome['wordBreakdown'],
+            'extraWordsSaid' => $outcome['extraWordsSaid'],
+            'wordsToPractice' => $outcome['wordsToPractice'],
+            'wordCounts' => $outcome['wordCounts'],
+            'triesLeft' => $outcome['triesLeft'],
         ]);
     }
 }

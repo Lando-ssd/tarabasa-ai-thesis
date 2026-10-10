@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\LearnerApiController;
 use App\Http\Controllers\Api\LearnerDiagnosticApiController;
 use App\Http\Controllers\Api\LearnerReadingApiController;
+use App\Http\Controllers\LearnerReadingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,7 +36,12 @@ Route::middleware('auth:sanctum')->prefix('learner')->name('api.learner.')->grou
         Route::get('/activities', [LearnerApiController::class, 'activities'])->name('activities.index');
         Route::get('/activities/{activity}', [LearnerApiController::class, 'showActivity'])->name('activities.show');
         Route::post('/activities/{activity}/record', [LearnerReadingApiController::class, 'submitRecording'])->name('activities.record');
+        // The two free practice tries before the real reading (scored for feedback only, nothing saved).
+        Route::post('/activities/{activity}/practice', [LearnerReadingApiController::class, 'submitPractice'])->name('activities.practice');
     });
 
     Route::post('/reading-preferences/font-step', [LearnerApiController::class, 'updateReadingFontStep'])->name('reading-preferences.font-step');
+
+    // Wakes the scoring service (and the recommender) as a reading screen opens, same as the website's /learner/warm.
+    Route::get('/warm', [LearnerReadingController::class, 'warm'])->middleware('throttle:20,1')->name('warm');
 });

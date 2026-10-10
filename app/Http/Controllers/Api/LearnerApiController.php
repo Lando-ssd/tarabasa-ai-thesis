@@ -7,6 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\LearnerBadge;
 use App\Services\LearnerAuthService;
+use App\Services\LearnerReadingService;
+use App\Support\LearnerHome;
+use App\Support\ReadingLevel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -62,10 +65,34 @@ class LearnerApiController extends Controller
     public function dashboard(Request $request): JsonResponse
     {
         $learner = $request->user();
+        $home = LearnerHome::for($learner);
+        $currentStep = ReadingLevel::step($learner);
 
         return response()->json([
             'learner' => $this->learnerPayload($learner),
+            // The four step path, with the child's own step marked: names a child can read, never a grade.
+            'readingPath' => collect(ReadingLevel::STEPS)->map(fn (array $step, int $number) => [
+                'step' => $number,
+                'name' => $step['name'],
+                'skill' => $step['skill'],
+                'blurb' => $step['blurb'],
+                'isCurrent' => $number === $currentStep,
+            ])->values(),
             'competencyProgress' => $learner->subdomainProgressSummary(),
+            // Same numbers as the website's Home (App\Support\LearnerHome).
+            'streak' => [
+                'days' => $home['dayStreak'],
+                'week' => $home['streakWeek']->values(),
+            ],
+            'weeklyGoal' => [
+                'done' => $home['weeklyCount'],
+                'target' => $home['weeklyTarget'],
+                'met' => $home['weeklyMet'],
+            ],
+            'growth' => [
+                'days' => $home['growthDays']->values(),
+                'scale' => $home['growthScale'],
+            ],
             'badges' => LearnerBadge::summaryFor($learner),
         ]);
     }
@@ -98,7 +125,9 @@ class LearnerApiController extends Controller
 
         abort_unless($activity->isAccessibleByLearner($learner), 403);
 
-        return response()->json($this->activityDetailPayload($activity));
+        $practice = app(LearnerReadingService::class)->practiceStage($learner, $activity, $request->query('stage'));
+
+        return response()->json($this->activityDetailPayload($activity) + ['practice' => $practice]);
     }
 
     public function updateReadingFontStep(Request $request): JsonResponse
@@ -128,22 +157,24 @@ class LearnerApiController extends Controller
 
     private function activityDetailPayload(Activity $activity): array
     {
-        // Deliberately does NOT include follow_up_questions — the
-        // comprehension quiz is an explicit fast-follow, not MVP, and
-        // that field's 'answer' key is the real correct-answer text
-        // (never sent to the web client either — activity-found.blade.php
-        // only ever renders '$question[choices]' into the page, keeping
-        // 'answer' server-side for scoring). Shipping it here now, before
-        // the quiz UI exists to use it responsibly, would just hand a
-        // mobile client the answer key. Add it back (choices only, still
-        // no 'answer') when the mobile quiz step is actually built.
+        // The comprehension quiz is sent as the question and its choices ONLY. The correct answer (and the
+        // explanation that gives it away) stays on the server and is checked there when the recording is
+        // submitted, exactly as the website does (activity-found.blade.php never sends 'answer' to the browser).
+        $questions = ($activity->competency === 'reading_comprehension') ? ($activity->follow_up_questions ?: []) : [];
+
         return [
             'id' => $activity->id,
             'title' => $activity->title,
+            'instructions' => $activity->instructions,
             'passageText' => $activity->passage_text,
+            'wordCount' => $activity->word_count,
             'competency' => $activity->competency,
             'difficultyTier' => $activity->difficulty_tier,
             'targetSkills' => $activity->target_skills,
+            'quizQuestions' => collect($questions)->map(fn (array $q) => [
+                'question' => $q['question'] ?? '',
+                'choices' => array_values($q['choices'] ?? []),
+            ])->values(),
         ];
     }
 }
