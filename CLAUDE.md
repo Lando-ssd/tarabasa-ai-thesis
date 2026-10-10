@@ -6331,7 +6331,7 @@ level (`ReadingLevel::rungAfterLevelChange`), so one reading could jump a whole 
   real child, a real microphone and a real class have not tried the new rule; "Independent" for the class guard follows rungs 5 and 6.
   The old whole-level jump is gone for everyone, but children who already jumped keep the level they have.
 
-## One grade per class, multigrade classes, and what happens when a child improves (2026-10-07, BUILT LOCALLY, NOT PUSHED YET)
+## One grade per class, multigrade classes, and what happens when a child improves (2026-10-07, PUSHED; the multigrade part was REVERSED 2026-10-10, see the next section)
 
 The user showed a live class (Grade 1) and reported a Grade 2 learner could be added to it, asked what should happen when a
 Frustration reader improves and is "still in the same class", and repeated that the roster search must say learners (it
@@ -6370,6 +6370,47 @@ already did locally; the live site is simply older than the local commit `f2b401
 - **Tests.** `tests/Feature/ClassGradeAndMovesTest.php` (10) plus updated `ClassLevelTest`; full suite 298 passing, also with the
   teammate-service variables blank. Checked in a browser: refusal text, roster tags and banner, the moved-up note, the Alerts item,
   and the locked grade dropdown with the multigrade box.
+
+## One grade per class with NO exception, the Non-reader alert, and the DepEd basis (2026-10-10, BUILT LOCALLY, NOT PUSHED YET)
+
+The user answered the open questions. Their rule: a class is only for ONE grade ("Grade 1 is only for Grade 1, Grade 2 only for Grade 2,
+Grade 3 only for Grade 3"), even when the teacher handles several grades; they asked for the sign up and class creation to carry it, and a
+message or warning when a teacher tries to merge grades. So the "Multigrade class" box built on 2026-10-07 was REMOVED (migration
+`2026_10_10_000100` drops `classes.multigrade`; `Teacher::isMultigrade`, the checkbox, the pills and the promotions special case are gone).
+- **Rule everywhere** (`SchoolClass::acceptsGrade($grade)`, no teacher argument; `ClassLevel::gradeRefusal`): typing a code, the QR scanner, Move
+  to another class, editing a class's grade under learners, and the Promotions claim all refuse a learner of another grade. The refusal names both
+  grades, says "classes of different grades cannot be merged", and tells a multi-grade teacher to open a class for that grade (or says "You do not
+  handle Grade 3"). A teacher who no longer handles a class's grade (they narrowed the grades in Profile) is told "You no longer handle Grade 2" and
+  cannot add to that class; the Profile save warns which classes this affects. Moving from one grade to several (or back) only changes which
+  grades class creation offers; classes stay single grade.
+- **Sign up and Profile** (`teacher/_grades-field`): "One grade" or "More than one grade (a separate class for each)", the hint says every class holds
+  one grade only. Class creation offers only the grades picked there; a multi-grade teacher sees a "One class, one grade" notice in New class; the
+  class window's Add learner view says the same. Server enforced (a forged grade is rejected).
+- **DepEd note for the thesis (checked by search 2026-10-10; the DepEd pages themselves returned 403 to the build machine, so re-read the exact wording
+  on deped.gov.ph before quoting):** DepEd Order No. 96, s. 1997 and No. 81, s. 2009 define a MULTIGRADE CLASS as two or more grades under one
+  teacher. TaraBasa deliberately does NOT model that: it models a multi-grade teacher as several single-grade classes. Say so plainly if the adviser asks
+  (an earlier note in this file wrongly said DO 96 s. 2009). Phil-IRI is DepEd Order No. 14, s. 2018 (Independent 97 percent or more, Instructional 90 to
+  96, Frustration below 90; a learner who cannot yet recognize and sound out letters and simple words is a Non-reader). Hamon: Bawat Bata Bumabasa is
+  DepEd Memorandum No. 173, s. 2019 (every learner a reader at their grade level; six elements of reading: oral language, phonological awareness, phonics,
+  vocabulary, fluency, comprehension). All three are in `config/teaching_path.php` (`deped`), and each ladder step now names its element of reading.
+- **The "just starting to read" alert** (the user's "separate alert for Non-readers"): `TeacherAlerts::startAlert`, kind `start`, shown for a child whose
+  MEASURED step is Letters (`reading_rung = 0`; what the parent said never raises it). It has its own chip and section ("Starting to read", calm blue,
+  not red), a "Why this is flagged, and the basis" disclosure (Phil-IRI, the 3Bs initiative and the MATATAG codes EN2PWS-I-2, RL1PWS-I-2, RL1PWS-I-5), one
+  suggested short activity from the teacher's own approved ones, and the first Letters teaching move. A child on Letters gets ONLY this card (low scores
+  are expected there, so no second "needs support" card; the Home banner still counts only support alerts). It stays until the child moves up; Mark
+  handled hides it until they read again. Grade 2 and 3 children get one extra plain line asking for daily letter practice and telling the parent.
+  Said kindly: "where reading instruction begins, not a mark against" the child. Tests: `NonReaderAlertTest` (7).
+- **Rule based, still not a trained model** (the user asked to "train the AI more"): the "training" is more curriculum knowledge, not machine learning:
+  the DepEd references above, an element of reading per step, and the alert. State this plainly; there is no dataset of children's recordings to train on.
+- **Admin redesign: PREVIEW ONLY, not built.** Artifact `https://claude.ai/artifact/8rPvNjawdcUcoFLui1b91u` (source in the session scratchpad, not the
+  repo) shows a left-menu Admin (Overview, Approvals, Accounts, System health, Activity log) and a "What changes" list. Problems found in the current
+  `admin/dashboard` + `AdminController`: one long standalone page; service problems above the approvals; a Rejected teacher can never be reopened; no
+  confirmation or reason on approve/reject; `rejectTeacher`/`activateTeacher` do not check the teacher is Pending (callable on an Active one by URL);
+  two searches doing the same job (server `?q=` and a page filter) and two meanings of "Status" (`users.status` Active/Inactive vs `teachers.status`
+  Pending/Active/Rejected); email verification not shown (an unverified teacher can be approved); no Reconnect Gmail path when the token expires; raw
+  `<pre>` dumps for service problems; stat tiles not clickable; no record of who did what. WAITING for the user's yes or no on: block Approve until the
+  email is verified, show the rejection reason to the teacher, add an `admin_actions` log table, and account deletion (Data Privacy Act) which is not built.
+- **Tests:** full suite 307 passing (ClassGradeAndMovesTest rewritten for the one-grade rule, NonReaderAlertTest new).
 
 ## Before pushing this round (checklist for the next session)
 

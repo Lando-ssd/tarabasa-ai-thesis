@@ -17,8 +17,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * A class holds ONE grade (so a Grade 2 learner cannot be added to a Grade 1 class, however the code arrives), except a
- * multigrade class opened by a teacher who handles several grades. And what happens when a child's reading improves:
+ * A class holds ONE grade, with no exception (so a Grade 2 learner cannot be added to a Grade 1 class, however the code arrives, and a
+ * teacher who handles several grades opens one class per grade). And what happens when a child's reading improves:
  * they stay in the class (a class is a grade) and move to the next reading group, and the teacher is told.
  */
 class ClassGradeAndMovesTest extends TestCase
@@ -40,9 +40,9 @@ class ClassGradeAndMovesTest extends TestCase
         return [$user, $teacher];
     }
 
-    private function klass(Teacher $t, string $grade, string $name = 'Class', bool $multigrade = false): SchoolClass
+    private function klass(Teacher $t, string $grade, string $name = 'Class'): SchoolClass
     {
-        return SchoolClass::create(['teacher_id' => $t->id, 'name' => $name, 'grade_level' => $grade, 'multigrade' => $multigrade, 'section' => 'A', 'group_tag' => null, 'school_year' => SchoolClass::currentSchoolYear()]);
+        return SchoolClass::create(['teacher_id' => $t->id, 'name' => $name, 'grade_level' => $grade, 'section' => 'A', 'group_tag' => null, 'school_year' => SchoolClass::currentSchoolYear()]);
     }
 
     private function kid(?SchoolClass $c, string $grade, int $rung = 1, array $o = []): Learner
@@ -87,7 +87,9 @@ class ClassGradeAndMovesTest extends TestCase
         $message = session('errors')->first('learner_code');
         $this->assertStringContainsString('Rosa is in Grade 2, and Sampaguita is a Grade 1 class', $message);
         $this->assertStringContainsString('A class holds one grade only', $message);
-        $this->assertStringContainsString('Add Rosa to a Grade 2 class instead', $message);
+        $this->assertStringContainsString('a Grade 1 class is only for Grade 1 learners', $message);
+        $this->assertStringContainsString('classes of different grades cannot be merged', $message);
+        $this->assertStringContainsString('You do not handle Grade 2', $message);
         $this->assertNull($second->fresh()->class_id);
 
         $this->postJson($url, ['learner_code' => $second->learner_code])->assertStatus(422)->assertJson(['ok' => false]);
@@ -97,37 +99,50 @@ class ClassGradeAndMovesTest extends TestCase
         $this->assertSame($class->id, $first->fresh()->class_id);
     }
 
-    public function test_a_teacher_who_handles_several_grades_is_pointed_to_the_right_class_or_a_multigrade_one(): void
+    public function test_a_teacher_who_handles_several_grades_still_gets_one_class_per_grade_with_no_mixing(): void
     {
         [$user, $t] = $this->teacher(['Grade 1', 'Grade 2']);
         $g1 = $this->klass($t, 'Grade 1', 'One');
-        $multi = $this->klass($t, 'Grade 1', 'Together', multigrade: true);
+        $g2 = $this->klass($t, 'Grade 2', 'Two');
         $kid = $this->kid(null, 'Grade 2', 1, ['first_name' => 'Rosa']);
         $three = $this->kid(null, 'Grade 3', 1, ['first_name' => 'Tomas']);
         $this->actingAs($user);
 
+        // Handling both grades does not let a Grade 2 learner into the Grade 1 class.
         $this->from('/x')->post(route('teacher.classes.join-learner', $g1), ['learner_code' => $kid->learner_code])->assertSessionHasErrors('learner_code');
-        $this->assertStringContainsString('one of your Grade 2 classes instead, or open a multigrade class', session('errors')->first('learner_code'));
+        $this->assertStringContainsString('one of your Grade 2 classes, or open a new Grade 2 class', session('errors')->first('learner_code'));
+        $this->assertNull($kid->fresh()->class_id);
 
-        $this->post(route('teacher.classes.join-learner', $multi), ['learner_code' => $kid->learner_code])->assertRedirect();
-        $this->assertSame($multi->id, $kid->fresh()->class_id, 'a multigrade class takes any grade the teacher handles');
+        // The Grade 2 class takes them.
+        $this->post(route('teacher.classes.join-learner', $g2), ['learner_code' => $kid->learner_code])->assertRedirect();
+        $this->assertSame($g2->id, $kid->fresh()->class_id);
 
-        $this->from('/x')->post(route('teacher.classes.join-learner', $multi), ['learner_code' => $three->learner_code])->assertSessionHasErrors('learner_code');
-        $this->assertStringContainsString('you do not handle Grade 3', session('errors')->first('learner_code'));
+        // A grade the teacher does not handle is refused everywhere.
+        $this->from('/x')->post(route('teacher.classes.join-learner', $g1), ['learner_code' => $three->learner_code])->assertSessionHasErrors('learner_code');
+        $this->assertStringContainsString('You do not handle Grade 3', session('errors')->first('learner_code'));
     }
 
-    public function test_only_a_teacher_who_handles_several_grades_can_open_a_multigrade_class(): void
+    public function test_class_creation_offers_only_the_grades_handled_and_there_is_no_way_to_make_a_mixed_class(): void
     {
         [$single, $ts] = $this->teacher(['Grade 1']);
-        $this->actingAs($single)->post(route('teacher.classes.store'), ['name' => 'Solo', 'grade_level' => 'Grade 1', 'section' => 'A', 'school_year' => SchoolClass::currentSchoolYear(), 'multigrade' => '1'])->assertRedirect();
-        $this->assertFalse(SchoolClass::firstWhere('name', 'Solo')->multigrade, 'a forged multigrade flag is ignored');
+        $year = SchoolClass::currentSchoolYear();
+        $this->actingAs($single)->post(route('teacher.classes.store'), ['name' => 'Solo', 'grade_level' => 'Grade 1', 'section' => 'A', 'school_year' => $year, 'multigrade' => '1'])->assertRedirect();
+        $this->assertFalse(array_key_exists('multigrade', SchoolClass::firstWhere('name', 'Solo')->getAttributes()), 'there is no multigrade setting any more');
+        $html = $this->get(route('teacher.classes.index'))->getContent();
+        $this->assertStringNotContainsString('name="multigrade"', $html);
+        $this->assertStringNotContainsString('Grades cannot be merged in one class', $html, 'a one-grade teacher does not need the reminder');
 
         [$multi, $tm] = $this->teacher(['Grade 1', 'Grade 2']);
-        $this->actingAs($multi)->post(route('teacher.classes.store'), ['name' => 'Together', 'grade_level' => 'Grade 1', 'section' => 'A', 'school_year' => SchoolClass::currentSchoolYear(), 'multigrade' => '1'])->assertRedirect();
-        $this->assertTrue(SchoolClass::firstWhere('name', 'Together')->multigrade);
+        $page = $this->actingAs($multi)->get(route('teacher.classes.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('One class, one grade.', $page);
+        $this->assertStringContainsString('Grades cannot be merged in one class', $page);
+        $this->assertStringNotContainsString('name="multigrade"', $page);
+        $this->assertStringContainsString('<option >Grade 1</option>', str_replace('<option>', '<option >', $page));
 
-        $this->get(route('teacher.classes.index'))->assertSee('Multigrade class', false)->assertSee('Multigrade');
-        $this->actingAs($single)->get(route('teacher.classes.index'))->assertDontSee('name="multigrade"', false);
+        $this->post(route('teacher.classes.store'), ['name' => 'G1', 'grade_level' => 'Grade 1', 'section' => 'A', 'school_year' => $year])->assertRedirect();
+        $this->post(route('teacher.classes.store'), ['name' => 'G2', 'grade_level' => 'Grade 2', 'section' => 'A', 'school_year' => $year])->assertRedirect();
+        $this->from('/x')->post(route('teacher.classes.store'), ['name' => 'G3', 'grade_level' => 'Grade 3', 'section' => 'A', 'school_year' => $year])->assertSessionHasErrors('grade_level');
+        $this->assertSame(['Grade 1', 'Grade 2'], SchoolClass::where('teacher_id', $tm->id)->orderBy('grade_level')->pluck('grade_level')->all());
     }
 
     public function test_a_classs_grade_cannot_change_under_learners_it_would_no_longer_take(): void
@@ -140,18 +155,14 @@ class ClassGradeAndMovesTest extends TestCase
         $edit = fn (SchoolClass $c, array $o) => $this->from('/x')->put(route('teacher.classes.update', $c), $o + ['name' => $c->name, 'section' => 'A', 'grade_level' => $c->grade_level]);
 
         $edit($class, ['grade_level' => 'Grade 2'])->assertSessionHasErrors('grade_level');
-        $this->assertStringContainsString('A class holds one grade', session('errors')->first('grade_level'));
+        $this->assertStringContainsString('a Grade 2 class is only for Grade 2 learners', session('errors')->first('grade_level'));
         $this->assertSame('Grade 1', $class->fresh()->grade_level);
 
         $edit($empty, ['grade_level' => 'Grade 2'])->assertSessionHasNoErrors();
         $this->assertSame('Grade 2', $empty->fresh()->grade_level, 'an empty class can change grade');
 
-        // Ticking multigrade is fine; unticking it under a learner of another grade is not.
-        $multi = $this->klass($t, 'Grade 1', 'Together', multigrade: true);
-        $other = $this->kid($multi, 'Grade 2', 1, ['first_name' => 'Rosa']);
-        $edit($multi, [])->assertSessionHasErrors('multigrade');
-        $this->assertTrue($multi->fresh()->multigrade);
-        $edit($multi, ['multigrade' => '1'])->assertSessionHasNoErrors();
+        $edit($class, ['name' => 'Renamed'])->assertSessionHasNoErrors();
+        $this->assertSame('Renamed', $class->fresh()->name, 'renaming is always fine');
     }
 
     public function test_a_learner_can_only_be_moved_to_a_class_that_takes_their_grade(): void
@@ -188,20 +199,50 @@ class ClassGradeAndMovesTest extends TestCase
         $this->assertSame(1, Learner::where('class_id', $class->id)->count(), 'nobody is removed');
     }
 
-    public function test_a_promoted_learner_keeps_the_grade_they_were_promoted_to_in_a_multigrade_class(): void
+    public function test_a_promoted_learner_can_only_be_claimed_into_a_class_of_the_grade_they_were_promoted_to(): void
     {
         [$user, $t] = $this->teacher(['Grade 1', 'Grade 2']);
-        $multi = $this->klass($t, 'Grade 1', 'Together', multigrade: true);
-        $single = $this->klass($t, 'Grade 1', 'SoloOne');
+        $g1 = $this->klass($t, 'Grade 1', 'SoloOne');
+        $g2 = $this->klass($t, 'Grade 2', 'SoloTwo');
         $kid = $this->kid(null, 'Grade 1', 3, ['first_name' => 'Lito']);
-        $record = PromotionRecord::create(['learner_id' => $kid->id, 'released_by_teacher_id' => $t->id, 'next_grade' => 'Grade 2', 'status' => 'Pending', 'released_from_class_id' => $single->id]);
+        $record = PromotionRecord::create(['learner_id' => $kid->id, 'released_by_teacher_id' => $t->id, 'next_grade' => 'Grade 2', 'status' => 'Pending', 'released_from_class_id' => $g1->id]);
         $this->actingAs($user);
 
-        $this->post(route('teacher.promotions.claim', $record), ['class_id' => $single->id])->assertStatus(403);
+        $this->post(route('teacher.promotions.claim', $record), ['class_id' => $g1->id])->assertStatus(403);
         $this->assertNull($kid->fresh()->class_id);
 
-        $this->post(route('teacher.promotions.claim', $record), ['class_id' => $multi->id])->assertRedirect();
-        $this->assertSame([$multi->id, 'Grade 2'], [$kid->fresh()->class_id, $kid->fresh()->grade_level], 'the grade is the one promoted to, not the class\'s main grade');
+        $this->post(route('teacher.promotions.claim', $record), ['class_id' => $g2->id])->assertRedirect();
+        $this->assertSame([$g2->id, 'Grade 2'], [$kid->fresh()->class_id, $kid->fresh()->grade_level]);
+    }
+
+    public function test_narrowing_the_grades_in_profile_warns_and_blocks_adding_to_a_class_of_a_grade_no_longer_handled(): void
+    {
+        [$user, $t] = $this->teacher(['Grade 1', 'Grade 2']);
+        $g2 = $this->klass($t, 'Grade 2', 'OldTwo');
+        $kid = $this->kid(null, 'Grade 2', 1, ['first_name' => 'Rosa']);
+        $this->actingAs($user);
+
+        $this->put(route('profile.grades.update'), ['grades_mode' => 'single', 'grades_handled' => ['Grade 1']])
+            ->assertSessionHas('status', fn ($m) => str_contains($m, 'Each class still holds one grade only') && str_contains($m, 'OldTwo (Grade 2)') && str_contains($m, 'cannot take new learners'));
+
+        $this->from('/x')->post(route('teacher.classes.join-learner', $g2), ['learner_code' => $kid->learner_code])->assertSessionHasErrors('learner_code');
+        $this->assertStringContainsString('You no longer handle Grade 2', session('errors')->first('learner_code'));
+        $this->assertNull($kid->fresh()->class_id);
+
+        // Going the other way (one grade to several) just adds options: classes stay one grade each.
+        $this->put(route('profile.grades.update'), ['grades_mode' => 'multi', 'grades_handled' => ['Grade 1', 'Grade 2']])
+            ->assertSessionHas('status', fn ($m) => str_contains($m, 'Each class still holds one grade only') && ! str_contains($m, 'cannot take new learners'));
+        $this->post(route('teacher.classes.join-learner', $g2), ['learner_code' => $kid->learner_code])->assertRedirect();
+        $this->assertSame($g2->id, $kid->fresh()->class_id);
+    }
+
+    public function test_the_sign_up_and_profile_form_says_each_class_holds_one_grade(): void
+    {
+        $html = $this->get(route('register.teacher'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('each class holds one grade only', $html);
+        $this->assertStringContainsString('Grade 1 class is only for Grade 1 learners', $html);
+        $this->assertStringNotContainsString('multigrade', strtolower($html));
     }
 
     // ------------------------------------------------------------------ improving inside the same class

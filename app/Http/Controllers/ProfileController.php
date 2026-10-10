@@ -63,8 +63,9 @@ class ProfileController extends Controller
     }
 
     /**
-     * Which grades a Teacher handles (one grade, or several for a multigrade class). Class
-     * creation offers only these. Existing classes are never touched by a change here.
+     * Which grades a Teacher handles (one grade, or several, with a separate class for each). Class
+     * creation offers only these. Existing classes are never touched by a change here, and a class
+     * is still only for its own grade, so a teacher who handles more grades just opens more classes.
      */
     public function updateGrades(Request $request): RedirectResponse
     {
@@ -73,9 +74,23 @@ class ProfileController extends Controller
         $validated = $request->validate(\App\Models\Teacher::gradeRules());
         $grades = \App\Models\Teacher::gradesFromValidated($validated);
 
-        $request->user()->teacher->update(['grades_handled' => $grades]);
+        $teacher = $request->user()->teacher;
+        $teacher->update(['grades_handled' => $grades]);
 
-        return back()->with('status', 'Grades updated. New classes will offer: '.implode(', ', $grades).'.');
+        $message = 'Grades updated. New classes will offer: '.implode(', ', $grades).'. Each class still holds one grade only.';
+
+        // Classes of a grade the teacher no longer handles stay as they are, but cannot take new learners.
+        $left = \App\Models\SchoolClass::where('teacher_id', $teacher->id)
+            ->where('school_year', \App\Models\SchoolClass::currentSchoolYear())
+            ->whereNotIn('grade_level', $grades)
+            ->get();
+
+        if ($left->isNotEmpty()) {
+            $message .= ' You still have '.$left->map(fn ($c) => "{$c->name} ({$c->grade_level})")->implode(', ')
+                .'. They stay as they are, but they cannot take new learners until you handle that grade again.';
+        }
+
+        return back()->with('status', $message);
     }
 
     public function updatePassword(Request $request): RedirectResponse

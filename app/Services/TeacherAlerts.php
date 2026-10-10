@@ -25,11 +25,15 @@ use Illuminate\Support\Facades\DB;
  * time (nothing is stored but "handled"), for the learners in the Teacher's classes of the school
  * year in progress.
  *
- * Three kinds, each with the evidence behind it and one suggested step taken from the Teacher's
+ * Four kinds, each with the evidence behind it and one suggested step taken from the Teacher's
  * OWN approved activities (never anything outside what they approved):
  *  - support: the last three readings were all under 70 percent, OR the latest reading was flagged for extra support
  *    (under 70 percent, the same line the app flags a reading at and tells the Teacher about at once), the latest within
  *    two weeks. A learner with a single 25 percent reading is not made to wait for two more bad ones;
+ *  - start: the child is still at the Non-reader level (the Letters step: the first reading check, or their readings, found
+ *    they cannot yet read words), the Phil-IRI level DepEd Order 14, s. 2018 names for a learner who cannot yet recognize and
+ *    sound out letters and simple words. It is the start of reading instruction, not a mark against the child, and it is
+ *    shown until the child moves up a step;
  *  - up: the last three readings were all 90 percent or above, the latest within two weeks (the
  *    same 90 percent the app itself uses to move a reader up a step), so the strong readers are
  *    seen too and not left in a beginner group;
@@ -108,7 +112,9 @@ class TeacherAlerts
             $sessions = $recent->get($learner->id, collect());
             $last3 = $sessions->take(self::IN_A_ROW);
 
-            $alert = $this->supportAlert($learner, $last3) ?? $this->movedAlert($learner, $sessions) ?? $this->upAlert($learner, $last3);
+            // A child on the Letters step gets the one "just starting to read" alert: low scores are expected there, so a separate
+            // "needs support" card on top of it would only repeat it.
+            $alert = $this->startAlert($learner, $sessions) ?? $this->supportAlert($learner, $last3) ?? $this->movedAlert($learner, $sessions) ?? $this->upAlert($learner, $last3);
             if ($alert) {
                 $alerts->push($alert + ['sessions' => $sessions]);
             }
@@ -128,7 +134,7 @@ class TeacherAlerts
             $alerts = $alerts->map(fn (array $a) => $this->withSuggestion($teacher, $a));
         }
 
-        $order = ['support' => 0, 'up' => 1, 'quiet' => 2];
+        $order = ['support' => 0, 'start' => 1, 'up' => 2, 'quiet' => 3];
 
         return $alerts->sortBy(fn (array $a) => [$order[$a['kind']], -$a['evidence_at']->timestamp])->values();
     }
@@ -197,6 +203,50 @@ class TeacherAlerts
             'pattern' => $this->patternLine($profile),
             'profile' => $profile,
             'evidence_at' => $this->at($reading),
+        ];
+    }
+
+    /**
+     * A child still on the Letters step (rung 0, the Phil-IRI Non-reader level, from the first reading check or their readings).
+     * What the parent said at sign up never raises this: only a measured level does. It stays until the child moves up, and
+     * "Mark handled" hides it until they read again. Said kindly: it is where reading starts, not a failure.
+     *
+     * @param  Collection<int, ReadingSession>  $sessions  newest first
+     */
+    private function startAlert(Learner $learner, Collection $sessions): ?array
+    {
+        if ($learner->reading_rung === null || (int) $learner->reading_rung !== 0) {
+            return null;
+        }
+
+        $first = $learner->first_name;
+        $class = $learner->schoolClass;
+        $latest = $sessions->first();
+        $stamps = array_filter([
+            $learner->rung_changed_at?->timestamp,
+            $latest ? $this->at($latest)->timestamp : null,
+        ]);
+        $evidenceAt = Carbon::createFromTimestamp($stamps === [] ? 0 : max($stamps));
+
+        $why = "{$first} cannot yet read words on their own, so {$first} starts on Letters, the first step: naming letters and the sounds they make. "
+            .'This is where reading instruction begins, not a mark against '.$first.'.';
+        if ($learner->grade_level !== 'Grade 1') {
+            $why .= " {$first} is in {$learner->grade_level}, so plan a few minutes of letter practice every day and tell the parent (the Parent screen shows the same step).";
+        }
+
+        return [
+            'kind' => 'start',
+            'variant' => 'nonreader',
+            'learner' => $learner,
+            'class' => $class,
+            'title' => $first.' '.$learner->last_name.' is just starting to read',
+            'band' => 'non',
+            'evidence' => 'Letters step, Non-reader level',
+            'why' => $why,
+            'basis' => (string) config('teaching_path.nonreader.basis'),
+            'pattern' => null,
+            'profile' => null,
+            'evidence_at' => $evidenceAt,
         ];
     }
 
@@ -310,7 +360,12 @@ class TeacherAlerts
         $learner = $alert['learner'];
         $group = ReadingLevel::groupOf($learner);
 
-        if ($alert['kind'] === 'support') {
+        if ($alert['kind'] === 'start') {
+            // A short, easy activity, and the first teaching move for the Letters step (config/teaching_path.php).
+            $tier = 'Easy';
+            $card = $this->suggestions->forLearner($teacher, $learner, $tier);
+            $tip = (string) config('teaching_path.rungs.0.moves.0');
+        } elseif ($alert['kind'] === 'support') {
             $tier = 'Easy';
             $main = ErrorPatterns::mainPattern($alert['profile']);
             $card = $this->suggestions->forLearner($teacher, $learner, $tier, $alert['profile']);

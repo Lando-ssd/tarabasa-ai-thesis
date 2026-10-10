@@ -17,10 +17,10 @@
     use App\Models\Notification;
     use App\Support\ReadingLevel;
 
-    $chips = ['all' => 'All', 'support' => 'Needs support', 'up' => 'Moving up', 'quiet' => 'Quiet'];
-    $sections = ['support' => 'Needs support now', 'up' => 'Moving up', 'quiet' => 'Quiet'];
-    $style = ['support' => ['need', 'attention', 'warning-circle'], 'up' => ['up', 'summary', 'trend-up'], 'quiet' => ['quiet', 'level', 'moon']];
-    $pillFor = ['support' => 'warn', 'up' => 'ok', 'quiet' => 'amber'];
+    $chips = ['all' => 'All', 'support' => 'Needs support', 'start' => 'Starting to read', 'up' => 'Moving up', 'quiet' => 'Quiet'];
+    $sections = ['support' => 'Needs support now', 'start' => 'Starting to read', 'up' => 'Moving up', 'quiet' => 'Quiet'];
+    $style = ['support' => ['need', 'attention', 'warning-circle'], 'start' => ['start', 'begin', 'book-open-text'], 'up' => ['up', 'summary', 'trend-up'], 'quiet' => ['quiet', 'level', 'moon']];
+    $pillFor = ['support' => 'warn', 'start' => 'blue', 'up' => 'ok', 'quiet' => 'amber'];
     $unreadRoutine = $routine->where('is_read', false)->count();
 @endphp
 
@@ -42,7 +42,7 @@
   <div class="card empty-hero" style="margin-top:12px">
     <div class="empty-ico">@include('learner._badge-icon', ['icon' => 'check-circle', 'class' => 'ico'])</div>
     <h2>{{ $counts['all'] === 0 ? 'Nothing needs your attention' : 'Nothing in this list' }}</h2>
-    <p>{{ $counts['all'] === 0 ? 'Alerts appear here when a learner needs support, is ready to move up, or has gone quiet. Right now everyone is on track, or has not read yet.' : 'Choose another filter to see the rest.' }}</p>
+    <p>{{ $counts['all'] === 0 ? 'Alerts appear here when a learner needs support, is just starting to read, is moving up, or has gone quiet. Right now everyone is on track, or has not read yet.' : 'Choose another filter to see the rest.' }}</p>
   </div>
 @else
   @foreach ($sections as $kind => $heading)
@@ -68,7 +68,11 @@
           <p class="why">{{ $a['why'] }}</p>
           @if (! empty($a['pattern']))<p class="patline">{{ $a['pattern'] }}</p>@endif
 
-          @if ($kind === 'support' && $sg)
+          @if ($kind === 'start')
+            @if (! empty($a['basis']))<details class="basis"><summary>Why this is flagged, and the basis</summary><p>{{ $a['basis'] }}</p></details>@endif
+          @endif
+
+          @if (($kind === 'support' || $kind === 'start') && $sg)
             <div class="sugline">@include('learner._badge-icon', ['icon' => 'lightbulb', 'class' => 'ico'])
               <span>
                 @if ($card)
@@ -94,7 +98,7 @@
             @if ($card && $teacher->status === 'Active')
               <form method="POST" action="{{ route('teacher.alerts.assign', $l) }}" data-busy="Assigning">@csrf
                 <input type="hidden" name="kind" value="{{ $kind }}"><input type="hidden" name="activity_id" value="{{ $card['activity']->id }}">
-                <button type="submit" class="btn small">{{ $kind === 'support' ? 'Assign easier activity' : 'Assign next level' }}</button>
+                <button type="submit" class="btn small">{{ $kind === 'support' ? 'Assign easier activity' : ($kind === 'start' ? 'Assign a short activity' : 'Assign next level') }}</button>
               </form>
             @endif
             <a class="btn small ghost" href="{{ route('teacher.analytics.index', ['mode' => 'learner', 'learner_id' => $l->id]) }}">Open progress</a>

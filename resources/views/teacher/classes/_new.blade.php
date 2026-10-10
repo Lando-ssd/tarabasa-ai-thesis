@@ -15,6 +15,9 @@
       <form id="new-class-form" method="POST" action="{{ route('teacher.classes.store') }}" data-busy="Creating">
         @csrf
         <input type="hidden" name="form" value="new-class">
+        @if (count(auth()->user()->teacher->gradesAllowed()) > 1)
+          <div class="help">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>One class, one grade.</b> You handle {{ implode(' and ', auth()->user()->teacher->gradesAllowed()) }}. Open a separate class for each grade: a Grade 1 class is only for Grade 1 learners, a Grade 2 class only for Grade 2, and a Grade 3 class only for Grade 3. Grades cannot be merged in one class.</div></div>
+        @endif
         <div class="help">@include('learner._badge-icon', ['icon' => 'info', 'class' => 'ico'])<div><b>Class name</b> is what your school calls this class, for example <i>Kamunggay</i>. <b>Section</b> is the official section. Learners and parents see the name.</div></div>
         <div class="grid2">
           <div class="field"><label for="nc-name">Class name</label><input type="text" id="nc-name" name="name" data-af placeholder="e.g. Sampaguita" value="{{ $reopen ? old('name') : '' }}" required>@if ($reopen) @error('name')<span class="field-error">{{ $message }}</span>@enderror @endif</div>
@@ -27,9 +30,7 @@
             </select>
           </div>
         </div>
-        @if (auth()->user()->teacher->isMultigrade())
-          <div class="field"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="multigrade" value="1" @checked($reopen && old('multigrade'))> Multigrade class</label><span class="fhint">Tick this only if you teach {{ implode(' and ', auth()->user()->teacher->gradesAllowed()) }} together in this class. It then takes learners from any of those grades. Leave it unticked for a normal class of one grade.</span></div>
-        @endif
+
         <div class="field"><label for="nc-tag">Focus group <span class="opt">optional</span></label><input type="text" id="nc-tag" name="group_tag" placeholder="e.g. Basic Phonics" value="{{ $reopen ? old('group_tag') : '' }}"><span class="fhint">A label for what this class is working on. Give two classes the same focus to assign one activity to both at once. <b>It does not sort learners.</b> Reading groups inside the class are made automatically from reading levels.</span></div>
       </form>
     </div>

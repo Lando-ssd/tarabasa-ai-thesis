@@ -161,17 +161,12 @@ class ClassController extends Controller
             // Only the grades the Teacher said they handle (Profile). Enforced here, so a forged
             // request cannot open a class for another grade.
             'grade_level' => ['required', Rule::in($teacher->gradesAllowed())],
-            'multigrade' => ['nullable', 'boolean'],
             'section' => ['required', 'string', 'max:255'],
             'group_tag' => ['nullable', 'string', 'max:255'],
             'school_year' => ['required', 'string', 'max:20'],
         ], [
             'grade_level.in' => 'You handle '.implode(' and ', $teacher->gradesAllowed()).'. Change the grades you handle in Profile to open a class for another grade.',
         ]);
-
-        // A class holds one grade. Only a teacher who handles several grades can open a multigrade class, whatever
-        // a forged request says.
-        $validated['multigrade'] = $teacher->isMultigrade() && $request->boolean('multigrade');
 
         $class = SchoolClass::create([
             'teacher_id' => $teacher->id,
@@ -205,34 +200,22 @@ class ClassController extends Controller
             // The class's own grade stays allowed even if the Teacher later narrowed the grades
             // they handle, so an old class can still be renamed.
             'grade_level' => ['required', Rule::in(array_unique([...$teacher->gradesAllowed(), $class->grade_level]))],
-            'multigrade' => ['nullable', 'boolean'],
             'section' => ['required', 'string', 'max:255'],
             'group_tag' => ['nullable', 'string', 'max:255'],
         ], [
             'grade_level.in' => 'You handle '.implode(' and ', $teacher->gradesAllowed()).'. Change the grades you handle in Profile to use another grade.',
         ]);
 
-        // Only a teacher who handles several grades can keep or make a class multigrade. An old multigrade class stays
-        // multigrade when its teacher later narrows their grades, until they untick it.
-        $validated['multigrade'] = $request->boolean('multigrade') && ($teacher->isMultigrade() || $class->multigrade);
-
-        // A class holds one grade, so its grade (or its multigrade setting) cannot be changed under learners it
-        // would no longer accept. Nobody is moved or removed: the teacher is told who is in the way.
-        $candidate = $class->replicate()->forceFill([
-            'grade_level' => $validated['grade_level'],
-            'multigrade' => $validated['multigrade'],
-        ]);
-        $outOfPlace = $class->learners()->get()->reject(fn (Learner $l) => $candidate->acceptsGrade($l->grade_level, $teacher));
+        // A class holds ONE grade, so its grade cannot be changed under learners who would no longer fit it (that would
+        // quietly merge grades). Nobody is moved or removed: the teacher is told who is in the way.
+        $outOfPlace = $class->learners()->get()->reject(fn (Learner $l) => (new SchoolClass(['grade_level' => $validated['grade_level']]))->acceptsGrade($l->grade_level));
 
         if ($outOfPlace->isNotEmpty()) {
             $names = $outOfPlace->take(3)->map(fn (Learner $l) => "{$l->first_name} ({$l->grade_level})")->implode(', ');
             $more = $outOfPlace->count() > 3 ? ' and '.($outOfPlace->count() - 3).' more' : '';
-            $field = $validated['multigrade'] ? 'grade_level' : ($class->multigrade ? 'multigrade' : 'grade_level');
 
             throw ValidationException::withMessages([
-                $field => $validated['multigrade']
-                    ? "{$names}{$more} are in grades you do not handle, so they cannot stay in a multigrade class. Move them to a class of their own grade first."
-                    : "This class has learners from other grades: {$names}{$more}. A class holds one grade, so move them to a class of their own grade first, then change this.",
+                'grade_level' => "{$names}{$more} would no longer fit: a {$validated['grade_level']} class is only for {$validated['grade_level']} learners. Move them to a class of their own grade first, then change this.",
             ]);
         }
 

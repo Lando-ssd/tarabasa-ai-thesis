@@ -19,31 +19,20 @@ class SchoolClass extends Model
         'teacher_id',
         'name',
         'grade_level',
-        'multigrade',
         'section',
         'group_tag',
         'school_year',
     ];
 
-    protected function casts(): array
-    {
-        return ['multigrade' => 'boolean'];
-    }
-
     /**
-     * Can a learner of this grade be in this class? A class holds ONE grade, its own. The only exception is a
-     * multigrade class (one teacher teaching several grades together), which takes any grade that teacher handles.
-     * A learner with no grade on record is never turned away for it: there is nothing to compare.
+     * Can a learner of this grade be in this class? A class holds ONE grade, its own, with no exception: a Grade 1 class
+     * is only for Grade 1 learners, Grade 2 for Grade 2, Grade 3 for Grade 3, even when its teacher handles several
+     * grades (such a teacher opens one class per grade). A learner with no grade on record is never turned away for it:
+     * there is nothing to compare.
      */
-    public function acceptsGrade(?string $grade, Teacher $teacher): bool
+    public function acceptsGrade(?string $grade): bool
     {
-        if ($grade === null || $grade === '') {
-            return true;
-        }
-
-        return $this->multigrade
-            ? in_array($grade, $teacher->gradesAllowed(), true)
-            : $grade === $this->grade_level;
+        return $grade === null || $grade === '' || $grade === $this->grade_level;
     }
 
     public function teacher(): \Illuminate\Database\Eloquent\Relations\BelongsTo

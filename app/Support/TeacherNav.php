@@ -20,15 +20,12 @@ class TeacherNav
     {
         $teacher = $user->teacher;
 
-        // The grades this teacher could claim a released learner into: the grade of each class, and every grade the
-        // teacher handles when one of their classes is multigrade.
-        $classes = $teacher
-            ? SchoolClass::where('teacher_id', $teacher->id)->where('school_year', SchoolClass::currentSchoolYear())->get(['grade_level', 'multigrade'])
+        $grades = $teacher
+            ? SchoolClass::where('teacher_id', $teacher->id)
+                ->where('school_year', SchoolClass::currentSchoolYear())
+                ->pluck('grade_level')
+                ->unique()
             : collect();
-        $grades = $classes->pluck('grade_level')
-            ->merge($classes->contains('multigrade', true) ? $teacher->gradesAllowed() : [])
-            ->unique()
-            ->values();
 
         return [
             // The number on the Alerts item: alerts that are open (who needs support, who is ready to

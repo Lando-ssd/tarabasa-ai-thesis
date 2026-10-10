@@ -21,14 +21,14 @@ class Teacher extends Model
 
     protected function casts(): array
     {
-        // The grades this Teacher handles, e.g. ["Grade 1"] or ["Grade 1","Grade 2"] for a multigrade
-        // class. null means every grade (accounts made before this was asked).
+        // The grades this Teacher handles, e.g. ["Grade 1"] or ["Grade 1","Grade 2"] (one class per grade, never mixed).
+        // null means every grade (accounts made before this was asked).
         return ['grades_handled' => 'array'];
     }
 
     /**
      * Validation rules for the "which grades do you handle" question, shared by sign up and
-     * Profile. The mode (one grade, or several for a multigrade class) and the ticked grades are
+     * Profile. The mode (one grade, or several grades, a separate class for each) and the ticked grades are
      * both checked on the server, never only in the form.
      */
     public static function gradeRules(): array
@@ -40,7 +40,7 @@ class Teacher extends Model
         ];
     }
 
-    /** One grade means exactly one; multigrade means two or more. Returns the grades in order, no repeats. */
+    /** One grade means exactly one; "more than one" means two or more. Returns the grades in order, no repeats. */
     public static function gradesFromValidated(array $validated): array
     {
         $grades = array_values(array_intersect(['Grade 1', 'Grade 2', 'Grade 3'], $validated['grades_handled']));
@@ -50,7 +50,7 @@ class Teacher extends Model
         }
 
         if ($validated['grades_mode'] === 'multi' && count($grades) < 2) {
-            throw ValidationException::withMessages(['grades_handled' => 'A multigrade class has two or more grades. Tick at least two.']);
+            throw ValidationException::withMessages(['grades_handled' => 'Tick at least two grades, or choose One grade.']);
         }
 
         return $grades;
@@ -62,12 +62,6 @@ class Teacher extends Model
         $all = ['Grade 1', 'Grade 2', 'Grade 3'];
 
         return $this->grades_handled ? array_values(array_intersect($all, $this->grades_handled)) : $all;
-    }
-
-    /** A teacher who handles two or more grades may open a multigrade class (see SchoolClass::acceptsGrade). */
-    public function isMultigrade(): bool
-    {
-        return count($this->gradesAllowed()) >= 2;
     }
 
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo

@@ -133,7 +133,7 @@ class LearnerProfile
      * the same numbers the app counts (config/progression.php), so what the teacher reads is what is being measured.
      *
      * @param  null|array{rung:int, source:string, sourceText:string}  $readiness
-     * @return array{focus:string, moves:list<string>, ready:string, watch:string, basis:string}
+     * @return array{element:string, focus:string, moves:list<string>, ready:string, watch:string, basis:string}
      */
     private static function teach(Learner $learner, ?array $readiness): array
     {
@@ -150,6 +150,7 @@ class LearnerProfile
         );
 
         return [
+            'element' => $path['element'],
             'focus' => $path['focus'],
             'moves' => $path['moves'],
             'ready' => $ready,

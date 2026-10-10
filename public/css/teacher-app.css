@@ -572,3 +572,10 @@ table.rep{ width:100%; border-collapse:collapse; font-size:13.5px; } table.rep t
 .lrow .ltags .pill{ font-size:12px; padding:2px 8px 1px; white-space:nowrap; }
 .help.good{ background:var(--green-bg); border-color:#b7e2d6; color:#0f6a55; }
 .help.good .ico{ color:#13715d; } .help.good b{ color:#0f6a55; }
+
+/* "Just starting to read" alert (Phil-IRI Non-reader level): calm blue, never the red of a problem. */
+.acard.start{ background:#eef5ff; border-color:#cfe0f7; } .acard.start .why{ color:#2f5f8c; }
+.notif-ico.begin{ background:var(--blue); }
+.acard .basis{ margin:0 0 8px; font-size:12.5px; color:var(--muted); }
+.acard .basis summary{ cursor:pointer; color:var(--blue-ink); font-weight:600; }
+.acard .basis p{ margin:6px 0 0; line-height:1.45; }

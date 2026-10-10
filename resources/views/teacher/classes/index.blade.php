@@ -101,7 +101,7 @@
         <button type="button" class="ctile" data-open="class-{{ $c->id }}" data-grade="{{ $c->grade_level }}">
           <span class="ctile-top">
             <span class="pill">{{ $c->grade_level }}</span>
-            @if ($c->multigrade)<span class="pill blue" title="Learners from more than one grade">Multigrade</span>@endif
+
             @if ($c->group_tag)<span class="pill blue" title="Focus group">@include('learner._badge-icon', ['icon' => 'users-three', 'class' => 'ico']){{ $c->group_tag }}</span>@endif
             @if ($isPastYear)<span class="pill amber">Read only</span>@endif
           </span>

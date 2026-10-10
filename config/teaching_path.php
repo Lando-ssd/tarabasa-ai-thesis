@@ -23,10 +23,25 @@
  */
 return [
 
-    'basis' => 'National Reading Panel (2000); Ehri (2005); Pearson and Gallagher (1983); MATATAG Reading and Literacy and English guides.',
+    'basis' => 'DepEd Phil-IRI (DO 14, s. 2018); DepEd Memorandum 173, s. 2019 (Bawat Bata Bumabasa); MATATAG Reading and Literacy and English guides; National Reading Panel (2000); Ehri (2005); Pearson and Gallagher (1983).',
+
+    // The DepEd documents this app's reading levels and alerts stand on, in one place, so a screen, a test and the
+    // thesis all quote the same thing. Found by search on 2026-10-10; the DepEd pages themselves could not be opened from
+    // the build machine, so check the exact wording on deped.gov.ph before quoting it in the manuscript.
+    'deped' => [
+        'phil_iri' => 'Phil-IRI, DepEd Order No. 14, s. 2018: oral reading is Independent at 97 percent or more, Instructional at 90 to 96, Frustration below 90, and a learner who cannot yet recognize and sound out letters and simple words is a Non-reader.',
+        '3bs' => 'Hamon: Bawat Bata Bumabasa, DepEd Memorandum No. 173, s. 2019: every learner a reader at their grade level, built on six elements of reading (oral language, phonological awareness, phonics, vocabulary, fluency, comprehension).',
+        'multigrade' => 'DepEd Order No. 96, s. 1997 and No. 81, s. 2009 define a multigrade class as two or more grades under one teacher. TaraBasa does not mix grades in a class: a teacher who handles several grades opens one class for each grade.',
+    ],
+
+    // Shown on the "just starting to read" alert (a child on the Letters step, the Phil-IRI Non-reader level).
+    'nonreader' => [
+        'basis' => 'Phil-IRI (DepEd Order No. 14, s. 2018) calls a learner who cannot yet recognize and sound out letters and simple words a Non-reader. DepEd Memorandum No. 173, s. 2019 (Bawat Bata Bumabasa) aims at every learner reading at their grade level, starting from phonological awareness and phonics. The MATATAG guides ask for letter names and sounds first (EN2PWS-I-2, RL1PWS-I-2), then sounding out words (RL1PWS-I-5).',
+    ],
 
     'rungs' => [
         0 => [
+            'element' => 'Phonological awareness and phonics (letter names and sounds)',
             'focus' => 'Naming letters and knowing their sounds (EN2PWS-I-2, RL1PWS-I-2).',
             'moves' => [
                 'Teach a few letters at a time, starting with the ones that make the most words (s, a, t, p, i, n).',
@@ -36,6 +51,7 @@ return [
             'watch' => 'Look-alike letters (b and d, p and q) and letters whose name does not start with their sound.',
         ],
         1 => [
+            'element' => 'Phonics (sounding out and blending words)',
             'focus' => 'Sounding out short words, letter by letter (RL1PWS-I-5, EN2PWS-I-3).',
             'moves' => [
                 'Read the first word together, saying each sound slowly, then blend the sounds into the word.',
@@ -45,6 +61,7 @@ return [
             'watch' => 'Guessing from the first letter. If the child guesses, tap each letter and blend again.',
         ],
         2 => [
+            'element' => 'Fluency, with vocabulary (high frequency words)',
             'focus' => 'Reading short sentences of familiar words (RL1CAT-III-1, RL1VWK-I-3).',
             'moves' => [
                 'Read the sentence once together, then once alone, so the second read is easier and smoother.',
@@ -54,6 +71,7 @@ return [
             'watch' => 'Reading word by word with no flow. Rereading the same sentence builds smoothness.',
         ],
         3 => [
+            'element' => 'Fluency (speed, accuracy and expression)',
             'focus' => 'Reading longer sentences with speed, accuracy and expression (RL1CAT-III-1, EN2PWS-I-1).',
             'moves' => [
                 'Model reading with expression, then have the child echo you.',
@@ -63,6 +81,7 @@ return [
             'watch' => 'Dropping the ends of words, and skipping small words (a, the, of).',
         ],
         4 => [
+            'element' => 'Fluency and comprehension',
             'focus' => 'Reading a short story and understanding it (EN3CAT-I-1, EN3CAT-I-2).',
             'moves' => [
                 'Ask who and what before reading, and one question after (what happened first?).',
@@ -72,6 +91,7 @@ return [
             'watch' => 'Reading fast but not remembering. Stop after a sentence and ask what it said.',
         ],
         5 => [
+            'element' => 'Fluency and comprehension',
             'focus' => 'Reading stories with expression and answering questions about them (EN3CAT-I-1, EN3CAT-I-2).',
             'moves' => [
                 'Ask a question that needs a reason (why did the character do that?), not only a fact.',
@@ -81,6 +101,7 @@ return [
             'watch' => 'Names and uncommon words. Teach them before reading so they do not slow the whole story.',
         ],
         6 => [
+            'element' => 'Comprehension and vocabulary',
             'focus' => 'Reading longer stories and informational texts on their own (EN3CAT-I-1, EN3CAT-I-2).',
             'moves' => [
                 'Give longer stories and true texts, and let the child choose some themselves.',

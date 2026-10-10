@@ -10,8 +10,8 @@ use App\Models\Teacher;
  * The general reading level of a class, and whether a learner may be added to it.
  *
  * Two rules stand in the way, in this order. (1) Grade: a class holds ONE grade, so a Grade 2 learner cannot join a
- * Grade 1 class (only a multigrade class, opened by a teacher who handles several grades, takes more than one grade).
- * (2) Reading level: below.
+ * Grade 1 class, with no exception (a teacher who handles several grades opens one class for each). (2) Reading
+ * level: below.
  *
  * A teacher's own instruction: a class is taught at one general level, and a learner who already reads at a high level
  * cannot be added to it, even when they are in the same grade, because the class is not pitched for them. Such a child
@@ -66,11 +66,6 @@ class ClassLevel
      */
     public static function refusal(SchoolClass $class, Learner $learner): ?string
     {
-        // A multigrade class is meant to hold children at many levels, so it has no single level to protect.
-        if ($class->multigrade) {
-            return null;
-        }
-
         if (self::bandOf($learner) !== 'independent') {
             return null;
         }
@@ -89,24 +84,26 @@ class ClassLevel
     }
 
     /**
-     * A class holds ONE grade. A Grade 2 learner cannot be added to a Grade 1 class, whoever types or scans the code. The
-     * one exception is a multigrade class (see SchoolClass::acceptsGrade), which takes any grade the teacher handles.
+     * A class holds ONE grade, with no exception: a Grade 1 class is only for Grade 1 learners, whoever types or scans
+     * the code. A teacher who handles several grades opens one class for each. A teacher who no longer handles a class's
+     * grade (they changed the grades they handle in Profile) cannot add to it either.
      */
     public static function gradeRefusal(Teacher $teacher, SchoolClass $class, Learner $learner): ?string
     {
-        if ($class->acceptsGrade($learner->grade_level, $teacher)) {
-            return null;
+        if (! $class->acceptsGrade($learner->grade_level)) {
+            $handles = in_array($learner->grade_level, $teacher->gradesAllowed(), true);
+            $hint = $handles
+                ? "Add {$learner->first_name} to one of your {$learner->grade_level} classes, or open a new {$learner->grade_level} class (Classes, New class)."
+                : "You do not handle {$learner->grade_level}. Change the grades you handle in Profile if that is wrong, or ask the school to place {$learner->first_name} with a {$learner->grade_level} teacher.";
+
+            return "{$learner->first_name} is in {$learner->grade_level}, and {$class->name} is a {$class->grade_level} class. A class holds one grade only: a {$class->grade_level} class is only for {$class->grade_level} learners, and classes of different grades cannot be merged. {$hint}";
         }
 
-        if ($class->multigrade) {
-            return "{$learner->first_name} is in {$learner->grade_level}, and you do not handle {$learner->grade_level}. A multigrade class takes only the grades you handle: ".implode(' and ', $teacher->gradesAllowed()).'.';
+        if (! in_array($class->grade_level, $teacher->gradesAllowed(), true)) {
+            return "You no longer handle {$class->grade_level}, so {$class->name} cannot take new learners. Change the grades you handle in Profile to add to it again.";
         }
 
-        $hint = $teacher->isMultigrade()
-            ? "Add {$learner->first_name} to one of your {$learner->grade_level} classes instead, or open a multigrade class if you teach the grades together."
-            : "Add {$learner->first_name} to a {$learner->grade_level} class instead.";
-
-        return "{$learner->first_name} is in {$learner->grade_level}, and {$class->name} is a {$class->grade_level} class. A class holds one grade only. {$hint}";
+        return null;
     }
 
     /** Everything that can stand in the way of putting this learner in this class: the grade first, then the reading level. */

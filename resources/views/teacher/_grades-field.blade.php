@@ -1,8 +1,9 @@
 {{--
   "Which grades do you handle?" Used by Teacher sign up and Teacher Profile.
-  One grade, or two or more for a multigrade class (in the Philippines one teacher can handle two or
-  more grades in one classroom, so the app must not assume one grade per teacher). Class creation
-  offers only these grades; the server enforces it, this form only makes it easy.
+  One grade, or two or more (a teacher in the Philippines can handle several grades, so the app must not
+  assume one grade per teacher). Class creation offers only these grades, and EVERY class holds one grade
+  only: a teacher who handles Grade 1 and Grade 2 opens a Grade 1 class and a Grade 2 class, never one mixed
+  class. The server enforces it, this form only makes it easy.
 
   Variables: $selected (array of "Grade N"), optional $idp (id prefix, default "gr").
 --}}
@@ -17,12 +18,12 @@
     <label class="gr-opt {{ $mode === 'single' ? 'on' : '' }}">
       <input type="radio" name="grades_mode" value="single" @checked($mode === 'single') required>
       <span class="gr-rb" aria-hidden="true"></span>
-      <span>One grade<small>A single-grade class</small></span>
+      <span>One grade<small>Choose Grade 1, Grade 2 or Grade 3. Every class you open is for that grade.</small></span>
     </label>
     <label class="gr-opt {{ $mode === 'multi' ? 'on' : '' }}">
       <input type="radio" name="grades_mode" value="multi" @checked($mode === 'multi')>
       <span class="gr-rb" aria-hidden="true"></span>
-      <span>More than one grade (multigrade)<small>Two or more grades under one teacher</small></span>
+      <span>More than one grade<small>Pick the grades you handle. You open a separate class for each grade.</small></span>
     </label>
   </div>
   <div class="gr-chk" id="{{ $idp }}-chk" @if(! $mode) hidden @endif>
@@ -33,7 +34,7 @@
       </label>
     @endforeach
   </div>
-  <p class="gr-hint">Class creation will offer only these grades. You can change them later in Profile.</p>
+  <p class="gr-hint">Class creation will offer only these grades, and each class holds one grade only: a Grade 1 class is only for Grade 1 learners, Grade 2 for Grade 2, Grade 3 for Grade 3. You can change the grades later in Profile.</p>
   @error('grades_handled') <span class="field-error">{{ $message }}</span> @enderror
   @error('grades_mode') <span class="field-error">{{ $message }}</span> @enderror
 </div>

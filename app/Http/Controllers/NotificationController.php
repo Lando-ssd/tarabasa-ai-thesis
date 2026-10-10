@@ -28,11 +28,12 @@ class NotificationController extends Controller
         $counts = [
             'all' => $all->count(),
             'support' => $all->where('kind', 'support')->count(),
+            'start' => $all->where('kind', 'start')->count(),
             'up' => $all->where('kind', 'up')->count(),
             'quiet' => $all->where('kind', 'quiet')->count(),
         ];
 
-        $filter = in_array($request->query('filter'), ['support', 'up', 'quiet'], true) ? $request->query('filter') : 'all';
+        $filter = in_array($request->query('filter'), ['support', 'start', 'up', 'quiet'], true) ? $request->query('filter') : 'all';
 
         // The routine messages (a summary of each reading, a confirmed level) stay, folded away.
         $routine = Notification::where('recipient_user_id', $user->id)
@@ -56,7 +57,7 @@ class NotificationController extends Controller
     public function handled(Request $request, Learner $learner, TeacherAlerts $alerts): RedirectResponse
     {
         $teacher = $request->user()->teacher;
-        $kind = $request->validate(['kind' => ['required', 'in:support,up,quiet']])['kind'];
+        $kind = $request->validate(['kind' => ['required', 'in:support,start,up,quiet']])['kind'];
 
         $this->authorizeLearner($teacher, $learner);
         $alerts->markHandled($teacher, $learner, $kind);
@@ -69,7 +70,7 @@ class NotificationController extends Controller
     {
         $teacher = $request->user()->teacher;
         $data = $request->validate([
-            'kind' => ['required', 'in:support,up'],
+            'kind' => ['required', 'in:support,start,up'],
             'activity_id' => ['required', 'integer'],
         ]);
 
