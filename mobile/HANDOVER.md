@@ -132,8 +132,10 @@ sample data at 360x640, 393x852 and 768x1024. The phone API gained badge icons a
 a "for later" mark on stories (tests in `tests/Feature/MobileApiTest.php`, 18 passing; whole suite 343).
 NOT proven yet (needs a real phone): the microphone and the m4a upload, the camera card scan, the phone's own read
 aloud voice, timing on mobile data, and children's voices. The browser preview cannot test those.
-Not done: a Play Store build and signing key. The APK in `D:\tools\apk-out\` (0.2.0-test3) was built BEFORE My Shelf, the silence check,
-the warm-up and the Games, so a new build is needed for a tester to see them.
+Not done: a Play Store build and signing key. The current test file is `D:\tools\apk-out\TaraBasa-AI-0.3.0-test4.apk` (43.9 MB, arm64 only,
+version 0.3.0, versionCode 4, SHA-256 `6eead70c8b5ecf5140e2ef738d638964ad8fd99f9503de8902493733dce10b29`, built 2026-10-12 in 16 minutes from a copy in
+`D:\tb`). Checked inside the file: the live address is in the bundle and `localhost` is not; Shelf, the games, the silence check, the warm-up and the three
+game sounds are in it. Older files (0.1.x, 0.2.0-test3) lack screens: do not send them.
 
 ## Next steps, in order
 1. A tester runs `PHONE-TEST-CHECKLIST.md` on a real Android phone and reports back.

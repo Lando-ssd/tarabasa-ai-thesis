@@ -6494,7 +6494,7 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   points, streak or level. Browser-preview results with a synthetic microphone: all three games played to the finish (levels 1 to 3), real
   `game_plays` rows and badges, silent microphone sends nothing, "again" twice pops the balloon anyway, "unavailable" gives tap-to-pop, layout fits
   390x844 and 360x640. NOT proven: expo-speech voices for words/letters, game sounds on a device, a child's voice, mobile data timing. App version
-  bumped to 0.3.0 (versionCode 4): the existing APK (0.2.0-test3) predates Shelf, silence check, warm-up and Games, so a new build is needed.
+  bumped to 0.3.0 (versionCode 4): the older APK (0.2.0-test3) predates Shelf, silence check, warm-up and Games. Round three was PUSHED as `00e6c9b` on `mobile-app`, and the 0.3.0 APK was built the same day (`TaraBasa-AI-0.3.0-test4.apk`, 43.9 MB, SHA-256 `6eead70c…ce10b29`, 16 minutes from `D:\tb`; checked inside: live address, no localhost, new screens and the 3 game sounds present). NOT installed on any phone yet.
 - **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
   about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
   environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`
