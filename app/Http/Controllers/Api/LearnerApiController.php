@@ -8,6 +8,7 @@ use App\Models\Activity;
 use App\Models\LearnerBadge;
 use App\Services\LearnerAuthService;
 use App\Services\LearnerReadingService;
+use App\Services\ReadingProgression;
 use App\Support\LearnerHome;
 use App\Support\ReadingLevel;
 use Illuminate\Http\JsonResponse;
@@ -78,6 +79,9 @@ class LearnerApiController extends Controller
                 'blurb' => $step['blurb'],
                 'isCurrent' => $number === $currentStep,
             ])->values(),
+            // How far the child is toward growing on their own step: "great readings" counted so far out of the number the
+            // app needs (config/progression.php). The same numbers the teacher sees; nothing is changed by asking.
+            'pathProgress' => $this->pathProgress($learner),
             'competencyProgress' => $learner->subdomainProgressSummary(),
             // Same numbers as the website's Home (App\Support\LearnerHome).
             'streak' => [
@@ -95,6 +99,14 @@ class LearnerApiController extends Controller
             ],
             'badges' => $this->badgesPayload($learner),
         ]);
+    }
+
+    /** @return array{have:int, need:int, atTop:bool} */
+    private function pathProgress($learner): array
+    {
+        $progress = app(ReadingProgression::class)->progress($learner);
+
+        return ['have' => $progress['have'], 'need' => $progress['need'], 'atTop' => $progress['atTop']];
     }
 
     /**

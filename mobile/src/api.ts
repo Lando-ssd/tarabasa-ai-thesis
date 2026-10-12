@@ -48,6 +48,8 @@ export type LoginResult = {
 export type Home = {
   learner: LearnerPayload;
   readingPath: { step: number; name: string; skill: string; blurb: string; isCurrent: boolean }[];
+  /** Great readings counted toward growing on the child's own step (for the ring on the reading path). */
+  pathProgress?: { have: number; need: number; atTop: boolean };
   competencyProgress: unknown[];
   streak: { days: number; week: { label: string; done: boolean }[] };
   weeklyGoal: { done: number; target: number; met: boolean };

@@ -154,6 +154,22 @@ Four things that do not depend on the phone test, so the teammate's report on 0.
   no localhost, the new screens, and the three game sounds. The teammate may still be testing 0.3.0 (`...-0.3.0-test4.apk`): wait for
   that report before sending 0.3.1. Older files (0.1.x, 0.2.0-test3) lack screens: do not send them.
 
+## Reading path redesign (2026-10-12 night, LOCAL, not pushed, not in any APK yet)
+The owner shared two screenshots of a language app's winding lesson path and asked for the same kind of path on Home, in TaraBasa's own
+colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the plain list on Home):
+- A blue banner "STEP 2 OF 4 / Word Builder / Sound out and read words", then the four steps as round buttons on an S shaped trail: steps already
+  left behind are green with a bold check, the child's own step is the orange star with a ring that fills one segment per great reading counted
+  (3 needed, `config/progression.php`), steps ahead are grey with a lock and the last is a trophy. Small dots join the buttons (green once passed).
+- Under the child's own step an orange card: the skill ("Sounding Out Words"), "1 of 3 great readings so far", "Read 2 more really well to grow.",
+  and one big START READING button (this replaced Home's old separate button). Tara's head sits beside the trail. The star breathes gently unless the
+  phone is set to reduce motion. At the top step the ring turns gold and the card says "You are a Story Reader".
+- Real data: `GET /api/learner/dashboard` now also returns `pathProgress {have, need, atTop}` (`LearnerApiController::pathProgress`, from
+  `ReadingProgression::progress`, read only; 2 new tests, `MobileApiTest` 29 passing). The phone treats it as optional, so the older live server
+  (no `pathProgress` yet) still works: the ring and the count are simply left out.
+- On a short phone Home scrolls once, as it opens, just far enough to show the Start button (`Screen` got an optional `scrollRef`).
+- Gallery pictures of every step: `#gallery=path-1` ... `#gallery=path-4`. Checked at 390x844 and 360x640 and with the live local server.
+- NOT done: the website's Home already has its own road; it was not changed. A new APK (0.3.2) is needed to see this on a phone.
+
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
    on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,
