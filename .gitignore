@@ -35,3 +35,7 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Signing keys (never commit)
+*.keystore
+*.jks

@@ -42,3 +42,4 @@ yarn-error.*
 
 # this computer's build tool paths
 *.local.ps1
+*.keystore
