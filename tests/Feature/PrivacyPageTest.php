@@ -34,6 +34,37 @@ class PrivacyPageTest extends TestCase
         $page->assertSee('A child cannot sign up alone.', false);
     }
 
+    public function test_it_describes_the_phone_app(): void
+    {
+        $page = $this->get('/privacy')->assertOk();
+
+        $page->assertSee('The phone app', false);
+        $page->assertSee('Microphone:', false);
+        $page->assertSee('Camera:', false);
+        $page->assertSee('QR code on a learner card', false);
+        $page->assertSee('removed as soon as our server has answered', false);
+        $page->assertSee('advertising ID', false);
+    }
+
+    public function test_the_phone_app_asks_only_for_the_permissions_the_page_explains(): void
+    {
+        // The page explains the microphone and the camera. If another sensitive permission is ever added to the
+        // phone app (location, contacts, storage...), this fails and the page must say what it is for first.
+        $app = json_decode(file_get_contents(base_path('mobile/app.json')), true);
+        $blocked = $app['expo']['android']['blockedPermissions'] ?? [];
+
+        foreach (['SYSTEM_ALERT_WINDOW', 'USE_BIOMETRIC', 'USE_FINGERPRINT', 'READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'] as $unused) {
+            $this->assertContains("android.permission.$unused", $blocked, "$unused is not used by the phone app and must stay blocked.");
+        }
+
+        $plugins = json_encode($app['expo']['plugins']);
+        $this->assertStringContainsString('microphonePermission', $plugins);
+        $this->assertStringContainsString('cameraPermission', $plugins);
+        $this->assertStringNotContainsString('locationPermission', $plugins);
+        $this->assertStringNotContainsString('expo-location', $plugins);
+        $this->assertStringNotContainsString('expo-contacts', $plugins);
+    }
+
     public function test_the_recording_claim_is_still_true_the_app_stores_no_audio(): void
     {
         // The only file the app writes with ->store() is the optional avatar photo. If a recording is

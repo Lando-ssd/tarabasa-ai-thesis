@@ -6402,7 +6402,7 @@ message or warning when a teacher tries to merge grades. So the "Multigrade clas
   Said kindly: "where reading instruction begins, not a mark against" the child. Tests: `NonReaderAlertTest` (7).
 - **Rule based, still not a trained model** (the user asked to "train the AI more"): the "training" is more curriculum knowledge, not machine learning:
   the DepEd references above, an element of reading per step, and the alert. State this plainly; there is no dataset of children's recordings to train on.
-- **Admin redesign: BUILT on 2026-10-10 night (see the section "Admin rebuilt" below).** The notes that follow describe what it fixed. Artifact `https://claude.ai/artifact/8rPvNjawdcUcoFLui1b91u` (source in the session scratchpad, not the
+- **Admin redesign: BUILT on 2026-10-10 night (see the section "Admin rebuilt" below).** The notes that follow describe what it fixed. Original preview: Artifact `https://claude.ai/artifact/8rPvNjawdcUcoFLui1b91u` (source in the session scratchpad, not the
   repo) shows a left-menu Admin (Overview, Approvals, Accounts, System health, Activity log) and a "What changes" list. Problems found in the current
   `admin/dashboard` + `AdminController`: one long standalone page; service problems above the approvals; a Rejected teacher can never be reopened; no
   confirmation or reason on approve/reject; `rejectTeacher`/`activateTeacher` do not check the teacher is Pending (callable on an Active one by URL);
@@ -6412,7 +6412,140 @@ message or warning when a teacher tries to merge grades. So the "Multigrade clas
   email is verified, show the rejection reason to the teacher, add an `admin_actions` log table, and account deletion (Data Privacy Act) which is not built.
 - **Tests:** full suite 307 passing (ClassGradeAndMovesTest rewritten for the one-grade rule, NonReaderAlertTest new).
 
-## Admin rebuilt (2026-10-10 night, PUSHED to this live branch on 2026-10-11)
+## Mobile app, Part 2 started: the Expo project in `mobile/` (2026-10-10, PUSHED to the branch `mobile-app`, not to the live branch)
+
+**Branches, so nobody pushes to the wrong one.** Render deploys ONLY `claude/admin-dashboard-approvals-62dcd0` (at `136917a` when the mobile
+work was pushed). All mobile work, and the phone API changes that came with it, live on `mobile-app`, which does not deploy. This worktree
+(`sleepy-rhodes-2f3ecb`) was switched to `mobile-app`. A fix for the live website belongs on the live branch (switch to it, or use another
+worktree), and `mobile-app` is merged into it only when the user says so. `main` is about 112 commits behind the live branch; do not clone
+or branch from `main`. The website's Home now uses `App\Support\LearnerHome` and the practice stage rule uses
+`LearnerReadingService::practiceStage`: both are website code too, so merging `mobile-app` changes the live site (covered by tests).
+
+The user said "lets start the react js for mobile" and asked whether it can work. It can. "react js" is read as React Native with
+Expo (the stack recorded in "Mobile app, Part 1"; an older memory note said the adviser had not signed off on it, so ask once if the
+adviser's answer matters). Learner only, as scoped in Part 1. The manuscript still names Kotlin: that is a documentation item for the team.
+- **What exists.** `mobile/` is a standalone Expo SDK 57 / React Native 0.86 / TypeScript project (created with `create-expo-app
+  --template blank-typescript`; its own `.gitignore` keeps `node_modules`, `.expo` and `.env*.local` out of git; the template's nested
+  `.claude/settings.json` and `LICENSE` were deleted, `AGENTS.md` kept). `mobile` is in `.dockerignore` so the server image never carries it.
+  Expo has changed a lot between versions: read the versioned docs (`https://docs.expo.dev/versions/v57.0.0/`) before writing code that
+  touches an Expo or React Native API, as the template's `AGENTS.md` says.
+- **The real screens (built 2026-10-12, version 0.2.0, after the user approved the design preview).** The user's answers:
+  five places in the bottom bar (Home, Read, Games, Badges, Shelf) with Games and Shelf "coming soon" for now ("the future
+  redesign can adjust"); "Scan my card" as the main sign in with typing as the backup; NOT the parent's blue or pink choice
+  (one colour for everyone, chosen for the phone); the real app icon made from the actual logo now; and "suit the best":
+  the phone screen is not the web's size, so align and size by mobile UI principles. Built: `src/SignIn.tsx` +
+  `CardScanner.tsx` (camera sheet, only a real card is accepted: shape and Luhn check digit verified on the phone, ported in
+  `learnerCode.ts`), `FirstCheck.tsx`, `Home.tsx`, `ReadList.tsx` + `Story.tsx` + `Results.tsx` (Listen, two free tries, the
+  real reading, quiz after reading for comprehension stories, answers marked on the server), `Badges.tsx` (100 by group, tap for
+  detail), `ComingSoon.tsx`, `Main.tsx` (bar, Android back button), shared `ui.tsx`, `theme.ts`, `Feedback.tsx`,
+  `ReadingScene.tsx`, `MicButton.tsx`, `WordReview.tsx`, `Waiting.tsx`. Fonts Baloo 2 / Barlow Semi Condensed / Lexend are
+  bundled; icons are the website's Phosphor sprite turned into `iconPaths.ts` (`node tools/make-icon-paths.cjs`); the
+  icon, adaptive icon, monochrome icon, splash and in-app owl are cut from `public/images/logo.png` by
+  `node tools/make-icons.cjs` (a colour key removes the blue tile). `PhoneCheck.tsx` and `RecorderButton.tsx` were removed.
+  Phone sizing rules used: taps at least 48dp (main buttons 56dp), main action pinned at the bottom (thumb zone), safe areas
+  via react-native-safe-area-context, scrolls on 360x640, content column capped at 560dp on tablets, fonts capped at 1.25x
+  system scaling, the mic button shrinks on phones shorter than 700dp, the keyboard pushes the sign in form up (the owl hides),
+  every word that needs practice carries a written note so colour is never the only signal, no emoji, no dashes.
+  A developer-only gallery (`http://localhost:8081/#gallery=results`, `src/devGallery.tsx`, `__DEV__` and web only) shows a
+  screen with sample data at any size. Real finding from the browser walk: the first check's letters come as
+  `{upper, lower}` objects, not text (the app crashed until typed correctly). `expo-doctor` also found `expo-asset` missing
+  (a peer of expo-audio): the 0.1.1 APKs lack it and may close by themselves; use 0.2.0.
+  The phone API gained `badges[].icon/category/current/target` (no rule), `newBadges[]` as `{code,name,description,icon}`,
+  and `later`/`wordCount` on each story (`MobileApiTest`, 18 tests, whole suite 343 passing).
+- **The phone API was brought up to the website's logic (2026-10-10 night, 17 new tests in `tests/Feature/MobileApiTest.php`).** The login
+  payload now has `dayStreak`, `themeColor` and `readingStep {step, name}` (the four step path; `streak` is still the old stored counter,
+  kept for compatibility). `GET /api/learner/dashboard` adds `readingPath` (4 steps, the child's marked), `streak {days, week}`,
+  `weeklyGoal {done, target, met}`, `growth {days, scale}` (all from the new shared `App\Support\LearnerHome`, which the website's Home
+  now also uses) plus the 100 badges. `GET /api/learner/activities/{id}` adds `instructions`, `wordCount`, `quizQuestions` (the question and
+  its choices ONLY, never the answer or explanation) and `practice {triesLeft, startAt}` (`LearnerReadingService::practiceStage`, shared with
+  the website). New `POST /api/learner/activities/{id}/practice` (free, unscored, two tries, `no_tries_left` after) and `GET /api/learner/warm`
+  (204, wakes the scoring service and the recommender; throttled). The quiz is marked on the server from the picked choice text sent in
+  `answers[i]`. Full suite 324 passing (307 + 17).
+- **Verified for real.** Browser preview of the Expo web build against the local server (Maria `TB26-43708`): sign in, the new fields,
+  "Reach the server" (0.5 s), the activity list. A scripted run exactly like the phone calls it, with a real synthesized voice and the
+  real Reading-api, on a disposable local child (deleted afterwards): login, warm, Home, list, detail, a free practice try (66.67
+  percent, nothing saved), a real reading (66.67 percent, 33 points, the week's goal and the day streak moved to 1, four badges earned),
+  logout. The practice try took 36 s (the scoring service was asleep) and the real reading 12 s. A second scripted run did the FIRST
+  READING CHECK through the phone API (a new child who had none): the home call answered `403 diagnostic_required` first, three items
+  opened instantly from the curated bank (words, short sentences, longer sentences), each scored in 10 to 17 s, the check finished at
+  Developing, Sentence Reader, with three badges, and Home then opened. Test files were WAV: there is no ffmpeg
+  here, so the phone's m4a/AAC upload is NOT proven yet (Reading-api documents m4a as accepted, so it is expected to work).
+- **Design preview:** Artifact `https://claude.ai/artifact/WsvHtotrivVLgqX3hSFdJh` (approved 2026-10-12 with the answers above).
+- **Still missing in the API:** the Games finish call and Games words, Bookshelf and re-read, the first check warm up, avatar photos.
+- **Second round (2026-10-12, LOCAL, not pushed): the silence check, the warm-up and My Shelf.** The user said "start the silence check and mic warm-up
+  or its possible do all the learner end still step by step, and apply the principle of ui/ux design", and earlier asked to see the app on localhost in a
+  phone frame to review it there (`mobile/src/PhoneFrame.tsx`, so the localhost preview replaces the Artifact preview for review).
+  (1) `src/recording.ts` + `MicButton.tsx`: a recording under 1 second, or whose loudest moment was below -45 dB, is not sent; a calm inline note
+  says so and the mic is ready again; no level information means send anyway. `WarmUp.tsx` (say "sun", live `LevelBar`, "I heard you!", Skip always
+  there) runs once before the first item of the first check, like the website. Verified in the browser with a synthetic microphone (silent stream:
+  nothing sent, voice stream: sent; warm-up silent: "I did not hear anything", voice: heard after about 2 s). The dB numbers are NOT verified on a real
+  phone. (2) Shelf tab: `GET /api/learner/bookshelf`, `GET /api/learner/bookshelf/{activity}`, `POST /api/learner/bookshelf/{activity}/reread`
+  (`LearnerBookshelfApiController`; the same rules as the website: only a story the child really read, free and unscored via
+  `recordFreeReattempt`, no limit on tries, a child sees times read and the last day, never a percentage); `Shelf.tsx` + `Reread.tsx`. Tests: 4 new in
+  `MobileApiTest` (22 passing). Verified: Maria's points, streak, level and readings were identical before and after a re-read.
+- **Third round (2026-10-12, LOCAL, not pushed): Practice Games on the phone.** The user said "go start the games". The game rules now live in ONE
+  place, `app/Services/PracticeGameService.php` (start level from grade, the three word lists and letter levels, the child's own missed words and
+  pattern words first, the word check, and `finish()` which writes `game_plays` and awards the Games badges); the website's `GameController` was
+  changed to call it (its tests, incl. `AdaptivePatternTest`'s reflection call to the private `wordLevels`, still pass). New phone routes inside the
+  `learner.diagnostic.api` group: `GET /api/learner/games`, `GET .../games/words`, `POST .../games/check-word` (answers only heard / again /
+  unavailable, never "wrong", never what was heard), `POST .../games/{game}/finish` (`LearnerGamesApiController`). Phone screens: `Games.tsx` (hub, the
+  recommended game marked), `LetterMatch.tsx`, `WordBuilder.tsx`, `BalloonPop.tsx` (new on both website and phone), `SayWord.tsx` (3 second word
+  check, uses `MicButton` so the silence check applies), `gameKit.tsx` (sounds, board memory, header, Celebrate, GameDone). Free play still: no
+  points, streak or level. Browser-preview results with a synthetic microphone: all three games played to the finish (levels 1 to 3), real
+  `game_plays` rows and badges, silent microphone sends nothing, "again" twice pops the balloon anyway, "unavailable" gives tap-to-pop, layout fits
+  390x844 and 360x640. NOT proven: expo-speech voices for words/letters, game sounds on a device, a child's voice, mobile data timing. App version
+  bumped to 0.3.0 (versionCode 4): the older APK (0.2.0-test3) predates Shelf, silence check, warm-up and Games. Round three was PUSHED as `00e6c9b` on `mobile-app`, and the 0.3.0 APK was built the same day (`TaraBasa-AI-0.3.0-test4.apk`, 43.9 MB, SHA-256 `6eead70c…ce10b29`, 16 minutes from `D:\tb`; checked inside: live address, no localhost, new screens and the 3 game sounds present). NOT installed on any phone yet.
+- **Fourth round (2026-10-12 night, LOCAL, not pushed): version 0.3.1, store preparation.** The user said to start the 0.3.1 items that do not
+  depend on the phone test. Done and checked: (1) the phone deletes its copy of a recording once the server answers, deletes unsent ones (too
+  quiet, warm-up) and sweeps the cache at app start and log out (`mobile/src/recordingFiles.ts`, `expo-file-system` is now a direct
+  dependency; a failed send keeps its file so Send Again works; not provable without a real phone). (2) `android.blockedPermissions` in
+  `mobile/app.json` removes SYSTEM_ALERT_WINDOW, USE_BIOMETRIC, USE_FINGERPRINT and external storage: the built file went from 15 permissions to 10
+  (`aapt2`); FOREGROUND_SERVICE and FOREGROUND_SERVICE_MEDIA_PLAYBACK stay until a phone test shows sounds still play without them. (3)
+  `mobile/src/ErrorBoundary.tsx` wraps the app: a crash shows "Oops! Tara got mixed up" and a Start Again button (gallery: `#gallery=crash`).
+  (4) `mobile/plugins/with-upload-signing.js` (an Expo config plugin) signs release builds with our upload key when four Gradle properties
+  (`TARABASA_UPLOAD_STORE_FILE`, `..._STORE_PASSWORD`, `..._KEY_ALIAS`, `..._KEY_PASSWORD`) exist in `D:\tools\gradle-home\gradle.properties`
+  (never in the project); `gradlew bundleRelease` without them stops with a clear message (tested), and a throwaway key produced a signed 30.7 MB
+  `.aab` (key deleted after). The REAL upload key is NOT made yet (the account owner should; see `mobile/PLAY-STORE-PLAN.md` section 5). (5) The website
+  `/privacy` page now has a "The phone app" section (microphone, camera, what is stored and not used), pinned by two new tests in
+  `PrivacyPageTest` (7 passing). It reaches the live site only when `mobile-app` is merged into the live branch. APK:
+  `D:\tools\apk-out\TaraBasa-AI-0.3.1-test5.apk` (43.9 MB, versionCode 5, SHA-256 `870da01e…2118`); checked inside: live address, no localhost,
+  new screens, the 3 game sounds. The teammate may still be testing 0.3.0: wait for that report before sending 0.3.1. The Learner end is code
+  complete (every website Learner screen has a phone version); what remains needs a real phone and a real child.
+- **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
+  about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
+  environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`
+  as a reading screen opens. A phone needs the live server's address (a phone on another network cannot reach the computer's local copy).
+  Uploaded avatar photos vanish on a redeploy, so use the initial as fallback. Android can be given to others as an APK (free); Expo's
+  current page says an iPhone needs a paid Apple developer account even for Expo Go. The user has NO phone: the real-device check is the
+  teammate's Android phone, by sending an APK (`mobile/PHONE-TEST-CHECKLIST.md`). Expo's own doc examples are not always current
+  (`StyleSheet.absoluteFillObject` no longer exists in React Native 0.86): trust `tsc --noEmit`.
+- **Build tools on this computer (nothing system wide was changed).** Java 17 (Eclipse Temurin 17.0.20.1, checksum verified) is unzipped in
+  `D:\tools\jdk-17`; Gradle's cache is `D:\tools\gradle-home`; the Android SDK is the existing one in `%LOCALAPPDATA%\Android\Sdk`
+  (platform 36, build tools 36.1.0, NDK 27.1 installed by the first build, about 2.2 GB on C:). `mobile/android-env.local.ps1` (untracked)
+  sets them for one PowerShell window. A first APK build took 31 minutes; `D:\tools\apk-out\` holds the APKs (outside the repo).
+  No Android emulator was set up (it needs Android Studio or the Google command-line tools; the computer has 7.7 GB of RAM).
+- **Dependencies:** `npm audit --omit=dev` shows 21 advisories (7 moderate, 14 high), all in Expo's own build tools (cli, metro, config
+  plugins), which run on the developer's computer and are not inside the installed app. `npm audit fix --force` would break Expo: leave
+  them and update Expo when a new SDK is out.
+- **The test APK to send:** the 0.2.0 file in `D:\tools\apk-out\` (`TaraBasa-AI-0.2.0-test3.apk`, 43.7 MB, arm64 only, versionCode 3, SHA-256
+  `31672409ec44c6de0896f59d5b6c9de2e844aa0001b0bc359d65bb72a8737fd3`, built 2026-10-12 in 16 minutes; checked: the bundle holds the live
+  address and not localhost). **Windows long paths:** building from the worktree failed (safe-area-context's native code makes file
+  names over 260 characters, and a `subst` drive does not help because Node resolves it back to the long path). It was built from
+  a plain copy in `D:	b` (robocopy the source, `npm ci`, prebuild, gradle). See `mobile/HANDOVER.md`, with `PHONE-TEST-CHECKLIST.md` next to it. It points at the live server, asks for CAMERA and
+  RECORD_AUDIO, scans QR codes on the device, and has the real owl icon. Older files (`0.1.0-test1`, `0.1.1-test2`) are the
+  plain test builds: ignore them. Minor cleanup before a real release: the manifest also carries SYSTEM_ALERT_WINDOW and
+  USE_BIOMETRIC/USE_FINGERPRINT (from Expo's modules), the release is signed with the debug key, and CAMERA/microphone are
+  listed as required hardware (a phone without them cannot install it).
+- **Deadline:** the user said next month, most likely the first week (so about three weeks from 2026-10-10). Demo core: sign in, first
+  reading check, Home, reading and recording, results, Badges. Cut first if time runs short: Games, Bookshelf, the quiz, the weekly goal,
+  the text size control.
+- **Next, in order.** (1) The user sends the 0.2.0 APK and a test child's code and PIN to the teammate (a made up child on the
+  LIVE site; Claude may not create accounts on live sites), who runs `mobile/PHONE-TEST-CHECKLIST.md` on an Android phone.
+  (2) Fix what that finds. (3) Games and Shelf if there is time (cut first), the first check's one word microphone warm up, a
+  silence check before sending, then Play Store steps. (4) The user decides when to push; `mobile-app` never deploys; say plainly
+  that `main` is 112 commits behind the live branch.
+
+## Admin rebuilt (2026-10-10 night, PUSHED to the live branch on 2026-10-11 as 66ebc30)
 
 The user showed the live Admin Dashboard ("still the same ui and a lot of errors") and said to fix the Admin first. They never answered the four
 yes/no questions of the preview, so the preview's RECOMMENDED answers were built (they can be flipped): (1) Approve is blocked until the teacher's
@@ -6444,9 +6577,9 @@ open: Data Privacy Act).
   Check now wake. One layout bug found and fixed: the Accounts table made the phone page wider than the screen (now it scrolls inside its own box).
 - **Local Admin login:** `audit.admin@example.com` exists in the local database; its password was set to a local test value tonight. To set your own:
   run `php artisan admin:sync` with `ADMIN_PASSWORD` in the environment. Local sample data used for the checks was removed afterwards.
-- **Shipped.** Committed on the live branch (`claude/admin-dashboard-approvals-62dcd0`) by cherry-picking the Admin commit from a temporary branch, with the
-  full test suite run on this branch first. The three migrations run by themselves at boot. After a deploy, open System health and press "Check now" once.
-  The mobile work lives on the separate branch `mobile-app`, which does NOT deploy.
+- **Shipped.** The Admin commit was cherry-picked from a temporary branch (`admin-redesign`, `c23211a`) onto the live branch as `66ebc30` (full suite 325 passing
+  there) and pushed. `mobile-app` carries the same Admin code (identical files, so a later merge of `mobile-app` into the live branch only conflicts in this
+  notes file). After a deploy, open System health and press "Check now" once.
 - **Still open:** account deletion (decision), a rejection reason cannot be edited, no bulk actions, Reconnect Gmail still ends in "copy the code into
   GMAIL_SEND_REFRESH_TOKEN and redeploy" (a person has to paste it; the app cannot write host settings), and `ADMIN_PASSWORD` is still not set on Render.
 

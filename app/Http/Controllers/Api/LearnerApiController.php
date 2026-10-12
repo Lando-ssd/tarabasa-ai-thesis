@@ -7,6 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\LearnerBadge;
 use App\Services\LearnerAuthService;
+use App\Services\LearnerReadingService;
+use App\Support\LearnerHome;
+use App\Support\ReadingLevel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -62,12 +65,61 @@ class LearnerApiController extends Controller
     public function dashboard(Request $request): JsonResponse
     {
         $learner = $request->user();
+        $home = LearnerHome::for($learner);
+        $currentStep = ReadingLevel::step($learner);
 
         return response()->json([
             'learner' => $this->learnerPayload($learner),
+            // The four step path, with the child's own step marked: names a child can read, never a grade.
+            'readingPath' => collect(ReadingLevel::STEPS)->map(fn (array $step, int $number) => [
+                'step' => $number,
+                'name' => $step['name'],
+                'skill' => $step['skill'],
+                'blurb' => $step['blurb'],
+                'isCurrent' => $number === $currentStep,
+            ])->values(),
             'competencyProgress' => $learner->subdomainProgressSummary(),
-            'badges' => LearnerBadge::summaryFor($learner),
+            // Same numbers as the website's Home (App\Support\LearnerHome).
+            'streak' => [
+                'days' => $home['dayStreak'],
+                'week' => $home['streakWeek']->values(),
+            ],
+            'weeklyGoal' => [
+                'done' => $home['weeklyCount'],
+                'target' => $home['weeklyTarget'],
+                'met' => $home['weeklyMet'],
+            ],
+            'growth' => [
+                'days' => $home['growthDays']->values(),
+                'scale' => $home['growthScale'],
+            ],
+            'badges' => $this->badgesPayload($learner),
         ]);
+    }
+
+    /**
+     * All the badges, earned or not, as the phone draws them: a plain name for the group, the icon the website
+     * shows (a Phosphor icon name), and how far the child is toward the ones not earned yet. The rule behind a
+     * badge never leaves the server.
+     */
+    private function badgesPayload($learner): array
+    {
+        $categories = config('badges.categories', []);
+        $icons = config('badge_icons.icons', []);
+        $fallbackIcon = config('badge_icons.fallback', 'medal');
+
+        return collect(LearnerBadge::summaryFor($learner))->map(fn (array $badge) => [
+            'code' => $badge['code'],
+            'name' => $badge['name'],
+            'description' => $badge['description'],
+            'category' => $categories[$badge['category']] ?? $badge['category'],
+            'icon' => $icons[$badge['code']] ?? $fallbackIcon,
+            'earned' => $badge['earned'],
+            'earnedAt' => $badge['earnedAt'],
+            'comingSoon' => $badge['comingSoon'],
+            'current' => $badge['current'],
+            'target' => $badge['target'],
+        ])->values()->all();
     }
 
     /**
@@ -83,7 +135,7 @@ class LearnerApiController extends Controller
         $options = $service->findActivityOptions($request->user());
 
         return response()->json([
-            'options' => $options->map(fn (array $option) => $this->activitySummaryPayload($option['activity'], $option['source'], $option['practice'] ?? null))->values(),
+            'options' => $options->map(fn (array $option) => $this->activitySummaryPayload($option['activity'], $option['source'], $option['practice'] ?? null, (bool) ($option['later'] ?? false)))->values(),
         ]);
     }
 
@@ -98,7 +150,9 @@ class LearnerApiController extends Controller
 
         abort_unless($activity->isAccessibleByLearner($learner), 403);
 
-        return response()->json($this->activityDetailPayload($activity));
+        $practice = app(LearnerReadingService::class)->practiceStage($learner, $activity, $request->query('stage'));
+
+        return response()->json($this->activityDetailPayload($activity) + ['practice' => $practice]);
     }
 
     public function updateReadingFontStep(Request $request): JsonResponse
@@ -112,7 +166,7 @@ class LearnerApiController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    private function activitySummaryPayload(Activity $activity, string $source, ?string $practice = null): array
+    private function activitySummaryPayload(Activity $activity, string $source, ?string $practice = null, bool $later = false): array
     {
         return [
             'id' => $activity->id,
@@ -123,27 +177,32 @@ class LearnerApiController extends Controller
             'isRecommended' => str_contains($source, 'Picked just for you'),
             // What this story practises for this child, when their own readings show a clear pattern.
             'practice' => $practice,
+            'wordCount' => $activity->word_count,
+            // Too long for where this child is now: listed last and marked "for later", never hidden.
+            'later' => $later,
         ];
     }
 
     private function activityDetailPayload(Activity $activity): array
     {
-        // Deliberately does NOT include follow_up_questions — the
-        // comprehension quiz is an explicit fast-follow, not MVP, and
-        // that field's 'answer' key is the real correct-answer text
-        // (never sent to the web client either — activity-found.blade.php
-        // only ever renders '$question[choices]' into the page, keeping
-        // 'answer' server-side for scoring). Shipping it here now, before
-        // the quiz UI exists to use it responsibly, would just hand a
-        // mobile client the answer key. Add it back (choices only, still
-        // no 'answer') when the mobile quiz step is actually built.
+        // The comprehension quiz is sent as the question and its choices ONLY. The correct answer (and the
+        // explanation that gives it away) stays on the server and is checked there when the recording is
+        // submitted, exactly as the website does (activity-found.blade.php never sends 'answer' to the browser).
+        $questions = ($activity->competency === 'reading_comprehension') ? ($activity->follow_up_questions ?: []) : [];
+
         return [
             'id' => $activity->id,
             'title' => $activity->title,
+            'instructions' => $activity->instructions,
             'passageText' => $activity->passage_text,
+            'wordCount' => $activity->word_count,
             'competency' => $activity->competency,
             'difficultyTier' => $activity->difficulty_tier,
             'targetSkills' => $activity->target_skills,
+            'quizQuestions' => collect($questions)->map(fn (array $q) => [
+                'question' => $q['question'] ?? '',
+                'choices' => array_values($q['choices'] ?? []),
+            ])->values(),
         ];
     }
 }

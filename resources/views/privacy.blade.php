@@ -1,8 +1,10 @@
 {{--
   The privacy page (public, no sign in). Plain words, because parents and teachers read it, and it
-  says only what the app really does (checked against the code on 2026-10-05): recordings are not saved
-  by the app, nothing is sold, there are no analytics or advertising cookies, and the outside services
-  are listed. Standalone like the error pages, so it works without the rest of the layout.
+  says only what the app really does (checked against the code on 2026-10-05, and the phone app section
+  against mobile/src on 2026-10-12): recordings are not saved by the app (the phone deletes its own
+  temporary copy, see mobile/src/recordingFiles.ts), nothing is sold, there are no analytics or advertising
+  cookies, and the outside services are listed. The phone app's permissions (microphone, camera) are in
+  mobile/app.json; if one is added, say what it is for here. Standalone like the error pages, so it works without the rest of the layout.
   If the app starts doing something new with data (a new outside service, storing recordings), change
   this page in the same commit.
 --}}
@@ -39,16 +41,27 @@
 <main class="page" role="main">
   <div class="brand">TaraBasa<span>AI</span></div>
   <h1>Privacy</h1>
-  <p class="updated">Last updated 5 October 2026</p>
+  <p class="updated">Last updated 12 October 2026</p>
 
-  <p class="lead">TaraBasa AI is a reading practice website for Grade 1 to 3 learners. It was built by a student team as a capstone project. This page says what it keeps, why, and who can see it.</p>
+  <p class="lead">TaraBasa AI is a reading practice website and phone app for Grade 1 to 3 learners. It was built by a student team as a capstone project. This page says what it keeps, why, and who can see it.</p>
 
   <h2>What we keep</h2>
   <ul>
     <li><b>Parents and teachers:</b> name, email address and a password (kept scrambled, never readable). A contact number is optional. Teachers also give a school name and employee ID, which the site administrator checks.</li>
     <li><b>Children:</b> a parent adds each child. We keep the child's first and last name, grade, an avatar or an optional photo the parent chooses, and a 4 digit PIN (kept scrambled). The parent may also tell us the child's reading stage, learning style, home language, supports and interests so the first reading check starts in the right place.</li>
     <li><b>Reading activity:</b> scores, which words were missed, points, badges, days read and reading level.</li>
-    <li><b>Recordings:</b> a child's voice is recorded in the browser only when the child taps the microphone. It is sent to be scored. <b>The app does not save the recording.</b> We keep the result (the scores and the words), not the audio.</li>
+    <li><b>Recordings:</b> a child's voice is recorded, in the browser or in the phone app, only when the child taps the microphone. It is sent to be scored. <b>The app does not save the recording.</b> We keep the result (the scores and the words), not the audio.</li>
+  </ul>
+
+  <h2>The phone app</h2>
+  <p>The phone app is for learners only. A parent creates the child's account on the website; the child then signs in on the phone with the learner code and the 4 digit PIN. What the phone app does, and does not do:</p>
+  <ul>
+    <li><b>Microphone:</b> used only while the child is reading or saying a word. The phone first checks, on the phone itself, that a voice was heard. If nothing was heard, nothing is sent.</li>
+    <li><b>The phone's copy of a recording</b> is removed as soon as our server has answered. If sending fails, the copy stays so the child can send it again, and it is removed the next time the app opens or the child logs out. The microphone check at the start of the first reading only listens and keeps nothing.</li>
+    <li><b>Camera:</b> used only to scan the QR code on a learner card. The picture is read on the phone and is not saved or sent anywhere. Only the code printed on the card is used to fill in the sign in box. A child can type the code instead.</li>
+    <li><b>Kept on the phone:</b> the sign in token and the child's first name, in the phone's secure storage. Both are removed when the child logs out.</li>
+    <li><b>Voice that reads aloud:</b> the phone's own voice. Nothing is sent anywhere for that.</li>
+    <li><b>Not used:</b> advertising, analytics, location, contacts, files or photos on the phone, and the phone's advertising ID.</li>
   </ul>
 
   <h2>Why</h2>
@@ -86,7 +99,7 @@
   @endif
 
   <h2>Keeping it safe</h2>
-  <p>Passwords and PINs are stored scrambled, and the live site uses an encrypted connection. No website can promise perfect security, so we keep the information we hold small.</p>
+  <p>Passwords and PINs are stored scrambled, and the live site and the phone app use an encrypted connection. No website can promise perfect security, so we keep the information we hold small.</p>
 
   <h2>Changes</h2>
   <p>If this changes, we will update this page and the date at the top.</p>

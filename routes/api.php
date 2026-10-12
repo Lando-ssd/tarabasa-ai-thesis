@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\LearnerApiController;
+use App\Http\Controllers\Api\LearnerBookshelfApiController;
 use App\Http\Controllers\Api\LearnerDiagnosticApiController;
+use App\Http\Controllers\Api\LearnerGamesApiController;
 use App\Http\Controllers\Api\LearnerReadingApiController;
+use App\Http\Controllers\LearnerReadingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,7 +38,23 @@ Route::middleware('auth:sanctum')->prefix('learner')->name('api.learner.')->grou
         Route::get('/activities', [LearnerApiController::class, 'activities'])->name('activities.index');
         Route::get('/activities/{activity}', [LearnerApiController::class, 'showActivity'])->name('activities.show');
         Route::post('/activities/{activity}/record', [LearnerReadingApiController::class, 'submitRecording'])->name('activities.record');
+        // The two free practice tries before the real reading (scored for feedback only, nothing saved).
+        Route::post('/activities/{activity}/practice', [LearnerReadingApiController::class, 'submitPractice'])->name('activities.practice');
+
+        // My Shelf: the stories the child has really read, and a free re-read of one (unscored, nothing saved).
+        Route::get('/bookshelf', [LearnerBookshelfApiController::class, 'index'])->name('bookshelf.index');
+        Route::get('/bookshelf/{activity}', [LearnerBookshelfApiController::class, 'show'])->name('bookshelf.show');
+        Route::post('/bookshelf/{activity}/reread', [LearnerBookshelfApiController::class, 'reread'])->name('bookshelf.reread');
+
+        // Practice Games (free play): what the Games screen needs, the words, one spoken word, and "a game ended".
+        Route::get('/games', [LearnerGamesApiController::class, 'index'])->name('games.index');
+        Route::get('/games/words', [LearnerGamesApiController::class, 'words'])->name('games.words');
+        Route::post('/games/check-word', [LearnerGamesApiController::class, 'checkWord'])->middleware('throttle:90,1')->name('games.check-word');
+        Route::post('/games/{game}/finish', [LearnerGamesApiController::class, 'finish'])->middleware('throttle:30,1')->name('games.finish');
     });
 
     Route::post('/reading-preferences/font-step', [LearnerApiController::class, 'updateReadingFontStep'])->name('reading-preferences.font-step');
+
+    // Wakes the scoring service (and the recommender) as a reading screen opens, same as the website's /learner/warm.
+    Route::get('/warm', [LearnerReadingController::class, 'warm'])->middleware('throttle:20,1')->name('warm');
 });

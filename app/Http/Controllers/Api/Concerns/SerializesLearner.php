@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Concerns;
 
 use App\Models\Learner;
+use App\Support\ReadingLevel;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -25,8 +26,34 @@ trait SerializesLearner
             'avatarPhotoUrl' => $learner->avatar_photo_path ? Storage::url($learner->avatar_photo_path) : null,
             'masteryLevel' => $learner->mastery_level ?? 'New',
             'points' => $learner->points,
+            // The old stored counter: one point per scored reading, never reset. Kept so older clients keep working;
+            // "days in a row" is dayStreak below, the same number the website's Home shows.
             'streak' => $learner->streak,
+            'dayStreak' => $learner->readingDayStreak(),
             'readingFontStep' => $learner->effectiveReadingFontStep(),
+            'themeColor' => $learner->theme_color ?? 'blue',
+            // Where the child is on the four step path (1 Letter Explorer to 4 Story Reader), null before the first check.
+            'readingStep' => [
+                'step' => ReadingLevel::step($learner),
+                'name' => ReadingLevel::stepName($learner),
+            ],
         ];
+    }
+
+    /**
+     * Badges a reading has just earned, in the form the phone draws them: name, what it means and the icon
+     * (a Phosphor icon name). The rule that earns a badge stays on the server.
+     */
+    private function newBadgesPayload(array $badges): array
+    {
+        $icons = config('badge_icons.icons', []);
+        $fallback = config('badge_icons.fallback', 'medal');
+
+        return collect($badges)->map(fn (array $badge) => [
+            'code' => $badge['code'],
+            'name' => $badge['name'],
+            'description' => $badge['description'] ?? '',
+            'icon' => $icons[$badge['code']] ?? $fallback,
+        ])->values()->all();
     }
 }

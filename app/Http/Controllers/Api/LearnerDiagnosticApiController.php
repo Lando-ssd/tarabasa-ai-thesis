@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\SerializesLearner;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Services\LearnerDiagnosticService;
@@ -19,6 +20,8 @@ use Illuminate\Http\Request;
  */
 class LearnerDiagnosticApiController extends Controller
 {
+    use SerializesLearner;
+
     public function passage(Request $request, LearnerDiagnosticService $service): JsonResponse
     {
         $learner = $request->user();
@@ -62,7 +65,7 @@ class LearnerDiagnosticApiController extends Controller
                 'status' => 'finished',
                 'finalLevel' => $outcome['finalLevel'],
                 'resultLabel' => $outcome['resultLabel'],
-                'newBadges' => $outcome['newBadges'],
+                'newBadges' => $this->newBadgesPayload($outcome['newBadges']),
             ]);
         }
 

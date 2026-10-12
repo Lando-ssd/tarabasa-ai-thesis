@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "TaraBasa AI",
+    "slug": "tarabasa-ai",
+    "version": "0.3.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tarabasaai.app"
+    },
+    "android": {
+      "package": "com.tarabasaai.app",
+      "versionCode": 5,
+      "adaptiveIcon": {
+        "backgroundColor": "#0062CF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "TaraBasa AI listens while your child reads aloud, so it can check the reading."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "TaraBasa AI uses the camera to scan your learner card.",
+          "barcodeScannerEnabled": true,
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-asset",
+      "./plugins/with-upload-signing"
+    ]
+  }
+}
