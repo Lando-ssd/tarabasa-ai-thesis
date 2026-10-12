@@ -155,7 +155,13 @@ Four things that do not depend on the phone test, so the teammate's report on 0.
   that report before sending 0.3.1. Older files (0.1.x, 0.2.0-test3) lack screens: do not send them.
 
 ## Next steps, in order
-1. A tester runs `PHONE-TEST-CHECKLIST.md` on a real Android phone (0.3.0, or 0.3.1) and reports back.
+0. **BLOCKER found 2026-10-12: the live server does not have the newer phone endpoints.** Render runs the live branch at `66ebc30`;
+   practice tries, My Shelf, Games, the warm-up call and the new Home numbers exist only on `mobile-app`. Merge `mobile-app` into
+   `claude/admin-dashboard-approvals-62dcd0` and let Render deploy it BEFORE the phone is tested (no migrations, packages or Docker
+   changes; the only merge conflict is in `CLAUDE.md`). The team decides, because it changes the live website. See `TEST-SETUP.md`.
+   The tester has NOT been sent anything yet (the owner waited until the whole Learner end was finished), so send 0.3.1, not 0.3.0.
+1. A tester runs `PHONE-TEST-CHECKLIST.md` on a real Android phone (0.3.1) and reports back. How to prepare it: `TEST-SETUP.md`.
+   What to expect and what is risky: `APP-REVIEW.md`.
 2. Fix what that finds (most likely the microphone file format, upload time, the camera, or a screen that does not fit), and bump the
    version (0.3.2 and so on; always a new `versionCode`).
 3. Play Store: the account and the closed test take at least 14 days (see `PLAY-STORE-PLAN.md`), so decide the account owner now.

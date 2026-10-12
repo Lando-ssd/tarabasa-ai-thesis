@@ -1,11 +1,14 @@
 # Phone test checklist (for whoever tests the APK on a real Android phone)
 
-This is a TEST build of the real app (version 0.3.0): sign in, the first reading check, Home, Read, Games, Badges
+This is a TEST build of the real app (version 0.3.1): sign in, the first reading check, Home, Read, Games, Badges
 and Shelf. Its job is to find out what works on a real phone before the demo. Please be honest about what fails:
 a failure found now is cheap, the same failure found on demo day is not.
 
-Use only this version (0.3.0). The older test builds (0.1.x, 0.2.0) are missing screens, and 0.1.1 is also
+Use only this version (0.3.1). The older test builds (0.1.x, 0.2.0, 0.3.0) are missing things, and 0.1.1 is also
 missing a library the microphone needs and may close by itself.
+
+Nobody has run this on a real phone yet, so you are the first. Things that only a real phone can show: the microphone,
+the camera, the phone's own reading-aloud voice, the sounds, and how long things take on mobile data.
 
 ## Before you start
 - An Android phone (Android 7 or newer, 64-bit, which is almost every phone made after 2017).
@@ -63,6 +66,10 @@ Write down for each one: **worked / did not work / odd**, and what the screen sa
 13. **Turn the internet off** in the middle of sending a reading. The app should say it could not send, keep
     the reading, and let you tap **Send Again** after the internet is back.
 14. **Close and reopen the app.** It should remember the child.
+15. **Rotate and resize.** Turn the phone sideways and back. Make the phone's text size larger in Settings and open
+    the app again. Nothing should be cut off or overlap, and no button should be too small to tap.
+16. **If you ever see "Oops! Tara got mixed up"** (a safety screen, it means something crashed): take a screenshot, write
+    what you tapped just before, then tap **Start Again**. Please report every time it appears.
 
 ## What to send back
 - Phone brand and model, Android version.
