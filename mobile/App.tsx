@@ -5,9 +5,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import * as api from './src/api';
 import * as storage from './src/storage';
+import { ErrorBoundary } from './src/ErrorBoundary';
 import { useAppFonts } from './src/fonts';
 import { FirstCheck } from './src/FirstCheck';
 import { Main } from './src/Main';
+import { sweepRecordings } from './src/recordingFiles';
 import { SessionContext, type Session } from './src/session';
 import { SignIn } from './src/SignIn';
 import { Animation, Btn, Busy, H2, Notice, P, Screen } from './src/ui';
@@ -39,7 +41,11 @@ export default function Root() {
       return <Gallery />;
     }
   }
-  return <App />;
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
 }
 
 function App() {
@@ -71,10 +77,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    sweepRecordings(); // no recording of a child's voice is left over from the last visit
     boot();
   }, [boot]);
 
   const leave = useCallback(async (notice?: string) => {
+    sweepRecordings();
     try {
       await api.logout();
     } catch {

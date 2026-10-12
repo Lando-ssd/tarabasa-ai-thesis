@@ -44,36 +44,37 @@ Checked against the real release file (`TaraBasa-AI-0.3.0-test4.apk`, read with 
 | Requirement | Status |
 |---|---|
 | New apps must target Android 16 (API 36) from 31 Aug 2026 | **Met**: `targetSdkVersion 36` |
-| New apps must be uploaded as an **Android App Bundle (.aab)**, not an APK | **Not yet**: we only built APKs. Needs a release build with an upload key (section 5) |
-| Privacy policy at a public address, linked in the listing and Data safety form | **Exists** (`/privacy`) but describes the website only: must be updated (section 4) |
+| New apps must be uploaded as an **Android App Bundle (.aab)**, not an APK | **Ready to build** (0.3.1, 2026-10-12): the signing plumbing exists and a bundle was built and signed with a throwaway key. The REAL upload key is not made yet (section 5) |
+| Privacy policy at a public address, linked in the listing and Data safety form | **Updated for the phone app** (0.3.1, `/privacy`, 7 tests). Still to confirm with the teammate: whether Reading-api keeps any audio |
 | Data safety form, content rating questionnaire, Target audience and content | Not started; drafts below |
 | App access: reviewers need a way in (the app is behind a code and PIN) | Needs a **permanent demo child** on the live site, with the code and PIN written in the form. Use a made up child, never a real one |
 | Families Policy: no ads, no ad SDKs, no precise location, no device identifiers sent | **Met**: no ads, no analytics, no location permission, no advertising ID permission in the file |
 | Families Policy: only SDKs approved for child-directed services | **UNVERIFIED**: the app has no ad or analytics SDK, but `expo-camera` bundles Google ML Kit barcode scanning (it runs on the phone and sends nothing in our use). Check Play Console's SDK page for it before submitting |
 | Disclose microphone data collected from children | Required; in the drafts below |
-| Declared permissions should match what the app does | **Over-declared**: the file asks for 15 permissions, several unused (next table) |
+| Declared permissions should match what the app does | **Cleaned in 0.3.1**: 15 permissions down to 10 (checked in the built file with `aapt2`). Two foreground-service permissions are kept until a phone test (next table) |
 
-Permissions in the 0.3.0 file and what to do (do these together in the next build, after the first phone test, so the
-teammate does not retest twice):
+Permissions in the 0.3.0 file and what was done in 0.3.1 (DONE means blocked in `app.json` and confirmed gone from the built file):
 
 | Permission | Used for | Plan |
 |---|---|---|
 | RECORD_AUDIO, CAMERA, INTERNET, ACCESS_NETWORK_STATE | reading, card scan, server | keep |
 | VIBRATE, MODIFY_AUDIO_SETTINGS, WAKE_LOCK | small system helpers from libraries | keep (harmless), mention nothing |
-| **SYSTEM_ALERT_WINDOW** ("draw over other apps") | not used by us; added by a library for debug tools | **remove** (`android.blockedPermissions`): a review flag in a children's app |
-| **USE_BIOMETRIC, USE_FINGERPRINT** | not used (the sign-in token needs no fingerprint) | **remove** |
-| **FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK** | background audio, which we do not use; Play asks developers to justify these | **remove** after a phone test that sounds still play |
-| **READ/WRITE_EXTERNAL_STORAGE** (Android 12 and older only) | not needed | **remove** |
+| **SYSTEM_ALERT_WINDOW** ("draw over other apps") | not used by us; added by a library for debug tools | **DONE, removed**: it was a review flag in a children's app |
+| **USE_BIOMETRIC, USE_FINGERPRINT** | not used (the sign-in token needs no fingerprint) | **DONE, removed** |
+| **FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK** | background audio, which we do not use; Play asks developers to justify these | **still there**: remove after a phone test that sounds still play without them |
+| **READ/WRITE_EXTERNAL_STORAGE** (Android 12 and older only) | not needed | **DONE, removed** |
 | uses-feature camera and microphone are "required" | a phone without a camera cannot install | decide: required is fine for a reading app, but a tablet without a camera could not use it; typing the code works without a camera |
 
-Also found: recordings are **not deleted from the phone** after they are sent (they stay in the app's private cache until
-Android clears it). The website's privacy page says "the app does not save the recording", which would be untrue for the
-phone. Fix in the next build (delete the file after a successful upload and when leaving a screen) and then say so.
+Also found, and **fixed in 0.3.1**: recordings used to stay in the app's private cache after they were sent. The phone now
+deletes its copy once the server has answered, deletes unsent ones, and sweeps the cache when the app opens and at log out
+(`mobile/src/recordingFiles.ts`); a failed send keeps its file so "Send Again" works. Only a real phone shows that the cache is
+really empty afterwards, so check that during the phone test.
 
 ## 4. The privacy policy must be updated before the first submission
 
-`resources/views/privacy.blade.php` says it is a website. Its own note says to change it in the same commit as any new data
-practice. The phone app adds, and the page must state truthfully (check each against the code before publishing):
+**DONE in 0.3.1:** `resources/views/privacy.blade.php` now has a "The phone app" section, and two tests pin it (the claims
+below, and that the phone app's blocked permissions and the microphone and camera wording stay as the page says). It reaches
+the live site only when `mobile-app` is merged into the live branch. What the section says, for review:
 - the app records the child's voice when the child taps the microphone and sends it to be scored; whether the audio is kept
   anywhere afterwards (**confirm with the teammate who runs Reading-api whether it keeps any audio**; our code does not);
 - the camera is used on the phone only to read the QR code on a learner card; nothing is stored or sent except the code the
@@ -86,7 +87,14 @@ practice. The phone app adds, and the page must state truthfully (check each aga
 
 The Play listing needs this address to be a normal web page (not a PDF) and to work without signing in: `/privacy` does.
 
-## 5. Building the file Google accepts (do this in the next build)
+## 5. Building the file Google accepts
+
+**Plumbing DONE in 0.3.1** (`mobile/plugins/with-upload-signing.js`, applied on every `expo prebuild`): once the four Gradle
+properties below exist, `gradlew bundleRelease` signs the bundle with the upload key; without them a bundle build stops with a
+clear message (tested), and test APKs stay debug signed as before. Tested with a throwaway key: a 30.7 MB `.aab` signed by it.
+**Still to do, by the account owner:** make the real upload key (step 1), put its four values in
+`D:\tools\gradle-home\gradle.properties` (outside the project):
+`TARABASA_UPLOAD_STORE_FILE`, `TARABASA_UPLOAD_STORE_PASSWORD`, `TARABASA_UPLOAD_KEY_ALIAS`, `TARABASA_UPLOAD_KEY_PASSWORD`.
 
 1. Make an **upload key** once (JDK 17 is at `D:\tools\jdk-17`): `keytool -genkeypair -v -storetype PKCS12 -keystore
    tarabasa-upload.keystore -alias tarabasa-upload -keyalg RSA -keysize 2048 -validity 10000`. Choose a long password.
@@ -94,9 +102,8 @@ The Play listing needs this address to be a normal web page (not a PDF) and to w
    never send them in a chat.** If lost, Google can reset the upload key through support, but it takes time.
 2. Enroll in **Play App Signing** (the default for new apps): Google keeps the real signing key, our upload key only proves
    an upload is ours.
-3. Add a release signing block in the generated `android/app/build.gradle` (it is generated by `expo prebuild`, so the block
-   must be applied by a small config plugin or a post-prebuild step, not edited by hand) and run
-   `gradlew bundleRelease`; the file is `android/app/build/outputs/bundle/release/app-release.aab`.
+3. Run `gradlew bundleRelease` (the signing block is applied by the config plugin, nothing is edited by hand); the file is
+   `android/app/build/outputs/bundle/release/app-release.aab`.
 4. Keep building from the short copy `D:\tb` (Windows long paths), and make sure `org.gradle.configureondemand` is not true.
 5. `.gitignore` now blocks `*.keystore` and `*.jks` in the repo.
 6. Bump `versionCode` for every upload (Google rejects a repeated number).
@@ -154,10 +161,11 @@ advertising; the form also lets us show "Committed to follow the Play Families P
 | Make a permanent demo child on the live site for reviewers (never a real child) | you | this week |
 | Set `PRIVACY_CONTACT_EMAIL` on Render | you | this week |
 | Confirm Reading-api retention of audio | teammate | this week |
-| Build 0.3.1: remove unused permissions, delete recordings after upload, fix what the phone test finds | Claude | after the test report |
-| Update `/privacy` for the app (same commit as 0.3.1) | Claude | with 0.3.1 |
+| Build 0.3.1: remove unused permissions, delete recordings after upload, upload key plumbing, error screen | Claude | **DONE 2026-10-12** (APK `0.3.1-test5` built and checked) |
+| Update `/privacy` for the app (same commit as 0.3.1) | Claude | **DONE 2026-10-12** (live only after `mobile-app` is merged into the live branch) |
+| Build 0.3.2: whatever the phone test finds, plus remove the two foreground-service permissions if sounds still play | Claude | after the test report |
 | Create the developer account, verify identity, pay $25 | the account owner | as soon as decided |
-| Make the upload key, build the .aab, upload to **closed testing**, add 12+ testers | Claude builds, owner uploads | when the account is ready |
+| Make the REAL upload key (section 5), build the .aab, upload to **closed testing**, add 12+ testers | the account owner makes the key, Claude builds, the owner uploads | when the account is ready |
 | 14 days of testing, then apply for production | owner | about 3 Nov at the earliest |
 
 ## Sources (all read 2026-10-12)

@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { API_URL, REQUEST_TIMEOUT_MS, UPLOAD_TIMEOUT_MS } from './config';
+import { discardRecording } from './recordingFiles';
 import * as storage from './storage';
 
 const TOKEN_KEY = 'tarabasa_token';
@@ -259,7 +260,11 @@ async function uploadAudio<T>(path: string, uri: string, answers?: string[], fie
   Object.entries(fields ?? {}).forEach(([name, value]) => form.append(name, value));
 
   // No Content-Type header on purpose: the phone adds the multipart boundary itself.
-  return request<T>(path, { method: 'POST', body: form }, { timeoutMs: UPLOAD_TIMEOUT_MS });
+  const result = await request<T>(path, { method: 'POST', body: form }, { timeoutMs: UPLOAD_TIMEOUT_MS });
+  // The server answered, so the copy of the child's voice on the phone is not needed any more. If the send FAILED the
+  // file is kept on purpose, so "Send Again" works; the cache sweep removes it later.
+  discardRecording(uri);
+  return result;
 }
 
 export function login(learnerCode: string, pin: string) {

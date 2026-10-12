@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Linking, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import { HINTS, judgeRecording, METER_MS, VOICE_DB } from './recording';
+import { discardRecording } from './recordingFiles';
 import { Btn, Icon, Notice, Small } from './ui';
 import { colors, fonts } from './theme';
 
@@ -139,7 +140,8 @@ export function MicButton({
       const seconds = (Date.now() - startedAt.current) / 1000;
       const judged = checkSound ? judgeRecording(seconds, peak.current) : 'ok';
       if (judged !== 'ok') {
-        // Nothing is sent. Tell the child kindly and let them try again at once.
+        // Nothing is sent. Tell the child kindly and let them try again at once. The unused file is removed.
+        discardRecording(uri);
         setHint(judged === 'silent' && silentHint ? silentHint : HINTS[judged]);
         return;
       }

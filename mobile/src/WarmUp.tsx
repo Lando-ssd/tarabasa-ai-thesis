@@ -4,6 +4,7 @@ import * as Speech from 'expo-speech';
 import { LevelBar } from './LevelBar';
 import { MicButton } from './MicButton';
 import { levelShare, VOICE_DB, WARM_MAX_SECONDS, WARM_VOICE_SAMPLES } from './recording';
+import { discardRecording } from './recordingFiles';
 import { Animation, Btn, Icon, IconBtn, Panel, Pill, Screen, Small } from './ui';
 import { colors, fonts } from './theme';
 
@@ -56,7 +57,8 @@ export function WarmUp({
                 maxSeconds={WARM_MAX_SECONDS}
                 autoStopAfterVoice={WARM_VOICE_SAMPLES}
                 onMeter={(db) => setLevel(levelShare(db))}
-                onRecorded={(_uri, _seconds, info) => {
+                onRecorded={(uri, _seconds, info) => {
+                  discardRecording(uri); // the warm-up only listens; the file is never needed
                   setLevel(0);
                   setOutcome(info.voiceSamples >= WARM_VOICE_SAMPLES || (info.peakDb ?? -160) > VOICE_DB + 5 ? 'heard' : 'quiet');
                 }}

@@ -6495,6 +6495,22 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   `game_plays` rows and badges, silent microphone sends nothing, "again" twice pops the balloon anyway, "unavailable" gives tap-to-pop, layout fits
   390x844 and 360x640. NOT proven: expo-speech voices for words/letters, game sounds on a device, a child's voice, mobile data timing. App version
   bumped to 0.3.0 (versionCode 4): the older APK (0.2.0-test3) predates Shelf, silence check, warm-up and Games. Round three was PUSHED as `00e6c9b` on `mobile-app`, and the 0.3.0 APK was built the same day (`TaraBasa-AI-0.3.0-test4.apk`, 43.9 MB, SHA-256 `6eead70c…ce10b29`, 16 minutes from `D:\tb`; checked inside: live address, no localhost, new screens and the 3 game sounds present). NOT installed on any phone yet.
+- **Fourth round (2026-10-12 night, LOCAL, not pushed): version 0.3.1, store preparation.** The user said to start the 0.3.1 items that do not
+  depend on the phone test. Done and checked: (1) the phone deletes its copy of a recording once the server answers, deletes unsent ones (too
+  quiet, warm-up) and sweeps the cache at app start and log out (`mobile/src/recordingFiles.ts`, `expo-file-system` is now a direct
+  dependency; a failed send keeps its file so Send Again works; not provable without a real phone). (2) `android.blockedPermissions` in
+  `mobile/app.json` removes SYSTEM_ALERT_WINDOW, USE_BIOMETRIC, USE_FINGERPRINT and external storage: the built file went from 15 permissions to 10
+  (`aapt2`); FOREGROUND_SERVICE and FOREGROUND_SERVICE_MEDIA_PLAYBACK stay until a phone test shows sounds still play without them. (3)
+  `mobile/src/ErrorBoundary.tsx` wraps the app: a crash shows "Oops! Tara got mixed up" and a Start Again button (gallery: `#gallery=crash`).
+  (4) `mobile/plugins/with-upload-signing.js` (an Expo config plugin) signs release builds with our upload key when four Gradle properties
+  (`TARABASA_UPLOAD_STORE_FILE`, `..._STORE_PASSWORD`, `..._KEY_ALIAS`, `..._KEY_PASSWORD`) exist in `D:\tools\gradle-home\gradle.properties`
+  (never in the project); `gradlew bundleRelease` without them stops with a clear message (tested), and a throwaway key produced a signed 30.7 MB
+  `.aab` (key deleted after). The REAL upload key is NOT made yet (the account owner should; see `mobile/PLAY-STORE-PLAN.md` section 5). (5) The website
+  `/privacy` page now has a "The phone app" section (microphone, camera, what is stored and not used), pinned by two new tests in
+  `PrivacyPageTest` (7 passing). It reaches the live site only when `mobile-app` is merged into the live branch. APK:
+  `D:\tools\apk-out\TaraBasa-AI-0.3.1-test5.apk` (43.9 MB, versionCode 5, SHA-256 `870da01e…2118`); checked inside: live address, no localhost,
+  new screens, the 3 game sounds. The teammate may still be testing 0.3.0: wait for that report before sending 0.3.1. The Learner end is code
+  complete (every website Learner screen has a phone version); what remains needs a real phone and a real child.
 - **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
   about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
   environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`

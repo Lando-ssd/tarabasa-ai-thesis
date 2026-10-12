@@ -1,13 +1,14 @@
 // Developer only. In the browser preview, open  http://localhost:8081/#gallery=<name>  to see one screen with sample
 // data at any phone size, without a server, a microphone or a child. It is never reached in a phone build (App.tsx
 // guards it with __DEV__ and the web platform). Names: home, badges, results, results-low, check-intro, check-letters,
-// check-next, check-unclear, check-done, warmup, warmup-heard, warmup-quiet, practice, quiz, waiting, failed, soon.
+// check-next, check-unclear, check-done, warmup, warmup-heard, warmup-quiet, practice, quiz, waiting, failed, crash, soon.
 import { useMemo } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { Home as HomeData, LearnerPayload, ReadingOutcome, WordResult } from './api';
 import { Badges } from './Badges';
 import { ComingSoon } from './ComingSoon';
+import { ErrorBoundary } from './ErrorBoundary';
 import { Feedback } from './Feedback';
 import { useAppFonts } from './fonts';
 import { FirstCheck } from './FirstCheck';
@@ -204,11 +205,25 @@ function screenFor(name: string) {
       return <WarmUp letters onDone={noop} demo="quiet" />;
     case 'waiting':
       return <Waiting />;
+    case 'crash':
+      // Shows the last-resort error screen: a part that throws once, and a button that gives the app a clean start.
+      return (
+        <ErrorBoundary onRestart={() => { healed = true; }}>
+          <CrashOnce />
+        </ErrorBoundary>
+      );
     case 'failed':
       return <SendFailed message="We could not reach TaraBasa. Check the internet and try again." onRetry={noop} onReread={noop} />;
     default:
       return <ComingSoon title="Games are coming soon" text="Word games with Tara are on the way. For now, read a story and earn points." />;
   }
+}
+
+let healed = false;
+/** Throws every time it is drawn until "Start Again" is pressed, like a bug that a fresh start clears. */
+function CrashOnce() {
+  if (!healed) throw new Error('Sample crash for the gallery');
+  return <Waiting />;
 }
 
 export function Gallery() {
