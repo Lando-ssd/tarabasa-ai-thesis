@@ -6429,16 +6429,29 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   `.claude/settings.json` and `LICENSE` were deleted, `AGENTS.md` kept). `mobile` is in `.dockerignore` so the server image never carries it.
   Expo has changed a lot between versions: read the versioned docs (`https://docs.expo.dev/versions/v57.0.0/`) before writing code that
   touches an Expo or React Native API, as the template's `AGENTS.md` says.
-- **The phone check screen (no design yet, on purpose).** `mobile/src/config.ts` (server address from `EXPO_PUBLIC_API_URL`, default the
-  live Render URL; 90 s timeout, 240 s for uploads because the free host sleeps), `src/storage.ts` (SecureStore on a phone,
-  `localStorage` only in the browser preview), `src/api.ts` (fetch client with the Bearer token, friendly errors, every endpoint below,
-  multipart upload of a recording), `src/RecorderButton.tsx` (expo-audio, m4a/AAC, asks for the microphone, stops by itself at 60 s),
-  `src/PhoneCheck.tsx` (five plain cards: reach/wake the server, microphone record and play back, read an activity with a practice try
-  and a real reading and the quiz, or the first reading check for a child who has none, camera QR scan of a learner card, the phone's
-  read aloud voice and a Lottie), `App.tsx` (code + PIN sign in, then the cards). It is a checklist for a tester on a real phone, NOT the
-  app design. `mobile/.env.local` (untracked) points the browser preview at `http://localhost:8123`; the APK builds take the address
-  from a process variable (see `mobile/HANDOVER.md`). `.claude/launch.json` has a `mobile-web` entry (Expo web on port 8081).
-  `mobile/HANDOVER.md` (how to run, build and the team rules) and `mobile/PHONE-TEST-CHECKLIST.md` (what a tester taps and reports) exist.
+- **The real screens (built 2026-10-12, version 0.2.0, after the user approved the design preview).** The user's answers:
+  five places in the bottom bar (Home, Read, Games, Badges, Shelf) with Games and Shelf "coming soon" for now ("the future
+  redesign can adjust"); "Scan my card" as the main sign in with typing as the backup; NOT the parent's blue or pink choice
+  (one colour for everyone, chosen for the phone); the real app icon made from the actual logo now; and "suit the best":
+  the phone screen is not the web's size, so align and size by mobile UI principles. Built: `src/SignIn.tsx` +
+  `CardScanner.tsx` (camera sheet, only a real card is accepted: shape and Luhn check digit verified on the phone, ported in
+  `learnerCode.ts`), `FirstCheck.tsx`, `Home.tsx`, `ReadList.tsx` + `Story.tsx` + `Results.tsx` (Listen, two free tries, the
+  real reading, quiz after reading for comprehension stories, answers marked on the server), `Badges.tsx` (100 by group, tap for
+  detail), `ComingSoon.tsx`, `Main.tsx` (bar, Android back button), shared `ui.tsx`, `theme.ts`, `Feedback.tsx`,
+  `ReadingScene.tsx`, `MicButton.tsx`, `WordReview.tsx`, `Waiting.tsx`. Fonts Baloo 2 / Barlow Semi Condensed / Lexend are
+  bundled; icons are the website's Phosphor sprite turned into `iconPaths.ts` (`node tools/make-icon-paths.cjs`); the
+  icon, adaptive icon, monochrome icon, splash and in-app owl are cut from `public/images/logo.png` by
+  `node tools/make-icons.cjs` (a colour key removes the blue tile). `PhoneCheck.tsx` and `RecorderButton.tsx` were removed.
+  Phone sizing rules used: taps at least 48dp (main buttons 56dp), main action pinned at the bottom (thumb zone), safe areas
+  via react-native-safe-area-context, scrolls on 360x640, content column capped at 560dp on tablets, fonts capped at 1.25x
+  system scaling, the mic button shrinks on phones shorter than 700dp, the keyboard pushes the sign in form up (the owl hides),
+  every word that needs practice carries a written note so colour is never the only signal, no emoji, no dashes.
+  A developer-only gallery (`http://localhost:8081/#gallery=results`, `src/devGallery.tsx`, `__DEV__` and web only) shows a
+  screen with sample data at any size. Real finding from the browser walk: the first check's letters come as
+  `{upper, lower}` objects, not text (the app crashed until typed correctly). `expo-doctor` also found `expo-asset` missing
+  (a peer of expo-audio): the 0.1.1 APKs lack it and may close by themselves; use 0.2.0.
+  The phone API gained `badges[].icon/category/current/target` (no rule), `newBadges[]` as `{code,name,description,icon}`,
+  and `later`/`wordCount` on each story (`MobileApiTest`, 18 tests, whole suite 343 passing).
 - **The phone API was brought up to the website's logic (2026-10-10 night, 17 new tests in `tests/Feature/MobileApiTest.php`).** The login
   payload now has `dayStreak`, `themeColor` and `readingStep {step, name}` (the four step path; `streak` is still the old stored counter,
   kept for compatibility). `GET /api/learner/dashboard` adds `readingPath` (4 steps, the child's marked), `streak {days, week}`,
@@ -6457,11 +6470,7 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   opened instantly from the curated bank (words, short sentences, longer sentences), each scored in 10 to 17 s, the check finished at
   Developing, Sentence Reader, with three badges, and Home then opened. Test files were WAV: there is no ffmpeg
   here, so the phone's m4a/AAC upload is NOT proven yet (Reading-api documents m4a as accepted, so it is expected to work).
-- **Design preview (waiting for the user's five answers):** Artifact `https://claude.ai/artifact/WsvHtotrivVLgqX3hSFdJh` (source
-  `TaraBasa-Phone-App-Preview.html` in the session scratchpad, not in the repo): eight sample screens (sign in with Scan my card, first
-  check intro, reading with the three stages, results, Home, pick a story, badges, waiting and no internet), what changes from the website,
-  the first version's scope, the basis (WCAG 2.2 SC 2.5.8, Android 48dp, MATATAG, Phil-IRI), and five yes/no questions (five place bottom
-  bar, Scan my card as the main sign in, no Games or Bookshelf in the first version, the blue/pink choice, the app name and placeholder icon).
+- **Design preview:** Artifact `https://claude.ai/artifact/WsvHtotrivVLgqX3hSFdJh` (approved 2026-10-12 with the answers above).
 - **Still missing in the API:** the Games finish call and Games words, Bookshelf and re-read, the first check warm up, avatar photos.
 - **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
   about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
@@ -6479,23 +6488,23 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
 - **Dependencies:** `npm audit --omit=dev` shows 21 advisories (7 moderate, 14 high), all in Expo's own build tools (cli, metro, config
   plugins), which run on the developer's computer and are not inside the installed app. `npm audit fix --force` would break Expo: leave
   them and update Expo when a new SDK is out.
-- **The test APK to send:** `D:\tools\apk-out\TaraBasa-AI-0.1.1-test2.apk` (36.7 MB, arm64 only, package `com.tarabasaai.app`, versionCode 2,
-  SHA-256 `d2fedafea799c227a973378afdc590ceed1ee335646324edb3105307f821626d`, built 2026-10-10 in 8.9 minutes), with
-  `PHONE-TEST-CHECKLIST.md` next to it. It points at the live server (checked: the bundle holds `tarabasa-ai.onrender.com` and not
-  `localhost:8123`), asks for CAMERA and RECORD_AUDIO, and scans QR codes on the device (ML Kit models inside, no outside service). The first test
-  file (`...0.1.0-test1.apk`) only has the sign in screen; ignore it. Minor cleanup before a real release: the manifest also carries
-  SYSTEM_ALERT_WINDOW and USE_BIOMETRIC/USE_FINGERPRINT (from Expo's modules), the release is signed with the debug key, the icon is
-  Expo's placeholder, and CAMERA/microphone are listed as required hardware (a phone without them cannot install it).
+- **The test APK to send:** the 0.2.0 file in `D:\tools\apk-out\` (`TaraBasa-AI-0.2.0-test3.apk`, 43.7 MB, arm64 only, versionCode 3, SHA-256
+  `31672409ec44c6de0896f59d5b6c9de2e844aa0001b0bc359d65bb72a8737fd3`, built 2026-10-12 in 16 minutes; checked: the bundle holds the live
+  address and not localhost). **Windows long paths:** building from the worktree failed (safe-area-context's native code makes file
+  names over 260 characters, and a `subst` drive does not help because Node resolves it back to the long path). It was built from
+  a plain copy in `D:	b` (robocopy the source, `npm ci`, prebuild, gradle). See `mobile/HANDOVER.md`, with `PHONE-TEST-CHECKLIST.md` next to it. It points at the live server, asks for CAMERA and
+  RECORD_AUDIO, scans QR codes on the device, and has the real owl icon. Older files (`0.1.0-test1`, `0.1.1-test2`) are the
+  plain test builds: ignore them. Minor cleanup before a real release: the manifest also carries SYSTEM_ALERT_WINDOW and
+  USE_BIOMETRIC/USE_FINGERPRINT (from Expo's modules), the release is signed with the debug key, and CAMERA/microphone are
+  listed as required hardware (a phone without them cannot install it).
 - **Deadline:** the user said next month, most likely the first week (so about three weeks from 2026-10-10). Demo core: sign in, first
   reading check, Home, reading and recording, results, Badges. Cut first if time runs short: Games, Bookshelf, the quiz, the weekly goal,
   the text size control.
-- **Next, in order.** (1) The user sends the APK (`D:\tools\apk-out\TaraBasa-AI-0.1.1-test2.apk`, if its build finished) and a test child's
-  code and PIN to the teammate, who runs `mobile/PHONE-TEST-CHECKLIST.md` on an Android phone. The user must first make the test child on
-  the LIVE site (a test parent, a made up child; Claude may not create accounts on live sites). (2) The user approves or changes the
-  mobile design preview (an Artifact made the same night, see the memory note), reusing the web Learner look. (3) Fix what the phone test
-  finds, then build the screens in slices, extending the API only as each needs it: sign in (type or scan the card), first reading check,
-  Home, Reading list and record, results, Badges; Games and Bookshelf last. (4) The user decides when to push; use a NEW branch
-  (`mobile-app`), never the branch Render deploys, and say plainly that `main` is 112 commits behind it.
+- **Next, in order.** (1) The user sends the 0.2.0 APK and a test child's code and PIN to the teammate (a made up child on the
+  LIVE site; Claude may not create accounts on live sites), who runs `mobile/PHONE-TEST-CHECKLIST.md` on an Android phone.
+  (2) Fix what that finds. (3) Games and Shelf if there is time (cut first), the first check's one word microphone warm up, a
+  silence check before sending, then Play Store steps. (4) The user decides when to push; `mobile-app` never deploys; say plainly
+  that `main` is 112 commits behind the live branch.
 
 ## Admin rebuilt (2026-10-10 night, PUSHED to the live branch on 2026-10-11 as 66ebc30)
 

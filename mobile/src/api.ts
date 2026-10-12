@@ -4,6 +4,12 @@ import * as storage from './storage';
 
 const TOKEN_KEY = 'tarabasa_token';
 
+// Set once by the app: called when the server says the saved sign in is no longer good (a 401), so the app can go back to sign in.
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -45,8 +51,83 @@ export type Home = {
   streak: { days: number; week: { label: string; done: boolean }[] };
   weeklyGoal: { done: number; target: number; met: boolean };
   growth: { days: { label: string; count: number; isToday: boolean; isFuture: boolean }[]; scale: number };
-  badges: { code: string; name: string; description: string; earned: boolean; earnedAt: string | null }[];
+  badges: Badge[];
 };
+
+export type Badge = {
+  code: string;
+  name: string;
+  description: string;
+  /** The group it belongs to, such as Reading or Streaks. */
+  category: string;
+  /** A Phosphor icon name, the same icon the website shows. */
+  icon: string;
+  earned: boolean;
+  earnedAt: string | null;
+  comingSoon: boolean;
+  /** How far the child is toward it, when that can be counted. */
+  current: number | null;
+  target: number | null;
+};
+
+export type NewBadge = { code: string; name: string; description: string; icon: string };
+
+/** One word of the passage, after scoring. */
+export type WordResult = {
+  text: string;
+  status: 'correct' | 'repeated' | 'skip' | 'sub' | 'mispronounced' | 'unsure';
+  heard: string | null;
+};
+
+export type PracticeOutcome =
+  | { status: 'no_tries_left'; triesLeft: 0 }
+  | { status: 'unclear'; triesLeft: number }
+  | {
+      status: 'scored';
+      accuracy: number;
+      wordBreakdown: WordResult[];
+      extraWordsSaid: string[];
+      wordsToPractice: number | null;
+      wordCounts: { right: number; total: number; notSure: number } | null;
+      triesLeft: number;
+    };
+
+export type ReadingOutcome =
+  | { status: 'unclear'; final: boolean }
+  | {
+      status: 'scored';
+      learner: LearnerPayload;
+      accuracy: number;
+      wcpm: number | null;
+      levelBefore: string;
+      levelAfter: string;
+      levelChanged: boolean;
+      levelWentUp: boolean;
+      progress: {
+        moved: 'up' | 'down' | null;
+        stepChanged: boolean;
+        stepAfter: string | null;
+        have: number;
+        need: number;
+        nextStep: string | null;
+      } | null;
+      pointsEarned: number;
+      wordBreakdown: WordResult[];
+      extraWordsSaid: string[];
+      wordsToPractice: number | null;
+      wordCounts: { right: number; total: number; notSure: number } | null;
+      comprehension: {
+        correctCount: number;
+        totalCount: number;
+        breakdown: { question: string; picked: string | null; correctAnswer: string; isCorrect: boolean }[];
+      } | null;
+      newBadges: NewBadge[];
+    };
+
+export type CheckOutcome =
+  | { status: 'unclear'; final: boolean }
+  | { status: 'continue'; message: string; passagesDone: number; maxPassages: number }
+  | { status: 'finished'; finalLevel: string; resultLabel: string | null; newBadges: NewBadge[] };
 
 export type ActivityOption = {
   id: number;
@@ -56,6 +137,9 @@ export type ActivityOption = {
   source: string;
   isRecommended: boolean;
   practice: string | null;
+  wordCount: number | null;
+  /** Too long for where this child is now. Shown last and marked "for later", never hidden. */
+  later: boolean;
 };
 
 export type ActivityDetail = {
@@ -70,7 +154,7 @@ export type ActivityDetail = {
 };
 
 export type DiagnosticPassage = {
-  activity: { id: number; title: string; passageText: string; kind: 'letters' | 'passage'; prompt: string; letters: string[] | null };
+  activity: { id: number; title: string; passageText: string; kind: 'letters' | 'passage'; prompt: string; letters: { upper: string; lower: string }[] | null };
   passageNumber: number;
   maxPassages: number;
 };
@@ -115,6 +199,7 @@ async function request<T>(path: string, init: RequestInit = {}, options: { withT
   }
 
   if (!response.ok) {
+    if (response.status === 401 && withToken) onUnauthorized?.();
     // Laravel validation errors come back as { message, errors: { field: [..] } }.
     const first = body?.errors ? (Object.values(body.errors)[0] as string[] | undefined)?.[0] : undefined;
     throw new ApiError(first ?? body?.message ?? `Something went wrong (${response.status}).`, response.status, body);
@@ -167,11 +252,20 @@ export function activityDetail(id: number) {
 }
 
 export function practiceTry(id: number, uri: string) {
-  return uploadAudio<any>(`/api/learner/activities/${id}/practice`, uri);
+  return uploadAudio<PracticeOutcome>(`/api/learner/activities/${id}/practice`, uri);
 }
 
 export function realReading(id: number, uri: string, answers?: string[]) {
-  return uploadAudio<any>(`/api/learner/activities/${id}/record`, uri, answers);
+  return uploadAudio<ReadingOutcome>(`/api/learner/activities/${id}/record`, uri, answers);
+}
+
+/** Saves the child's text size choice (1 to 5) so it is the same on the website. */
+export function setFontStep(step: number) {
+  return request<{ ok: boolean }>('/api/learner/reading-preferences/font-step', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ step }),
+  });
 }
 
 export function firstCheckPassage() {
@@ -179,5 +273,13 @@ export function firstCheckPassage() {
 }
 
 export function firstCheckRecord(uri: string) {
-  return uploadAudio<any>('/api/learner/diagnostic/record', uri);
+  return uploadAudio<CheckOutcome>('/api/learner/diagnostic/record', uri);
+}
+
+/**
+ * Wakes the sleeping server as the sign in screen opens, so it is ready by the time the code and PIN are typed.
+ * The free host sleeps after a quiet while. A plain page request that stays connected is what wakes it. Never throws.
+ */
+export function wakeServer() {
+  fetch(`${API_URL}/up`).catch(() => {});
 }

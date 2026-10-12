@@ -167,6 +167,22 @@ class MobileApiTest extends TestCase
         $this->assertGreaterThanOrEqual(100, count($home->json('badges')), 'all the badges are listed, earned or not');
     }
 
+    public function test_every_badge_comes_with_a_group_name_an_icon_the_phone_can_draw_and_no_rule(): void
+    {
+        [$kid] = $this->child();
+        Sanctum::actingAs($kid, ['*']);
+
+        $badges = $this->getJson('/api/learner/dashboard')->assertOk()->json('badges');
+
+        $sprite = \Illuminate\Support\Facades\File::get(public_path('icons/badges.svg'));
+        foreach ($badges as $badge) {
+            $this->assertNotEmpty($badge['category'], $badge['code'].' has a group name');
+            $this->assertStringContainsString('id="ph-'.$badge['icon'].'"', $sprite, $badge['code'].' uses an icon that exists');
+            $this->assertArrayNotHasKey('rule', $badge, 'how a badge is earned stays on the server');
+        }
+        $this->assertContains('Reading', array_column($badges, 'category'));
+    }
+
     public function test_home_is_not_available_before_the_first_check_and_says_why(): void
     {
         $kid = $this->learner(['mastery_level' => null, 'reading_rung' => null]);

@@ -39,4 +39,21 @@ trait SerializesLearner
             ],
         ];
     }
+
+    /**
+     * Badges a reading has just earned, in the form the phone draws them: name, what it means and the icon
+     * (a Phosphor icon name). The rule that earns a badge stays on the server.
+     */
+    private function newBadgesPayload(array $badges): array
+    {
+        $icons = config('badge_icons.icons', []);
+        $fallback = config('badge_icons.fallback', 'medal');
+
+        return collect($badges)->map(fn (array $badge) => [
+            'code' => $badge['code'],
+            'name' => $badge['name'],
+            'description' => $badge['description'] ?? '',
+            'icon' => $icons[$badge['code']] ?? $fallback,
+        ])->values()->all();
+    }
 }

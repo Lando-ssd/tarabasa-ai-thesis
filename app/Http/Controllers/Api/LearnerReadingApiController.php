@@ -57,7 +57,7 @@ class LearnerReadingApiController extends Controller
             'wordsToPractice' => $outcome['wordsToPractice'],
             'wordCounts' => $outcome['wordCounts'] ?? null,
             'comprehension' => $outcome['comprehension'],
-            'newBadges' => $outcome['newBadges'],
+            'newBadges' => $this->newBadgesPayload($outcome['newBadges']),
         ]);
     }
 
