@@ -6472,6 +6472,29 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   here, so the phone's m4a/AAC upload is NOT proven yet (Reading-api documents m4a as accepted, so it is expected to work).
 - **Design preview:** Artifact `https://claude.ai/artifact/WsvHtotrivVLgqX3hSFdJh` (approved 2026-10-12 with the answers above).
 - **Still missing in the API:** the Games finish call and Games words, Bookshelf and re-read, the first check warm up, avatar photos.
+- **Second round (2026-10-12, LOCAL, not pushed): the silence check, the warm-up and My Shelf.** The user said "start the silence check and mic warm-up
+  or its possible do all the learner end still step by step, and apply the principle of ui/ux design", and earlier asked to see the app on localhost in a
+  phone frame to review it there (`mobile/src/PhoneFrame.tsx`, so the localhost preview replaces the Artifact preview for review).
+  (1) `src/recording.ts` + `MicButton.tsx`: a recording under 1 second, or whose loudest moment was below -45 dB, is not sent; a calm inline note
+  says so and the mic is ready again; no level information means send anyway. `WarmUp.tsx` (say "sun", live `LevelBar`, "I heard you!", Skip always
+  there) runs once before the first item of the first check, like the website. Verified in the browser with a synthetic microphone (silent stream:
+  nothing sent, voice stream: sent; warm-up silent: "I did not hear anything", voice: heard after about 2 s). The dB numbers are NOT verified on a real
+  phone. (2) Shelf tab: `GET /api/learner/bookshelf`, `GET /api/learner/bookshelf/{activity}`, `POST /api/learner/bookshelf/{activity}/reread`
+  (`LearnerBookshelfApiController`; the same rules as the website: only a story the child really read, free and unscored via
+  `recordFreeReattempt`, no limit on tries, a child sees times read and the last day, never a percentage); `Shelf.tsx` + `Reread.tsx`. Tests: 4 new in
+  `MobileApiTest` (22 passing). Verified: Maria's points, streak, level and readings were identical before and after a re-read.
+- **Third round (2026-10-12, LOCAL, not pushed): Practice Games on the phone.** The user said "go start the games". The game rules now live in ONE
+  place, `app/Services/PracticeGameService.php` (start level from grade, the three word lists and letter levels, the child's own missed words and
+  pattern words first, the word check, and `finish()` which writes `game_plays` and awards the Games badges); the website's `GameController` was
+  changed to call it (its tests, incl. `AdaptivePatternTest`'s reflection call to the private `wordLevels`, still pass). New phone routes inside the
+  `learner.diagnostic.api` group: `GET /api/learner/games`, `GET .../games/words`, `POST .../games/check-word` (answers only heard / again /
+  unavailable, never "wrong", never what was heard), `POST .../games/{game}/finish` (`LearnerGamesApiController`). Phone screens: `Games.tsx` (hub, the
+  recommended game marked), `LetterMatch.tsx`, `WordBuilder.tsx`, `BalloonPop.tsx` (new on both website and phone), `SayWord.tsx` (3 second word
+  check, uses `MicButton` so the silence check applies), `gameKit.tsx` (sounds, board memory, header, Celebrate, GameDone). Free play still: no
+  points, streak or level. Browser-preview results with a synthetic microphone: all three games played to the finish (levels 1 to 3), real
+  `game_plays` rows and badges, silent microphone sends nothing, "again" twice pops the balloon anyway, "unavailable" gives tap-to-pop, layout fits
+  390x844 and 360x640. NOT proven: expo-speech voices for words/letters, game sounds on a device, a child's voice, mobile data timing. App version
+  bumped to 0.3.0 (versionCode 4): the existing APK (0.2.0-test3) predates Shelf, silence check, warm-up and Games, so a new build is needed.
 - **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
   about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
   environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`

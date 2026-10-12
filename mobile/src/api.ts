@@ -124,6 +124,45 @@ export type ReadingOutcome =
       newBadges: NewBadge[];
     };
 
+/** A story on the shelf: one the child really read. Times read and the last day, never a percentage. */
+export type Book = { id: number; title: string; wordCount: number | null; timesRead: number; lastRead: string | null };
+
+export type BookDetail = { id: number; title: string; instructions: string | null; passageText: string; wordCount: number | null };
+
+/** A free re-read: feedback only. Nothing is saved, so there are no points and no level here. */
+export type RereadOutcome =
+  | { status: 'unclear' }
+  | {
+      status: 'scored';
+      accuracy: number;
+      wordBreakdown: WordResult[];
+      extraWordsSaid: string[];
+      wordsToPractice: number | null;
+      wordCounts: { right: number; total: number; notSure: number } | null;
+    };
+
+/** What the Games screen and Letter Match need from the server. */
+export type GamesInfo = {
+  /** A game the child's own reading says would help, or null. Never a gate: every game is always playable. */
+  recommended: 'word-builder' | 'letter-match' | null;
+  hasCompetencyData: boolean;
+  /** The level a game starts at: the child's grade, 1 to 3. */
+  startLevel: number;
+  /** Letter Match: for each level, a list of sets of capital letters. */
+  letterLevels: Record<string, string[][]>;
+};
+
+/** The words Word Builder and Balloon Pop can use at each level: the child's own missed words first. */
+export type WordLevels = {
+  startLevel: number;
+  levels: Record<string, { struggling: string[]; fallback: string[]; favoured: string[] }>;
+};
+
+export type GameName = 'word-builder' | 'letter-match' | 'balloon-pop';
+
+/** What a finished game tells the server, so the Games badges can be earned. */
+export type GameFinishBody = { level_reached: number; top_level_cleared: boolean; had_perfect_round: boolean; rounds: number };
+
 export type CheckOutcome =
   | { status: 'unclear'; final: boolean }
   | { status: 'continue'; message: string; passagesDone: number; maxPassages: number }
@@ -208,7 +247,7 @@ async function request<T>(path: string, init: RequestInit = {}, options: { withT
 }
 
 /** Sends one recording (and any quiz answers) to a scoring endpoint as a multipart upload. */
-async function uploadAudio<T>(path: string, uri: string, answers?: string[]): Promise<T> {
+async function uploadAudio<T>(path: string, uri: string, answers?: string[], fields?: Record<string, string>): Promise<T> {
   const form = new FormData();
   if (Platform.OS === 'web') {
     // A browser needs a real file object; a phone takes the file's address.
@@ -217,6 +256,7 @@ async function uploadAudio<T>(path: string, uri: string, answers?: string[]): Pr
     form.append('audio', { uri, name: 'recording.m4a', type: 'audio/mp4' } as unknown as Blob);
   }
   (answers ?? []).forEach((choice, i) => form.append(`answers[${i}]`, choice));
+  Object.entries(fields ?? {}).forEach(([name, value]) => form.append(name, value));
 
   // No Content-Type header on purpose: the phone adds the multipart boundary itself.
   return request<T>(path, { method: 'POST', body: form }, { timeoutMs: UPLOAD_TIMEOUT_MS });
@@ -259,6 +299,39 @@ export function realReading(id: number, uri: string, answers?: string[]) {
   return uploadAudio<ReadingOutcome>(`/api/learner/activities/${id}/record`, uri, answers);
 }
 
+export function bookshelf() {
+  return request<{ books: Book[] }>('/api/learner/bookshelf');
+}
+
+export function bookDetail(id: number) {
+  return request<BookDetail>(`/api/learner/bookshelf/${id}`);
+}
+
+export function rereadBook(id: number, uri: string) {
+  return uploadAudio<RereadOutcome>(`/api/learner/bookshelf/${id}/reread`, uri);
+}
+
+export function games() {
+  return request<GamesInfo>('/api/learner/games');
+}
+
+export function gameWords() {
+  return request<WordLevels>('/api/learner/games/words');
+}
+
+export function finishGame(game: GameName, body: GameFinishBody) {
+  return request<{ newBadges: { code: string; name: string; icon: string }[] }>(`/api/learner/games/${game}/finish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+/** Balloon Pop: one spoken word. The answer is only ever heard, again or unavailable, never "wrong". */
+export function checkWord(word: string, uri: string) {
+  return uploadAudio<{ status: 'heard' | 'again' | 'unavailable' }>('/api/learner/games/check-word', uri, undefined, { word });
+}
+
 /** Saves the child's text size choice (1 to 5) so it is the same on the website. */
 export function setFontStep(step: number) {
   return request<{ ok: boolean }>('/api/learner/reading-preferences/font-step', {
@@ -281,5 +354,6 @@ export function firstCheckRecord(uri: string) {
  * The free host sleeps after a quiet while. A plain page request that stays connected is what wakes it. Never throws.
  */
 export function wakeServer() {
-  fetch(`${API_URL}/up`).catch(() => {});
+  // The answer is never read, so the browser preview does not need permission to see it (no-cors); a phone ignores this setting.
+  fetch(`${API_URL}/up`, { mode: 'no-cors' }).catch(() => {});
 }

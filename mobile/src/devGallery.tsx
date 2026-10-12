@@ -1,7 +1,7 @@
 // Developer only. In the browser preview, open  http://localhost:8081/#gallery=<name>  to see one screen with sample
 // data at any phone size, without a server, a microphone or a child. It is never reached in a phone build (App.tsx
 // guards it with __DEV__ and the web platform). Names: home, badges, results, results-low, check-intro, check-letters,
-// check-next, check-unclear, check-done, practice, quiz, waiting, failed, soon.
+// check-next, check-unclear, check-done, warmup, warmup-heard, warmup-quiet, practice, quiz, waiting, failed, soon.
 import { useMemo } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { Results } from './Results';
 import { SessionContext, type Session } from './session';
 import { PracticeFeedback, Quiz } from './Story';
 import { SendFailed, Waiting } from './Waiting';
+import { WarmUp } from './WarmUp';
 import { colors } from './theme';
 
 const learner: LearnerPayload = {
@@ -195,6 +196,12 @@ function screenFor(name: string) {
           onSubmit={noop}
         />
       );
+    case 'warmup':
+      return <WarmUp letters={false} onDone={noop} />;
+    case 'warmup-heard':
+      return <WarmUp letters={false} onDone={noop} demo="heard" />;
+    case 'warmup-quiet':
+      return <WarmUp letters onDone={noop} demo="quiet" />;
     case 'waiting':
       return <Waiting />;
     case 'failed':

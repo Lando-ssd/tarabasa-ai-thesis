@@ -6,11 +6,13 @@ import { Feedback } from './Feedback';
 import { MicButton } from './MicButton';
 import { ReadingScene } from './ReadingScene';
 import { Animation, Btn, H1, IconBtn, Notice, P, Screen } from './ui';
+import { WarmUp } from './WarmUp';
 import { SendFailed, Waiting } from './Waiting';
 
 type Phase =
   | { name: 'intro'; error?: string }
   | { name: 'loading' }
+  | { name: 'warm'; item: api.DiagnosticPassage }
   | { name: 'item'; item: api.DiagnosticPassage }
   | { name: 'sending'; item: api.DiagnosticPassage; uri: string }
   | { name: 'failed'; item: api.DiagnosticPassage; uri: string; message: string }
@@ -26,6 +28,8 @@ const WELCOME = 'Tara will pick the best story for you. Say the words out loud w
  */
 export function FirstCheck({ firstName, onDone }: { firstName: string; onDone: () => void }) {
   const [phase, setPhase] = useState<Phase>({ name: 'intro' });
+  // The warm-up (say one easy word to test the microphone) happens once, before the very first item.
+  const [warmedUp, setWarmedUp] = useState(false);
 
   // Wake the scoring service while the child reads the welcome, so the first recording is not slow.
   useEffect(() => {
@@ -36,7 +40,8 @@ export function FirstCheck({ firstName, onDone }: { firstName: string; onDone: (
   async function loadItem() {
     setPhase({ name: 'loading' });
     try {
-      setPhase({ name: 'item', item: await api.firstCheckPassage() });
+      const item = await api.firstCheckPassage();
+      setPhase(!warmedUp && item.passageNumber === 1 ? { name: 'warm', item } : { name: 'item', item });
     } catch (e) {
       setPhase({ name: 'intro', error: e instanceof Error ? e.message : 'Something went wrong. Please try again.' });
     }
@@ -73,6 +78,17 @@ export function FirstCheck({ firstName, onDone }: { firstName: string; onDone: (
             {phase.name === 'intro' && phase.error ? <Notice text={phase.error} /> : null}
           </View>
         </Screen>
+      );
+
+    case 'warm':
+      return (
+        <WarmUp
+          letters={phase.item.activity.kind === 'letters'}
+          onDone={() => {
+            setWarmedUp(true);
+            setPhase({ name: 'item', item: phase.item });
+          }}
+        />
       );
 
     case 'item':

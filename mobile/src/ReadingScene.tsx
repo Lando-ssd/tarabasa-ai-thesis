@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import * as Speech from 'expo-speech';
-import { Animation, Icon, IconBtn, Panel, Screen, Small } from './ui';
+import { Animation, IconBtn, Panel, Pill, Screen, Small } from './ui';
 import { colors, fonts, READING_BASE, readingSteps } from './theme';
 import { useSession } from './session';
 
@@ -11,6 +11,8 @@ export type Passage = { kind: 'text'; text: string } | { kind: 'letters'; letter
 type Props = {
   /** A short line at the top, such as the story's title or "Passage 2". */
   eyebrow?: string;
+  /** A small note under the top row, such as "Free practice. Nothing is saved." */
+  pill?: string;
   /** The three stages of a story (Listen, Your turn, Read for real), with the active one marked. */
   steps?: { labels: string[]; active: number };
   /** Progress through the first reading check. */
@@ -31,7 +33,7 @@ type Props = {
  * The screen a child reads on. Tara peeks over a blue panel that holds the direction, the text size control and the
  * passage in a large reading font. The microphone (the footer) is the biggest thing on the screen.
  */
-export function ReadingScene({ eyebrow, steps, dots, direction, passage, below, footer, onBack, speakText }: Props) {
+export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, below, footer, onBack, speakText }: Props) {
   const { fontStep, setFontStep } = useSession();
   const [speaking, setSpeaking] = useState(false);
 
@@ -72,6 +74,12 @@ export function ReadingScene({ eyebrow, steps, dots, direction, passage, below, 
         </View>
         {speakText ? <IconBtn icon="speaker-high" label={speaking ? 'Stop reading aloud' : 'Read it to me'} onPress={toggleSpeech} tone={speaking ? 'orange' : 'ghost'} /> : null}
       </View>
+
+      {pill ? (
+        <View style={{ alignItems: 'center', marginTop: 6 }}>
+          <Pill icon="info" color={colors.blueDark} text={pill} />
+        </View>
+      ) : null}
 
       {steps ? (
         <View style={styles.steps}>

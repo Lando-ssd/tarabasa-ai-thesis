@@ -3,11 +3,17 @@ import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ReadingOutcome } from './api';
 import { Badges } from './Badges';
+import { BalloonPop } from './BalloonPop';
 import { ComingSoon } from './ComingSoon';
+import { Games, type GameKey } from './Games';
 import { Home } from './Home';
+import { LetterMatch } from './LetterMatch';
 import { ReadList } from './ReadList';
+import { Reread } from './Reread';
 import { Results } from './Results';
+import { WordBuilder } from './WordBuilder';
 import { useSession } from './session';
+import { Shelf } from './Shelf';
 import { Story } from './Story';
 import { Icon } from './ui';
 import { colors, fonts, size } from './theme';
@@ -17,6 +23,9 @@ type ReadRoute =
   | { name: 'list' }
   | { name: 'story'; id: number }
   | { name: 'results'; title: string; outcome: Extract<ReadingOutcome, { status: 'scored' }> };
+
+type GamesRoute = { name: 'hub' } | { name: 'play'; game: GameKey };
+type ShelfRoute = { name: 'list' } | { name: 'reread'; id: number };
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'home', label: 'Home', icon: 'house' },
@@ -28,20 +37,25 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
 
 /**
  * The signed in app: five places in a bottom bar (Home, Read, Games, Badges, Shelf), the same places as the website. Games
- * and Shelf say "coming soon" in this first version. While a child is reading, the bar goes away so a stray tap cannot
+ * says "coming soon" until it is built. While a child is reading, the bar goes away so a stray tap cannot
  * leave the story. The phone's back button goes back one step, then to Home, then leaves the app.
  */
 export function Main() {
   const { learner, setLearner, reloadHome } = useSession();
   const [tab, setTab] = useState<Tab>('home');
   const [route, setRoute] = useState<ReadRoute>({ name: 'list' });
+  const [shelfRoute, setShelfRoute] = useState<ShelfRoute>({ name: 'list' });
+  const [gamesRoute, setGamesRoute] = useState<GamesRoute>({ name: 'hub' });
 
-  const reading = tab === 'read' && route.name !== 'list';
+  const reading =
+    (tab === 'read' && route.name !== 'list') || (tab === 'shelf' && shelfRoute.name !== 'list') || (tab === 'games' && gamesRoute.name !== 'hub');
 
   const goTab = useCallback(
     (next: Tab) => {
       setTab(next);
       if (next !== 'read') setRoute({ name: 'list' });
+      if (next !== 'shelf') setShelfRoute({ name: 'list' });
+      if (next !== 'games') setGamesRoute({ name: 'hub' });
       if (next === 'home' || next === 'badges') reloadHome();
     },
     [reloadHome],
@@ -55,6 +69,14 @@ export function Main() {
         else setRoute({ name: 'list' });
         return true;
       }
+      if (tab === 'games' && gamesRoute.name !== 'hub') {
+        setGamesRoute({ name: 'hub' });
+        return true;
+      }
+      if (tab === 'shelf' && shelfRoute.name !== 'list') {
+        setShelfRoute({ name: 'list' });
+        return true;
+      }
       if (tab !== 'home') {
         goTab('home');
         return true;
@@ -62,7 +84,7 @@ export function Main() {
       return false; // on Home: leave the app
     });
     return () => sub.remove();
-  }, [tab, route, goTab]);
+  }, [tab, route, shelfRoute, gamesRoute, goTab]);
 
   let screen: React.ReactNode;
   if (tab === 'home') {
@@ -85,11 +107,22 @@ export function Main() {
       screen = <ReadList onOpen={(id) => setRoute({ name: 'story', id })} />;
     }
   } else if (tab === 'games') {
-    screen = <ComingSoon title="Games are coming soon" text="Word games with Tara are on the way. For now, read a story and earn points." />;
+    const back = () => setGamesRoute({ name: 'hub' });
+    if (gamesRoute.name === 'play' && gamesRoute.game === 'letter-match') {
+      screen = <LetterMatch onExit={back} />;
+    } else if (gamesRoute.name === 'play' && gamesRoute.game === 'word-builder') {
+      screen = <WordBuilder onExit={back} />;
+    } else if (gamesRoute.name === 'play') {
+      screen = <BalloonPop onExit={back} />;
+    } else {
+      screen = <Games onPlay={(game) => setGamesRoute({ name: 'play', game })} />;
+    }
   } else if (tab === 'badges') {
     screen = <Badges />;
+  } else if (shelfRoute.name === 'reread') {
+    screen = <Reread id={shelfRoute.id} onExit={() => setShelfRoute({ name: 'list' })} />;
   } else {
-    screen = <ComingSoon title="Your Shelf is coming soon" text="The stories you have read will live here, so you can read them again." />;
+    screen = <Shelf onOpen={(id) => setShelfRoute({ name: 'reread', id })} onFindStory={() => goTab('read')} />;
   }
 
   return (

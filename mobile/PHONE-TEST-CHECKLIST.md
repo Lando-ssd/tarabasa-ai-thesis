@@ -1,11 +1,11 @@
 # Phone test checklist (for whoever tests the APK on a real Android phone)
 
-This is a TEST build of the real app (version 0.2.0): sign in, the first reading check, Home, Read, Badges.
-Games and Shelf say "coming soon" on purpose. Its job is to find out what works on a real phone before the
-demo. Please be honest about what fails: a failure found now is cheap, the same failure found on demo day is not.
+This is a TEST build of the real app (version 0.3.0): sign in, the first reading check, Home, Read, Games, Badges
+and Shelf. Its job is to find out what works on a real phone before the demo. Please be honest about what fails:
+a failure found now is cheap, the same failure found on demo day is not.
 
-Use this file, not the older test build (0.1.1). The older one is missing a library the microphone needs and
-may close by itself.
+Use only this version (0.3.0). The older test builds (0.1.x, 0.2.0) are missing screens, and 0.1.1 is also
+missing a library the microphone needs and may close by itself.
 
 ## Before you start
 - An Android phone (Android 7 or newer, 64-bit, which is almost every phone made after 2017).
@@ -43,10 +43,26 @@ Write down for each one: **worked / did not work / odd**, and what the screen sa
      nobody has done yet and the most valuable one.
 6. **Results.** Points, words read right, badges, level message. Tap **Done**: Home should show the new points.
 7. **Badges.** Scroll the list. Tap a badge for the details.
-8. **The phone's back button.** On a reading screen it should go back one step, then to Home, then leave the app.
-9. **Turn the internet off** in the middle of sending a reading. The app should say it could not send, keep
-   the reading, and let you tap **Send Again** after the internet is back.
-10. **Close and reopen the app.** It should remember the child.
+8. **Silence check.** On a reading screen tap the microphone and stay silent for a few seconds (or put the phone face
+   down), then tap the green check. The app should say it did not hear anything, send nothing, and let you try
+   again at once. Then try again and read normally: that must work. If it ever says "we did not hear anything"
+   when you did speak, note the phone model and how close the phone was: that is the number we need to adjust.
+9. **Microphone warm-up.** Sign in with a child who has NOT done the first reading check yet. Before the first
+   item the app asks you to say one easy word and shows a moving bar. Does the bar move when you speak? Does it say
+   "I heard you"? Can you skip it?
+10. **Games.** Open **Games**. Play each of the three games (Word Builder, Letter Match, Balloon Pop) for a round.
+    - Tap **Hear the word** or turn a Letter Match card: does the phone speak, and can you hear it?
+    - Do the short sounds play (a happy ding, a quiet low tone for a wrong match)?
+    - In Word Builder, after spelling a word tap the microphone and say it. In Balloon Pop, say the marked word.
+      How many seconds until the answer? Does a wrong or unclear try ever say "wrong"? (It must not.)
+    - Leave a game half way (Games tab, then back): the board should still be there for Word Builder and Letter Match.
+    - Finish a game: the "All done" screen may show a new badge. Check **Badges** afterwards.
+11. **Shelf.** Open **Shelf**. Stories you have read appear; open one and read it again. Points and level must
+    NOT change after a re-read.
+12. **The phone's back button.** On a reading screen it should go back one step, then to Home, then leave the app.
+13. **Turn the internet off** in the middle of sending a reading. The app should say it could not send, keep
+    the reading, and let you tap **Send Again** after the internet is back.
+14. **Close and reopen the app.** It should remember the child.
 
 ## What to send back
 - Phone brand and model, Android version.
