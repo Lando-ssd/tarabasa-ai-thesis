@@ -6511,6 +6511,12 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   `D:\tools\apk-out\TaraBasa-AI-0.3.1-test5.apk` (43.9 MB, versionCode 5, SHA-256 `870da01e…2118`); checked inside: live address, no localhost,
   new screens, the 3 game sounds. The teammate may still be testing 0.3.0: wait for that report before sending 0.3.1. The Learner end is code
   complete (every website Learner screen has a phone version); what remains needs a real phone and a real child.
+  **PUSHED (`661d63b`, `4b4440a`) and then MERGED INTO THE LIVE BRANCH on 2026-10-12 evening** (merge commit `8e1caa4`, with the owner's explicit
+  yes): the live server (Render, branch `claude/admin-dashboard-approvals-62dcd0`) was still at `66ebc30` and did NOT have the newer phone
+  endpoints (practice, bookshelf, games, warm, new Home fields), so the phone app could not have worked against it. The merge added no migrations,
+  packages or Docker changes (the `mobile/` folder is in `.dockerignore`); the only conflict was this notes file. After the deploy the website
+  pages answered 200, the new phone routes answered 401 (they exist and need a login) and `/privacy` showed "The phone app". The tester has been
+  sent NOTHING yet: send 0.3.1 with `mobile/TEST-SETUP.md` and `mobile/PHONE-TEST-CHECKLIST.md`; `mobile/APP-REVIEW.md` is the honest review.
 - **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
   about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
   environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`

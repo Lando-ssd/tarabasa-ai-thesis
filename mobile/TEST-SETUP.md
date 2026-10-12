@@ -3,7 +3,11 @@
 The tester only needs the app file, the checklist, and one made-up child's code and PIN. Everything below prepares those.
 It takes about 40 minutes the first time. Use made-up names and no photos: never a real child.
 
-## 0. The live server must have the phone's server code first (a real blocker found on 2026-10-12)
+## 0. The live server must have the phone's server code first (a real blocker found on 2026-10-12, DONE the same evening)
+
+**Status: done.** `mobile-app` was merged into the live branch as `8e1caa4` and Render deployed it (checked at 20:43: the website
+pages load, the new phone routes answer "login required", `/privacy` has the phone-app section). Skip to step 1. The text below
+says what was found and why.
 
 The phone app talks to the live website (https://tarabasa-ai.onrender.com). On 2026-10-12 the live website was still on the
 older code (commit `66ebc30`) and did NOT have the newer phone endpoints (practice tries, My Shelf, Games, the warm-up call,

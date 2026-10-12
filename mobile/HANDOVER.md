@@ -155,10 +155,11 @@ Four things that do not depend on the phone test, so the teammate's report on 0.
   that report before sending 0.3.1. Older files (0.1.x, 0.2.0-test3) lack screens: do not send them.
 
 ## Next steps, in order
-0. **BLOCKER found 2026-10-12: the live server does not have the newer phone endpoints.** Render runs the live branch at `66ebc30`;
-   practice tries, My Shelf, Games, the warm-up call and the new Home numbers exist only on `mobile-app`. Merge `mobile-app` into
-   `claude/admin-dashboard-approvals-62dcd0` and let Render deploy it BEFORE the phone is tested (no migrations, packages or Docker
-   changes; the only merge conflict is in `CLAUDE.md`). The team decides, because it changes the live website. See `TEST-SETUP.md`.
+0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
+   on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,
+   `mobile-app` was merged into `claude/admin-dashboard-approvals-62dcd0` (merge commit `8e1caa4`, fast-forward push, no migrations,
+   packages or Docker changes). Render deployed it by 20:43: the website pages answer 200, the new phone routes answer 401 (they exist
+   and want a login), and `/privacy` has "The phone app". Not yet tried with a real login from a phone.
    The tester has NOT been sent anything yet (the owner waited until the whole Learner end was finished), so send 0.3.1, not 0.3.0.
 1. A tester runs `PHONE-TEST-CHECKLIST.md` on a real Android phone (0.3.1) and reports back. How to prepare it: `TEST-SETUP.md`.
    What to expect and what is risky: `APP-REVIEW.md`.
