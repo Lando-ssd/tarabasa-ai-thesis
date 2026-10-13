@@ -6775,6 +6775,37 @@ approved preview's numbers (only near duplicates merged, not a strict 4/8 grid),
   pointerdown, mousedown, pointerup, mouseup and click (the harness does this). A tool permission check blocked `rm -rf` of an
   export folder: use a NEW output folder name instead of deleting.
 
+## Parent pages on a phone: review, fixes and a hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+
+The user asked for "the parents phone review side". Read as: the Parent screens as they look on a phone, reviewed like the child's
+app, with a link they can open without localhost. The Parent end is the website (no Parent screens in the phone app), so this is the
+Blade pages at phone width.
+
+- **How it was reviewed.** `tools/parent-phone-preview/` (see its README): a throwaway PHPUnit-style capture builds a made-up family
+  in an in-memory database (Carla Domingo; Maria Grade 1 with 9 readings, a repeating word-ending pattern, badges and alerts;
+  Miguel Grade 2; Ana added through the real wizard so she has nothing read yet; four shared activities in the Open Repository) and saves 18
+  real Parent pages as HTML. They were measured in frames of 360x640, 390x844, 430x932, 768x1024 and 1280x800 (page area =
+  height minus 88 for the phone's browser bar and bars) and at text 20% larger. FINAL: 0 findings in 108 combinations (no sideways
+  scroll, no clipped text, no tap target under 44px on a phone or tablet).
+- **Real defects found and fixed.** (1) Tap targets: the top avatar chip 38, "See all" 26, Copy/QR/See progress buttons 40 to 41,
+  filter chips 39, rating stars 34, Back links 26, Copy code 35, Log in 43, and on the sign up and log in pages the Back links, "Sign in",
+  "Sign up as a parent", "Forgot password" and the password eye (15 to 22px). Buttons got `min-height:44px`; small links and the eye keep
+  their look and gain an invisible `::after` tap area (verified with `elementFromPoint`: 46 to 47px). (2) Progress: the two source
+  tiles stacked full width and pushed Adaptive Focus and Reading Level below the first screen; they now stay side by side. (3) Children:
+  the Learner Code split across two lines ("TB26-" / "66485") because Copy and QR squeezed it; the code never wraps now and the buttons
+  drop beneath it. (4) "1 days in a row" (children list pill) now says "1 day". (5) CORRECTNESS, not layout: Alerts (Parent and
+  Teacher), the Progress session list and the Teacher session rows showed server (UTC) times: "1:30 AM" for something that
+  happened at 9:30 AM in the Philippines, and Today/Yesterday flipped on the UTC day. They now go through `LearnerClock` (Asia/Manila);
+  `NotificationLocalTimeTest` pins it (two tests).
+- **Not changed, noted:** the add-a-child wizard's Next button is a small right-aligned button, not full width; the auth pages the
+  user likes keep their look (only tap areas changed).- **Hosted preview:** https://claude.ai/artifact/EZv59sFSaGNrj8WKUU7qSW (private to the user). A phone frame with a browser address
+  bar, five sizes (four phones and a laptop), a screen picker, and a working menu: a tap on a link inside a page asks the viewer to show
+  the matching screen; a button that would save (log out, mark as read, unlock, save) shows a "preview only" note. Each screen is the
+  page text handed to a frame; the pages are static, so a typed value or a changed filter is not remembered between screens.
+- **Not verified:** the hosted page inside claude.ai (private link; tested from a plain folder address), and a real phone's browser
+  (Chrome's address bar hides and shows as a page scrolls, which changes the page height a little). Sample data is made up; the
+  numbers shown (142 points, 3 days in a row) are what the real code computed from it, not typed in.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.
