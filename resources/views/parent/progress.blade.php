@@ -117,7 +117,7 @@
         <div class="item">
           <div class="item-body">
             <div class="item-title">{{ $session->activity->title ?? 'Reading activity' }} <span class="tag {{ $session->initiated_by === 'Parent' ? 'parent' : '' }}">{{ $session->initiated_by }}</span></div>
-            <div class="item-sub">{{ $session->level_before ?? 'New' }} to {{ $session->level_after ?? 'New' }} &middot; {{ $session->timestamp->format('M j, g:i A') }}</div>
+            <div class="item-sub">{{ $session->level_before ?? 'New' }} to {{ $session->level_after ?? 'New' }} &middot; {{ \App\Support\LearnerClock::local($session->timestamp)->format('M j, g:i A') }}</div>
           </div>
           <span class="pill {{ $session->accuracy_percent >= 80 ? 'ok' : 'amber' }}" style="font-size:20px;padding:7px 14px 6px">{{ round($session->accuracy_percent) }}%</span>
         </div>

@@ -56,14 +56,14 @@
                 <button type="submit" class="notif unread {{ $isAttention ? 'flagged' : '' }}">
                   <span class="notif-ico {{ $kind }}">@include('learner._badge-icon', ['icon' => $icon, 'class' => 'ico'])</span>
                   <span><b>{{ $title }}</b><span class="d">{{ $notification->message }}</span></span>
-                  <span class="notif-meta"><span class="new">New</span><span>{{ $notification->timestamp->format('g:i A') }}</span></span>
+                  <span class="notif-meta"><span class="new">New</span><span>{{ \App\Support\LearnerClock::local($notification->timestamp)->format('g:i A') }}</span></span>
                 </button>
               </form>
             @else
               <div class="notif">
                 <span class="notif-ico {{ $kind }}">@include('learner._badge-icon', ['icon' => $icon, 'class' => 'ico'])</span>
                 <span><b>{{ $title }}</b><span class="d">{{ $notification->message }}</span></span>
-                <span class="notif-meta"><span>{{ $notification->timestamp->format('g:i A') }}</span></span>
+                <span class="notif-meta"><span>{{ \App\Support\LearnerClock::local($notification->timestamp)->format('g:i A') }}</span></span>
               </div>
             @endif
           @endforeach
