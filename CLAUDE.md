@@ -6637,7 +6637,12 @@ open: Data Privacy Act).
 - **Still open:** account deletion (decision), a rejection reason cannot be edited, no bulk actions, Reconnect Gmail still ends in "copy the code into
   GMAIL_SEND_REFRESH_TOKEN and redeploy" (a person has to paste it; the app cannot write host settings), and `ADMIN_PASSWORD` is still not set on Render.
 
-## Phone app: layout rescaled to the approved preview, and Practice Games are read-aloud only (2026-10-13, BUILT LOCALLY, NOT PUSHED)
+## Phone app: layout rescaled to the approved preview, and Practice Games are read-aloud only (2026-10-13, PUSHED as 7604942 and MERGED INTO THE LIVE BRANCH as 9876f5c)
+
+**Status:** the user said "push it now" (mobile-app, `7604942`) and then "yes merge it to the live branch": merged cleanly into the live
+branch as `9876f5c` (403 tests passing on the merged code, fast-forward push), and the live site then answered 302 on
+`/learner/games/word-train` and `/sentence-stars` and 200 on `/animations/learner/tara-owl-head.json`. The 0.4.0 APK was built the same
+day (see "Version 0.4.0" in `mobile/HANDOVER.md`) and has NOT been sent to anyone yet.
 
 The user compared the localhost phone app with the approved preview (Artifact `WsvHtotrivVLgqX3hSFdJh`): the preview is "clean", the app
 had the button pinned far below its content and the sizes and alignment felt off. They also said Games must be reading and nothing else,
@@ -6707,6 +6712,22 @@ AND the website (`/learner/games/word-builder` and `/letter-match` redirect to t
   timing (`PAUSE_MS` 1700 on the phone, 1600 on the website) and the "heard" share (two thirds) were set without real recordings and are
   the first things to adjust after the phone test. The phone builds 0.3.0 to 0.3.2 cannot play the new games (the Games calls changed):
   send a new build.
+
+## Parent add-a-child screens moved to the Parent look (2026-10-13, BUILT LOCALLY, NOT PUSHED)
+
+While the user rested they asked to "continue the other end". The last Parent screens still on the older look (a soft blue gradient page, blue
+gradient buttons, the Baloo font) were the focused flow: `parent/children/create` (five steps), `created` (the "all set" page with the code
+and QR) and `link` (link an existing child). They now use ONE shared stylesheet, `public/css/parent-focus.css` (cache busted by content
+hash, same tokens as `parent-app.css`): flat pale page, white cards with a lip, an orange progress bar, the game face for headings, the
+orange clay primary button and a white lip button for Back, blue for the selected avatar and chips, green for a chosen answer. No menu bar on
+purpose (one task, start to finish, like the Learner's focused screens). Nothing about how they work changed (every field, id, route and
+script is as before; the Cropper photo crop is untouched). Copy lost its dashes ("PINs don't match. Try again." and similar), the page title
+is "Add your child | TaraBasa AI". `parent/children/card` (the printable card) was already in the Parent look.
+- Checked in the browser: all five steps (including picking an avatar, the reading stage and chips, the three placement questions and the
+  PIN), a real submit (the "all set" page showed the code, its parts and the QR), the link page, and a 390 wide phone (no sideways scroll). The
+  test child made for the walkthrough was deleted from the local database afterwards. The related PHPUnit tests pass (169).
+- NOT touched: the Parent sign up and log in pages, and the Teacher sign up (they use the auth layout the user already liked).
+- This follows the approved Parent redesign (it is the leftover of it, not a new design), so no new preview was made.
 
 ## Before pushing this round (checklist for the next session)
 
