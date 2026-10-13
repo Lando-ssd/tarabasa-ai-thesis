@@ -1,5 +1,5 @@
 @extends('layouts.auth')
-@section('title', 'Parent Registration — TaraBasa AI')
+@section('title', 'Parent Registration | TaraBasa AI')
 @section('content')
 
   <h1>Create your account</h1>

@@ -1,5 +1,5 @@
 @extends('layouts.auth')
-@section('title', 'Teacher Registration — TaraBasa AI')
+@section('title', 'Teacher Registration | TaraBasa AI')
 @section('content')
 
   <h1>Teacher Registration</h1>
