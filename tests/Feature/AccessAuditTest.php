@@ -346,7 +346,7 @@ class AccessAuditTest extends TestCase
     public function test_a_child_who_has_not_done_the_first_check_is_held_there_on_every_learner_screen(): void
     {
         $this->as('learnerFresh');
-        foreach (['/learner/dashboard', '/learner/games', '/learner/badges', '/learner/bookshelf', '/learner/activity/start', '/learner/games/balloon-pop'] as $url) {
+        foreach (['/learner/dashboard', '/learner/games', '/learner/badges', '/learner/bookshelf', '/learner/activity/start', '/learner/games/balloon-pop', '/learner/games/word-train', '/learner/games/sentence-stars'] as $url) {
             $this->get($url)->assertRedirect(route('learner.diagnostic.show'));
         }
     }
@@ -541,7 +541,7 @@ class AccessAuditTest extends TestCase
             ['teacherA', ['/teacher/dashboard', '/teacher/classes', '/teacher/activities', '/teacher/analytics', '/teacher/analytics?mode=learner', '/teacher/analytics?mode=group', '/teacher/promotions', '/teacher/notifications', '/teacher/profile']],
             ['teacherPending', ['/teacher/dashboard', '/teacher/classes', '/teacher/activities', '/teacher/notifications']],
             ['parentA', ['/parent/dashboard', '/parent/children', '/parent/children/create', '/parent/children/link', '/parent/progress', '/parent/repository', '/parent/notifications', '/parent/profile']],
-            ['learnerA', ['/learner/dashboard', '/learner/games', '/learner/games/word-builder', '/learner/games/letter-match', '/learner/games/balloon-pop', '/learner/badges', '/learner/bookshelf', '/learner/activity/start']],
+            ['learnerA', ['/learner/dashboard', '/learner/games', '/learner/games/balloon-pop', '/learner/games/word-train', '/learner/games/sentence-stars', '/learner/badges', '/learner/bookshelf', '/learner/activity/start']],
             ['learnerFresh', ['/learner/diagnostic', '/learner/diagnostic/passage']],
         ];
 

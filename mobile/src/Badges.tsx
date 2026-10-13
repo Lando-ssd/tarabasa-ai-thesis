@@ -6,6 +6,7 @@ import { Medal } from './Feedback';
 import { useSession } from './session';
 import { Btn, Busy, H1, H2, Notice, P, Screen, Small } from './ui';
 import { colors, fonts, size } from './theme';
+import { s } from './scale';
 
 /**
  * All the badges, earned ones lit and the rest as locks, so a child can see what is ahead. Grouped by kind. Tap one to
@@ -35,16 +36,16 @@ export function Badges() {
 
       {!home ? (
         homeError ? (
-          <View style={{ gap: 12, marginTop: 16 }}>
+          <View style={{ gap: s(12), marginTop: s(16) }}>
             <Notice text={homeError} />
             <Btn label="Try Again" onPress={reloadHome} />
           </View>
         ) : (
-          <Busy text="Getting your badges" style={{ marginTop: 20 }} />
+          <Busy text="Getting your badges" style={{ marginTop: s(20) }} />
         )
       ) : (
         groups.map(([category, badges]) => (
-          <View key={category} style={{ marginTop: 18 }}>
+          <View key={category} style={{ marginTop: s(18) }}>
             <H2>
               {category} <Text style={styles.count}>{badges.filter((b) => b.earned).length} of {badges.length}</Text>
             </H2>
@@ -84,7 +85,7 @@ function BadgeSheet({ badge, onClose }: { badge: Badge | null; onClose: () => vo
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
       {badge ? (
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
-          <Medal icon={badge.icon} off={!badge.earned} size={92} />
+          <Medal icon={badge.icon} off={!badge.earned} size={s(92)} />
           <H2 style={{ textAlign: 'center' }}>{badge.name}</H2>
           <P style={{ textAlign: 'center' }}>{badge.description}</P>
           {when ? <Small style={{ color: colors.ok, fontFamily: fonts.uiBold }}>Earned on {when}</Small> : null}
@@ -97,10 +98,10 @@ function BadgeSheet({ badge, onClose }: { badge: Badge | null; onClose: () => vo
 }
 
 const styles = StyleSheet.create({
-  count: { fontFamily: fonts.ui, fontSize: 15, color: colors.slate },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, rowGap: 14 },
-  cell: { width: '33.333%', alignItems: 'center', gap: 4, paddingHorizontal: 4, minHeight: 48 },
-  name: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 17, color: colors.ink, textAlign: 'center' },
+  count: { fontFamily: fonts.ui, fontSize: s(15), color: colors.slate },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: s(8), rowGap: s(14) },
+  cell: { width: '33.333%', alignItems: 'center', gap: s(4), paddingHorizontal: s(4), minHeight: s(48) },
+  name: { fontFamily: fonts.ui, fontSize: s(14), lineHeight: s(17), color: colors.ink, textAlign: 'center' },
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(12,23,34,0.45)' },
   sheet: {
     position: 'absolute',
@@ -111,10 +112,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: size.maxWidth,
     backgroundColor: colors.white,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 22,
+    borderTopLeftRadius: s(28),
+    borderTopRightRadius: s(28),
+    padding: s(22),
     alignItems: 'center',
-    gap: 10,
+    gap: s(10),
   },
 });

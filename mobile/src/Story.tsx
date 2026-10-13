@@ -8,6 +8,7 @@ import { Animation, Btn, Busy, H2, IconBtn, Notice, Panel, Screen, Small } from 
 import { SendFailed, Waiting } from './Waiting';
 import { WordReview } from './WordReview';
 import { colors, fonts } from './theme';
+import { s } from './scale';
 
 type Scored = Extract<api.ReadingOutcome, { status: 'scored' }>;
 type PracticeScored = Extract<api.PracticeOutcome, { status: 'scored' }>;
@@ -82,7 +83,7 @@ export function Story({ id, onExit, onScored }: { id: number; onExit: () => void
     return (
       <Screen scroll={false}>
         <View style={styles.center}>
-          <Animation name="head" px={130} />
+          <Animation name="head" px={s(130)} />
           <Busy text="Opening your story" />
         </View>
       </Screen>
@@ -155,7 +156,7 @@ export function Story({ id, onExit, onScored }: { id: number; onExit: () => void
         : 'You used both free tries. Now read it for real.';
     below = feedback ? <PracticeFeedback result={feedback} /> : null;
     footer = (
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: s(10) }}>
         {triesLeft > 0 ? <MicButton idleLabel={feedback ? 'Tap the mic to try again' : 'Tap the mic and read the story'} onRecorded={(uri) => send('practice', uri)} /> : null}
         <Btn label="Read For Real" tone={feedback || triesLeft === 0 ? 'orange' : 'ghost'} compact={triesLeft > 0 && !feedback} onPress={goReal} />
       </View>
@@ -182,7 +183,7 @@ export function Story({ id, onExit, onScored }: { id: number; onExit: () => void
 export function PracticeFeedback({ result }: { result: PracticeScored }) {
   const counts = result.wordCounts;
   return (
-    <Panel style={{ gap: 10 }}>
+    <Panel style={{ gap: s(10) }}>
       <H2>Your practice</H2>
       <Small style={{ color: colors.ink }}>
         {counts ? `${counts.right} of ${counts.total} words read right. ` : ''}This one is not saved. Look at the words, then try again or read for real.
@@ -205,11 +206,11 @@ export function Quiz({ questions, onBack, onSubmit }: { questions: api.ActivityD
         <Text maxFontSizeMultiplier={1.2} style={styles.quizTitle}>
           A few questions
         </Text>
-        <View style={{ width: 48 }} />
+        <View style={{ width: s(48) }} />
       </View>
-      <View style={{ gap: 18, marginTop: 8 }}>
+      <View style={{ gap: s(18), marginTop: s(8) }}>
         {questions.map((q, i) => (
-          <View key={i} style={{ gap: 8 }}>
+          <View key={i} style={{ gap: s(8) }}>
             <Text maxFontSizeMultiplier={1.2} style={styles.question}>
               {i + 1}. {q.question}
             </Text>
@@ -238,13 +239,13 @@ export function Quiz({ questions, onBack, onSubmit }: { questions: api.ActivityD
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
-  quizTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  quizTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.displayMedium, fontSize: 22, color: colors.ink },
-  question: { fontFamily: fonts.read, fontSize: 19, lineHeight: 28, color: colors.ink },
-  choice: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: s(14) },
+  quizTop: { flexDirection: 'row', alignItems: 'center', gap: s(10) },
+  quizTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.displayMedium, fontSize: s(22), color: colors.ink },
+  question: { fontFamily: fonts.read, fontSize: s(19), lineHeight: s(28), color: colors.ink },
+  choice: { minHeight: s(56), flexDirection: 'row', alignItems: 'center', gap: s(12), backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: s(16), paddingHorizontal: s(14), paddingVertical: s(10) },
   choiceOn: { borderColor: colors.orange, backgroundColor: colors.orangeSoft },
-  choiceText: { flex: 1, fontFamily: fonts.read, fontSize: 18, lineHeight: 26, color: colors.ink },
-  radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.line, backgroundColor: colors.white },
+  choiceText: { flex: 1, fontFamily: fonts.read, fontSize: s(18), lineHeight: s(26), color: colors.ink },
+  radio: { width: s(24), height: s(24), borderRadius: s(12), borderWidth: 2, borderColor: colors.line, backgroundColor: colors.white },
   radioOn: { borderColor: colors.orange, backgroundColor: colors.orange },
 });

@@ -53,12 +53,15 @@ Write down for each one: **worked / did not work / odd**, and what the screen sa
 9. **Microphone warm-up.** Sign in with a child who has NOT done the first reading check yet. Before the first
    item the app asks you to say one easy word and shows a moving bar. Does the bar move when you speak? Does it say
    "I heard you"? Can you skip it?
-10. **Games.** Open **Games**. Play each of the three games (Word Builder, Letter Match, Balloon Pop) for a round.
-    - Tap **Hear the word** or turn a Letter Match card: does the phone speak, and can you hear it?
-    - Do the short sounds play (a happy ding, a quiet low tone for a wrong match)?
-    - In Word Builder, after spelling a word tap the microphone and say it. In Balloon Pop, say the marked word.
-      How many seconds until the answer? Does a wrong or unclear try ever say "wrong"? (It must not.)
-    - Leave a game half way (Games tab, then back): the board should still be there for Word Builder and Letter Match.
+10. **Games.** Open **Games**. Every game is reading out loud. Play each of the three games (Balloon Pop, Word Train,
+    Sentence Stars) for a round.
+    - Tap **Hear the word** (or **Hear the words**, **Hear the sentence**): does the phone speak, and can you hear it?
+    - Do the short sounds play (a happy ding, a quiet low tone)?
+    - In Balloon Pop say the marked word. In Word Train read all the cars (a child still on the letters step gets letters,
+      so say the letter names). In Sentence Stars read the whole sentence. The recording should stop by itself soon after
+      you pause; tapping the check mark also stops it. How many seconds until the answer? Does a wrong or unclear try ever
+      say "wrong"? (It must not.) After a try, are the words that were heard shown in green?
+    - Is the game that the screen says is "Recommended" a sensible one for this child?
     - Finish a game: the "All done" screen may show a new badge. Check **Badges** afterwards.
 11. **Shelf.** Open **Shelf**. Stories you have read appear; open one and read it again. Points and level must
     NOT change after a re-read.

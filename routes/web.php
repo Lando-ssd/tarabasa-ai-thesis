@@ -121,10 +121,15 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         // ReadingSession impact, deliberately kept separate from the real
         // reading-achievement system (see GameController's own doc block).
         Route::get('/games', [GameController::class, 'index'])->name('games.index');
-        Route::get('/games/word-builder', [GameController::class, 'wordBuilder'])->name('games.word-builder');
-        Route::get('/games/letter-match', [GameController::class, 'letterMatch'])->name('games.letter-match');
+        // Every game is a read-aloud game (Balloon Pop, Word Train, Sentence Stars).
         Route::get('/games/balloon-pop', [GameController::class, 'balloonPop'])->name('games.balloon-pop');
-        // One spoken word checked by the same service that scores readings. Practice only: nothing is saved.
+        Route::get('/games/word-train', [GameController::class, 'wordTrain'])->name('games.word-train');
+        Route::get('/games/sentence-stars', [GameController::class, 'sentenceStars'])->name('games.sentence-stars');
+        // The two games they replaced (spelling and card matching were not reading): an old link or bookmark lands on the Games page.
+        Route::redirect('/games/word-builder', '/learner/games');
+        Route::redirect('/games/letter-match', '/learner/games');
+        // Something read aloud (a word, a row, a sentence) checked by the same service that scores readings. Practice only: nothing is saved.
+        Route::post('/games/check-text', [GameController::class, 'checkText'])->middleware('throttle:90,1')->name('games.check-text');
         Route::post('/games/check-word', [GameController::class, 'checkWord'])->middleware('throttle:90,1')->name('games.check-word');
         Route::post('/games/{game}/finish', [GameController::class, 'finish'])->middleware('throttle:30,1')->name('games.finish');
 

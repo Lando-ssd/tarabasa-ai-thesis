@@ -1,6 +1,8 @@
 // The phone app's look, taken from the website's Learner side (white page, blue panel, clay orange buttons) and sized
 // for a phone. One colour set for every child: the website lets a parent pick blue or pink, the phone app does not.
 
+import { s } from './scale';
+
 export const colors = {
   page: '#ffffff',
   ink: '#17324d',
@@ -41,13 +43,13 @@ export const fonts = {
 // Sizes follow Android's guidance for touch (48dp minimum) and the WCAG 2.2 target size rule, with room to spare
 // because the users are six to nine years old.
 export const size = {
-  touch: 48, // the smallest thing that can be tapped
-  button: 56, // the main buttons
-  field: 54,
-  tabBar: 64,
-  gutter: 20, // the space at the left and right of every screen
+  touch: s(40), // the smallest thing that can be tapped (about 52dp on a 390 wide phone, above Android's 48dp)
+  button: s(52), // the main buttons
+  field: s(50),
+  tabBar: s(52),
+  gutter: s(16), // the space at the left and right of every screen
   maxWidth: 560, // on a tablet the content stays a readable column
-  radius: 18,
+  radius: s(14),
 };
 
 // How much larger the reading text is at each of the five text size steps (the website's A minus and A plus).
@@ -58,4 +60,4 @@ export const readingSteps = [
   { label: 'Large', scale: 1.15 },
   { label: 'Extra large', scale: 1.32 },
 ];
-export const READING_BASE = 24; // the reading text size at "Medium", in sp
+export const READING_BASE = s(22); // the reading text size at "Medium", in sp (about 28 on a 390 wide phone)

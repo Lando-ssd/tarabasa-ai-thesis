@@ -144,24 +144,40 @@ export type RereadOutcome =
       wordCounts: { right: number; total: number; notSure: number } | null;
     };
 
-/** What the Games screen and Letter Match need from the server. */
+/** What the Games screen needs from the server. */
 export type GamesInfo = {
-  /** A game the child's own reading says would help, or null. Never a gate: every game is always playable. */
-  recommended: 'word-builder' | 'letter-match' | null;
-  hasCompetencyData: boolean;
-  /** The level a game starts at: the child's grade, 1 to 3. */
+  /** A game the child's own reading says would help most, or null. Never a gate: every game is always playable. */
+  recommended: GameName | null;
+  /** Why: 'letters', 'own-words', 'first-words' or 'sentences'. */
+  reason: 'letters' | 'own-words' | 'first-words' | 'sentences' | null;
+  /** The level a game starts at, 1 to 3, from the child's step on the reading path. */
   startLevel: number;
-  /** Letter Match: for each level, a list of sets of capital letters. */
-  letterLevels: Record<string, string[][]>;
 };
 
-/** The words Word Builder and Balloon Pop can use at each level: the child's own missed words first. */
+/** The words a game can use at each level (the child's own missed words first, then ones that practise their kind of mistake, then the level's list). */
+export type WordPool = { struggling: string[]; fallback: string[]; favoured: string[] };
 export type WordLevels = {
   startLevel: number;
-  levels: Record<string, { struggling: string[]; fallback: string[]; favoured: string[] }>;
+  levels: Record<string, WordPool>;
 };
 
-export type GameName = 'word-builder' | 'letter-match' | 'balloon-pop';
+/** Word Train: rows of words, or rows of letters for a child still on the letters step. */
+export type TrainLevels = {
+  startLevel: number;
+  mode: 'letters' | 'words';
+  /** How many cars at each level. */
+  cars: Record<string, number>;
+  levels: Record<string, WordPool>;
+};
+
+/** Sentence Stars: the level's sentences, and the ones that suit this child listed first as "preferred". */
+export type SentenceLevels = {
+  startLevel: number;
+  levels: Record<string, { preferred: string[]; fallback: string[] }>;
+};
+
+/** Every game is a read-aloud game. */
+export type GameName = 'balloon-pop' | 'word-train' | 'sentence-stars';
 
 /** What a finished game tells the server, so the Games badges can be earned. */
 export type GameFinishBody = { level_reached: number; top_level_cleared: boolean; had_perfect_round: boolean; rounds: number };
@@ -326,6 +342,14 @@ export function gameWords() {
   return request<WordLevels>('/api/learner/games/words');
 }
 
+export function gameTrain() {
+  return request<TrainLevels>('/api/learner/games/train');
+}
+
+export function gameSentences() {
+  return request<SentenceLevels>('/api/learner/games/sentences');
+}
+
 export function finishGame(game: GameName, body: GameFinishBody) {
   return request<{ newBadges: { code: string; name: string; icon: string }[] }>(`/api/learner/games/${game}/finish`, {
     method: 'POST',
@@ -337,6 +361,17 @@ export function finishGame(game: GameName, body: GameFinishBody) {
 /** Balloon Pop: one spoken word. The answer is only ever heard, again or unavailable, never "wrong". */
 export function checkWord(word: string, uri: string) {
   return uploadAudio<{ status: 'heard' | 'again' | 'unavailable' }>('/api/learner/games/check-word', uri, undefined, { word });
+}
+
+/** What the child read aloud in a game: a row of words or letters, or a sentence. */
+export type ReadKind = 'row' | 'letters' | 'sentence';
+
+/**
+ * Something read aloud in a game. The answer is only ever heard, again or unavailable (never "wrong"), plus, for each word asked,
+ * whether it was heard, so the game can show what went well and ask for the rest again. Nothing is kept.
+ */
+export function checkText(text: string, kind: ReadKind, uri: string) {
+  return uploadAudio<{ status: 'heard' | 'again' | 'unavailable'; matched: boolean[] }>('/api/learner/games/check-text', uri, undefined, { text, kind });
 }
 
 /** Saves the child's text size choice (1 to 5) so it is the same on the website. */

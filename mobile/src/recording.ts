@@ -19,6 +19,10 @@ export const VOICE_DB = -35;
 export const WARM_VOICE_SAMPLES = 3;
 export const WARM_MAX_SECONDS = 4;
 
+/** A game that records a row or a sentence stops by itself once the voice has been quiet this long (and a voice was heard). */
+export const PAUSE_MS = 1700;
+export const PAUSE_MIN_VOICE = 5;
+
 /** How often the level is read while recording, in milliseconds. */
 export const METER_MS = 100;
 

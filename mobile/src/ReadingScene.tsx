@@ -4,6 +4,7 @@ import * as Speech from 'expo-speech';
 import { Animation, IconBtn, Panel, Pill, Screen, Small } from './ui';
 import { colors, fonts, READING_BASE, readingSteps } from './theme';
 import { useSession } from './session';
+import { s } from './scale';
 
 export type Letter = { upper: string; lower: string };
 export type Passage = { kind: 'text'; text: string } | { kind: 'letters'; letters: Letter[] };
@@ -63,7 +64,7 @@ export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, b
   return (
     <Screen footer={footer}>
       <View style={styles.top}>
-        {onBack ? <IconBtn icon="caret-left" label="Go back" onPress={onBack} /> : <View style={{ width: 4 }} />}
+        {onBack ? <IconBtn icon="caret-left" label="Go back" onPress={onBack} /> : <View style={{ width: s(4) }} />}
         <View style={{ flex: 1 }}>
           {eyebrow ? (
             <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={styles.eyebrow}>
@@ -76,7 +77,7 @@ export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, b
       </View>
 
       {pill ? (
-        <View style={{ alignItems: 'center', marginTop: 6 }}>
+        <View style={{ alignItems: 'center', marginTop: s(6) }}>
           <Pill icon="info" color={colors.blueDark} text={pill} />
         </View>
       ) : null}
@@ -85,7 +86,7 @@ export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, b
         <View style={styles.steps}>
           {steps.labels.map((label, i) => (
             <View key={label} style={[styles.step, i === steps.active && styles.stepOn]} accessible accessibilityLabel={`${label}${i === steps.active ? ', now' : ''}`}>
-              <Text maxFontSizeMultiplier={1.15} style={[styles.stepText, i === steps.active && { color: colors.white }]}>
+              <Text maxFontSizeMultiplier={1.15} numberOfLines={1} adjustsFontSizeToFit style={[styles.stepText, i === steps.active && { color: colors.white }]}>
                 {i + 1} {label}
               </Text>
             </View>
@@ -94,7 +95,7 @@ export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, b
       ) : null}
 
       <View style={styles.owl}>
-        <Animation name="head" px={92} />
+        <Animation name="head" px={s(92)} />
       </View>
       <Panel style={styles.panel}>
         <Text maxFontSizeMultiplier={1.2} style={styles.direction}>
@@ -130,7 +131,7 @@ export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, b
         )}
       </Panel>
 
-      {below ? <View style={{ marginTop: 14, gap: 12 }}>{below}</View> : null}
+      {below ? <View style={{ marginTop: s(14), gap: s(12) }}>{below}</View> : null}
     </Screen>
   );
 }
@@ -146,27 +147,27 @@ function Dots({ done, total }: { done: number; total: number }) {
 }
 
 const styles = StyleSheet.create({
-  top: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52 },
-  eyebrow: { fontFamily: fonts.uiBold, fontSize: 17, color: colors.slate, textAlign: 'center' },
-  dots: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 2 },
-  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: colors.sky2 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: s(10), minHeight: s(52) },
+  eyebrow: { fontFamily: fonts.uiBold, fontSize: s(17), color: colors.slate, textAlign: 'center' },
+  dots: { flexDirection: 'row', gap: s(8), justifyContent: 'center', marginTop: s(2) },
+  dot: { width: s(14), height: s(14), borderRadius: s(7), backgroundColor: colors.sky2 },
   dotDone: { backgroundColor: colors.ok },
   dotNow: { backgroundColor: colors.orange },
 
-  steps: { flexDirection: 'row', gap: 6, marginTop: 8 },
-  step: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, paddingHorizontal: 2 },
+  steps: { flexDirection: 'row', gap: s(6), marginTop: s(8) },
+  step: { flex: 1, minHeight: s(40), alignItems: 'center', justifyContent: 'center', borderRadius: s(12), backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, paddingHorizontal: s(2) },
   stepOn: { backgroundColor: colors.orange, borderColor: colors.orange },
-  stepText: { fontFamily: fonts.uiBold, fontSize: 14, color: colors.slate, textAlign: 'center' },
+  stepText: { fontFamily: fonts.uiBold, fontSize: s(12.5), color: colors.slate, textAlign: 'center' },
 
   // Tara's head overlaps the top edge of the panel, as on the website.
-  owl: { alignItems: 'center', marginBottom: -30, zIndex: 1 },
-  panel: { paddingTop: 36, gap: 12 },
-  direction: { fontFamily: fonts.uiBold, fontSize: 20, lineHeight: 26, color: colors.ink, textAlign: 'center' },
-  sizer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  passage: { backgroundColor: colors.white, borderRadius: 16, padding: 14 },
+  owl: { alignItems: 'center', marginBottom: s(-30), zIndex: 1 },
+  panel: { paddingTop: s(36), gap: s(12) },
+  direction: { fontFamily: fonts.uiBold, fontSize: s(20), lineHeight: s(26), color: colors.ink, textAlign: 'center' },
+  sizer: { flexDirection: 'row', alignItems: 'center', gap: s(8) },
+  passage: { backgroundColor: colors.white, borderRadius: s(16), padding: s(14) },
   passageText: { fontFamily: fonts.read, color: colors.ink },
-  letters: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
-  tile: { width: 76, height: 100, borderRadius: 18, backgroundColor: colors.white, borderBottomWidth: 5, borderBottomColor: colors.sky2, alignItems: 'center', justifyContent: 'center' },
-  tileText: { fontFamily: fonts.display, fontSize: 44, lineHeight: 56, color: colors.orange },
-  tileLower: { fontFamily: fonts.read, fontSize: 22, lineHeight: 26, color: colors.slate },
+  letters: { flexDirection: 'row', flexWrap: 'wrap', gap: s(10), justifyContent: 'center' },
+  tile: { width: s(76), height: s(100), borderRadius: s(18), backgroundColor: colors.white, borderBottomWidth: s(5), borderBottomColor: colors.sky2, alignItems: 'center', justifyContent: 'center' },
+  tileText: { fontFamily: fonts.display, fontSize: s(44), lineHeight: s(56), color: colors.orange },
+  tileLower: { fontFamily: fonts.read, fontSize: s(22), lineHeight: s(26), color: colors.slate },
 });

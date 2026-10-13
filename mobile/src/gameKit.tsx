@@ -4,10 +4,12 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 import * as api from './api';
 import { Feedback } from './Feedback';
 import { Animation, Icon, IconBtn } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, size } from './theme';
+import { s } from './scale';
 
 // The pieces every Practice Game shares: the three short sounds, the memory that lets a child leave a game and come back to
 // the same board, the header, the "level up" overlay and the "all done" screen that reports the game and shows new badges.
+// Every game is a read-aloud game.
 // Games are free play: no points, no streak, no level. The one thing a finished game reports is a row, so the Games badges
 // can be earned.
 
@@ -42,6 +44,15 @@ export function playSfx(name: Sfx, volume = 0.5) {
     /* a sound that cannot play never stops a game */
   }
 }
+
+// ------------------------------------------------------------------ letters
+
+/** A letter's NAME as it is said ("ay", "bee"): reading the bare letter would give a word like "a" or "I". */
+export const LETTER_NAMES: Record<string, string> = {
+  a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay',
+  k: 'kay', l: 'el', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'cue', r: 'are', s: 'ess', t: 'tee',
+  u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zee',
+};
 
 // ------------------------------------------------------------------ memory
 
@@ -97,7 +108,7 @@ export function GameHeader({ onBack, level, label, icons }: { onBack: () => void
       <IconBtn icon="caret-left" label="Back to Games" onPress={onBack} />
       <View style={styles.headerMid} accessible accessibilityLabel={`Level ${level}. ${label}`}>
         <View style={styles.levelPill}>
-          <Icon name={(icons ?? LEVEL_ICON)[level] ?? 'plant'} size={20} color={colors.ok} />
+          <Icon name={(icons ?? LEVEL_ICON)[level] ?? 'plant'} size={s(20)} color={colors.ok} />
           <Text maxFontSizeMultiplier={1.2} style={styles.levelText}>
             Level {level}
           </Text>
@@ -106,7 +117,7 @@ export function GameHeader({ onBack, level, label, icons }: { onBack: () => void
           {label}
         </Text>
       </View>
-      <View style={{ width: 48 }} />
+      <View style={{ width: size.touch }} />
     </View>
   );
 }
@@ -115,7 +126,7 @@ export function GameHeader({ onBack, level, label, icons }: { onBack: () => void
 export function Celebrate({ text, big }: { text: string; big?: boolean }) {
   return (
     <View style={styles.celebrate} accessibilityLiveRegion="polite">
-      <Animation name="happy" px={big ? 150 : 110} />
+      <Animation name="happy" px={s(big ? 130 : 100)} />
       <Text maxFontSizeMultiplier={1.2} style={styles.celebrateText}>
         {text}
       </Text>
@@ -148,7 +159,7 @@ export function GameDone({
   onExit,
   extra,
 }: {
-  game: 'letter-match' | 'word-builder' | 'balloon-pop';
+  game: api.GameName;
   firstName: string;
   level: number;
   climbed: boolean;
@@ -186,13 +197,13 @@ export function GameDone({
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52 },
-  headerMid: { flex: 1, alignItems: 'center', gap: 2 },
-  levelPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.mint, borderRadius: 99, paddingHorizontal: 12, minHeight: 34 },
-  levelText: { fontFamily: fonts.uiBold, fontSize: 17, color: colors.ink },
-  round: { fontFamily: fonts.ui, fontSize: 14, color: colors.slate },
-  celebrate: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(255,255,255,0.96)', alignItems: 'center', justifyContent: 'center', gap: 6, zIndex: 5, borderRadius: 18 },
-  celebrateText: { fontFamily: fonts.display, fontSize: 28, lineHeight: 34, color: colors.orange, textAlign: 'center' },
-  dots: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
-  dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.sky2 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: s(10), minHeight: s(52) },
+  headerMid: { flex: 1, alignItems: 'center', gap: s(2) },
+  levelPill: { flexDirection: 'row', alignItems: 'center', gap: s(6), backgroundColor: colors.mint, borderRadius: s(99), paddingHorizontal: s(12), minHeight: s(34) },
+  levelText: { fontFamily: fonts.uiBold, fontSize: s(17), color: colors.ink },
+  round: { fontFamily: fonts.ui, fontSize: s(14), color: colors.slate },
+  celebrate: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(255,255,255,0.96)', alignItems: 'center', justifyContent: 'center', gap: s(6), zIndex: 5, borderRadius: s(18) },
+  celebrateText: { fontFamily: fonts.display, fontSize: s(28), lineHeight: s(34), color: colors.orange, textAlign: 'center' },
+  dots: { flexDirection: 'row', gap: s(8), justifyContent: 'center' },
+  dot: { width: s(12), height: s(12), borderRadius: s(6), backgroundColor: colors.sky2 },
 });

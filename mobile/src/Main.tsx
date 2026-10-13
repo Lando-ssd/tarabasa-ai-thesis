@@ -7,16 +7,17 @@ import { BalloonPop } from './BalloonPop';
 import { ComingSoon } from './ComingSoon';
 import { Games, type GameKey } from './Games';
 import { Home } from './Home';
-import { LetterMatch } from './LetterMatch';
 import { ReadList } from './ReadList';
 import { Reread } from './Reread';
 import { Results } from './Results';
-import { WordBuilder } from './WordBuilder';
+import { SentenceStars } from './SentenceStars';
+import { WordTrain } from './WordTrain';
 import { useSession } from './session';
 import { Shelf } from './Shelf';
 import { Story } from './Story';
 import { Icon } from './ui';
 import { colors, fonts, size } from './theme';
+import { s } from './scale';
 
 type Tab = 'home' | 'read' | 'games' | 'badges' | 'shelf';
 type ReadRoute =
@@ -108,10 +109,10 @@ export function Main() {
     }
   } else if (tab === 'games') {
     const back = () => setGamesRoute({ name: 'hub' });
-    if (gamesRoute.name === 'play' && gamesRoute.game === 'letter-match') {
-      screen = <LetterMatch onExit={back} />;
-    } else if (gamesRoute.name === 'play' && gamesRoute.game === 'word-builder') {
-      screen = <WordBuilder onExit={back} />;
+    if (gamesRoute.name === 'play' && gamesRoute.game === 'word-train') {
+      screen = <WordTrain onExit={back} />;
+    } else if (gamesRoute.name === 'play' && gamesRoute.game === 'sentence-stars') {
+      screen = <SentenceStars onExit={back} />;
     } else if (gamesRoute.name === 'play') {
       screen = <BalloonPop onExit={back} />;
     } else {
@@ -149,7 +150,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (tab: Tab) => voi
             style={({ pressed }) => [styles.tab, pressed && { opacity: 0.6 }]}
           >
             <View style={[styles.mark, on && styles.markOn]} />
-            <Icon name={t.icon} size={28} color={on ? colors.orange : colors.slate} />
+            <Icon name={t.icon} size={s(28)} color={on ? colors.orange : colors.slate} />
             <Text maxFontSizeMultiplier={1.1} style={[styles.label, on && { color: colors.orangeDark }]}>
               {t.label}
             </Text>
@@ -162,8 +163,8 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (tab: Tab) => voi
 
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', borderTopWidth: 2, borderTopColor: colors.line, backgroundColor: colors.white },
-  tab: { flex: 1, height: size.tabBar, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  mark: { position: 'absolute', top: 0, width: 28, height: 4, borderBottomLeftRadius: 4, borderBottomRightRadius: 4, backgroundColor: 'transparent' },
+  tab: { flex: 1, height: size.tabBar, alignItems: 'center', justifyContent: 'center', gap: s(2) },
+  mark: { position: 'absolute', top: 0, width: s(28), height: s(4), borderBottomLeftRadius: s(4), borderBottomRightRadius: s(4), backgroundColor: 'transparent' },
   markOn: { backgroundColor: colors.orange },
-  label: { fontFamily: fonts.uiBold, fontSize: 13, color: colors.slate },
+  label: { fontFamily: fonts.uiBold, fontSize: s(13), color: colors.slate },
 });

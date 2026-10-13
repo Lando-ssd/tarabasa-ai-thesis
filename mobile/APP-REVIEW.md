@@ -20,8 +20,10 @@ It is a review of the Learner side only; Teacher, Parent and Admin stay on the w
 4. **Read:** the stories a teacher assigned (or the app picked). Listen (the phone reads it), two free practice tries, then
    the real reading. Comprehension stories end with a short quiz marked on the server. Results show the words that went well,
    words to practise, points and badges, and never a red mark.
-5. **Games:** Word Builder, Letter Match and Balloon Pop, three levels each, with spoken words and short sounds. Free play:
-   no points or level change; a finished game can earn a badge.
+5. **Games:** Balloon Pop, Word Train and Sentence Stars. Every game is reading out loud (the child reads a word, a row of
+   words or letters, or a sentence and the same speech checker listens), three levels each, with spoken words and short
+   sounds. They adapt: the level starts from the child's step on the reading path, and what they read comes first from their
+   own missed words and their main kind of mistake. Free play: no points or level change; a finished game can earn a badge.
 6. **Badges** (100, in groups) and **Shelf** (stories already read, free unscored re-reads).
 
 ## What is good

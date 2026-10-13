@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as api from './api';
 import { Animation, Btn, Busy, H1, Icon, Notice, P, Screen, Small } from './ui';
 import { colors, fonts } from './theme';
+import { s } from './scale';
 
 /**
  * What should I read? The stories the teacher gave, plus one the app picked from the child's own reading. A story that
@@ -32,20 +33,20 @@ export function ReadList({ onOpen }: { onOpen: (id: number) => void }) {
       <H1>What should I read?</H1>
 
       {error ? (
-        <View style={{ gap: 12, marginTop: 16 }}>
+        <View style={{ gap: s(12), marginTop: s(16) }}>
           <Notice text={error} />
           <Btn label="Try Again" onPress={load} />
         </View>
       ) : !options ? (
-        <Busy text="Finding your stories" style={{ marginTop: 20 }} />
+        <Busy text="Finding your stories" style={{ marginTop: s(20) }} />
       ) : options.length === 0 ? (
         <View style={styles.empty}>
-          <Animation name="head" px={130} />
+          <Animation name="head" px={s(130)} />
           <P style={{ textAlign: 'center' }}>Your teacher has not given you a story yet. Ask your teacher or a grown up, then come back.</P>
           <Btn label="Look Again" tone="ghost" compact onPress={load} />
         </View>
       ) : (
-        <View style={{ gap: 12, marginTop: 14 }}>
+        <View style={{ gap: s(12), marginTop: s(14) }}>
           {options.map((option) => (
             <Story key={option.id} option={option} onPress={() => onOpen(option.id)} />
           ))}
@@ -71,9 +72,9 @@ function Story({ option, onPress }: { option: api.ActivityOption; onPress: () =>
       style={({ pressed }) => [styles.card, picked && styles.cardPicked, later && { opacity: 0.8 }, pressed && { transform: [{ translateY: 2 }] }]}
     >
       <View style={styles.cover}>
-        <Icon name={icon} size={30} color={tone} />
+        <Icon name={icon} size={s(30)} color={tone} />
       </View>
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: s(2) }}>
         <Text maxFontSizeMultiplier={1.15} style={[styles.label, { color: picked ? colors.orangeDark : tone }]}>
           {label}
         </Text>
@@ -82,16 +83,16 @@ function Story({ option, onPress }: { option: api.ActivityOption; onPress: () =>
         </Text>
         {meta ? <Small>{meta}</Small> : null}
       </View>
-      <Icon name="caret-right" size={22} color={colors.slate} />
+      <Icon name="caret-right" size={s(22)} color={colors.slate} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  empty: { alignItems: 'center', gap: 12, marginTop: 24 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 84, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: 18, padding: 12 },
+  empty: { alignItems: 'center', gap: s(12), marginTop: s(24) },
+  card: { flexDirection: 'row', alignItems: 'center', gap: s(12), minHeight: s(84), backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: s(18), padding: s(12) },
   cardPicked: { borderColor: colors.orange, backgroundColor: colors.orangeSoft },
-  cover: { width: 52, height: 60, borderRadius: 12, backgroundColor: colors.sky2, alignItems: 'center', justifyContent: 'center' },
-  label: { fontFamily: fonts.uiBold, fontSize: 12.5, letterSpacing: 0.5, textTransform: 'uppercase' },
-  title: { fontFamily: fonts.uiBold, fontSize: 21, lineHeight: 24, color: colors.ink },
+  cover: { width: s(52), height: s(60), borderRadius: s(12), backgroundColor: colors.sky2, alignItems: 'center', justifyContent: 'center' },
+  label: { fontFamily: fonts.uiBold, fontSize: s(12.5), letterSpacing: s(0.5), textTransform: 'uppercase' },
+  title: { fontFamily: fonts.uiBold, fontSize: s(21), lineHeight: s(24), color: colors.ink },
 });

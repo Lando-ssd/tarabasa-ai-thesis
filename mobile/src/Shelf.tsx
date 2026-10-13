@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as api from './api';
 import { Animation, Btn, Busy, H1, Icon, Notice, P, Screen, Small } from './ui';
 import { colors, fonts } from './theme';
+import { s } from './scale';
 
 // A soft cover colour for each book, so a shelf of many books is easy to tell apart at a glance.
 const COVERS = [
@@ -46,20 +47,20 @@ export function Shelf({ onOpen, onFindStory }: { onOpen: (id: number) => void; o
       {books && books.length > 0 ? <Small>{books.length === 1 ? '1 story you have read' : `${books.length} stories you have read`}</Small> : null}
 
       {error ? (
-        <View style={{ gap: 12, marginTop: 16 }}>
+        <View style={{ gap: s(12), marginTop: s(16) }}>
           <Notice text={error} />
           <Btn label="Try Again" onPress={load} />
         </View>
       ) : !books ? (
-        <Busy text="Getting your shelf" style={{ marginTop: 20 }} />
+        <Busy text="Getting your shelf" style={{ marginTop: s(20) }} />
       ) : books.length === 0 ? (
         <View style={styles.empty}>
-          <Animation name="head" px={130} />
+          <Animation name="head" px={s(130)} />
           <P style={{ textAlign: 'center' }}>Stories you read will live here. Read your first story and it will land on your shelf.</P>
           <Btn label="Find a Story" icon="book-open" onPress={onFindStory} style={{ alignSelf: 'stretch' }} />
         </View>
       ) : (
-        <View style={{ gap: 12, marginTop: 14 }}>
+        <View style={{ gap: s(12), marginTop: s(14) }}>
           {books.map((book, i) => (
             <Book key={book.id} book={book} cover={COVERS[i % COVERS.length]} onPress={() => onOpen(book.id)} />
           ))}
@@ -80,9 +81,9 @@ function Book({ book, cover, onPress }: { book: api.Book; cover: (typeof COVERS)
       style={({ pressed }) => [styles.card, pressed && { transform: [{ translateY: 2 }] }]}
     >
       <View style={[styles.cover, { backgroundColor: cover.bg }]}>
-        <Icon name="book" size={30} color={cover.fg} />
+        <Icon name="book" size={s(30)} color={cover.fg} />
       </View>
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: s(2) }}>
         <Text maxFontSizeMultiplier={1.2} style={styles.title}>
           {book.title}
         </Text>
@@ -92,16 +93,16 @@ function Book({ book, cover, onPress }: { book: api.Book; cover: (typeof COVERS)
         </Small>
       </View>
       <View style={styles.again}>
-        <Icon name="arrows-clockwise" size={22} color={colors.orangeDark} />
+        <Icon name="arrows-clockwise" size={s(22)} color={colors.orangeDark} />
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  empty: { alignItems: 'center', gap: 14, marginTop: 24 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 84, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: 18, padding: 12 },
-  cover: { width: 52, height: 60, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: fonts.uiBold, fontSize: 21, lineHeight: 24, color: colors.ink },
-  again: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.orangeSoft, alignItems: 'center', justifyContent: 'center' },
+  empty: { alignItems: 'center', gap: s(14), marginTop: s(24) },
+  card: { flexDirection: 'row', alignItems: 'center', gap: s(12), minHeight: s(84), backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: s(18), padding: s(12) },
+  cover: { width: s(52), height: s(60), borderRadius: s(12), alignItems: 'center', justifyContent: 'center' },
+  title: { fontFamily: fonts.uiBold, fontSize: s(21), lineHeight: s(24), color: colors.ink },
+  again: { width: s(44), height: s(44), borderRadius: s(22), backgroundColor: colors.orangeSoft, alignItems: 'center', justifyContent: 'center' },
 });

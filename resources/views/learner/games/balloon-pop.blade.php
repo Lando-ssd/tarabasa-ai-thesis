@@ -59,7 +59,8 @@
   /* On a phone three balloons fit in a row, and the owl is smaller, so the microphone stays on screen. */
   @media (max-width:520px){
     .ask b{ font-size:46px; } .ask{ font-size:28px; gap:10px; }
-    .mascot{ width:70px; height:70px; margin-bottom:0; }
+    .owl-lottie{ width:124px; }
+    .star-lottie{ width:110px; height:110px; }
     .bl-row{ gap:8px 12px; padding-bottom:30px; margin-top:6px; }
     .bl{ width:calc((100% - 24px) / 3); height:auto; aspect-ratio:4 / 5; }
     .mic-btn{ width:84px; height:84px; }
@@ -81,7 +82,7 @@
 
   <div class="card sky">
     <div id="playArea">
-      <div class="mascot">@include('learner.games._owl-mascot', ['id' => 'bpOwlMain'])</div>
+      <div class="owl-lottie" id="bpOwlMain" role="img" aria-label="Tara the owl, listening"></div>
       <div class="ask">
         <span>Say</span><b id="targetWord">sun</b>
         <button type="button" class="listen-btn" id="listenBtn" aria-label="Hear the word">@include('learner._badge-icon', ['icon' => 'speaker-high', 'class' => 'badge-svg'])</button>
@@ -95,23 +96,24 @@
     </div>
 
     <div class="celebrate" id="celebrate">
-      <div class="celebrate-mascot">@include('learner.games._owl-mascot', ['id' => 'bpOwlCelebrate'])</div>
+      <div class="star-lottie" id="bpCelebrateStar" role="img" aria-label="A happy star"></div>
       <p class="celebrate-text">Round complete!</p>
       <p class="level-up-text" id="levelUpText" style="display:none;">@include('learner._badge-icon', ['icon' => 'star']) Level up!</p>
     </div>
 
     <div class="celebrate" id="roundComplete">
-      <div class="celebrate-mascot">@include('learner.games._owl-mascot', ['id' => 'bpOwlRoundComplete'])</div>
+      <div class="star-lottie" id="bpDoneStar" role="img" aria-label="A happy star"></div>
       <h1>All done!</h1>
       <p class="round-summary" id="roundCompleteSummary">Nice work!</p>
       <div class="gm-newbadges" id="newBadges"></div>
       <a href="{{ route('learner.games.balloon-pop') }}" class="big-btn">Play Again</a>
     </div>
 
-    <a href="{{ route('learner.dashboard') }}" class="back-link" id="backLink">Back to My Dashboard</a>
+    <a href="{{ route('learner.games.index') }}" class="back-link" id="backLink">Back to Games</a>
   </div>
 </div>
 
+@include('learner.games._game-animations')
 @include('learner.games._game-sounds')
 @include('learner.games._game-voice')
 @include('learner.games._game-finish', ['game' => 'balloon-pop'])
@@ -344,13 +346,12 @@
   function showRoundThenContinue(leveledUp) {
     playArea.style.display = 'none';
     levelUpText.style.display = leveledUp ? 'block' : 'none';
-    document.getElementById('bpOwlCelebrate').classList.add('is-celebrating');
     window.tarabasaPlaySfx('levelComplete', 0.6);
     celebrate.classList.add('show');
+    window.tarabasaAnimate(document.getElementById('bpCelebrateStar'), 'star-happy');
 
     setTimeout(() => {
       celebrate.classList.remove('show');
-      document.getElementById('bpOwlCelebrate').classList.remove('is-celebrating');
       playArea.style.display = '';
       startRound();
     }, 1700);
@@ -360,8 +361,8 @@
     setLevelBadge();
     attemptLabel.textContent = 'Complete!';
     playArea.style.display = 'none';
-    document.getElementById('bpOwlRoundComplete').classList.add('is-celebrating');
     window.tarabasaPlaySfx('levelComplete', 0.6);
+    window.tarabasaAnimate(document.getElementById('bpDoneStar'), 'star-happy');
     roundCompleteSummary.textContent = 'You finished at Level ' + currentLevel + (leveledUpDuringSession ? '. Great climbing!' : '. Nice work!');
     roundComplete.classList.add('show');
     backLink.style.display = 'none';
@@ -373,6 +374,9 @@
       rounds: Math.max(1, Math.min(3, attemptCount))
     }, document.getElementById('newBadges'));
   }
+
+  // Tara's head looks around at the top of the game.
+  window.tarabasaAnimate(document.getElementById('bpOwlMain'), 'tara-owl-head');
 
   startRound();
 </script>

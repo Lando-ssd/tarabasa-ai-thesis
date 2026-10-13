@@ -1,8 +1,8 @@
 {{--
-  The look shared by both Practice Games (Word Builder and Letter Match), so they
+  The look shared by all three Practice Games (Balloon Pop, Word Train and Sentence Stars), so they
   match the rest of the Learner screens: a plain white page, a light blue panel
   with a lip, the game face for words, clay orange buttons. Included inside <head>;
-  each game keeps only what is its own (tiles and slots, cards) in its own <style>.
+  each game keeps only what is its own (balloons, train cars, the sentence) in its own <style>.
 
   Expects the page to load Barlow Semi Condensed and Inter (see the games' <head>).
 --}}
@@ -48,10 +48,11 @@
   @media (min-width:700px){ .card{ padding:34px 34px 30px; border-radius:34px; } }
   .card > *{ position:relative; z-index:1; }
 
-  /* Tara, the little SVG owl (games/_owl-mascot). No chip behind her: she sits straight on the panel. */
-  .mascot, .celebrate-mascot{ width:104px; height:104px; margin:0 auto 6px; }
-  .mascot{ animation:bob 2.4s ease-in-out infinite; }
-  @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-8px); } }
+  /* Tara's head at the top of a game, and the happy star when a round or a game ends: both are the shared Lottie files (games/_game-animations). */
+  .owl-lottie{ width:170px; aspect-ratio:700 / 458; margin:0 auto 4px; }
+  .star-lottie{ width:150px; height:150px; margin:0 auto 4px; }
+  .owl-lottie.is-encouraging{ animation:owlTilt .9s ease; }
+  @keyframes owlTilt{ 0%,100%{ transform:rotate(0); } 25%{ transform:rotate(-6deg); } 75%{ transform:rotate(6deg); } }
   h1{ font:700 32px/1.15 var(--font-game); color:#2f455b; margin:0 0 18px; }
   @media (min-width:700px){ h1{ font-size:38px; } }
 

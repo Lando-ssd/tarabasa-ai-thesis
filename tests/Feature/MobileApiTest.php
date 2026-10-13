@@ -487,20 +487,51 @@ class MobileApiTest extends TestCase
         ];
     }
 
-    public function test_the_games_screen_gets_the_starting_level_the_letter_sets_and_a_real_recommendation(): void
+    /** A Reading-api /analyze answer for several words: each pair is [reference, status] or [reference, status, spoken]. */
+    private function manyWords(array $pairs): array
     {
-        [$kid] = $this->child(['grade_level' => 'Grade 2']);
+        $feedback = [];
+        $stamps = [];
+        foreach ($pairs as $i => $p) {
+            $feedback[] = ['reference' => $p[0], 'spoken' => $p[2] ?? $p[0], 'status' => $p[1]];
+            $stamps[] = ['word' => $p[2] ?? $p[0], 'start' => $i, 'end' => $i + .5, 'confidence' => 0.9];
+        }
+
+        return [
+            'accuracy' => ['accuracy_score' => 0, 'spoken_word_count' => count($pairs), 'substitutions' => 0, 'deletions' => 0, 'insertions' => 0, 'word_feedback' => $feedback],
+            'speed' => ['wcpm' => 40], 'prosody' => ['prosody_score' => 50],
+            'word_timestamps' => $stamps,
+        ];
+    }
+
+    public function test_the_games_start_a_child_at_a_level_from_their_reading_step_and_recommend_a_real_game(): void
+    {
+        // Every game is a read-aloud game, so the level a game starts at follows where the child is on the reading path
+        // (the step from the first check), not their grade. The default test child is on step 3 (longer sentences).
+        [$kid] = $this->child(['reading_rung' => 3]);
         Sanctum::actingAs($kid, ['*']);
-
         $games = $this->getJson('/api/learner/games')->assertOk();
+        $this->assertSame(2, $games->json('startLevel'));
+        $this->assertSame('sentence-stars', $games->json('recommended'));
+        $this->assertSame('sentences', $games->json('reason'));
 
-        $this->assertSame(2, $games->json('startLevel'), 'a child starts at their grade, one to three');
-        $this->assertCount(1, $games->json('letterLevels.1'), 'level 1 is one set');
-        $this->assertCount(6, $games->json('letterLevels.1.0'));
-        $this->assertCount(3, $games->json('letterLevels.3'), 'level 3 is the whole alphabet in three sets');
-        $this->assertSame(26, collect($games->json('letterLevels.3'))->flatten()->count());
-        $this->assertNull($games->json('recommended'), 'no clear need yet, so nothing is recommended');
-        $this->assertFalse($games->json('hasCompetencyData'));
+        foreach ([[0, 1, 'word-train', 'letters'], [1, 1, 'word-train', 'first-words'], [2, 2, 'sentence-stars', 'sentences'], [5, 3, 'sentence-stars', 'sentences']] as [$rung, $level, $game, $reason]) {
+            [$kid] = $this->child(['reading_rung' => $rung]);
+            Sanctum::actingAs($kid, ['*']);
+            $games = $this->getJson('/api/learner/games')->assertOk();
+            $this->assertSame([$level, $game, $reason], [$games->json('startLevel'), $games->json('recommended'), $games->json('reason')], "step {$rung}");
+        }
+
+        // A child with words they keep missing is led to the game that drills those very words.
+        [$kid] = $this->child(['reading_rung' => 3]);
+        PersonalWordBank::create(['learner_id' => $kid->id, 'word' => 'hen', 'mastery_status' => 'Struggling']);
+        Sanctum::actingAs($kid, ['*']);
+        $games = $this->getJson('/api/learner/games')->assertOk();
+        $this->assertSame(['balloon-pop', 'own-words'], [$games->json('recommended'), $games->json('reason')]);
+
+        // The old keys of the spelling and matching games are gone from this answer.
+        $this->assertArrayNotHasKey('letterLevels', $games->json());
+        $this->assertArrayNotHasKey('hasCompetencyData', $games->json());
     }
 
     public function test_the_word_levels_come_with_the_childs_own_missed_words_first_by_length(): void
@@ -512,7 +543,7 @@ class MobileApiTest extends TestCase
 
         $words = $this->getJson('/api/learner/games/words')->assertOk();
 
-        $this->assertSame(1, $words->json('startLevel'));
+        $this->assertSame(2, $words->json('startLevel'));
         $this->assertContains('hen', $words->json('levels.1.struggling'));
         $this->assertContains('castle', $words->json('levels.3.struggling'));
         $this->assertNotContains('castle', $words->json('levels.1.struggling'), 'a word goes to the level of its length');
@@ -520,23 +551,108 @@ class MobileApiTest extends TestCase
         $this->assertContains('frog', $words->json('levels.2.fallback'));
     }
 
+    public function test_word_train_offers_rows_of_words_or_for_a_child_on_the_letters_step_rows_of_letters(): void
+    {
+        [$kid] = $this->child(['reading_rung' => 3]);
+        PersonalWordBank::create(['learner_id' => $kid->id, 'word' => 'hen', 'mastery_status' => 'Struggling']);
+        Sanctum::actingAs($kid, ['*']);
+        $train = $this->getJson('/api/learner/games/train')->assertOk();
+        $this->assertSame('words', $train->json('mode'));
+        $this->assertSame([3, 4, 5], array_values(array_map('intval', $train->json('cars'))), 'more cars at each level');
+        $this->assertContains('hen', $train->json('levels.1.struggling'), "the child's own missed word comes first");
+
+        [$kid] = $this->child(['reading_rung' => 0]);
+        Sanctum::actingAs($kid, ['*']);
+        $train = $this->getJson('/api/learner/games/train')->assertOk();
+        $this->assertSame('letters', $train->json('mode'));
+        $this->assertSame([4, 5, 6], array_values(array_map('intval', $train->json('cars'))));
+        $this->assertCount(6, $train->json('levels.1.fallback'), 'level 1 is the first set of six letters');
+        $this->assertCount(18, $train->json('levels.3.fallback'), 'each level adds a set');
+        $this->assertSame(['s', 'a', 't', 'p', 'i', 'n'], $train->json('levels.1.fallback'));
+    }
+
+    public function test_sentence_stars_offers_the_levels_sentences_and_puts_the_ones_with_the_childs_missed_words_first(): void
+    {
+        [$kid] = $this->child();
+        PersonalWordBank::create(['learner_id' => $kid->id, 'word' => 'frog', 'mastery_status' => 'Struggling']);
+        Sanctum::actingAs($kid, ['*']);
+
+        $s = $this->getJson('/api/learner/games/sentences')->assertOk();
+
+        $this->assertSame(2, $s->json('startLevel'));
+        $this->assertContains('The cat sat.', $s->json('levels.1.fallback'));
+        $this->assertContains('The frog sat on a log.', $s->json('levels.2.preferred'), 'a sentence with a word the child misses is preferred');
+        $this->assertNotContains('We swim in the pond.', $s->json('levels.2.preferred'));
+        $this->assertContains('We swim in the pond.', $s->json('levels.2.fallback'), 'the whole level is still offered');
+        $this->assertSame([], $s->json('levels.1.preferred'), 'nothing at level 1 matches, so nothing is singled out');
+    }
+
     public function test_a_finished_game_is_recorded_once_and_may_earn_a_badge_and_nothing_else_moves(): void
     {
         [$kid] = $this->child(['points' => 30, 'streak' => 2]);
         Sanctum::actingAs($kid, ['*']);
 
-        $done = $this->postJson('/api/learner/games/letter-match/finish', ['level_reached' => 2, 'top_level_cleared' => false, 'had_perfect_round' => true, 'rounds' => 3])
+        $done = $this->postJson('/api/learner/games/sentence-stars/finish', ['level_reached' => 2, 'top_level_cleared' => false, 'had_perfect_round' => true, 'rounds' => 3])
             ->assertOk()->assertJsonStructure(['newBadges']);
 
-        $this->assertSame(1, \App\Models\GamePlay::where('learner_id', $kid->id)->where('game', 'letter-match')->count());
+        $this->assertSame(1, \App\Models\GamePlay::where('learner_id', $kid->id)->where('game', 'sentence-stars')->count());
         $kid->refresh();
         $this->assertSame([30, 2, 'Developing'], [$kid->points, $kid->streak, $kid->mastery_level], 'games never move points, streak or level');
         foreach ($done->json('newBadges') as $badge) {
             $this->assertSame(['code', 'name', 'icon'], array_keys($badge));
         }
+        $this->assertContains('game_letter_match_rookie', collect($done->json('newBadges'))->pluck('code')->all(), 'the first Sentence Stars game earns its Rookie badge');
 
         $this->postJson('/api/learner/games/no-such-game/finish', ['level_reached' => 1, 'top_level_cleared' => false, 'had_perfect_round' => false, 'rounds' => 1])->assertNotFound();
-        $this->postJson('/api/learner/games/word-builder/finish', ['level_reached' => 9, 'top_level_cleared' => false, 'had_perfect_round' => false, 'rounds' => 1])->assertUnprocessable();
+        $this->postJson('/api/learner/games/word-train/finish', ['level_reached' => 9, 'top_level_cleared' => false, 'had_perfect_round' => false, 'rounds' => 1])->assertUnprocessable();
+        // The two retired games can no longer be reported.
+        $this->postJson('/api/learner/games/word-builder/finish', ['level_reached' => 1, 'top_level_cleared' => false, 'had_perfect_round' => false, 'rounds' => 1])->assertNotFound();
+        $this->postJson('/api/learner/games/letter-match/finish', ['level_reached' => 1, 'top_level_cleared' => false, 'had_perfect_round' => false, 'rounds' => 1])->assertNotFound();
+    }
+
+    public function test_a_row_or_a_sentence_read_aloud_is_heard_or_again_with_the_words_that_were_heard(): void
+    {
+        [$kid] = $this->child();
+        Sanctum::actingAs($kid, ['*']);
+        Http::fake(['reading.test/analyze' => Http::sequence()
+            ->push($this->manyWords([['cat', 'correct'], ['dog', 'correct'], ['pig', 'correct']]))                       // all three
+            ->push($this->manyWords([['cat', 'correct'], ['dog', 'substitution', 'dig'], ['pig', 'correct']]))            // two of three: enough
+            ->push($this->manyWords([['cat', 'correct'], ['dog', 'deletion'], ['pig', 'substitution', 'big']]))            // one of three: not enough
+            ->push($this->manyWords([['the', 'correct'], ['cat', 'correct'], ['sat', 'correct']]))]);
+
+        $ask = fn (string $text, string $kind) => $this->post('/api/learner/games/check-text', ['text' => $text, 'kind' => $kind, 'audio' => $this->audio()], ['Accept' => 'application/json']);
+
+        $ask('cat dog pig', 'row')->assertOk()->assertExactJson(['status' => 'heard', 'matched' => [true, true, true]]);
+        $ask('cat dog pig', 'row')->assertOk()->assertExactJson(['status' => 'heard', 'matched' => [true, false, true]]);
+        $ask('cat dog pig', 'row')->assertOk()->assertExactJson(['status' => 'again', 'matched' => [true, false, false]]);
+        $ask('the cat sat', 'sentence')->assertOk()->assertJsonPath('status', 'heard');
+
+        // What the checker is asked to listen for matches what was asked, whatever kind it is.
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/analyze') && str_contains($request->body(), 'cat dog pig'));
+        Http::assertSent(fn ($request) => str_contains($request->body(), 'sentence_reading'));
+    }
+
+    public function test_a_game_never_calls_the_childs_reading_wrong_and_keeps_nothing(): void
+    {
+        [$kid] = $this->child();
+        Sanctum::actingAs($kid, ['*']);
+        Http::fake(['reading.test/analyze' => Http::sequence()->push(['detail' => 'Audio is silent or nearly silent.'], 422)]);
+        $sessions = ReadingSession::count();
+        $bank = PersonalWordBank::count();
+
+        $this->post('/api/learner/games/check-text', ['text' => 's a t p', 'kind' => 'letters', 'audio' => $this->audio()], ['Accept' => 'application/json'])
+            ->assertOk()->assertExactJson(['status' => 'again', 'matched' => [false, false, false, false]]);
+
+        config(['services.reading_ai.url' => null]);
+        $this->post('/api/learner/games/check-text', ['text' => 'cat dog pig', 'kind' => 'row', 'audio' => $this->audio()], ['Accept' => 'application/json'])
+            ->assertOk()->assertJsonPath('status', 'unavailable');
+
+        $this->assertSame([$sessions, $bank], [ReadingSession::count(), PersonalWordBank::count()], 'nothing a child reads in a game is kept');
+
+        // Only plain lowercase words, a known kind, and not too many words.
+        $this->postJson('/api/learner/games/check-text', ['text' => 'Cat Dog', 'kind' => 'row'])->assertUnprocessable();
+        $this->postJson('/api/learner/games/check-text', ['text' => 'cat dog', 'kind' => 'spelling'])->assertUnprocessable();
+        $this->post('/api/learner/games/check-text', ['text' => implode(' ', array_fill(0, 15, 'cat')), 'kind' => 'sentence', 'audio' => $this->audio()], ['Accept' => 'application/json'])->assertUnprocessable();
     }
 
     public function test_a_spoken_word_is_heard_or_again_never_wrong_and_nothing_is_saved(): void
