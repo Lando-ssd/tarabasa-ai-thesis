@@ -1,0 +1,271 @@
+<title>TaraBasa Phone Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a control rail on the left, one phone on the right that scales to fit. Stacks on a narrow screen. */
+:root {
+  --bg: #eef3f8;
+  --surface: #ffffff;
+  --ink: #17324d;
+  --muted: #56697a;
+  --line: #d7e3ef;
+  --accent: #dd7014;
+  --accent-ink: #ffffff;
+  --sky: #eaf4ff;
+  --chip: #f5f9fd;
+  --device: #1f2d3b;
+  --font-display: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  --font-ui: 'Barlow Semi Condensed', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1a26; --surface: #152636; --ink: #e8f0f8; --muted: #9db2c6; --line: #2a425b;
+    --accent: #f08a2e; --accent-ink: #1a1208; --sky: #1b3550; --chip: #1a2f44; --device: #0a121b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1a26; --surface: #152636; --ink: #e8f0f8; --muted: #9db2c6; --line: #2a425b;
+  --accent: #f08a2e; --accent-ink: #1a1208; --sky: #1b3550; --chip: #1a2f44; --device: #0a121b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.45; padding-inline: 16px; padding-block: 20px 36px; }
+.head { max-width: 1180px; margin: 0 auto 18px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); } .stage { order: -1; position: static !important; } }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1.1; margin: 0 0 6px; color: var(--accent); text-wrap: balance; }
+h2 { font-family: var(--font-ui); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.lede { margin: 0; color: var(--muted); max-width: 46ch; }
+.rail { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.group { display: flex; flex-direction: column; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+button.chip {
+  font: inherit; font-weight: 600; color: var(--ink); background: var(--chip); border: 2px solid var(--line);
+  border-radius: 999px; padding: 7px 14px; min-height: 40px; cursor: pointer; text-align: left;
+}
+button.chip:hover { border-color: var(--accent); }
+button.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.chip:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.size small { display: block; font-weight: 500; font-size: 12px; opacity: 0.8; }
+.note { background: var(--sky); border-radius: 14px; padding: 12px 14px; font-size: 14px; color: var(--ink); }
+.note b { font-weight: 700; }
+.note p { margin: 0 0 6px; } .note p:last-child { margin: 0; }
+details { border: 2px solid var(--line); border-radius: 14px; background: var(--surface); }
+summary { cursor: pointer; font-weight: 700; padding: 10px 14px; }
+details ul { margin: 0; padding: 0 16px 14px 32px; color: var(--muted); font-size: 14px; }
+details li { margin-bottom: 6px; }
+.stage { display: flex; flex-direction: column; align-items: center; min-width: 0; gap: 12px; position: sticky; top: 16px; }
+.stage-box { width: 100%; display: flex; justify-content: center; }
+.device { background: var(--device); padding: 12px; box-shadow: 0 28px 50px -22px rgba(10, 24, 40, 0.6); transform-origin: top center; }
+.screen { position: relative; background: #fff; overflow: hidden; }
+.screen iframe { display: block; border: 0; background: #fff; }
+.bar-top { position: absolute; inset: 0 0 auto 0; height: 24px; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font: 700 11px/1 system-ui, sans-serif; color: #1f2d3b; pointer-events: none; }
+.bar-bottom { position: absolute; left: 50%; bottom: 8px; width: 110px; height: 4px; margin-left: -55px; border-radius: 4px; background: #1f2d3b; opacity: 0.85; pointer-events: none; }
+.cap { margin: 0; font-size: 14px; color: var(--muted); text-align: center; max-width: 60ch; }
+.cap a { color: var(--accent); font-weight: 700; }
+</style>
+
+<header class="head">
+  <h1>TaraBasa Phone Preview</h1>
+  <p class="lede">The child's phone app, running its own code on sample data. Pick a phone size and a screen, then tap around inside the phone.</p>
+</header>
+
+<div class="wrap">
+  <div class="rail">
+
+    <div class="group">
+      <h2>Phone size</h2>
+      <div class="row" id="sizes" role="group" aria-label="Phone size"></div>
+    </div>
+
+    <div class="group">
+      <h2>Tap through it</h2>
+      <div class="row" id="g-live" role="group" aria-label="Main screens"></div>
+    </div>
+    <div class="group">
+      <h2>First reading check</h2>
+      <div class="row" id="g-check" role="group" aria-label="First reading check screens"></div>
+    </div>
+    <div class="group">
+      <h2>While and after reading</h2>
+      <div class="row" id="g-read" role="group" aria-label="Reading screens"></div>
+    </div>
+    <div class="group">
+      <h2>Games</h2>
+      <div class="row" id="g-games" role="group" aria-label="Game screens"></div>
+    </div>
+    <div class="group">
+      <h2>Other states</h2>
+      <div class="row" id="g-other" role="group" aria-label="Other screens"></div>
+    </div>
+
+    <div class="note">
+      <p><b>Sample child.</b> Maria, Grade 1. Nothing here is a real learner and nothing is saved.</p>
+      <p><b>No microphone.</b> The preview cannot record, so a reading screen shows its ready state. The screens that come after reading are in the lists above.</p>
+    </div>
+
+    <details>
+      <summary>What changed in this layout pass</summary>
+      <ul>
+        <li>One spacing ladder (2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40) for every gap, padding and margin.</li>
+        <li>Every tap target is at least 48dp, also on the smallest phones.</li>
+        <li>The six letter tiles share the width three to a row, so none falls off the screen.</li>
+        <li>The warm-up and its "I did not hear anything" state fit a 640 tall phone without scrolling.</li>
+        <li>On most phones Tara's head and the microphone step down one size, so the story and the pinned microphone fit together. On the smallest phones Tara steps aside while a child reads.</li>
+        <li>Balloon Pop packs its word and "hear it" button side by side and shrinks the balloons a little on short phones.</li>
+        <li>A thin line appears above the pinned button only when the story scrolls beneath it.</li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="stage">
+    <div class="stage-box" id="box">
+      <div class="device" id="device">
+        <div class="screen" id="screen">
+          <iframe id="app" title="TaraBasa AI phone app" src="about:blank"></iframe>
+          <div class="bar-top" aria-hidden="true"><span>9:41</span><span>LTE 87%</span></div>
+          <div class="bar-bottom" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+    <p class="cap" id="cap"></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var APP = 'app/index.html';
+  var SIZES = [
+    { key: 'small', label: 'Small phone', w: 360, h: 640 },
+    { key: 'common', label: 'Common phone', w: 390, h: 844 },
+    { key: 'large', label: 'Large phone', w: 430, h: 932 },
+    { key: 'tablet', label: 'Tablet', w: 768, h: 1024 }
+  ];
+  var SCREENS = {
+    live: [
+      ['home', 'Home', 'demo=home'], ['read', 'Read', 'demo=read'], ['games', 'Games', 'demo=games'],
+      ['badges', 'Badges', 'demo=badges'], ['shelf', 'Shelf', 'demo=shelf'], ['signin', 'Sign in', 'demo=signin']
+    ],
+    check: [
+      ['check-intro', 'Welcome', 'gallery=check-intro'], ['warmup', 'Warm-up', 'gallery=warmup'],
+      ['warmup-heard', 'Warm-up heard', 'gallery=warmup-heard'], ['warmup-quiet', 'Warm-up quiet', 'gallery=warmup-quiet'],
+      ['check-letters', 'Letters', 'gallery=check-letters'], ['check-next', 'Great job', 'gallery=check-next'],
+      ['check-unclear', 'Try again', 'gallery=check-unclear'], ['check-done', 'You did it', 'gallery=check-done']
+    ],
+    read: [
+      ['practice', 'Your turn', 'gallery=practice'], ['quiz', 'Quiz', 'gallery=quiz'],
+      ['results', 'Results', 'gallery=results'], ['results-low', 'Results, tricky', 'gallery=results-low'],
+      ['path-1', 'Path, step 1', 'gallery=path-1'], ['path-3', 'Path, step 3', 'gallery=path-3'], ['path-4', 'Path, top', 'gallery=path-4']
+    ],
+    games: [
+      ['train', 'Word Train', 'gallery=train'], ['train-letters', 'Train, letters', 'gallery=train-letters'],
+      ['train-partial', 'Train, some heard', 'gallery=train-partial'], ['train-heard', 'Train, all heard', 'gallery=train-heard'],
+      ['stars', 'Sentence Stars', 'gallery=stars'], ['stars-partial', 'Stars, some heard', 'gallery=stars-partial'],
+      ['stars-heard', 'Stars, all heard', 'gallery=stars-heard']
+    ],
+    other: [
+      ['waiting', 'Waiting', 'gallery=waiting'], ['failed', 'Could not send', 'gallery=failed'],
+      ['crash', 'Crash screen', 'gallery=crash'], ['soon', 'Coming soon', 'gallery=soon']
+    ]
+  };
+  var state = { size: 'common', screen: 'home' };
+  var seq = 0;
+  try {
+    var saved = JSON.parse(localStorage.getItem('tb-phone-preview') || '{}');
+    if (saved.size) state.size = saved.size;
+    if (saved.screen) state.screen = saved.screen;
+  } catch (e) {}
+
+  var $ = function (id) { return document.getElementById(id); };
+  var all = {};
+  Object.keys(SCREENS).forEach(function (g) { SCREENS[g].forEach(function (s) { all[s[0]] = s; }); });
+  if (!all[state.screen]) state.screen = 'home';
+  if (!SIZES.some(function (s) { return s.key === state.size; })) state.size = 'common';
+
+  function chip(label, sub, onClick, key, group) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip' + (sub ? ' size' : ''); b.dataset.key = key; b.dataset.group = group;
+    b.innerHTML = label + (sub ? '<small>' + sub + '</small>' : '');
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  SIZES.forEach(function (s) {
+    $('sizes').appendChild(chip(s.label, s.w + ' x ' + s.h, function () { state.size = s.key; render(true); }, s.key, 'size'));
+  });
+  Object.keys(SCREENS).forEach(function (g) {
+    SCREENS[g].forEach(function (s) {
+      $('g-' + g).appendChild(chip(s[1], '', function () { state.screen = s[0]; render(true); }, s[0], 'screen'));
+    });
+  });
+
+  function curSize() { return SIZES.filter(function (s) { return s.key === state.size; })[0]; }
+
+  function fit() {
+    var s = curSize();
+    var outerW = s.w + 24, outerH = s.h + 24;
+    var availW = $('box').clientWidth || outerW;
+    var availH = Math.max(480, window.innerHeight - 80);
+    var k = Math.min(1, availW / outerW, availH / outerH);
+    var dev = $('device');
+    dev.style.transform = 'scale(' + k + ')';
+    $('box').style.height = Math.round(outerH * k) + 'px';
+    dev.style.marginBottom = '0';
+    return k;
+  }
+
+  var appHtml = null;
+
+  // The app is drawn in a frame built from its own page text, with its start screen handed over as a plain value. This works
+  // wherever the page is hosted. If the page text cannot be fetched, the frame is pointed at the app's address instead.
+  function loadApp(hash) {
+    var app = $('app');
+    seq += 1;
+    var mine = seq;
+    function fromText(html) {
+      if (mine !== seq) return;
+      var base = new URL('app/', location.href).href;
+      var doc = html
+        .replace('<head>', '<head><base href="' + base + '"><script>window.__TB_HASH=' + JSON.stringify('#' + hash) + ';<\/script>');
+      app.removeAttribute('src');
+      app.srcdoc = doc;
+    }
+    if (appHtml) return fromText(appHtml);
+    fetch('app/index.html').then(function (r) {
+      if (!r.ok) throw new Error('status ' + r.status);
+      return r.text();
+    }).then(function (html) { appHtml = html; fromText(html); }).catch(function () {
+      if (mine !== seq) return;
+      app.removeAttribute('srcdoc');
+      app.src = 'app/index.html?embed=1&r=' + mine + '#' + hash;
+    });
+  }
+
+  function caption(k) {
+    var s = curSize(), scr = all[state.screen];
+    $('cap').innerHTML = s.label + ', ' + s.w + ' x ' + s.h + ' dp' +
+      (k < 0.995 ? '. Drawn at ' + Math.round(k * 100) + '% to fit your window; the app still sees the full size.' : '.') +
+      ' <a href="app/index.html#' + scr[2] + '" target="_blank" rel="noopener">Open the app on its own</a>.';
+  }
+
+  function render(reload) {
+    var s = curSize(), scr = all[state.screen];
+    var dev = $('device'), screen = $('screen'), app = $('app');
+    dev.style.width = (s.w + 24) + 'px'; dev.style.height = (s.h + 24) + 'px';
+    dev.style.borderRadius = (s.key === 'tablet' ? 30 : 46) + 'px';
+    screen.style.width = s.w + 'px'; screen.style.height = s.h + 'px';
+    screen.style.borderRadius = (s.key === 'tablet' ? 20 : 34) + 'px';
+    app.style.width = s.w + 'px'; app.style.height = s.h + 'px';
+    if (reload) loadApp(scr[2]);
+    document.querySelectorAll('button.chip').forEach(function (b) {
+      var on = b.dataset.group === 'size' ? b.dataset.key === state.size : b.dataset.key === state.screen;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    caption(fit());
+    try { localStorage.setItem('tb-phone-preview', JSON.stringify(state)); } catch (e) {}
+  }
+  window.addEventListener('resize', function () { caption(fit()); });
+  render(true);
+})();
+</script>

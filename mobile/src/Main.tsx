@@ -16,8 +16,9 @@ import { useSession } from './session';
 import { Shelf } from './Shelf';
 import { Story } from './Story';
 import { Icon } from './ui';
-import { colors, fonts, size } from './theme';
+import { colors, fonts, size, space } from './theme';
 import { s } from './scale';
+import { demoStartTab } from './config';
 
 type Tab = 'home' | 'read' | 'games' | 'badges' | 'shelf';
 type ReadRoute =
@@ -43,7 +44,7 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
  */
 export function Main() {
   const { learner, setLearner, reloadHome } = useSession();
-  const [tab, setTab] = useState<Tab>('home');
+  const [tab, setTab] = useState<Tab>(demoStartTab());
   const [route, setRoute] = useState<ReadRoute>({ name: 'list' });
   const [shelfRoute, setShelfRoute] = useState<ShelfRoute>({ name: 'list' });
   const [gamesRoute, setGamesRoute] = useState<GamesRoute>({ name: 'hub' });
@@ -163,7 +164,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (tab: Tab) => voi
 
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', borderTopWidth: 2, borderTopColor: colors.line, backgroundColor: colors.white },
-  tab: { flex: 1, height: size.tabBar, alignItems: 'center', justifyContent: 'center', gap: s(2) },
+  tab: { flex: 1, height: size.tabBar, alignItems: 'center', justifyContent: 'center', gap: space[2] },
   mark: { position: 'absolute', top: 0, width: s(28), height: s(4), borderBottomLeftRadius: s(4), borderBottomRightRadius: s(4), backgroundColor: 'transparent' },
   markOn: { backgroundColor: colors.orange },
   label: { fontFamily: fonts.uiBold, fontSize: s(13), color: colors.slate },

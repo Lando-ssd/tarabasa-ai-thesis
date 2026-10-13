@@ -21,6 +21,7 @@ import { PracticeFeedback, Quiz } from './Story';
 import { SendFailed, Waiting } from './Waiting';
 import { WarmUp } from './WarmUp';
 import { colors } from './theme';
+import { startHash } from './config';
 import { ReadGame } from './ReadGame';
 import { configFor as trainFor } from './WordTrain';
 import { configFor as starsFor } from './SentenceStars';
@@ -293,7 +294,7 @@ function CrashOnce() {
 
 export function Gallery() {
   const ready = useAppFonts();
-  const name = (typeof window !== 'undefined' ? window.location.hash : '').replace(/^#gallery=?/, '') || 'home';
+  const name = startHash().replace(/^#gallery=?/, '') || 'home';
   const session = useMemo<Session>(
     () => ({ learner, home: homeFor(name), homeError: null, reloadHome: async () => {}, fontStep: 4, setFontStep: noop, setLearner: noop, signOut: noop }),
     [name],

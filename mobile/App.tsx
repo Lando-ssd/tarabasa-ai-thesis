@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,8 +14,12 @@ import { SessionContext, type Session } from './src/session';
 import { SignIn } from './src/SignIn';
 import { Animation, Btn, Busy, H2, Notice, P, Screen } from './src/ui';
 import { colors } from './src/theme';
+import { DEMO, startHash } from './src/config';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Demo mode (hosted preview): answer from sample data. Never true in a phone build.
+if (DEMO && Platform.OS === 'web') require('./src/demoServer').installDemoServer();
 
 const NAME_KEY = 'tarabasa_first_name';
 
@@ -28,6 +32,16 @@ type Boot =
 // Developer only, browser only. On a wide browser window the app is drawn inside a phone (src/PhoneFrame.tsx) so the real
 // screen size is obvious; ?frame=off switches that off. #gallery shows single screens with sample data (src/devGallery.tsx).
 // Neither ever runs in a phone build.
+/**
+ * Hosted preview and the developer's gallery only: leaves the strip a real phone's status bar and its gesture bar take, so a
+ * screen is judged against the area it really has (the preview paints the status bar over the top strip). Never on a phone.
+ */
+function SystemBars({ children }: { children: ReactNode }) {
+  const on = Platform.OS === 'web' && (DEMO || (__DEV__ && startHash().startsWith('#gallery')));
+  if (!on) return <>{children}</>;
+  return <View style={{ flex: 1, backgroundColor: colors.page, paddingTop: 24, paddingBottom: 24 }}>{children}</View>;
+}
+
 export default function Root() {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     const embedded = window.self !== window.top;
@@ -36,15 +50,21 @@ export default function Root() {
       const { PhoneFrame } = require('./src/PhoneFrame');
       return <PhoneFrame />;
     }
-    if (__DEV__ && window.location.hash.startsWith('#gallery')) {
+    if ((__DEV__ || DEMO) && startHash().startsWith('#gallery')) {
       const { Gallery } = require('./src/devGallery');
-      return <Gallery />;
+      return (
+        <SystemBars>
+          <Gallery />
+        </SystemBars>
+      );
     }
   }
   return (
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
+    <SystemBars>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </SystemBars>
   );
 }
 

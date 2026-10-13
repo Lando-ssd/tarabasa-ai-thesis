@@ -6729,6 +6729,52 @@ is "Add your child | TaraBasa AI". `parent/children/card` (the printable card) w
 - NOT touched: the Parent sign up and log in pages, and the Teacher sign up (they use the auth layout the user already liked).
 - This follows the approved Parent redesign (it is the leftover of it, not a new design), so no new preview was made.
 
+## Phone app: layout pass 2 and the hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+
+The user pasted a prompt written by another Claude ("adapt the phone app so every screen is laid out for a phone, layout only")
+and said to adjust it where it is not perfect. What did not fit, and what was decided: the phone app has ONLY Learner screens
+(no Teacher/Parent/Admin); most of the web-to-phone work was already done in the 0.4.0 round (`s()` scale, anchored buttons), so
+this was a gap audit; and the user chose "go with your recommendations" for two open questions: (1) the spacing ladder keeps the
+approved preview's numbers (only near duplicates merged, not a strict 4/8 grid), (2) tablets keep the one centred 560 wide column.
+
+- **Spacing ladder.** `space` in `mobile/src/theme.ts`: 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40. A script moved 204 gap,
+  padding and margin values onto it (merged: 18 to 16, 22 to 20, 26 to 24, 36 to 32, 5 to 4, 7 to 6, 9 to 8, 13 to 12, 1 to 2).
+  New spacing is written `space[10]`, never `s(10)`. `size.touch = max(48, s(40))` (it was about 43dp on a 360x640 phone).
+- **Two height tiers** in `mobile/src/scale.ts`: `SHORT_HEIGHT` (under 720) and `COMPACT_HEIGHT` (under 950, most phones). On
+  compact phones the mic is `s(82)` (short `s(70)`, tall `s(92)`), Tara's head is smaller, the warm-up uses tighter spacing, Balloon
+  Pop puts the word and its "hear it" button side by side; a STORY screen (it has the step bar) drops Tara on compact and short
+  phones so the whole story stays visible above the pinned microphone. `Screen` now shows a thin line above its pinned footer only
+  when the content actually scrolls beneath it.
+- **Real defects found and fixed:** the six letter tiles had a fixed width, so on a 390 wide phone only two fitted per row and the
+  last row fell off the screen (now three per row, measured with `onLayout`); the warm-up panel was cut off on a 640 tall phone;
+  its "I did not hear anything" state scrolled on a 844 tall one; Home's one line name was clipped (Baloo 2 needs line height
+  about 1.45); the story's "Your turn" stage hid half the passage; Balloon Pop's second row sat under the mic. The mic's box also
+  kept 12dp of spare height for its pulse ring (trimmed).
+- **How it was checked.** A browser harness (kept only in the session, rebuild it if needed) opens every screen in frames of 360x640,
+  390x844, 430x932 and 768x1024 and reports sideways overflow, tap targets under 46dp, clipped text and how far the screen scrolls;
+  a second part taps through Read, a story, My Turn, Games and the Shelf. Text 20 percent larger was simulated on the small phone.
+  FINAL RESULT with the status bar and gesture bar emulated (24dp each, so heights match a real phone): 0 problems in 232
+  screen/size combinations; every common screen fits without scrolling at 390x844 and larger. **Still scrolls on the SMALLEST phone
+  (360x640, about 592 usable):** warm-up "quiet" +17, the quiz +68 (three questions), "Your turn" +38, Balloon Pop +40. Long lists
+  (Read, Games, Badges, Home, Results) scroll by design. One harness result (the letters check at 390x844 "+96") only happened with a
+  desktop sized test window and not in three direct checks: treated as a harness quirk.
+- **Hosted preview (no localhost).** Artifact https://claude.ai/artifact/D5MUePwKUG4KWYeq3ivare (private to the user): the REAL
+  app code built for the web in demo mode, drawn in a phone frame with four phone sizes and a screen picker (live tabs, the first
+  check, reading, games, states). Demo mode = `EXPO_PUBLIC_DEMO=1` (or `#demo` in the dev address): `src/demoServer.ts` answers every
+  `/api/learner/*` call with sample data (child "Maria"), `config.ts` has `DEMO`, `startHash()` (the preview page hands the start
+  screen over as `window.__TB_HASH` because its frame has no address) and `demoStartTab()`, `App.tsx` `SystemBars` draws the two
+  system bar strips, `storage.ts` keeps values in memory when a sandboxed frame refuses local storage. None of this runs in a phone
+  build. To rebuild it: see the header of `mobile/tools/preview/make-preview.cjs` (export, run the script, copy
+  `TaraBasa-Phone-Preview.html`, publish the 7 files under `app/` as supporting files, about 3 MB). The seven fonts the app uses
+  are embedded in the script because a locked down page may refuse fonts from files.
+- **Not verified:** a real phone (system font scale, the Android keyboard with `KeyboardAvoidingView`, the status bar and gesture
+  bar sizes are emulated at 24dp each); how the hosted page behaves inside claude.ai (the link is private, so it could only be
+  tested from a plain folder address; it falls back to a plain frame address if the page text cannot be fetched); the microphone
+  (the preview cannot record). A new APK is needed to see any of this on a phone (app.json is still 0.4.0 / versionCode 7).
+- **Tooling notes:** the browser pane cannot be driven with `el.click()` on React Native Web buttons; a real press needs
+  pointerdown, mousedown, pointerup, mouseup and click (the harness does this). A tool permission check blocked `rm -rf` of an
+  export folder: use a NEW output folder name instead of deleting.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.
