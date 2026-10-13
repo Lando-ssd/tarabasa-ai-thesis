@@ -3,7 +3,7 @@ import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View,
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { Home as HomeData } from './api';
 import { Animation, Icon } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 import { s } from './scale';
 
 // The reading path: a winding trail of round buttons, in the style children already know from language apps, drawn with
@@ -64,7 +64,7 @@ export function ReadingPath({
         ) : null}
       </View>
 
-      <View style={{ paddingTop: s(18) }} onLayout={(e) => { seen.current.rows = e.nativeEvent.layout.y; report(); }}>
+      <View style={{ paddingTop: space[16] }} onLayout={(e) => { seen.current.rows = e.nativeEvent.layout.y; report(); }}>
         {path.map((node, i) => {
           const done = node.step < current;
           const now = node.step === current;
@@ -295,21 +295,21 @@ function useCalmMotion() {
 }
 
 const styles = StyleSheet.create({
-  banner: { backgroundColor: colors.blue, borderBottomWidth: s(5), borderBottomColor: colors.blueDark, borderRadius: s(18), paddingHorizontal: s(16), paddingVertical: s(12), gap: s(1) },
+  banner: { backgroundColor: colors.blue, borderBottomWidth: s(5), borderBottomColor: colors.blueDark, borderRadius: s(18), paddingHorizontal: space[16], paddingVertical: space[12], gap: space[2] },
   bannerLabel: { fontFamily: fonts.uiBold, fontSize: s(13), letterSpacing: s(1.2), color: 'rgba(255,255,255,0.82)' },
   bannerTitle: { fontFamily: fonts.display, fontSize: s(26), lineHeight: s(32), color: colors.white },
   bannerBlurb: { fontFamily: fonts.uiRegular, fontSize: s(16), lineHeight: s(20), color: 'rgba(255,255,255,0.94)' },
   row: { alignItems: 'center' },
   nodeBox: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },
   node: { width: NODE, height: NODE, borderRadius: NODE / 2, borderBottomWidth: s(7), alignItems: 'center', justifyContent: 'center' },
-  name: { fontFamily: fonts.uiBold, fontSize: s(17), lineHeight: s(22), color: colors.ink, textAlign: 'center', marginTop: s(2) },
+  name: { fontFamily: fonts.uiBold, fontSize: s(17), lineHeight: s(22), color: colors.ink, textAlign: 'center', marginTop: space[2] },
   owl: { position: 'absolute', top: s(-14) },
-  card: { alignSelf: 'stretch', backgroundColor: colors.orange, borderBottomWidth: s(6), borderBottomColor: colors.orangeDark, borderRadius: s(18), padding: s(16), gap: s(4), marginTop: s(14), marginBottom: s(4) },
+  card: { alignSelf: 'stretch', backgroundColor: colors.orange, borderBottomWidth: s(6), borderBottomColor: colors.orangeDark, borderRadius: s(18), padding: space[16], gap: space[4], marginTop: space[14], marginBottom: space[4] },
   pointer: { position: 'absolute', top: s(-9), left: '50%', width: s(18), height: s(18), borderRadius: s(4), backgroundColor: colors.orange, transform: [{ rotate: '45deg' }] },
   cardTitle: { fontFamily: fonts.display, fontSize: s(22), lineHeight: s(28), color: colors.white },
   cardSub: { fontFamily: fonts.uiBold, fontSize: s(17), lineHeight: s(22), color: colors.white },
   cardHint: { fontFamily: fonts.uiRegular, fontSize: s(16), lineHeight: s(21), color: 'rgba(255,255,255,0.94)' },
-  start: { marginTop: s(10), minHeight: s(54), borderRadius: s(14), backgroundColor: colors.white, borderBottomWidth: s(5), borderBottomColor: '#f0d6bd', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: s(10) },
+  start: { marginTop: space[10], minHeight: s(54), borderRadius: s(14), backgroundColor: colors.white, borderBottomWidth: s(5), borderBottomColor: '#f0d6bd', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[10] },
   startText: { fontFamily: fonts.uiBold, fontSize: s(19), letterSpacing: s(1), color: colors.orange },
   dots: { alignSelf: 'stretch', height: s(38) },
   dot: { position: 'absolute', left: '50%', width: s(8), height: s(8), borderRadius: s(4) },

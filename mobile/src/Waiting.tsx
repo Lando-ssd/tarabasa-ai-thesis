@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Animation, Btn, H2, Notice, P, Screen, Busy } from './ui';
 import { s } from './scale';
+import { space } from './theme';
 
 /**
  * The waiting screen while a reading is being scored. The free server can be asleep, so the first reading of the day
@@ -23,7 +24,7 @@ export function Waiting({ title = 'Checking your reading' }: { title?: string })
 
   return (
     <Screen scroll={false}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: s(14) }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[14] }}>
         <Animation name="head" px={s(150)} />
         <H2 style={{ textAlign: 'center' }}>{title}</H2>
         <P style={{ textAlign: 'center' }}>{text}</P>
@@ -39,13 +40,13 @@ export function SendFailed({ message, onRetry, onReread }: { message: string; on
     <Screen
       anchor="content"
       footer={
-        <View style={{ gap: s(10) }}>
+        <View style={{ gap: space[10] }}>
           <Btn label="Send Again" onPress={onRetry} />
           <Btn label="Read It Again" tone="ghost" compact onPress={onReread} />
         </View>
       }
     >
-      <View style={{ alignItems: 'center', gap: s(14) }}>
+      <View style={{ alignItems: 'center', gap: space[14] }}>
         <Animation name="head" px={s(130)} />
         <H2 style={{ textAlign: 'center' }}>We could not send it yet</H2>
         <Notice text={message} />

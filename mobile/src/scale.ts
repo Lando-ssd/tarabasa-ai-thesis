@@ -23,3 +23,9 @@ export const s = (n: number): number => Math.round(n * K * 4) / 4;
 
 /** True on a short phone (such as 360 by 640), where a screen drops its decorations first so the main button stays in view. */
 export const SHORT_HEIGHT = height < 720;
+
+/**
+ * True on most phones (under 950 tall, such as 390 by 844, 360 by 800 or 430 by 932). The biggest decorations (Tara's head, the microphone)
+ * step down one size so a story, its text and the pinned microphone all fit one screen. Only the tall phones and tablets keep them big.
+ */
+export const COMPACT_HEIGHT = height < 950;

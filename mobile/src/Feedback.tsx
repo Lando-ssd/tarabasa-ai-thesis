@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NewBadge } from './api';
 import { Animation, Btn, H1, Icon, P, Screen } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 import { s } from './scale';
 
 // The after screen the website calls the "feedback scene": the star, a big heading, a few numbers and one button.
@@ -34,7 +34,7 @@ export function Feedback({ mood, heading, subline, message, level, stats, badges
     <Screen
       anchor={full ? 'bottom' : 'content'}
       footer={
-        <View style={{ gap: s(10) }}>
+        <View style={{ gap: space[10] }}>
           <Btn label={buttonLabel} onPress={onButton} />
           {second ? <Btn label={second.label} tone="ghost" compact onPress={second.onPress} /> : null}
         </View>
@@ -112,19 +112,19 @@ export function Medal({ icon, size: px = s(62), off }: { icon: string; size?: nu
 }
 
 const styles = StyleSheet.create({
-  body: { alignItems: 'center', gap: s(10), paddingBottom: s(8) },
+  body: { alignItems: 'center', gap: space[10], paddingBottom: space[8] },
   heading: { textAlign: 'center' },
   center: { textAlign: 'center' },
-  level: { flexDirection: 'row', alignItems: 'center', gap: s(8), backgroundColor: colors.sky, borderRadius: s(14), paddingVertical: s(10), paddingHorizontal: s(14), alignSelf: 'stretch', justifyContent: 'center' },
+  level: { flexDirection: 'row', alignItems: 'center', gap: space[8], backgroundColor: colors.sky, borderRadius: s(14), paddingVertical: space[10], paddingHorizontal: space[14], alignSelf: 'stretch', justifyContent: 'center' },
   levelText: { fontFamily: fonts.uiBold, fontSize: s(18), lineHeight: s(23), color: colors.ink, flexShrink: 1, textAlign: 'center' },
-  stats: { flexDirection: 'row', gap: s(10), alignSelf: 'stretch' },
-  stat: { flex: 1, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: s(16), paddingVertical: s(10), paddingHorizontal: s(6), alignItems: 'center', gap: s(2) },
+  stats: { flexDirection: 'row', gap: space[10], alignSelf: 'stretch' },
+  stat: { flex: 1, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: s(16), paddingVertical: space[10], paddingHorizontal: space[6], alignItems: 'center', gap: space[2] },
   statValue: { fontFamily: fonts.display, fontSize: s(26), lineHeight: s(32) },
   statLabel: { fontFamily: fonts.ui, fontSize: s(14), lineHeight: s(18), color: colors.slate, textAlign: 'center' },
-  earned: { alignSelf: 'stretch', backgroundColor: colors.gold, borderRadius: s(18), padding: s(14), gap: s(10), alignItems: 'center' },
+  earned: { alignSelf: 'stretch', backgroundColor: colors.gold, borderRadius: s(18), padding: space[14], gap: space[10], alignItems: 'center' },
   earnedTitle: { fontFamily: fonts.displayMedium, fontSize: s(20), lineHeight: s(26), color: colors.ink },
-  earnedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: s(14), justifyContent: 'center' },
-  earnedItem: { width: s(96), alignItems: 'center', gap: s(4) },
+  earnedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[14], justifyContent: 'center' },
+  earnedItem: { width: s(96), alignItems: 'center', gap: space[4] },
   earnedName: { fontFamily: fonts.ui, fontSize: s(14), lineHeight: s(17), color: colors.ink, textAlign: 'center' },
   medal: { alignItems: 'center', justifyContent: 'center', borderBottomWidth: s(4) },
 });

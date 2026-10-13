@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import * as api from './api';
 import { Btn, Busy, H1, Icon, Notice, Screen, Small } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 import { s } from './scale';
 
 export type GameKey = api.GameName;
@@ -79,7 +79,7 @@ export function Games({ onPlay }: { onPlay: (game: GameKey) => void }) {
       <Small>Free play. No points, just for fun!</Small>
 
       {error ? (
-        <View style={{ gap: s(12), marginTop: s(14) }}>
+        <View style={{ gap: space[12], marginTop: space[14] }}>
           <Notice text={error} />
           <Btn label="Try Again" onPress={load} />
         </View>
@@ -93,10 +93,10 @@ export function Games({ onPlay }: { onPlay: (game: GameKey) => void }) {
           </Text>
         </View>
       ) : !info && !error ? (
-        <Busy style={{ marginTop: s(10) }} />
+        <Busy style={{ marginTop: space[10] }} />
       ) : null}
 
-      <View style={{ gap: s(14), marginTop: s(14) }}>
+      <View style={{ gap: space[14], marginTop: space[14] }}>
         {CARDS.map((card) => (
           <View key={card.key} style={[styles.card, { backgroundColor: card.bg }]}>
             <View style={styles.head}>
@@ -134,23 +134,23 @@ export function Games({ onPlay }: { onPlay: (game: GameKey) => void }) {
         ))}
       </View>
 
-      <Small style={{ marginTop: s(14) }}>Every game is reading out loud. What you read comes first from the words you missed in your readings, then from the list for your reading step.</Small>
-      <Small style={{ marginTop: s(6) }}>Games are practice. They never change your points, your streak or your level, and what you read in a game is not graded.</Small>
+      <Small style={{ marginTop: space[14] }}>Every game is reading out loud. What you read comes first from the words you missed in your readings, then from the list for your reading step.</Small>
+      <Small style={{ marginTop: space[6] }}>Games are practice. They never change your points, your streak or your level, and what you read in a game is not graded.</Small>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  tip: { flexDirection: 'row', alignItems: 'center', gap: s(10), backgroundColor: colors.orangeSoft, borderRadius: s(14), padding: s(12), marginTop: s(12), borderWidth: 1, borderColor: '#f3d6bb' },
+  tip: { flexDirection: 'row', alignItems: 'center', gap: space[10], backgroundColor: colors.orangeSoft, borderRadius: s(14), padding: space[12], marginTop: space[12], borderWidth: 1, borderColor: '#f3d6bb' },
   tipText: { flex: 1, fontFamily: fonts.ui, fontSize: s(16), lineHeight: s(22), color: colors.ink },
-  card: { borderRadius: s(22), padding: s(16), gap: s(8), borderBottomWidth: s(5), borderBottomColor: 'rgba(23,50,77,0.08)' },
+  card: { borderRadius: s(22), padding: space[16], gap: space[8], borderBottomWidth: s(5), borderBottomColor: 'rgba(23,50,77,0.08)' },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconTile: { width: s(52), height: s(52), borderRadius: s(16), backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
-  ribbon: { flexDirection: 'row', alignItems: 'center', gap: s(4), backgroundColor: colors.orange, borderRadius: s(99), paddingHorizontal: s(10), minHeight: s(28) },
+  ribbon: { flexDirection: 'row', alignItems: 'center', gap: space[4], backgroundColor: colors.orange, borderRadius: s(99), paddingHorizontal: space[10], minHeight: s(28) },
   ribbonText: { fontFamily: fonts.uiBold, fontSize: s(13), color: colors.white },
   title: { fontFamily: fonts.displayMedium, fontSize: s(24), lineHeight: s(30), color: colors.ink },
   text: { fontFamily: fonts.uiRegular, fontSize: s(17), lineHeight: s(23), color: colors.ink },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: s(6), marginBottom: s(4) },
-  chip: { backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: s(99), paddingHorizontal: s(10), minHeight: s(26), justifyContent: 'center' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[6], marginBottom: space[4] },
+  chip: { backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: s(99), paddingHorizontal: space[10], minHeight: s(26), justifyContent: 'center' },
   chipText: { fontFamily: fonts.uiBold, fontSize: s(13), color: colors.slate },
 });

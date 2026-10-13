@@ -6,8 +6,8 @@ import { Celebrate, Dots, GameDone, GameHeader, pickWords, playSfx, prepareSound
 import { SayWord, type SayResult } from './SayWord';
 import { useSession } from './session';
 import { Btn, Busy, Icon, IconBtn, Notice, Screen, Small } from './ui';
-import { colors, fonts, size } from './theme';
-import { s } from './scale';
+import { colors, fonts, size, space } from './theme';
+import { s, SHORT_HEIGHT } from './scale';
 
 // Balloon Pop, the same rules as the website: five balloons show words, three of them are marked in turn, and the child says the
 // marked word to pop it. Each word gets two tries; "Tara is not sure" is never "wrong", and after two tries the balloon pops anyway.
@@ -48,7 +48,7 @@ export function BalloonPop({ onExit }: { onExit: () => void }) {
   if (error) {
     return (
       <Screen footer={<Btn label="Back to Games" tone="ghost" onPress={onExit} />}>
-        <View style={{ flex: 1, justifyContent: 'center', gap: s(12) }}>
+        <View style={{ flex: 1, justifyContent: 'center', gap: space[12] }}>
           <Notice text={error} />
           <Btn label="Try Again" onPress={load} />
         </View>
@@ -92,7 +92,8 @@ function Play({ data, firstName, onExit }: { data: api.WordLevels; firstName: st
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const { height } = useWindowDimensions();
-  const short = height < 700;
+  // "short" here means not a tall phone: under about 950dp the word and its "hear it" button sit side by side so the balloons keep their room.
+  const short = height < 950;
   const target = order[pos];
   const word = words[target] ?? '';
 
@@ -208,7 +209,7 @@ function Play({ data, firstName, onExit }: { data: api.WordLevels; firstName: st
   return (
     <Screen
       footer={
-        <View style={{ gap: s(8), alignItems: 'center' }}>
+        <View style={{ gap: space[8], alignItems: 'center' }}>
           {tapMode ? (
             <Text maxFontSizeMultiplier={1.2} style={styles.note} accessibilityLiveRegion="polite">
               {note}
@@ -229,7 +230,7 @@ function Play({ data, firstName, onExit }: { data: api.WordLevels; firstName: st
       }
     >
       <GameHeader onBack={onExit} level={level} label={`Round ${attempt + 1} of ${MAX_ATTEMPTS}`} icons={LEVEL_ICON} />
-      <View style={{ marginTop: s(4), gap: s(4) }}>
+      <View style={{ marginTop: space[4], gap: space[4] }}>
         {short ? null : <Small style={{ textAlign: 'center' }}>Balloon {Math.min(pos + 1, TARGETS)} of {TARGETS}</Small>}
         <Dots done={pos} total={TARGETS} />
       </View>
@@ -260,7 +261,7 @@ function Play({ data, firstName, onExit }: { data: api.WordLevels; firstName: st
         )}
       </View>
 
-      <View style={styles.sky}>
+      <View style={[styles.sky, SHORT_HEIGHT && styles.skyShort]}>
         <Balloons words={words} target={target} popped={popped} tapMode={tapMode && !busy} onTap={(i) => i === target && pop(tries === 0)} />
         {message ? <Celebrate text={message} big={message === 'Level up!'} /> : null}
       </View>
@@ -273,12 +274,14 @@ function Balloons({ words, target, popped, tapMode, onTap }: { words: string[]; 
   const { width } = useWindowDimensions();
   const board = Math.min(size.maxWidth, width) - size.gutter * 2;
   // The sky has 8px of padding on each side and the balloons 12px between them, so they never touch the edge of the sky.
-  const w = Math.min(s(86), (board - s(16) - s(24) - s(8)) / 3);
+  const full = Math.min(s(86), (board - s(16) - s(24) - s(8)) / 3);
+  // On a short phone (about 640dp tall) the balloons are a little smaller so both rows sit above the microphone.
+  const w = SHORT_HEIGHT ? full * 0.8 : full;
   const rows = [words.slice(0, 3).map((x, i) => [x, i] as const), words.slice(3).map((x, i) => [x, i + 3] as const)];
   return (
-    <View style={{ gap: s(4), alignItems: 'center' }}>
+    <View style={{ gap: space[4], alignItems: 'center' }}>
       {rows.map((row, r) => (
-        <View key={r} style={{ flexDirection: 'row', justifyContent: 'center', gap: s(12) }}>
+        <View key={r} style={{ flexDirection: 'row', justifyContent: 'center', gap: space[12] }}>
           {row.map(([text, i]) => (
             <Balloon key={`${text}-${i}`} word={text} color={COLORS[i % COLORS.length]} w={w} isTarget={i === target} popped={popped.includes(i)} tappable={tapMode && i === target} delay={i * 260} onPress={() => onTap(i)} />
           ))}
@@ -357,15 +360,16 @@ function Balloon({ word, color, w, isTarget, popped, tappable, delay, onPress }:
 
 const styles = StyleSheet.create({
   note: { fontFamily: fonts.uiBold, fontSize: s(15), lineHeight: s(20), color: colors.ink, textAlign: 'center', minHeight: s(20) },
-  target: { alignItems: 'center', gap: s(6), marginTop: s(10) },
+  target: { alignItems: 'center', gap: space[6], marginTop: space[10] },
   targetLabel: { fontFamily: fonts.ui, fontSize: s(14), color: colors.slate },
-  targetShort: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: s(12) },
-  targetRow: { backgroundColor: colors.orangeSoft, borderRadius: s(16), borderWidth: 2, borderColor: '#f3d6bb', paddingHorizontal: s(22), paddingVertical: s(4) },
+  targetShort: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[12] },
+  targetRow: { backgroundColor: colors.orangeSoft, borderRadius: s(16), borderWidth: 2, borderColor: '#f3d6bb', paddingHorizontal: space[20], paddingVertical: space[4] },
   targetWord: { fontFamily: fonts.display, fontSize: s(38), lineHeight: s(48), color: colors.orange },
-  sky: { marginTop: s(10), backgroundColor: colors.sky, borderRadius: s(22), paddingTop: s(10), paddingBottom: s(26), paddingHorizontal: s(8), minHeight: s(205), justifyContent: 'center' },
+  skyShort: { paddingBottom: space[12], minHeight: s(160) },
+  sky: { marginTop: space[10], backgroundColor: colors.sky, borderRadius: s(22), paddingTop: space[10], paddingBottom: space[24], paddingHorizontal: space[8], minHeight: s(205), justifyContent: 'center' },
   balloon: { alignItems: 'center', justifyContent: 'center', overflow: 'visible', borderBottomRightRadius: s(40), borderBottomLeftRadius: s(40) },
   marked: { borderWidth: 4, borderColor: colors.white, shadowColor: colors.orange, shadowOpacity: 0.9, shadowRadius: 12, elevation: 10 },
-  balloonText: { fontFamily: fonts.read, color: colors.white, fontWeight: '700', textAlign: 'center', paddingHorizontal: s(6) },
+  balloonText: { fontFamily: fonts.read, color: colors.white, fontWeight: '700', textAlign: 'center', paddingHorizontal: space[6] },
   shine: { position: 'absolute', top: '12%', left: '18%', width: '18%', height: '22%', borderRadius: s(20), backgroundColor: 'rgba(255,255,255,0.4)' },
   knot: { width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderBottomWidth: s(9), borderLeftColor: 'transparent', borderRightColor: 'transparent', marginTop: s(-2) },
   string: { width: s(2), height: s(16), backgroundColor: 'rgba(23,50,77,0.35)' },

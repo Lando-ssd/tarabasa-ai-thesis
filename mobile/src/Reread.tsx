@@ -8,7 +8,7 @@ import { useSession } from './session';
 import { Animation, Btn, Busy, Notice, Panel, Screen, Small } from './ui';
 import { SendFailed, Waiting } from './Waiting';
 import { WordReview } from './WordReview';
-import { colors } from './theme';
+import { colors, space } from './theme';
 import { s } from './scale';
 
 type Scored = Extract<api.RereadOutcome, { status: 'scored' }>;
@@ -56,7 +56,7 @@ export function Reread({ id, onExit }: { id: number; onExit: () => void }) {
   if (phase.name === 'loading') {
     return (
       <Screen scroll={false}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: s(14) }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[14] }}>
           <Animation name="head" px={s(130)} />
           <Busy text="Opening your story" />
         </View>
@@ -108,7 +108,7 @@ export function Reread({ id, onExit }: { id: number; onExit: () => void }) {
         onButton={() => setPhase({ name: 'read' })}
         second={{ label: 'Back to My Shelf', onPress: onExit }}
         details={
-          <Panel style={{ gap: s(8) }}>
+          <Panel style={{ gap: space[8] }}>
             <Small>Your words</Small>
             <WordReview words={phase.outcome.wordBreakdown} extra={phase.outcome.extraWordsSaid} />
           </Panel>

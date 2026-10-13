@@ -4,7 +4,7 @@ import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder, use
 import { HINTS, judgeRecording, METER_MS, PAUSE_MIN_VOICE, PAUSE_MS, VOICE_DB } from './recording';
 import { discardRecording } from './recordingFiles';
 import { Btn, Icon, Notice, Small } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 import { s } from './scale';
 
 /** What the phone learned about the sound while it recorded. A level is null when the phone gave no level at all. */
@@ -36,7 +36,9 @@ type Props = {
 
 const SIZE = s(92);
 // On a short phone (about 640dp tall) the button gets smaller so the story keeps room above it.
-const SIZE_SHORT = s(76);
+const SIZE_SHORT = s(70);
+// On most phones (under about 950dp tall) one step down, so the story and the microphone both fit.
+const SIZE_MID = s(82);
 
 /**
  * The big microphone button, the main thing on a reading screen and placed where the thumb rests. One tap starts,
@@ -55,7 +57,7 @@ export function MicButton({
   stopOnPause,
 }: Props) {
   const { height } = useWindowDimensions();
-  const px = height < 700 ? SIZE_SHORT : SIZE;
+  const px = height < 700 ? SIZE_SHORT : height < 950 ? SIZE_MID : SIZE;
   const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
   const state = useAudioRecorderState(recorder, 250);
   const startedAt = useRef(0);
@@ -183,7 +185,7 @@ export function MicButton({
 
   return (
     <View style={styles.wrap}>
-      <View style={[styles.stage, { width: px + 56, height: px + 20 }]}>
+      <View style={[styles.stage, { width: px + 56, height: px + 8 }]}>
         {recording ? (
           <Animated.View
             pointerEvents="none"
@@ -231,7 +233,7 @@ export function MicButton({
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: s(6) },
+  wrap: { alignItems: 'center', gap: space[6] },
   stage: { alignItems: 'center', justifyContent: 'center' },
   ring: { position: 'absolute', backgroundColor: colors.orange },
   button: {
@@ -245,5 +247,5 @@ const styles = StyleSheet.create({
   pressed: { transform: [{ translateY: 4 }], borderBottomWidth: s(3) },
   off: { opacity: 0.55 },
   label: { fontFamily: fonts.uiBold, fontSize: s(19), color: colors.ink, textAlign: 'center' },
-  problem: { alignSelf: 'stretch', gap: s(8), marginTop: s(6) },
+  problem: { alignSelf: 'stretch', gap: space[8], marginTop: space[6] },
 });

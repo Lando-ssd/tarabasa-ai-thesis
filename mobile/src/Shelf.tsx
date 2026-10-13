@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as api from './api';
 import { Animation, Btn, Busy, H1, Icon, Notice, P, Screen, Small } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 import { s } from './scale';
 
 // A soft cover colour for each book, so a shelf of many books is easy to tell apart at a glance.
@@ -47,12 +47,12 @@ export function Shelf({ onOpen, onFindStory }: { onOpen: (id: number) => void; o
       {books && books.length > 0 ? <Small>{books.length === 1 ? '1 story you have read' : `${books.length} stories you have read`}</Small> : null}
 
       {error ? (
-        <View style={{ gap: s(12), marginTop: s(16) }}>
+        <View style={{ gap: space[12], marginTop: space[16] }}>
           <Notice text={error} />
           <Btn label="Try Again" onPress={load} />
         </View>
       ) : !books ? (
-        <Busy text="Getting your shelf" style={{ marginTop: s(20) }} />
+        <Busy text="Getting your shelf" style={{ marginTop: space[20] }} />
       ) : books.length === 0 ? (
         <View style={styles.empty}>
           <Animation name="head" px={s(130)} />
@@ -60,7 +60,7 @@ export function Shelf({ onOpen, onFindStory }: { onOpen: (id: number) => void; o
           <Btn label="Find a Story" icon="book-open" onPress={onFindStory} style={{ alignSelf: 'stretch' }} />
         </View>
       ) : (
-        <View style={{ gap: s(12), marginTop: s(14) }}>
+        <View style={{ gap: space[12], marginTop: space[14] }}>
           {books.map((book, i) => (
             <Book key={book.id} book={book} cover={COVERS[i % COVERS.length]} onPress={() => onOpen(book.id)} />
           ))}
@@ -83,7 +83,7 @@ function Book({ book, cover, onPress }: { book: api.Book; cover: (typeof COVERS)
       <View style={[styles.cover, { backgroundColor: cover.bg }]}>
         <Icon name="book" size={s(30)} color={cover.fg} />
       </View>
-      <View style={{ flex: 1, gap: s(2) }}>
+      <View style={{ flex: 1, gap: space[2] }}>
         <Text maxFontSizeMultiplier={1.2} style={styles.title}>
           {book.title}
         </Text>
@@ -100,8 +100,8 @@ function Book({ book, cover, onPress }: { book: api.Book; cover: (typeof COVERS)
 }
 
 const styles = StyleSheet.create({
-  empty: { alignItems: 'center', gap: s(14), marginTop: s(24) },
-  card: { flexDirection: 'row', alignItems: 'center', gap: s(12), minHeight: s(84), backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: s(18), padding: s(12) },
+  empty: { alignItems: 'center', gap: space[14], marginTop: space[24] },
+  card: { flexDirection: 'row', alignItems: 'center', gap: space[12], minHeight: s(84), backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: s(18), padding: space[12] },
   cover: { width: s(52), height: s(60), borderRadius: s(12), alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: fonts.uiBold, fontSize: s(21), lineHeight: s(24), color: colors.ink },
   again: { width: s(44), height: s(44), borderRadius: s(22), backgroundColor: colors.orangeSoft, alignItems: 'center', justifyContent: 'center' },
