@@ -6552,6 +6552,15 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   not verified" on the live site (the real registration email link verifies correctly locally, also behind a simulated HTTPS proxy), so the
   cause there is unknown; the new result page now names the address so a mismatch between the card and the clicked account is visible. Existing
   unconfirmed accounts on the live site are held back at sign in until they confirm.
+- **"Confirm email myself" (Admin, 2026-10-13, BUILT LOCALLY, NOT PUSHED).** After the live "Send the email again" produced no new email, the owner asked for
+  an Admin way to confirm an address without the link. Each unconfirmed card on Approvals and each unconfirmed row on Accounts has a button that opens a
+  window (`admin/_confirm-email-window`, one shared copy); the Admin must pick how they checked (`AdminController::CONFIRM_REASONS`: I spoke with them /
+  I checked with their school / Their email blocks our messages / Other, which needs a note), then `POST /admin/users/{user}/confirm-email`
+  (`admin.users.confirm-email`, `confirmEmail`) marks the email confirmed and writes `admin_actions` (`confirmed_email`, the reason as detail, the note) so the
+  Activity log reads "TaraBasa Admin confirmed the email address of Zed (I spoke with them)". Never for an Admin account (403) or an address already confirmed;
+  teachers and parents both. It weakens "a person must open the link" on purpose and is audited. Also: the Admin "Send the email again" message now names the
+  masked address (`pi***@gmail.com`) and says it may land in spam, so the Admin can see which inbox to look in. `AdminConfirmEmailTest` (9 tests); suite 392
+  passing; looked at in a browser (card, window, Approve unlocks, log line).
 - **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
   about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
   environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`

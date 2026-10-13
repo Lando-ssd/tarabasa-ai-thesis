@@ -167,6 +167,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/teachers/{teacher}/reopen', [AdminController::class, 'reopenTeacher'])->name('teachers.reopen');
     Route::post('/users/{user}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
     Route::post('/users/{user}/resend-verification', [AdminController::class, 'resendVerification'])->middleware('throttle:20,1')->name('users.resend-verification');
+    // The Admin confirms an email address themselves (reason required, written to the activity log).
+    Route::post('/users/{user}/confirm-email', [AdminController::class, 'confirmEmail'])->middleware('throttle:30,1')->name('users.confirm-email');
     // Asks the three teammate services, from this server, whether they answer (see App\Services\ServiceCheck).
     Route::post('/service-check', [AdminController::class, 'checkServices'])->name('service-check');
 });
