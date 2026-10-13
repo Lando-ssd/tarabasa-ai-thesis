@@ -6525,6 +6525,15 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   route afterwards; the new field itself is not yet confirmed against the running site (needs a login as the test child). APK:
   `D:\tools\apk-out\TaraBasa-AI-0.3.2-test6.apk` (versionCode 6, built from a copy in `D:\tb`, checked inside like 0.3.1). Send 0.3.2, not the
   older files. Still unproven on a real phone, as before.
+- **Verification link bug (found 2026-10-13 while setting up the phone test, FIX LOCAL then pushed to `mobile-app`, NOT in the live branch yet).**
+  `/email/verify/{id}/{hash}` had the `auth` middleware and `EmailVerificationRequest`, so it only verified the account when that same person was
+  signed in in the same browser. A teacher who clicked it logged out, on a phone, or while the Admin was signed in on that computer (403) stayed
+  "Email not verified" and the Admin's Approve button stayed locked. Now `AuthController::verifyEmail(Request, id, hash)` is reachable by anyone,
+  with the `signed` middleware (genuine and not expired, 60 minutes) plus a check that the hash is the sha1 of THAT user's email, so a link can only
+  verify the account it was made for; throttled 20 a minute. `tests/Feature/EmailVerificationLinkTest.php` (9 tests; 7 fail on the old code); full
+  suite 365 passing. The live site still has the bug until `mobile-app` is merged into the live branch (needs the owner's explicit yes). Workaround
+  in `mobile/TEST-SETUP.md` step 3. Not tested against real email on the live host. Reading the live database to check a teacher's status was
+  refused by the tool permissions, so the diagnosis came from the code and the tests.
 - **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
   about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
   environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`

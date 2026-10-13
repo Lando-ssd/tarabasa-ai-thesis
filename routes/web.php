@@ -140,8 +140,10 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
     Route::post('/logout', [LearnerAuthController::class, 'logout'])->name('logout');
 });
 
+// No `auth` here on purpose: the link must work from any browser or phone, whoever is (or is not) signed in.
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
-    ->middleware(['auth', 'signed'])
+    ->middleware(['signed', 'throttle:20,1'])
+    ->whereNumber('id')
     ->name('verification.verify');
 
 // Admin Dashboard — 'auth' confirms a real session, 'admin' confirms
