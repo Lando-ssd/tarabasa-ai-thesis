@@ -6,7 +6,8 @@ It takes about 40 minutes the first time. Use made-up names and no photos: never
 ## 0. The live server must have the phone's server code first (a real blocker found on 2026-10-12, DONE the same evening)
 
 **Status: done.** `mobile-app` was merged into the live branch as `8e1caa4` and Render deployed it (checked at 20:43: the website
-pages load, the new phone routes answer "login required", `/privacy` has the phone-app section). Skip to step 1. The text below
+pages load, the new phone routes answer "login required", `/privacy` has the phone-app section). On 2026-10-13 it was merged again
+(`ed5c5c6`) so the live server also returns the reading path's progress; the APK to send is now 0.3.2. Skip to step 1. The text below
 says what was found and why.
 
 The phone app talks to the live website (https://tarabasa-ai.onrender.com). On 2026-10-12 the live website was still on the

@@ -6517,6 +6517,14 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   packages or Docker changes (the `mobile/` folder is in `.dockerignore`); the only conflict was this notes file. After the deploy the website
   pages answered 200, the new phone routes answered 401 (they exist and need a login) and `/privacy` showed "The phone app". The tester has been
   sent NOTHING yet: send 0.3.1 with `mobile/TEST-SETUP.md` and `mobile/PHONE-TEST-CHECKLIST.md`; `mobile/APP-REVIEW.md` is the honest review.
+- **Fifth round (2026-10-13): version 0.3.2, the reading path.** Home shows the child's four steps as a winding path (`mobile/src/ReadingPath.tsx`)
+  with a ring that counts great readings toward growing, and the website's flying owl (`owl-bird` Lottie) beside the child's step. The dashboard
+  API returns `pathProgress {have, need, atTop}` (`LearnerApiController::pathProgress`, read only; the phone treats it as optional). PUSHED to
+  `mobile-app` (`6175976`, `7097c65`, `c1eb193`) and then MERGED INTO THE LIVE BRANCH on 2026-10-13 as `ed5c5c6` (the owner's explicit yes; clean merge,
+  full suite 356 passing, no migrations, packages or Docker changes). The live server answered 200 on the website pages and 401 on the dashboard
+  route afterwards; the new field itself is not yet confirmed against the running site (needs a login as the test child). APK:
+  `D:\tools\apk-out\TaraBasa-AI-0.3.2-test6.apk` (versionCode 6, built from a copy in `D:\tb`, checked inside like 0.3.1). Send 0.3.2, not the
+  older files. Still unproven on a real phone, as before.
 - **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
   about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
   environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`
