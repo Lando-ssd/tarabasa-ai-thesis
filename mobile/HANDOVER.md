@@ -189,6 +189,14 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - Gallery pictures of every step: `#gallery=path-1` ... `#gallery=path-4`. Checked at 390x844 and 360x640 and with the live local server.
 - NOT done: the website's Home already has its own road; it was not changed. The 0.3.2 APK (see above) has it.
 
+## Version 0.4.0 (2026-10-13): layout rescaled to the approved preview, read-aloud games
+- **File:** `D:\tools\apk-out\TaraBasa-AI-0.4.0-test7.apk` (41.9 MiB, arm64 only, versionCode 7, SHA-256
+  `e084fb3092ef239af06b3b76ee7089be5735ca51be0512239db6ac4e50c9cc82`, built from `D:\tb` in 10.6 min, prebuild cleaned). Checked inside: the live
+  address is present, no localhost or emulator address, Word Train, Sentence Stars and the new games calls are present, Word Builder and
+  Letter Match are gone, 10 permissions (same as 0.3.x). NOT sent to anyone yet, and nothing in it has been proven on a real phone.
+- Send this one, not 0.3.x: the Games calls changed, so older builds cannot play the new games. The server side is already live (merged into
+  the live branch as `9876f5c`).
+
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
    on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,

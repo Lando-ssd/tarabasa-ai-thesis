@@ -1,7 +1,8 @@
 {{--
   The Parent app shell: a left menu bar (a bottom bar on a phone) plus the page. Used by
   Home, Children, Progress, Activities (the open repository), Alerts and Profile. The
-  add-a-child steps and the link-a-child page are still standalone focused screens.
+  add-a-child steps, the "all set" page and the link-a-child page are focused screens without the menu bar, in the same look
+  (public/css/parent-focus.css).
 
   The look is the Learner Home's family, calmer for adults: white cards with a lip, the
   orange clay buttons, the game face for headings, no emoji. Styles are in
