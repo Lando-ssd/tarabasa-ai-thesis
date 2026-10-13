@@ -131,4 +131,22 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Confirmed email before sign in (Teacher and Parent)
+    |--------------------------------------------------------------------------
+    |
+    | On: a new Teacher or Parent is NOT signed in at registration and cannot sign in until they open the link
+    | we email them; registering with an address we cannot send to is refused. This was asked for by the project
+    | owner on 2026-10-13 because people typed addresses that were not real. It differs from the actor prompt's
+    | "a Pending Teacher logs in right away". Set REQUIRE_VERIFIED_EMAIL=false to go back to that behaviour
+    | without a code change (the Admin and the child's code and PIN sign in are never affected).
+    |
+    */
+
+    'require_verified_email' => (bool) env('REQUIRE_VERIFIED_EMAIL', true),
+
+    // Registration also checks that the address's domain can receive mail (a lookup, so it is off in tests).
+    'check_email_domain' => (bool) env('CHECK_EMAIL_DOMAIN', true),
+
 ];

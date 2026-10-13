@@ -61,7 +61,11 @@
 
     <div class="verify-note">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>We'll send a confirmation link to your email. You can start using your account right away — no need to wait for it.</span>
+      @if (config('auth.require_verified_email'))
+        <span>We will send a confirmation link to your email. Open it to turn on your account, then log in. Use an address you can really open.</span>
+      @else
+        <span>We'll send a confirmation link to your email. You can start using your account right away — no need to wait for it.</span>
+      @endif
     </div>
 
     <button type="submit" class="submit-btn" id="submitBtn">Create account</button>

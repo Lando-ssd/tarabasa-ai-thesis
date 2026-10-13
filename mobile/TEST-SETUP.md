@@ -40,11 +40,12 @@ tester starts if more than 15 minutes pass.
 A brand new child has nothing to read, so the Read tab would be empty. Stories come from a teacher:
 1. Sign up as a Teacher on the live site (a second email you can open), verify the email, and approve the teacher as Admin
    (Approvals).
-   **Known problem until the fix is live (found 2026-10-13):** the verify link in the email only worked when that teacher was signed in
+   **FIXED on 2026-10-13 (live branch `d1bde1c`, deployed 11:01): the link now works from any browser. Keep the text below only for a
+   link that was sent before the deploy (use "Send the email again" instead). Old problem (found 2026-10-13):** the verify link in the email only worked when that teacher was signed in
    in the same browser. Opened logged out, on a phone, or while the Admin is signed in on the same computer, it did nothing (or showed a
    403) and Approve stayed locked. Workaround: open a private window, sign in as the TEACHER there, then paste the email's link (right
    click the button, Copy link address) into that same window; reload Approvals. Links last 60 minutes ("Send the email again" makes a
-   new one). The fix is in `mobile-app` and needs merging into the live branch.
+   new one).
 2. Teacher: Activities, **Generate**: Grade 1, any skill, one text per level. It takes about two minutes and uses one of the
    two free credits. Approve what is written (drag a draft into Easy, Medium or Hard).
 3. Teacher: Classes, **New class** (Grade 1), then **Add learner** and type the child's learner code.

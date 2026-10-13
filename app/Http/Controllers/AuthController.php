@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\ParentAccount;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Support\EmailAddress;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -39,17 +41,19 @@ class AuthController extends Controller
      */
     public function storeTeacher(Request $request)
     {
+        $this->normalizeEmailInput($request);
+
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'middle_initial' => ['nullable', 'string', 'max:5'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', Rule::unique('users', 'email')],
+            'email' => $this->registrationEmailRules(),
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'school_name' => ['required', 'string', 'max:255'],
             'employee_id' => ['required', 'string', 'max:100'],
             'contact_number' => ['nullable', 'string', 'max:30'],
             ...Teacher::gradeRules(),
-        ]);
+        ], $this->registrationEmailMessages());
         $grades = Teacher::gradesFromValidated($validated);
 
         $user = DB::transaction(function () use ($validated, $grades) {
@@ -75,17 +79,13 @@ class AuthController extends Controller
             return $user;
         });
 
-        $this->sendVerificationEmailSafely($user);
+        // With "confirm your email first" on (the default), nobody is signed in until they open the link, and an
+        // address we cannot send to is refused instead of leaving an account nobody can ever use.
+        if ($refused = $this->sendOrRefuse($user, $request)) {
+            return $refused;
+        }
 
-        // Log in immediately — verification does not block access, per the
-        // actor prompt's explicit "logs in right away" rule.
-        Auth::login($user);
-
-        return view('auth.registration-submitted', [
-            'firstName' => $user->first_name,
-            'email' => $user->email,
-            'role' => 'teacher',
-        ]);
+        return $this->registrationDone($user, 'teacher');
     }
 
     /**
@@ -101,13 +101,15 @@ class AuthController extends Controller
      */
     public function storeParent(Request $request)
     {
+        $this->normalizeEmailInput($request);
+
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'middle_initial' => ['nullable', 'string', 'max:5'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', Rule::unique('users', 'email')],
+            'email' => $this->registrationEmailRules(),
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        ], $this->registrationEmailMessages());
 
         $user = DB::transaction(function () use ($validated) {
             $user = User::create([
@@ -126,14 +128,87 @@ class AuthController extends Controller
             return $user;
         });
 
-        $this->sendVerificationEmailSafely($user);
+        if ($refused = $this->sendOrRefuse($user, $request)) {
+            return $refused;
+        }
 
-        Auth::login($user);
+        return $this->registrationDone($user, 'parent');
+    }
 
+    private function mustConfirmEmail(): bool
+    {
+        return (bool) config('auth.require_verified_email', true);
+    }
+
+    /** Emails are compared and stored in lower case, so "Pinky@Gmail.com" and "pinky@gmail.com" are one address. */
+    private function normalizeEmailInput(Request $request): void
+    {
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => strtolower(trim($request->input('email')))]);
+        }
+    }
+
+    /** What a registration email must satisfy: a real looking address, a domain that can receive mail, no obvious typo, not taken. */
+    private function registrationEmailRules(): array
+    {
+        return [
+            'required',
+            // First, so a typo like "gmial.com" gets the helpful "Did you mean" instead of "does not look real".
+            function (string $attribute, mixed $value, \Closure $fail): void {
+                if (is_string($value) && ($hint = EmailAddress::suggestion($value))) {
+                    $fail("That address looks mistyped. Did you mean {$hint}?");
+                }
+            },
+            config('auth.check_email_domain') ? 'email:rfc,dns' : 'email',
+            'max:255',
+            Rule::unique('users', 'email'),
+        ];
+    }
+
+    private function registrationEmailMessages(): array
+    {
+        return [
+            'email.email' => 'That email address does not look real. Check the spelling, or use another address.',
+            'email.unique' => 'That email address already has an account. Log in instead, or use another address.',
+        ];
+    }
+
+    /**
+     * Sends the confirmation link. When confirming is required and the email cannot be sent, the account that was just
+     * made is removed again and the form comes back with a plain message, so the address can be retyped. Returns the
+     * response to send back when it was refused, or null when all is well.
+     */
+    private function sendOrRefuse(User $user, Request $request): mixed
+    {
+        if (! $this->mustConfirmEmail()) {
+            $this->sendVerificationEmail($user);
+            Auth::login($user);
+
+            return null;
+        }
+
+        if ($this->sendVerificationEmail($user)) {
+            return null;
+        }
+
+        DB::transaction(function () use ($user) {
+            Teacher::where('user_id', $user->id)->delete();
+            ParentAccount::where('user_id', $user->id)->delete();
+            $user->delete();
+        });
+
+        return back()
+            ->withInput($request->except(['password', 'password_confirmation']))
+            ->withErrors(['email' => 'We could not send the confirmation email right now. Check the address is typed correctly and try again in a minute.']);
+    }
+
+    private function registrationDone(User $user, string $role)
+    {
         return view('auth.registration-submitted', [
             'firstName' => $user->first_name,
             'email' => $user->email,
-            'role' => 'parent',
+            'role' => $role,
+            'mustConfirm' => $this->mustConfirmEmail(),
         ]);
     }
 
@@ -147,17 +222,39 @@ class AuthController extends Controller
      * instead of crashing the user-facing flow — this brings registration
      * in line with that same pattern.
      */
-    private function sendVerificationEmailSafely(User $user): void
+    private function sendVerificationEmail(User $user): bool
     {
         try {
             $user->sendEmailVerificationNotification();
+
+            return true;
         } catch (Throwable $e) {
-            Log::warning('Verification email failed to send during registration.', [
+            Log::warning('Verification email failed to send.', [
                 'user_id' => $user->id,
-                'email' => $user->email,
                 'error' => $e->getMessage(),
             ]);
+
+            return false;
         }
+    }
+
+    /**
+     * "Send the link again", for someone who cannot sign in yet so has no session to ask from. The answer is always
+     * the same whether or not the address has an account, so this cannot be used to find out who is registered.
+     */
+    public function resendVerification(Request $request)
+    {
+        $data = $request->validate(['email' => ['required', 'email', 'max:255']]);
+        $email = strtolower(trim($data['email']));
+
+        $user = User::where('email', $email)->first();
+
+        // One link a minute per address, whatever the answer was.
+        if ($user && $user->user_type !== 'Admin' && ! $user->hasVerifiedEmail() && Cache::add('resend-verification:'.$user->id, true, 60)) {
+            $this->sendVerificationEmail($user);
+        }
+
+        return redirect()->route('login')->with('status', 'If that address has an account that is still waiting to be confirmed, we sent a new link. Check your inbox and your spam folder.');
     }
 
     /**
@@ -174,13 +271,22 @@ class AuthController extends Controller
     {
         $user = User::find($id);
 
-        abort_unless($user && hash_equals(sha1($user->getEmailForVerification()), $hash), 403);
+        if (! $user || ! hash_equals(sha1($user->getEmailForVerification()), $hash)) {
+            return response()->view('auth.verify-link-problem', [], 403);
+        }
 
         if (! $user->hasVerifiedEmail() && $user->markEmailAsVerified()) {
             event(new Verified($user));
+            Log::info('Email address confirmed.', ['user_id' => $user->id]);
         }
 
-        return redirect()->route('login')->with('status', 'Email verified! You can now log in normally.');
+        // A page of its own that names the address, not a quiet redirect: whoever opened the link, and
+        // whoever is looking at the Admin screen, can see which account was confirmed.
+        return view('auth.email-verified', [
+            'email' => EmailAddress::mask($user->email),
+            'role' => strtolower((string) $user->user_type),
+            'isTeacher' => $user->user_type === 'Teacher',
+        ]);
     }
 
     public function showLogin()
@@ -240,7 +346,12 @@ class AuthController extends Controller
         }
 
         if ($blockedReason = $this->reasonLoginBlocked($user, $credentials['role'] ?? null)) {
-            RateLimiter::hit($throttleKey, 60);
+            // Lets the sign in page offer "send the link again" right under the message.
+            if ($this->needsConfirming($user)) {
+                $request->session()->flash('unconfirmed_email', $user->email);
+            } else {
+                RateLimiter::hit($throttleKey, 60);
+            }
 
             throw ValidationException::withMessages(['email' => $blockedReason]);
         }
@@ -287,7 +398,19 @@ class AuthController extends Controller
             return 'Your teacher registration was not approved.'.($reason !== '' ? ' Reason: '.rtrim($reason, '.').'.' : '').' Contact your school\'s TaraBasa admin.';
         }
 
+        // The address must be confirmed first. Only said after the password was right, so it does not
+        // tell a stranger which addresses have accounts.
+        if ($this->needsConfirming($user)) {
+            return 'Please confirm your email first. Open the link we sent to '.EmailAddress::mask($user->email).' (look in spam too), then log in. Tap the button under this message to get a new link.';
+        }
+
         return null;
+    }
+
+    /** A Teacher or Parent whose email has not been confirmed, while confirming is required. (The Admin is never held back.) */
+    private function needsConfirming(User $user): bool
+    {
+        return $this->mustConfirmEmail() && $user->user_type !== 'Admin' && ! $user->hasVerifiedEmail();
     }
 
     private function redirectForUserType(User $user)
@@ -357,6 +480,12 @@ class AuthController extends Controller
         if (! $user) {
             return redirect()->route('login', ['role' => $submittedRole])
                 ->withErrors(['email' => "No TaraBasa account found for {$googleUser->getEmail()}. Please register first."]);
+        }
+
+        // Google has just proved this person owns the address (checked above), which is exactly what the
+        // confirmation email is for, so there is nothing left to confirm.
+        if (! $user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
         }
 
         if ($blockedReason = $this->reasonLoginBlocked($user, $submittedRole)) {

@@ -3,7 +3,11 @@
 @section('content')
 
   <h1>Teacher Registration</h1>
-  <p class="sub">You can log in right away — some features unlock once your school verifies you.</p>
+  @if (config('auth.require_verified_email'))
+    <p class="sub">We will email you a confirmation link. Open it to turn on your account. Some features unlock once your school verifies you.</p>
+  @else
+    <p class="sub">You can log in right away — some features unlock once your school verifies you.</p>
+  @endif
 
   @if ($errors->any())
     <div class="form-error-banner">

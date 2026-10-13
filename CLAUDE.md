@@ -6525,15 +6525,33 @@ adviser's answer matters). Learner only, as scoped in Part 1. The manuscript sti
   route afterwards; the new field itself is not yet confirmed against the running site (needs a login as the test child). APK:
   `D:\tools\apk-out\TaraBasa-AI-0.3.2-test6.apk` (versionCode 6, built from a copy in `D:\tb`, checked inside like 0.3.1). Send 0.3.2, not the
   older files. Still unproven on a real phone, as before.
-- **Verification link bug (found 2026-10-13 while setting up the phone test, FIX LOCAL then pushed to `mobile-app`, NOT in the live branch yet).**
+- **Verification link bug (found 2026-10-13 while setting up the phone test, FIXED, pushed to `mobile-app` as `d911cbb` and MERGED INTO THE LIVE BRANCH as `d1bde1c` on the same day with the owner's explicit yes; deployed by 11:01, seen from outside because an unsigned link now answers 403 instead of redirecting to the login page).**
   `/email/verify/{id}/{hash}` had the `auth` middleware and `EmailVerificationRequest`, so it only verified the account when that same person was
   signed in in the same browser. A teacher who clicked it logged out, on a phone, or while the Admin was signed in on that computer (403) stayed
   "Email not verified" and the Admin's Approve button stayed locked. Now `AuthController::verifyEmail(Request, id, hash)` is reachable by anyone,
   with the `signed` middleware (genuine and not expired, 60 minutes) plus a check that the hash is the sha1 of THAT user's email, so a link can only
   verify the account it was made for; throttled 20 a minute. `tests/Feature/EmailVerificationLinkTest.php` (9 tests; 7 fail on the old code); full
-  suite 365 passing. The live site still has the bug until `mobile-app` is merged into the live branch (needs the owner's explicit yes). Workaround
-  in `mobile/TEST-SETUP.md` step 3. Not tested against real email on the live host. Reading the live database to check a teacher's status was
+  suite 365 passing (also on the merged code before the push). NOT yet confirmed with a real email and a real click on the live host. Workaround for
+  a link made before the deploy: `mobile/TEST-SETUP.md` step 3. Reading the live database to check a teacher's status was
   refused by the tool permissions, so the diagnosis came from the code and the tests.
+- **Confirm your email before signing in (2026-10-13, BUILT LOCALLY, NOT PUSHED; the owner asked for it after a "verified but still
+  unverified" report and because people typed addresses that were not real). THIS DEVIATES from the actor prompt's "a Pending Teacher logs in
+  right away".** Switch `auth.require_verified_email` (env `REQUIRE_VERIFIED_EMAIL`, default TRUE; set false on Render to go back with no code
+  change; phpunit.xml sets it false so the older tests keep their behaviour) and `auth.check_email_domain` (env `CHECK_EMAIL_DOMAIN`, default
+  true). With it on: a new Teacher or Parent is NOT signed in at registration (page says "Almost there"); `AuthController::reasonLoginBlocked`
+  refuses sign in until the email is confirmed, but only AFTER the password was right (no account enumeration), and the login page then offers
+  "Send me a new confirmation link" (`POST /email/resend`, `verification.resend`, public, throttled, same answer for every address, one send a minute
+  per account, never for the Admin or a confirmed account). The Admin is never held back (`needsConfirming`). "Continue with Google" marks the
+  account confirmed (Google proved the address). Registration: email lower-cased, `email:rfc,dns` (domain can receive mail), a typo list
+  (`App\Support\EmailAddress`: gmial.com, gmail.co ... "Did you mean ...?"), and if the confirmation email cannot be SENT the new account is
+  deleted again and the form returns with a message (nothing unusable is left behind). The link now shows a page (`auth/email-verified`, names the
+  address masked as `pi***@gmail.com`) instead of a silent redirect, and a bad, expired or changed link shows `auth/verify-link-problem` (403) with a
+  send-again form (`InvalidSignatureException` rendered in `bootstrap/app.php`). Tests: `EmailConfirmationTest` (17), `EmailVerificationLinkTest` (10);
+  suite 383 passing. Checked in a browser with the real flow: typo refused with the hint, "Almost there", sign in refused with the resend button,
+  the emailed link opened logged out, then sign in worked, and the bad link page. NOT reproduced: the owner's "link clicked but Admin still shows
+  not verified" on the live site (the real registration email link verifies correctly locally, also behind a simulated HTTPS proxy), so the
+  cause there is unknown; the new result page now names the address so a mismatch between the card and the clicked account is visible. Existing
+  unconfirmed accounts on the live site are held back at sign in until they confirm.
 - **Real hurdles, so they are not forgotten.** Recording: `expo-audio` records m4a/AAC (`RecordingPresets.HIGH_QUALITY`, 44.1 kHz stereo,
   about 16 KB a second; a mono 16 kHz preset would upload smaller on slow data, not needed yet). It cannot be tried in this build
   environment, only on a real phone. The server and the three teammate services sleep: show a waiting screen, and call `/api/learner/warm`
