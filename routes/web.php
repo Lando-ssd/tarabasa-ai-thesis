@@ -146,6 +146,11 @@ Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
     ->whereNumber('id')
     ->name('verification.verify');
 
+// "Send the link again" for someone who cannot sign in yet (so has no session). Same answer for every address.
+Route::post('/email/resend', [AuthController::class, 'resendVerification'])
+    ->middleware('throttle:10,1')
+    ->name('verification.resend');
+
 // Admin Dashboard — 'auth' confirms a real session, 'admin' confirms
 // user_type = Admin. A Teacher or Parent hitting these URLs directly
 // gets a 403 from EnsureUserIsAdmin, not just a hidden nav link.

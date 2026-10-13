@@ -53,4 +53,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // A confirmation link that is expired, cut short or changed says so in words and offers a new one,
+        // instead of the plain "forbidden" page.
+        $exceptions->render(function (\Illuminate\Routing\Exceptions\InvalidSignatureException $e, Request $request) {
+            if ($request->routeIs('verification.verify') && ! $request->expectsJson()) {
+                return response()->view('auth.verify-link-problem', [], 403);
+            }
+        });
     })->create();

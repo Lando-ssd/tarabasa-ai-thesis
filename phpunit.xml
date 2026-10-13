@@ -28,6 +28,11 @@
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
+        <!-- The older tests sign people in straight after registering; the "confirm your email first" rules
+             have their own tests (EmailConfirmationTest) that switch the setting on. A domain lookup needs the
+             internet, so tests do not do it either. -->
+        <env name="REQUIRE_VERIFIED_EMAIL" value="false"/>
+        <env name="CHECK_EMAIL_DOMAIN" value="false"/>
         <!-- Tests never wait for a sleeping teammate service to wake (they fake the answers). -->
         <env name="READING_AI_READY_WAIT" value="0"/>
         <env name="ACTIVITY_AI_READY_WAIT" value="0"/>

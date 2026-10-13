@@ -38,7 +38,7 @@ class EmailVerificationLinkTest extends TestCase
     {
         $teacher = $this->unverifiedTeacher();
 
-        $this->get($this->link($teacher))->assertRedirect(route('login'))->assertSessionHas('status');
+        $this->get($this->link($teacher))->assertOk()->assertSee('Email confirmed');
 
         $this->assertNotNull($teacher->fresh()->email_verified_at);
     }
@@ -49,7 +49,7 @@ class EmailVerificationLinkTest extends TestCase
         $admin = User::create(['first_name' => 'Ada', 'last_name' => 'Admin', 'email' => 'ada@example.com', 'password' => 'a-private-and-long-one-9', 'user_type' => 'Admin']);
         $admin->forceFill(['email_verified_at' => now()])->save();
 
-        $this->actingAs($admin)->get($this->link($teacher))->assertRedirect();
+        $this->actingAs($admin)->get($this->link($teacher))->assertOk()->assertSee('Email confirmed');
 
         $this->assertNotNull($teacher->fresh()->email_verified_at);
     }
@@ -58,7 +58,7 @@ class EmailVerificationLinkTest extends TestCase
     {
         $teacher = $this->unverifiedTeacher();
 
-        $this->actingAs($teacher)->get($this->link($teacher))->assertRedirect();
+        $this->actingAs($teacher)->get($this->link($teacher))->assertOk();
 
         $this->assertNotNull($teacher->fresh()->email_verified_at);
     }
@@ -68,9 +68,9 @@ class EmailVerificationLinkTest extends TestCase
         $teacher = $this->unverifiedTeacher();
         $url = $this->link($teacher);
 
-        $this->get($url)->assertRedirect();
+        $this->get($url)->assertOk();
         $first = $teacher->fresh()->email_verified_at;
-        $this->get($url)->assertRedirect(route('login'));
+        $this->get($url)->assertOk();
 
         $this->assertEquals($first, $teacher->fresh()->email_verified_at);
     }
@@ -124,6 +124,39 @@ class EmailVerificationLinkTest extends TestCase
         $url = URL::temporarySignedRoute('verification.verify', now()->addMinutes(60), ['id' => 999999, 'hash' => sha1('nobody@example.com')]);
 
         $this->get($url)->assertForbidden();
+    }
+
+    /**
+     * The whole real path, as it happens on the host: the form is submitted through the host's HTTPS proxy, the email
+     * carries a link, and that very link (not one made by the test) is opened later with nobody signed in.
+     */
+    public function test_the_link_in_the_real_registration_email_verifies_the_account_behind_the_hosts_proxy(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $proxy = ['X-Forwarded-Proto' => 'https', 'X-Forwarded-Host' => 'tarabasa-ai.onrender.com', 'X-Forwarded-Port' => '443'];
+
+        $this->withHeaders($proxy)->post(route('register.teacher.submit'), [
+            'first_name' => 'Pinky', 'last_name' => 'Reyes', 'email' => 'pinky@example.com', 'password' => 'Passw0rd!', 'password_confirmation' => 'Passw0rd!',
+            'school_name' => 'Rizal ES', 'employee_id' => 'EMP-1', 'grades_mode' => 'single', 'grades_handled' => ['Grade 2'],
+        ])->assertOk();
+
+        $user = User::where('email', 'pinky@example.com')->firstOrFail();
+        $this->assertNull($user->email_verified_at);
+
+        $url = null;
+        \Illuminate\Support\Facades\Notification::assertSentTo($user, \Illuminate\Auth\Notifications\VerifyEmail::class, function ($n) use ($user, &$url) {
+            $url = $n->toMail($user)->actionUrl;
+
+            return true;
+        });
+        $this->assertStringStartsWith('https://tarabasa-ai.onrender.com/email/verify/', $url);
+
+        // A new browser (nobody signed in), same proxy in front.
+        auth()->logout();
+        $this->flushSession();
+        $this->withHeaders($proxy)->get($url)->assertOk()->assertSee('Email confirmed');
+
+        $this->assertNotNull($user->fresh()->email_verified_at);
     }
 
     public function test_once_verified_the_admin_can_approve_the_teacher(): void

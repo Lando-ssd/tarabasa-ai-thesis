@@ -19,20 +19,41 @@
   <div class="success-stage">
     <div id="registrationSuccessLottie" class="success-lottie" role="img" aria-label="A celebratory thank-you animation"></div>
 
-    <h1>You're registered, {{ $firstName }}!</h1>
-    <p class="sub">Your account is ready to use.</p>
+    @if ($mustConfirm ?? false)
+      <h1>Almost there, {{ $firstName }}!</h1>
+      <p class="sub">Confirm your email to finish creating your account.</p>
+    @else
+      <h1>You're registered, {{ $firstName }}!</h1>
+      <p class="sub">Your account is ready to use.</p>
+    @endif
   </div>
 
   <div class="verify-note">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6l9 6 9-6M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <span>We've sent a confirmation link to <strong>{{ $email }}</strong>. Click it whenever you get a chance — you don't have to wait for it to start.</span>
+    @if ($mustConfirm ?? false)
+      <span>We sent a confirmation link to <strong>{{ $email }}</strong>. Open it to turn on your account, then log in. Look in your spam folder too. Wrong address? Register again with the right one.</span>
+    @else
+      <span>We've sent a confirmation link to <strong>{{ $email }}</strong>. Click it whenever you get a chance — you don't have to wait for it to start.</span>
+    @endif
   </div>
 
   @if ($role === 'teacher')
     <div class="verify-note amber">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>Your school details are being reviewed by an Admin. Until then, you can try AI activity generation with 2 free credits — real class rosters unlock once you're verified.</span>
+      @if ($mustConfirm ?? false)
+        <span>After you confirm your email, an Admin reviews your school details. Until then you can try activity generation with 2 free credits. Real class rosters unlock once you are approved.</span>
+      @else
+        <span>Your school details are being reviewed by an Admin. Until then, you can try AI activity generation with 2 free credits — real class rosters unlock once you're verified.</span>
+      @endif
     </div>
+  @endif
+
+  @if ($mustConfirm ?? false)
+    <form method="POST" action="{{ route('verification.resend') }}" style="margin:0 0 12px;text-align:center;">
+      @csrf
+      <input type="hidden" name="email" value="{{ $email }}">
+      <button type="submit" style="background:none;border:0;color:var(--blue-600);font:inherit;font-weight:700;font-size:14px;cursor:pointer;text-decoration:underline;">Did not get it? Send it again</button>
+    </form>
   @endif
 
   <a href="{{ route('login') }}" class="submit-btn" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;">

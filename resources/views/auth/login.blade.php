@@ -38,6 +38,15 @@
     </div>
   @endif
 
+  @if (session('unconfirmed_email'))
+    {{-- The password was right but the email is not confirmed yet: offer a new link right here. --}}
+    <form method="POST" action="{{ route('verification.resend') }}" style="margin:0 0 14px;">
+      @csrf
+      <input type="hidden" name="email" value="{{ session('unconfirmed_email') }}">
+      <button type="submit" class="scan-link" style="font-weight:800;">Send me a new confirmation link</button>
+    </form>
+  @endif
+
   @if (session('status'))
     <div class="verify-note success">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
