@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
 /**
- * One thing an Admin did to an account: approved, rejected, reopened, deactivated or activated it, with the reason
+ * One thing an Admin did to an account: approved, rejected, reopened, deactivated or activated it, sent the email
+ * again or confirmed the email address themselves, with the reason
  * or note they gave. Kept so the Admin's work can be audited (the Activity log screen).
  *
  * Writing a row must never be the reason a real action fails, so record() swallows its own errors and says so in
@@ -21,6 +22,7 @@ class AdminAction extends Model
         'deactivated' => 'deactivated',
         'activated' => 'activated',
         'resent' => 'sent the verification email again to',
+        'confirmed_email' => 'confirmed the email address of',
     ];
 
     public $timestamps = false;

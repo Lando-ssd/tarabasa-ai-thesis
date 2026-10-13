@@ -56,6 +56,7 @@
                 @csrf
                 <button type="submit" class="btn small ghost">Send the email again</button>
               </form>
+              <button type="button" class="btn small ghost" data-open="ce-{{ $u->id }}">Confirm email myself</button>
             @endunless
           @else
             <span class="pill warn">Rejected</span>
@@ -77,6 +78,10 @@
 
       @if ($tab === 'waiting')
         @push('dialogs')
+          @unless ($verified)
+            @include('admin._confirm-email-window', ['u' => $u, 'confirmReasons' => $confirmReasons])
+          @endunless
+
           <dialog id="ap-{{ $t->id }}" class="win" aria-label="Approve {{ $name }}">
             <div class="win-in narrow">
               <header class="win-head"><div class="win-titles"><h2>Approve {{ $name }}?</h2></div><button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button></header>

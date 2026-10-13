@@ -63,6 +63,7 @@
                     @csrf
                     <button type="submit" class="btn tiny ghost">Send email again</button>
                   </form>
+                  <button type="button" class="btn tiny ghost" data-open="ce-{{ $a->id }}">Confirm email myself</button>
                 @endunless
                 @if ($a->status === 'Active')
                   <button type="button" class="btn tiny ghost danger" data-open="de-{{ $a->id }}">Deactivate</button>
@@ -90,6 +91,11 @@
 </div>
 
 @foreach ($accounts as $a)
+  @if ($a->email_verified_at === null)
+    @push('dialogs')
+      @include('admin._confirm-email-window', ['u' => $a, 'confirmReasons' => $confirmReasons])
+    @endpush
+  @endif
   @if ($a->status === 'Active')
     @push('dialogs')
       <dialog id="de-{{ $a->id }}" class="win" aria-label="Deactivate {{ $a->first_name }} {{ $a->last_name }}">

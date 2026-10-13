@@ -8,6 +8,7 @@ use App\Models\Teacher;
 use App\Models\User;
 use App\Services\ServiceCheck;
 use App\Support\AdminHealth;
+use App\Support\EmailAddress;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -29,6 +30,17 @@ class AdminController extends Controller
         'Could not verify the employee ID',
         'Not a teacher at this school',
         'Duplicate account',
+        'Other',
+    ];
+
+    /**
+     * What the Admin picks when confirming someone's email address themselves (the person has not opened our link).
+     * Kept in the Activity log next to the Admin's name. "Other" needs a note.
+     */
+    public const CONFIRM_REASONS = [
+        'I spoke with them',
+        'I checked with their school',
+        'Their email blocks our messages',
         'Other',
     ];
 
@@ -107,6 +119,7 @@ class AdminController extends Controller
             'waitingCount' => Teacher::where('status', 'Pending')->count(),
             'rejectedCount' => Teacher::where('status', 'Rejected')->count(),
             'reasons' => self::REJECT_REASONS,
+            'confirmReasons' => self::CONFIRM_REASONS,
         ]);
     }
 
@@ -136,6 +149,7 @@ class AdminController extends Controller
             'accounts' => $accounts,
             'filter' => $filter,
             'q' => $q,
+            'confirmReasons' => self::CONFIRM_REASONS,
             'counts' => [
                 'all' => (clone $base)->count(),
                 'teachers' => (clone $base)->where('user_type', 'Teacher')->count(),
@@ -305,6 +319,41 @@ class AdminController extends Controller
 
         AdminAction::record($request->user(), 'resent', $user);
 
-        return back()->with('status', "Verification email sent to {$name}.");
+        // The masked address is shown so the Admin can see WHICH inbox to look in (and spot a card that belongs to another address).
+        return back()->with('status', "Verification email sent to {$name} at ".EmailAddress::mask($user->email).'. It can take a minute and may land in spam.');
+    }
+
+    /**
+     * The Admin confirms a person's email address themselves, for someone who cannot open our link (the email never
+     * arrives, or their provider blocks it) and whose address the Admin has checked another way. The reason is
+     * required and the action is written to the Activity log with the Admin's name. Never for an Admin account and
+     * never for an address that is already confirmed.
+     */
+    public function confirmEmail(Request $request, User $user): RedirectResponse
+    {
+        abort_if($user->user_type === 'Admin', 403);
+
+        $name = trim($user->first_name.' '.$user->last_name);
+
+        if ($user->email_verified_at !== null) {
+            return back()->withErrors(['admin' => "{$name} has already confirmed their email."]);
+        }
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'in:'.implode(',', self::CONFIRM_REASONS)],
+            'note' => [$request->input('reason') === 'Other' ? 'required' : 'nullable', 'string', 'max:140'],
+        ], [
+            'reason.required' => 'Pick how you checked their address.',
+            'reason.in' => 'Pick one of the listed reasons.',
+            'note.required' => 'Add a short note for "Other".',
+        ]);
+
+        if ($user->markEmailAsVerified()) {
+            event(new \Illuminate\Auth\Events\Verified($user));
+        }
+
+        AdminAction::record($request->user(), 'confirmed_email', $user, $data['reason'], $data['note'] ?? null);
+
+        return back()->with('status', "{$name}'s email is confirmed. They can log in now.");
     }
 }
