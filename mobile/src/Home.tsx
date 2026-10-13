@@ -1,9 +1,12 @@
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import type { Home as HomeData } from './api';
+import { ReadingPath } from './ReadingPath';
 import { useSession } from './session';
 import { Avatar, Btn, Busy, H2, Icon, Notice, Panel, Pill, Screen, Small } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, size } from './theme';
 
 /**
  * Home: who is signed in, days in a row and points, the reading path with the child's own step marked, one big button to
@@ -11,6 +14,21 @@ import { colors, fonts } from './theme';
  */
 export function Home({ onStartReading }: { onStartReading: () => void }) {
   const { learner, home, homeError, reloadHome, signOut } = useSession();
+  const scrollRef = useRef<ScrollView>(null);
+  const actionBottom = useRef<number | null>(null);
+  const brought = useRef(false);
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  // On a short phone the Start button can sit below the bottom bar. Once, as Home opens, scroll just far enough to bring
+  // it into view (like the language apps do): the content above stays reachable by scrolling back up.
+  function bringStartIntoView(contentTop: number) {
+    if (brought.current || actionBottom.current === null) return;
+    brought.current = true;
+    const visible = height - insets.top - 8 - size.tabBar - insets.bottom - 16;
+    const y = contentTop + actionBottom.current - visible;
+    if (y > 8) scrollRef.current?.scrollTo({ y, animated: true });
+  }
 
   function confirmLogOut() {
     const message = 'You will need your card or code and your PIN to come back.';
@@ -25,7 +43,7 @@ export function Home({ onStartReading }: { onStartReading: () => void }) {
   }
 
   return (
-    <Screen withTabBar>
+    <Screen withTabBar scrollRef={scrollRef}>
       <View style={styles.header}>
         <Avatar name={learner.firstName} px={52} />
         <View style={{ flex: 1 }}>
@@ -48,9 +66,8 @@ export function Home({ onStartReading }: { onStartReading: () => void }) {
           <Busy text="Getting your reading path" style={{ marginTop: 24 }} />
         )
       ) : (
-        <View style={{ gap: 14, marginTop: 14 }}>
-          <ReadingPath path={home.readingPath} />
-          <Btn label="Start Reading" icon="book-open" onPress={onStartReading} />
+        <View style={{ gap: 14, marginTop: 14 }} onLayout={(e) => bringStartIntoView(e.nativeEvent.layout.y)}>
+          <ReadingPath path={home.readingPath} progress={home.pathProgress} onStart={onStartReading} onActionBottom={(y) => { actionBottom.current = y; }} />
           <View style={styles.row}>
             <WeeklyGoal goal={home.weeklyGoal} />
             <WeekChart days={home.growth.days} scale={home.growth.scale} />
@@ -59,39 +76,6 @@ export function Home({ onStartReading }: { onStartReading: () => void }) {
         </View>
       )}
     </Screen>
-  );
-}
-
-function ReadingPath({ path }: { path: HomeData['readingPath'] }) {
-  const current = path.find((p) => p.isCurrent)?.step ?? 0;
-  return (
-    <Panel style={{ gap: 8 }}>
-      <Small>Your Reading Path</Small>
-      {path.map((node) => {
-        const done = current > 0 && node.step < current;
-        const here = node.isCurrent;
-        return (
-          <View
-            key={node.step}
-            style={[styles.node, here && styles.nodeHere]}
-            accessible
-            accessibilityLabel={`Step ${node.step}, ${node.name}${here ? ', you are here' : done ? ', done' : ''}`}
-          >
-            <View style={[styles.nodeDot, done && { backgroundColor: colors.ok }, here && { backgroundColor: colors.orange }]}>
-              {done ? <Icon name="check" size={16} color={colors.white} /> : <Text style={[styles.nodeNum, here && { color: colors.white }]}>{node.step}</Text>}
-            </View>
-            <Text maxFontSizeMultiplier={1.2} style={styles.nodeName}>
-              {node.name}
-            </Text>
-            {here ? (
-              <Text maxFontSizeMultiplier={1.2} style={styles.here}>
-                You are here
-              </Text>
-            ) : null}
-          </View>
-        );
-      })}
-    </Panel>
   );
 }
 
@@ -164,12 +148,6 @@ function WeekChart({ days, scale }: { days: HomeData['growth']['days']; scale: n
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { fontFamily: fonts.displayMedium, fontSize: 24, lineHeight: 28, color: colors.ink },
-  node: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.white, borderRadius: 14, borderWidth: 2, borderColor: colors.line, paddingHorizontal: 10, minHeight: 48 },
-  nodeHere: { borderColor: colors.orange, backgroundColor: colors.orangeSoft },
-  nodeDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.sky2, alignItems: 'center', justifyContent: 'center' },
-  nodeNum: { fontFamily: fonts.uiBold, fontSize: 15, color: colors.blue },
-  nodeName: { flex: 1, fontFamily: fonts.uiBold, fontSize: 18, color: colors.ink },
-  here: { fontFamily: fonts.uiBold, fontSize: 13, color: colors.orangeDark },
   row: { flexDirection: 'row', gap: 10, alignItems: 'stretch' },
   half: { flex: 1, padding: 10, justifyContent: 'center' },
   goal: { alignItems: 'center', gap: 6 },

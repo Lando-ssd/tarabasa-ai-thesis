@@ -1,7 +1,7 @@
 // Developer only. In the browser preview, open  http://localhost:8081/#gallery=<name>  to see one screen with sample
 // data at any phone size, without a server, a microphone or a child. It is never reached in a phone build (App.tsx
 // guards it with __DEV__ and the web platform). Names: home, badges, results, results-low, check-intro, check-letters,
-// check-next, check-unclear, check-done, warmup, warmup-heard, warmup-quiet, practice, quiz, waiting, failed, crash, soon.
+// check-next, check-unclear, check-done, warmup, warmup-heard, warmup-quiet, practice, quiz, waiting, failed, crash, path-1 to path-4, soon.
 import { useMemo } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -44,11 +44,12 @@ const badgeNames = ['First Reading Star', 'Reading Check Done', '3 Days In A Row
 const home: HomeData = {
   learner,
   readingPath: [
-    { step: 1, name: 'Letter Explorer', skill: '', blurb: '', isCurrent: false },
-    { step: 2, name: 'Word Builder', skill: '', blurb: '', isCurrent: true },
-    { step: 3, name: 'Sentence Reader', skill: '', blurb: '', isCurrent: false },
-    { step: 4, name: 'Story Reader', skill: '', blurb: '', isCurrent: false },
+    { step: 1, name: 'Letter Explorer', skill: 'Letters and Sounds', blurb: 'Say the sounds of letters', isCurrent: false },
+    { step: 2, name: 'Word Builder', skill: 'Sounding Out Words', blurb: 'Sound out and read words', isCurrent: true },
+    { step: 3, name: 'Sentence Reader', skill: 'Reading Sentences', blurb: 'Read sentences with care', isCurrent: false },
+    { step: 4, name: 'Story Reader', skill: 'Reading Stories', blurb: 'Read stories and answer questions', isCurrent: false },
   ],
+  pathProgress: { have: 1, need: 3, atTop: false },
   competencyProgress: [],
   streak: { days: 3, week: [] },
   weeklyGoal: { done: 3, target: 5, met: false },
@@ -119,11 +120,28 @@ const scored = (extra: Partial<Scored> = {}): Scored => ({
   ...extra,
 });
 
+
+/** The sample Home with the child on another step: path-1 (just starting), path-2, path-3 (two great readings in) and path-4 (the top). */
+function homeFor(name: string): HomeData {
+  const m = /^path-([1-4])$/.exec(name);
+  if (!m) return home;
+  const step = Number(m[1]);
+  return {
+    ...home,
+    readingPath: home.readingPath.map((p) => ({ ...p, isCurrent: p.step === step })),
+    pathProgress: step === 4 ? { have: 0, need: 3, atTop: true } : { have: step === 3 ? 2 : step === 1 ? 0 : 1, need: 3, atTop: false },
+  };
+}
+
 const noop = () => {};
 
 function screenFor(name: string) {
   switch (name) {
     case 'home':
+    case 'path-1':
+    case 'path-2':
+    case 'path-3':
+    case 'path-4':
       return <Home onStartReading={noop} />;
     case 'badges':
       return <Badges />;
@@ -230,8 +248,8 @@ export function Gallery() {
   const ready = useAppFonts();
   const name = (typeof window !== 'undefined' ? window.location.hash : '').replace(/^#gallery=?/, '') || 'home';
   const session = useMemo<Session>(
-    () => ({ learner, home, homeError: null, reloadHome: async () => {}, fontStep: 4, setFontStep: noop, setLearner: noop, signOut: noop }),
-    [],
+    () => ({ learner, home: homeFor(name), homeError: null, reloadHome: async () => {}, fontStep: 4, setFontStep: noop, setLearner: noop, signOut: noop }),
+    [name],
   );
   if (!ready) return null;
   return (

@@ -167,6 +167,34 @@ class MobileApiTest extends TestCase
         $this->assertGreaterThanOrEqual(100, count($home->json('badges')), 'all the badges are listed, earned or not');
     }
 
+    public function test_home_says_how_many_great_readings_the_child_has_toward_growing(): void
+    {
+        [$kid, $activity, $teacher] = $this->child(['mastery_level' => 'Developing', 'reading_rung' => 3]);
+        Sanctum::actingAs($kid, ['*']);
+
+        $fresh = $this->getJson('/api/learner/dashboard')->assertOk()->json('pathProgress');
+        $this->assertSame(0, $fresh['have']);
+        $this->assertSame((int) config('progression.up_readings'), $fresh['need']);
+        $this->assertFalse($fresh['atTop']);
+
+        // One strong reading of a long enough text counts; the sessions are never changed by looking.
+        $long = $this->activity($teacher, ['title' => 'A longer one', 'word_count' => 40]);
+        ReadingSession::create(['learner_id' => $kid->id, 'activity_id' => $long->id, 'session_type' => 'Practice', 'initiated_by' => 'Teacher', 'accuracy_percent' => 96]);
+        $before = ReadingSession::count();
+
+        $after = $this->getJson('/api/learner/dashboard')->assertOk()->json('pathProgress');
+        $this->assertSame(1, $after['have']);
+        $this->assertSame($before, ReadingSession::count());
+    }
+
+    public function test_a_child_on_the_top_rung_is_marked_as_at_the_top(): void
+    {
+        [$kid] = $this->child(['mastery_level' => 'Proficient', 'reading_rung' => (int) config('progression.top_rung')]);
+        Sanctum::actingAs($kid, ['*']);
+
+        $this->assertTrue($this->getJson('/api/learner/dashboard')->assertOk()->json('pathProgress.atTop'));
+    }
+
     public function test_every_badge_comes_with_a_group_name_an_icon_the_phone_can_draw_and_no_rule(): void
     {
         [$kid] = $this->child();

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode, type Ref } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -216,6 +216,7 @@ export function Notice({ text, tone = 'error' }: { text: string; tone?: 'error' 
 const ANIMATIONS = {
   intro: require('../assets/animations/tara-owl-intro.json'),
   head: require('../assets/animations/tara-owl-head.json'),
+  bird: require('../assets/animations/owl-bird.json'),
   happy: require('../assets/animations/star-happy.json'),
   sad: require('../assets/animations/star-sad.json'),
 };
@@ -239,13 +240,15 @@ type ScreenProps = {
   withTabBar?: boolean;
   background?: string;
   contentStyle?: StyleProp<ViewStyle>;
+  /** Lets a screen scroll itself (Home brings the child's own step into view). */
+  scrollRef?: Ref<ScrollView>;
 };
 
 /**
  * One screen. Keeps content clear of the notch, the status bar and the gesture bar, scrolls on a short phone,
  * keeps a readable column on a wide one, and pins the main action to the bottom edge.
  */
-export function Screen({ children, footer, scroll = true, withTabBar, background = colors.page, contentStyle }: ScreenProps) {
+export function Screen({ children, footer, scroll = true, withTabBar, background = colors.page, contentStyle, scrollRef }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const bottom = withTabBar ? 0 : Math.max(insets.bottom, 12);
   const body = (
@@ -256,6 +259,7 @@ export function Screen({ children, footer, scroll = true, withTabBar, background
     <View style={{ flex: 1, backgroundColor: background, paddingTop: insets.top + 8 }}>
       {scroll ? (
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1, paddingHorizontal: size.gutter, paddingBottom: footer ? 16 : bottom + 20 }}
           keyboardShouldPersistTaps="handled"
