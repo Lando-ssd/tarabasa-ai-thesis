@@ -140,8 +140,8 @@ advertising; the form also lets us show "Committed to follow the Play Families P
   > A parent creates the child's account on the TaraBasa AI website and gets a learner card with a QR code. On the phone the
   > child scans the card (or types the code) and enters a secret 4 digit PIN. A short first reading check finds a good
   > place to start. After that the app picks stories to read, listens while the child reads out loud, and shows which
-  > words went well and which need more practice. Points, badges and days in a row keep practice fun, and three word games
-  > (Word Builder, Letter Match, Balloon Pop) give extra practice without any marks.
+  > words went well and which need more practice. Points, badges and days in a row keep practice fun, and three reading games
+  > (Balloon Pop, Word Train, Sentence Stars) give extra practice out loud without any marks.
   >
   > For parents and teachers: progress, reading levels and activities are on the TaraBasa AI website. The app has no ads, no
   > chat, and no way for a child to contact anyone. Read the privacy page for exactly what is kept.

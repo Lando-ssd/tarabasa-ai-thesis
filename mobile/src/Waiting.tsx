@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Animation, Btn, H2, Notice, P, Screen, Busy } from './ui';
+import { s } from './scale';
 
 /**
  * The waiting screen while a reading is being scored. The free server can be asleep, so the first reading of the day
@@ -22,8 +23,8 @@ export function Waiting({ title = 'Checking your reading' }: { title?: string })
 
   return (
     <Screen scroll={false}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-        <Animation name="head" px={150} />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: s(14) }}>
+        <Animation name="head" px={s(150)} />
         <H2 style={{ textAlign: 'center' }}>{title}</H2>
         <P style={{ textAlign: 'center' }}>{text}</P>
         <Busy />
@@ -36,15 +37,16 @@ export function Waiting({ title = 'Checking your reading' }: { title?: string })
 export function SendFailed({ message, onRetry, onReread }: { message: string; onRetry: () => void; onReread: () => void }) {
   return (
     <Screen
+      anchor="content"
       footer={
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: s(10) }}>
           <Btn label="Send Again" onPress={onRetry} />
           <Btn label="Read It Again" tone="ghost" compact onPress={onReread} />
         </View>
       }
     >
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-        <Animation name="head" px={130} />
+      <View style={{ alignItems: 'center', gap: s(14) }}>
+        <Animation name="head" px={s(130)} />
         <H2 style={{ textAlign: 'center' }}>We could not send it yet</H2>
         <Notice text={message} />
         <P style={{ textAlign: 'center' }}>Your reading is still on this phone. Check the internet, then tap Send Again.</P>

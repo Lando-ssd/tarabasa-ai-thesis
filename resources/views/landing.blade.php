@@ -1099,7 +1099,7 @@
         <div class="games-text-wrap">
           <div id="gamesText" class="games-text">
             <h2 class="section-headline">Learning that feels like play</h2>
-            <p class="section-body">Word Builder and Letter Match turn practice into a real game, built around each child's own tricky words, no points or pressure attached.</p>
+            <p class="section-body">Balloon Pop, Word Train and Sentence Stars turn reading aloud into a real game, built around each child's own tricky words, no points or pressure attached.</p>
           </div>
         </div>
 

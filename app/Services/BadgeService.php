@@ -667,7 +667,7 @@ class BadgeService
         return $this->res($hit ? $this->playedAt($hit) : null);
     }
 
-    /** A whole round played and finished at level 3 (for Letter Match: every letter of the alphabet matched). */
+    /** A whole round played and finished at level 3 (Balloon Pop: every balloon of a level 3 round). */
     private function ruleGameTopCleared(array $rule, array $ctx): array
     {
         $hit = $this->playsOf($rule, $ctx)->first(fn (GamePlay $p) => $p->top_level_cleared);
@@ -682,7 +682,7 @@ class BadgeService
         return $this->res($hit ? $this->playedAt($hit) : null);
     }
 
-    /** Both games finished on the same calendar day, in the child's own timezone. */
+    /** Two different games finished on the same calendar day, in the child's own timezone. */
     private function ruleGameBothSameDay(array $rule, array $ctx): array
     {
         $seen = [];

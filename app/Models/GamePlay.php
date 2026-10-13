@@ -5,12 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * A finished Practice Games session (Word Builder, Letter Match or Balloon Pop). Only read by BadgeService (the Games badges);
- * see the migration for why this exists at all.
+ * A finished Practice Games session (Balloon Pop, Word Train or Sentence Stars: all three are read-aloud games). Only read by
+ * BadgeService (the Games badges); see the migration for why this exists at all.
+ *
+ * Word Builder and Letter Match, the first two games, were spelling and matching games rather than reading games and were
+ * replaced. Their old rows stay (a finished game still counts toward "games played"), but nothing writes them any more.
  */
 class GamePlay extends Model
 {
-    public const GAMES = ['word-builder', 'letter-match', 'balloon-pop'];
+    public const GAMES = ['balloon-pop', 'word-train', 'sentence-stars'];
+
+    /** The two retired games, kept only so rows already written under these names are still understood. */
+    public const RETIRED = ['word-builder', 'letter-match'];
 
     public $timestamps = false;
 

@@ -1,5 +1,5 @@
 {{--
-  Two small helpers both Practice Games use:
+  Two small helpers every Practice Game uses:
     tarabasaBadgeSvg(name)             an inline badge icon (games/_game-look styles it)
     tarabasaReportGame(payload, mount) tell the server a session ended, then show any badges
                                        it earned inside the element `mount`
@@ -8,7 +8,7 @@
   a game_plays row so the ten Games badges can be earned (GameController::finish). The
   report can never break a game: it is fire and forget and every failure is swallowed.
 
-  Expects: $game ('word-builder' | 'letter-match').
+  Expects: $game ('balloon-pop' | 'word-train' | 'sentence-stars').
 --}}
 <script>
   (function () {

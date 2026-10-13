@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Linking, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
-import { HINTS, judgeRecording, METER_MS, VOICE_DB } from './recording';
+import { HINTS, judgeRecording, METER_MS, PAUSE_MIN_VOICE, PAUSE_MS, VOICE_DB } from './recording';
 import { discardRecording } from './recordingFiles';
 import { Btn, Icon, Notice, Small } from './ui';
 import { colors, fonts } from './theme';
+import { s } from './scale';
 
 /** What the phone learned about the sound while it recorded. A level is null when the phone gave no level at all. */
 export type RecordingInfo = { peakDb: number | null; voiceSamples: number };
@@ -29,11 +30,13 @@ type Props = {
   silentHint?: string;
   /** Stop by itself once this many readings of a voice were heard (the warm-up: "say the word" and it is done). */
   autoStopAfterVoice?: number;
+  /** For a row of words or a sentence: stop by itself once the child has spoken and then paused, as well as on a tap of the check mark. */
+  stopOnPause?: boolean;
 };
 
-const SIZE = 92;
+const SIZE = s(92);
 // On a short phone (about 640dp tall) the button gets smaller so the story keeps room above it.
-const SIZE_SHORT = 76;
+const SIZE_SHORT = s(76);
 
 /**
  * The big microphone button, the main thing on a reading screen and placed where the thumb rests. One tap starts,
@@ -49,6 +52,7 @@ export function MicButton({
   onMeter,
   autoStopAfterVoice,
   silentHint,
+  stopOnPause,
 }: Props) {
   const { height } = useWindowDimensions();
   const px = height < 700 ? SIZE_SHORT : SIZE;
@@ -57,6 +61,7 @@ export function MicButton({
   const startedAt = useRef(0);
   const peak = useRef<number | null>(null);
   const voice = useRef(0);
+  const lastVoiceAt = useRef(0);
   const stopping = useRef(false);
   const meterTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [busy, setBusy] = useState(false);
@@ -90,6 +95,7 @@ export function MicButton({
     stopMeter();
     peak.current = null;
     voice.current = 0;
+    lastVoiceAt.current = 0;
     meterTimer.current = setInterval(() => {
       let level: number | undefined;
       try {
@@ -99,9 +105,15 @@ export function MicButton({
       }
       if (typeof level !== 'number' || !Number.isFinite(level)) return;
       peak.current = peak.current === null ? level : Math.max(peak.current, level);
-      if (level > VOICE_DB) voice.current += 1;
+      const now = Date.now();
+      if (level > VOICE_DB) {
+        voice.current += 1;
+        lastVoiceAt.current = now;
+      }
       onMeter?.(level);
       if (autoStopAfterVoice && voice.current >= autoStopAfterVoice) void stopRef.current();
+      // A row or a sentence: the child spoke, then stopped. That is "I am done", so nobody has to find the check mark.
+      if (stopOnPause && voice.current >= PAUSE_MIN_VOICE && now - lastVoiceAt.current > PAUSE_MS && now - startedAt.current > 1800) void stopRef.current();
     }, METER_MS);
   }
 
@@ -200,7 +212,7 @@ export function MicButton({
       <Text style={styles.label} accessibilityLiveRegion="polite">
         {recording ? `Listening  ${clock}` : idleLabel}
       </Text>
-      {recording ? <Small>{autoStopAfterVoice ? 'Say it now' : 'Tap the check mark when you finish'}</Small> : null}
+      {recording ? <Small>{autoStopAfterVoice ? 'Say it now' : stopOnPause ? 'Read it now. Pause when you finish.' : 'Tap the check mark when you finish'}</Small> : null}
 
       {hint && !recording ? (
         <View style={styles.problem}>
@@ -219,19 +231,19 @@ export function MicButton({
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: 6 },
+  wrap: { alignItems: 'center', gap: s(6) },
   stage: { alignItems: 'center', justifyContent: 'center' },
   ring: { position: 'absolute', backgroundColor: colors.orange },
   button: {
     backgroundColor: colors.orange,
-    borderBottomWidth: 7,
+    borderBottomWidth: s(7),
     borderBottomColor: colors.orangeDark,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonLive: { backgroundColor: colors.ok, borderBottomColor: '#1f6a41' },
-  pressed: { transform: [{ translateY: 4 }], borderBottomWidth: 3 },
+  pressed: { transform: [{ translateY: 4 }], borderBottomWidth: s(3) },
   off: { opacity: 0.55 },
-  label: { fontFamily: fonts.uiBold, fontSize: 19, color: colors.ink, textAlign: 'center' },
-  problem: { alignSelf: 'stretch', gap: 8, marginTop: 6 },
+  label: { fontFamily: fonts.uiBold, fontSize: s(19), color: colors.ink, textAlign: 'center' },
+  problem: { alignSelf: 'stretch', gap: s(8), marginTop: s(6) },
 });

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\GameController;
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
 use App\Models\Learner;
@@ -287,7 +286,7 @@ class AdaptivePatternTest extends TestCase
         }
         $this->assertSame('blends', ErrorPatterns::mainPattern(ErrorPatterns::forLearner($kid)));
 
-        $levels = (new \ReflectionMethod(GameController::class, 'wordLevels'))->invoke(app(GameController::class), $kid);
+        $levels = app(\App\Services\PracticeGameService::class)->wordLevels($kid);
 
         foreach ([1, 2, 3] as $level) {
             $this->assertArrayHasKey('favoured', $levels[$level]);
@@ -311,7 +310,7 @@ class AdaptivePatternTest extends TestCase
         $this->endingMistakes($kid, $a);
 
         $this->assertSame('endings', ErrorPatterns::mainPattern(ErrorPatterns::forLearner($kid)));
-        $levels = (new \ReflectionMethod(GameController::class, 'wordLevels'))->invoke(app(GameController::class), $kid);
+        $levels = app(\App\Services\PracticeGameService::class)->wordLevels($kid);
 
         // The game lists are plain single words with no endings to favour: nothing is pretended.
         foreach ([1, 2, 3] as $level) {
@@ -324,9 +323,9 @@ class AdaptivePatternTest extends TestCase
         $t = $this->teacher();
         $a = $this->activity($t, 'Plain', 'cat dog pig hen cow');
         $kid = $this->childWith($t, $a);
-        $method = new \ReflectionMethod(GameController::class, 'wordLevels');
+        $games = app(\App\Services\PracticeGameService::class);
 
-        $none = $method->invoke(app(GameController::class), $kid);
+        $none = $games->wordLevels($kid);
         $this->assertSame([], $none[1]['favoured']);
 
         // Middle-sound mistakes (hat read as hit) have no spelling feature to match on.
@@ -338,7 +337,7 @@ class AdaptivePatternTest extends TestCase
         }
 
         $this->assertSame('vowels', ErrorPatterns::mainPattern(ErrorPatterns::forLearner($kid)));
-        $vowels = $method->invoke(app(GameController::class), $kid);
+        $vowels = $games->wordLevels($kid);
         $this->assertSame([], $vowels[1]['favoured']);
         $this->assertSame([], $vowels[3]['favoured']);
     }

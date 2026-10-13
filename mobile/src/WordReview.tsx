@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { WordResult } from './api';
 import { colors, fonts } from './theme';
 import { Small } from './ui';
+import { s } from './scale';
 
 // How each word of the passage went. Never a grade and never a sad colour: a word that went wrong is shown in a
 // calm way with a short note, so a child sees what to practise. Colour is never the only signal: every word that
@@ -57,15 +58,15 @@ export function WordReview({ words, extra }: { words: WordResult[]; extra?: stri
         })}
       </View>
       {extra && extra.length > 0 ? (
-        <Small style={{ marginTop: 10 }}>You also said: {extra.join(', ')}. That is not in this story, but great effort reading out loud.</Small>
+        <Small style={{ marginTop: s(10) }}>You also said: {extra.join(', ')}. That is not in this story, but great effort reading out loud.</Small>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4, alignItems: 'center' },
-  word: { fontFamily: fonts.read, fontSize: 19, lineHeight: 26 },
-  note: { fontFamily: fonts.ui, fontSize: 12.5, lineHeight: 15 },
+  flow: { flexDirection: 'row', flexWrap: 'wrap', gap: s(6) },
+  chip: { borderRadius: s(10), paddingHorizontal: s(9), paddingVertical: s(4), alignItems: 'center' },
+  word: { fontFamily: fonts.read, fontSize: s(19), lineHeight: s(26) },
+  note: { fontFamily: fonts.ui, fontSize: s(12.5), lineHeight: s(15) },
 });

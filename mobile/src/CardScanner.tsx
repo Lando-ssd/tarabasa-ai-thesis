@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, H2, Icon, IconBtn, P } from './ui';
 import { isGoodCard, normalizeCode } from './learnerCode';
 import { colors, fonts, size } from './theme';
+import { s } from './scale';
 
 type Props = {
   visible: boolean;
@@ -70,7 +71,7 @@ export function CardScanner({ visible, onClose, onCard }: Props) {
         {permission?.granted ? (
           <View style={styles.center} pointerEvents="none">
             <View style={[styles.frame, found ? styles.frameOk : problem ? styles.frameBad : null]}>
-              {found ? <Icon name="check-circle" size={96} color={colors.ok} /> : null}
+              {found ? <Icon name="check-circle" size={s(96)} color={colors.ok} /> : null}
             </View>
           </View>
         ) : (
@@ -104,7 +105,7 @@ export function CardScanner({ visible, onClose, onCard }: Props) {
   );
 }
 
-const FRAME = 260;
+const FRAME = s(240);
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0c1722' },
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   frame: {
     width: FRAME,
     height: FRAME,
-    borderRadius: 28,
+    borderRadius: s(28),
     borderWidth: 5,
     borderColor: colors.orange,
     alignItems: 'center',
@@ -122,7 +123,7 @@ const styles = StyleSheet.create({
   },
   frameOk: { borderColor: colors.ok, backgroundColor: 'rgba(255,255,255,0.85)' },
   frameBad: { borderColor: '#ff8a80' },
-  sheet: { width: '100%', maxWidth: size.maxWidth, backgroundColor: colors.white, borderRadius: 24, padding: 20, gap: 14 },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: size.gutter, backgroundColor: 'rgba(12,23,34,0.78)', paddingTop: 16 },
-  hint: { fontFamily: fonts.ui, fontSize: 19, lineHeight: 26, color: colors.white, textAlign: 'center' },
+  sheet: { width: '100%', maxWidth: size.maxWidth, backgroundColor: colors.white, borderRadius: s(24), padding: s(20), gap: s(14) },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: size.gutter, backgroundColor: 'rgba(12,23,34,0.78)', paddingTop: s(16) },
+  hint: { fontFamily: fonts.ui, fontSize: s(19), lineHeight: s(26), color: colors.white, textAlign: 'center' },
 });

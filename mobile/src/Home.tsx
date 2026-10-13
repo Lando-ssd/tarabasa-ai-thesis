@@ -7,6 +7,7 @@ import { ReadingPath } from './ReadingPath';
 import { useSession } from './session';
 import { Avatar, Btn, Busy, H2, Icon, Notice, Panel, Pill, Screen, Small } from './ui';
 import { colors, fonts, size } from './theme';
+import { s } from './scale';
 
 /**
  * Home: who is signed in, days in a row and points, the reading path with the child's own step marked, one big button to
@@ -45,7 +46,7 @@ export function Home({ onStartReading }: { onStartReading: () => void }) {
   return (
     <Screen withTabBar scrollRef={scrollRef}>
       <View style={styles.header}>
-        <Avatar name={learner.firstName} px={52} />
+        <Avatar name={learner.firstName} px={s(52)} />
         <View style={{ flex: 1 }}>
           <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={styles.name}>
             {learner.firstName}
@@ -58,21 +59,21 @@ export function Home({ onStartReading }: { onStartReading: () => void }) {
 
       {!home ? (
         homeError ? (
-          <View style={{ gap: 12, marginTop: 20 }}>
+          <View style={{ gap: s(12), marginTop: s(20) }}>
             <Notice text={homeError} />
             <Btn label="Try Again" onPress={reloadHome} />
           </View>
         ) : (
-          <Busy text="Getting your reading path" style={{ marginTop: 24 }} />
+          <Busy text="Getting your reading path" style={{ marginTop: s(24) }} />
         )
       ) : (
-        <View style={{ gap: 14, marginTop: 14 }} onLayout={(e) => bringStartIntoView(e.nativeEvent.layout.y)}>
+        <View style={{ gap: s(14), marginTop: s(14) }} onLayout={(e) => bringStartIntoView(e.nativeEvent.layout.y)}>
           <ReadingPath path={home.readingPath} progress={home.pathProgress} onStart={onStartReading} onActionBottom={(y) => { actionBottom.current = y; }} />
           <View style={styles.row}>
             <WeeklyGoal goal={home.weeklyGoal} />
             <WeekChart days={home.growth.days} scale={home.growth.scale} />
           </View>
-          <Btn label="Log out" icon="sign-out" tone="ghost" compact onPress={confirmLogOut} style={{ alignSelf: 'center', marginTop: 6 }} />
+          <Btn label="Log out" icon="sign-out" tone="ghost" compact onPress={confirmLogOut} style={{ alignSelf: 'center', marginTop: s(6) }} />
         </View>
       )}
     </Screen>
@@ -87,8 +88,8 @@ function WeeklyGoal({ goal }: { goal: HomeData['weeklyGoal'] }) {
   return (
     <Panel style={styles.half} >
       <View style={styles.goal} accessible accessibilityLabel={`Weekly goal, ${goal.done} of ${goal.target}${goal.met ? ', done' : `, ${left} more to go`}`}>
-        <View style={{ width: 74, height: 74, alignItems: 'center', justifyContent: 'center' }}>
-          <Svg width={74} height={74} viewBox="0 0 74 74" style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
+        <View style={{ width: s(74), height: s(74), alignItems: 'center', justifyContent: 'center' }}>
+          <Svg width={s(74)} height={s(74)} viewBox="0 0 74 74" style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
             <Circle cx={37} cy={37} r={R} stroke={colors.sky2} strokeWidth={9} fill="none" />
             {share > 0 ? (
               <Circle
@@ -103,7 +104,7 @@ function WeeklyGoal({ goal }: { goal: HomeData['weeklyGoal'] }) {
               />
             ) : null}
           </Svg>
-          {goal.met ? <Icon name="trophy" size={26} color={colors.goldDeep} /> : <Text style={styles.goalNum}>{goal.done}/{goal.target}</Text>}
+          {goal.met ? <Icon name="trophy" size={s(26)} color={colors.goldDeep} /> : <Text style={styles.goalNum}>{goal.done}/{goal.target}</Text>}
         </View>
         <Text maxFontSizeMultiplier={1.15} style={styles.goalText}>
           Weekly goal{'\n'}
@@ -115,7 +116,7 @@ function WeeklyGoal({ goal }: { goal: HomeData['weeklyGoal'] }) {
 }
 
 function WeekChart({ days, scale }: { days: HomeData['growth']['days']; scale: number }) {
-  const MAX = 56;
+  const MAX = s(56);
   return (
     <Panel style={styles.half}>
       <View
@@ -146,15 +147,15 @@ function WeekChart({ days, scale }: { days: HomeData['growth']['days']; scale: n
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  name: { fontFamily: fonts.displayMedium, fontSize: 24, lineHeight: 28, color: colors.ink },
-  row: { flexDirection: 'row', gap: 10, alignItems: 'stretch' },
-  half: { flex: 1, padding: 10, justifyContent: 'center' },
-  goal: { alignItems: 'center', gap: 6 },
-  goalNum: { fontFamily: fonts.display, fontSize: 19, color: colors.ink },
-  goalText: { fontFamily: fonts.ui, fontSize: 14, lineHeight: 18, color: colors.slate, textAlign: 'center' },
-  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 5 },
-  barCol: { flex: 1, alignItems: 'center', gap: 4 },
-  bar: { alignSelf: 'stretch', backgroundColor: colors.sky2, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
-  barLabel: { fontFamily: fonts.ui, fontSize: 12, color: colors.slate },
+  header: { flexDirection: 'row', alignItems: 'center', gap: s(8) },
+  name: { fontFamily: fonts.displayMedium, fontSize: s(24), lineHeight: s(28), color: colors.ink },
+  row: { flexDirection: 'row', gap: s(10), alignItems: 'stretch' },
+  half: { flex: 1, padding: s(10), justifyContent: 'center' },
+  goal: { alignItems: 'center', gap: s(6) },
+  goalNum: { fontFamily: fonts.display, fontSize: s(19), color: colors.ink },
+  goalText: { fontFamily: fonts.ui, fontSize: s(14), lineHeight: s(18), color: colors.slate, textAlign: 'center' },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: s(5) },
+  barCol: { flex: 1, alignItems: 'center', gap: s(4) },
+  bar: { alignSelf: 'stretch', backgroundColor: colors.sky2, borderTopLeftRadius: s(6), borderTopRightRadius: s(6), borderBottomLeftRadius: s(3), borderBottomRightRadius: s(3) },
+  barLabel: { fontFamily: fonts.ui, fontSize: s(12), color: colors.slate },
 });

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ReadingLevel;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
@@ -386,38 +387,40 @@ class Learner extends Model implements AuthenticatableContract
     }
 
     /**
-     * Practice Games: Word Builder and Letter Match are both real
-     * foundational skill practice (spelling, letter and sound recognition);
-     * neither one measures comprehension, so this deliberately never claims a
-     * connection to it. Only emphasizes a specific game when the learner's
-     * current adaptive focus is one of the foundational subdomains; never a
-     * hard gate (both games stay fully playable regardless), just which one
-     * the Games hub leads with. Returns null when there's nothing honest to
-     * recommend (pre-diagnostic, or the current focus is comprehension) so the
-     * caller can render a neutral state rather than a fabricated one.
+     * Practice Games: which of the three read-aloud games leads the Games hub for this child. Every game is a reading game, so
+     * the choice comes from where the child is on the reading path and from the words they have been missing:
+     *  - still on the letters step: Word Train (a row of letters)
+     *  - has words they keep missing: Balloon Pop (it drills those very words)
+     *  - on the first-words step: Word Train (a row of words)
+     *  - otherwise: Sentence Stars (reading whole sentences)
+     * Never a gate: every game stays playable. Returns null only when the app does not know the child's step yet, so the caller
+     * can show a neutral state rather than a made up one. `reason` says why, for the hub's one line tip.
+     *
+     * @return null|array{game: string, reason: string}
      */
     public function recommendedGameFocus(): ?array
     {
-        $foundational = [
-            'Phonological Awareness',
-            'Phonics and Word Study',
-            'Vocabulary and Word Knowledge',
-            'Book and Print Knowledge',
-        ];
+        $rung = ReadingLevel::rung($this);
 
-        if (! in_array($this->focusSubdomain(), $foundational, true)) {
+        if ($rung === null) {
             return null;
         }
 
-        // A real, disclosed secondary signal, not a coin flip: a Learner
-        // with real struggling words gets Word Builder, since it's the
-        // one game that directly drills their own actual weak words —
-        // Letter Match is the safer foundational default otherwise.
+        if ($rung === 0) {
+            return ['game' => 'word-train', 'reason' => 'letters'];
+        }
+
         $hasStrugglingWords = PersonalWordBank::where('learner_id', $this->id)
             ->where('mastery_status', 'Struggling')
             ->exists();
 
-        return ['game' => $hasStrugglingWords ? 'word-builder' : 'letter-match'];
+        if ($hasStrugglingWords) {
+            return ['game' => 'balloon-pop', 'reason' => 'own-words'];
+        }
+
+        return $rung === 1
+            ? ['game' => 'word-train', 'reason' => 'first-words']
+            : ['game' => 'sentence-stars', 'reason' => 'sentences'];
     }
 
     /**

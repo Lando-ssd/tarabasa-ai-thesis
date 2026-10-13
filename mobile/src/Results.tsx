@@ -4,6 +4,7 @@ import { Feedback, type Stat } from './Feedback';
 import { colors } from './theme';
 import { Icon, Panel, Small, H2 } from './ui';
 import { WordReview } from './WordReview';
+import { s } from './scale';
 
 type Scored = Extract<ReadingOutcome, { status: 'scored' }>;
 
@@ -46,19 +47,19 @@ export function Results({ firstName, title, outcome, onDone }: { firstName: stri
       buttonLabel="Done"
       onButton={onDone}
       details={
-        <View style={{ gap: 12 }}>
-          <Panel style={{ gap: 8 }}>
+        <View style={{ gap: s(12) }}>
+          <Panel style={{ gap: s(8) }}>
             <Small>Your words</Small>
             <WordReview words={outcome.wordBreakdown} extra={outcome.extraWordsSaid} />
           </Panel>
           {quiz ? (
-            <Panel style={{ gap: 8 }}>
+            <Panel style={{ gap: s(8) }}>
               <H2>
                 You got {quiz.correctCount} out of {quiz.totalCount} right!
               </H2>
               {quiz.breakdown.map((q, i) => (
-                <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
-                  <Icon name={q.isCorrect ? 'check-circle' : 'lightbulb'} size={22} color={q.isCorrect ? colors.ok : colors.warn} />
+                <View key={i} style={{ flexDirection: 'row', gap: s(8), alignItems: 'flex-start' }}>
+                  <Icon name={q.isCorrect ? 'check-circle' : 'lightbulb'} size={s(22)} color={q.isCorrect ? colors.ok : colors.warn} />
                   <Small style={{ flex: 1, color: colors.ink }}>
                     {q.question}
                     {q.isCorrect ? '' : ` The answer was: ${q.correctAnswer}`}

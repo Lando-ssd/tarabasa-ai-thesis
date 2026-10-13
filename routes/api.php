@@ -46,9 +46,12 @@ Route::middleware('auth:sanctum')->prefix('learner')->name('api.learner.')->grou
         Route::get('/bookshelf/{activity}', [LearnerBookshelfApiController::class, 'show'])->name('bookshelf.show');
         Route::post('/bookshelf/{activity}/reread', [LearnerBookshelfApiController::class, 'reread'])->name('bookshelf.reread');
 
-        // Practice Games (free play): what the Games screen needs, the words, one spoken word, and "a game ended".
+        // Practice Games (free play, all read-aloud): what the Games screen needs, what each game offers, something read aloud, and "a game ended".
         Route::get('/games', [LearnerGamesApiController::class, 'index'])->name('games.index');
         Route::get('/games/words', [LearnerGamesApiController::class, 'words'])->name('games.words');
+        Route::get('/games/train', [LearnerGamesApiController::class, 'train'])->name('games.train');
+        Route::get('/games/sentences', [LearnerGamesApiController::class, 'sentences'])->name('games.sentences');
+        Route::post('/games/check-text', [LearnerGamesApiController::class, 'checkText'])->middleware('throttle:90,1')->name('games.check-text');
         Route::post('/games/check-word', [LearnerGamesApiController::class, 'checkWord'])->middleware('throttle:90,1')->name('games.check-word');
         Route::post('/games/{game}/finish', [LearnerGamesApiController::class, 'finish'])->middleware('throttle:30,1')->name('games.finish');
     });

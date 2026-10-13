@@ -2905,6 +2905,10 @@ inspection. Test data cleaned up afterward.
 
 ## Practice Games — Word Builder + Letter Match, standalone free play
 
+**SUPERSEDED 2026-10-13 (this and the next four "Practice Games" sections, and "Practice Games with a voice"):** Word Builder and Letter
+Match were removed; the games are now Balloon Pop, Word Train and Sentence Stars, all read aloud. See "Phone app: layout rescaled to the
+approved preview, and Practice Games are read-aloud only" near the end of this file. Kept below as history.
+
 Two real games, confirmed scope per the standing decision recorded
 above (see the "Practice Games are standalone" note next to the
 Activity Generation conflict) — no `ReadingSession`, no points, no
@@ -6632,6 +6636,77 @@ open: Data Privacy Act).
   notes file). After a deploy, open System health and press "Check now" once.
 - **Still open:** account deletion (decision), a rejection reason cannot be edited, no bulk actions, Reconnect Gmail still ends in "copy the code into
   GMAIL_SEND_REFRESH_TOKEN and redeploy" (a person has to paste it; the app cannot write host settings), and `ADMIN_PASSWORD` is still not set on Render.
+
+## Phone app: layout rescaled to the approved preview, and Practice Games are read-aloud only (2026-10-13, BUILT LOCALLY, NOT PUSHED)
+
+The user compared the localhost phone app with the approved preview (Artifact `WsvHtotrivVLgqX3hSFdJh`): the preview is "clean", the app
+had the button pinned far below its content and the sizes and alignment felt off. They also said Games must be reading and nothing else,
+still adaptive, and chose (asked in chat) that BOTH the phone and the website change together.
+
+**1. Why the app looked different, and the fix.** Measured both (the preview in the browser, the app through its iframe): the preview was
+drawn on a 300 wide phone (a 282 by 592 screen), so its buttons (52), headings (26) and gaps look big and tight there; the app used the
+same plain numbers as dp on a 390 wide phone, so everything was about 25 percent too small and loose, and `Screen` pinned the main
+button to the bottom edge even on short screens. Fix:
+- `mobile/src/scale.ts`: `s(n)` grows every design size by `K = min(width / 300, height / 592, 1.3)` (at least 1): about 1.3 on a 390 by
+  844 phone, 1.2 on 360 wide, and 1.08 on a 360 by 640 phone (the height term is what keeps a short phone's content on screen).
+  `SHORT_HEIGHT` is true under 720 dp tall. About 370 size numbers across `mobile/src` were wrapped in `s()` with a one-off script
+  (style keys such as fontSize, width, padding, gap, radius, and the `px=`, `size=` props); `theme.ts` tokens, the shared type sizes in
+  `ui.tsx` (h1 26, h2 20, p 16, small 14, button text 19, all design values) and the reading text base (`READING_BASE = s(22)`) were set
+  by hand. New code must write sizes as `s(...)`. `PhoneFrame.tsx` and `devGallery.tsx` are deliberately not scaled.
+- `Screen` has `anchor="content"`: the footer button goes straight under the content and the whole group is centred (sign in, the
+  first check welcome, "Great job", the failed-send screen, short result screens); the default `anchor="bottom"` still pins it (reading
+  screens with the microphone, full results). `Feedback` picks automatically (full when it has details, stats or more than two badges).
+- Checked in the browser preview at 390 by 844 and 360 by 640 (sign in, welcome, great job, check finished, results, practice, home,
+  read, games, shelf, badges, Balloon Pop). NOT checked on a real phone, and the Lottie motion cannot be watched in the test browser.
+
+**2. Practice Games are read-aloud only.** Word Builder (tap letters to spell) and Letter Match (match cards) are gone from the phone
+AND the website (`/learner/games/word-builder` and `/letter-match` redirect to the Games page). The three games now:
+- **Balloon Pop** (unchanged): read one word to pop its balloon.
+- **Word Train** (new): a train of cars; the child reads the whole row aloud to make it roll. 3, 4 and 5 cars at levels 1, 2 and 3. A
+  child still on the LETTERS step of the reading path (`ReadingLevel::rung() === 0`) gets rows of letters instead (4, 5 and 6; the same
+  six letter sets the first check uses, level 3 draws on all 18), so a non-reader is never given words.
+- **Sentence Stars** (new): read a sentence to catch a star; three sentences per round. The bank is `config/practice_sentences.php`
+  (16, 15 and 12 sentences at the three levels, written by the team: a Grade 1 and a Grade 2 teacher should read them).
+- Same rules as Balloon Pop for all three: a round is three things to read, two or more read right the first time climb a level, two
+  tries each ("Tara is not sure" is never "wrong", the words heard are shown in green, then it moves on), up to 3 rounds or one round
+  at level 3, "I read it!" instead of the microphone when there is none, free play (no points, streak or level), nothing kept.
+- **Adaptive, from data the app already has:** the level a game STARTS at is from the child's step on the reading path
+  (`PracticeGameService::startLevel`: steps 0 and 1 give level 1, 2 and 3 give level 2, 4 and up give level 3; it was the grade before);
+  what a game offers comes first from the child's own missed words (word bank), then words or sentences that practise their main kind of
+  mistake (`ErrorPatterns`), then the level's list; the hub's "Recommended" game (`Learner::recommendedGameFocus`, with a `reason`)
+  is Word Train for letters and first words, Balloon Pop when the child has words they keep missing, otherwise Sentence Stars.
+- **Server:** `PracticeGameService` (rules shared by the website and the phone API), new `checkText()` (kinds `row`, `letters`,
+  `sentence`, `word`; "heard" needs about two thirds of the words asked, words the checker was unsure of count neither way; answers
+  `status` plus `matched` per word), new routes `POST /learner/games/check-text`, `GET /api/learner/games/train`, `/sentences`,
+  `POST /api/learner/games/check-text`. `GET /api/learner/games` now returns `recommended`, `reason`, `startLevel` (the letter levels
+  and `hasCompetencyData` are gone). `GamePlay::GAMES` is now balloon-pop, word-train, sentence-stars; old rows under the retired names
+  stay and still count toward "games played". The ten Games badges kept their codes but were renamed and retargeted (Word Train
+  Rookie/Pro, Train Conductor, Sentence Stars Rookie, Star Reader, Lucky Star, Balloon Ace; Practice Party is any two different games on
+  one day); badges already earned stay earned.
+- **Animations on the website games:** all three game pages (Balloon Pop, Word Train, Sentence Stars) use the same Lottie files as the
+  Home, reading and result screens, through `games/_game-animations.blade.php` (`window.tarabasaAnimate(element, name)`, lottie-web
+  hosted in `public/vendor`): `tara-owl-head` at the top of a game (it tilts when Tara asks for a second try) and `star-happy` when a
+  round or a game is finished. The old hand-drawn SVG owl (`_owl-mascot`) was deleted. With reduced motion the animation holds its first
+  frame; a game works without it. A test (`PracticeGamesVoiceTest`) pins this. Played in the browser: the owl draws at the top and the
+  star plays on "Round complete" and "All done".
+- **Website:** `games/read-game.blade.php` is the shared page and loop (extended by `word-train` and `sentence-stars`), `_game-voice`
+  gained `tarabasaListenForText` (a row or sentence is recorded for about 1.8 seconds a word, up to 18, and stops when the child pauses or
+  presses the microphone again). **Phone:** `ReadGame.tsx` is the shared loop, `WordTrain.tsx`, `SentenceStars.tsx`, `SayText.tsx`;
+  `MicButton` gained `stopOnPause`. A new `train` icon was added to the sprite (`public/icons/badges.svg`) and `iconPaths.ts` regenerated.
+- **Tested.** PHPUnit: `MobileApiTest`, `PracticeGamesVoiceTest`, `AdaptivePatternTest`, `AccessAuditTest` updated and extended (steps to
+  levels and recommendations, letters mode, preferred sentences, check-text with heard and again and unavailable, retired keys, badges).
+  Played through the browser on localhost (both the website pages and the phone preview), including the "I read it!" path (no
+  microphone in the test browser). The REAL speech checker (live Reading-api through `PracticeGameService::checkText`) was run on every
+  item with two synthesized voices (58 items each: 43 sentences, 12 word rows, 3 letter rows). Zira: all 58 were heard. David: all 3
+  letter rows, 11 of 12 word rows ("mud bed cup" was turned away) and 42 of 43 sentences were heard (one sentence, "A fan is on.", was
+  replaced by "The sun is up." which then scored 4 of 4; "The hen can run." was tried and dropped because two of its words were
+  missed). Inside the "heard" answers a single word was sometimes missed (sat, hen, bat, jam, duck, walks, the): the weakest case is a
+  row of isolated short words, as with the first check's word lists, and a longer sentence is recognised better than a short one.
+- **Honest limits.** No real child or real microphone has used any of it (synthesized voices only). A row of three short words can be
+  turned away although it was read right; the two tries and "Good try! On we go" soften that. Children's voices, the stop-on-pause
+  timing (`PAUSE_MS` 1700 on the phone, 1600 on the website) and the "heard" share (two thirds) were set without real recordings and are
+  the first things to adjust after the phone test. The phone builds 0.3.0 to 0.3.2 cannot play the new games (the Games calls changed):
+  send a new build.
 
 ## Before pushing this round (checklist for the next session)
 

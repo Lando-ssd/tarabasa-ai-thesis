@@ -21,6 +21,9 @@ import { PracticeFeedback, Quiz } from './Story';
 import { SendFailed, Waiting } from './Waiting';
 import { WarmUp } from './WarmUp';
 import { colors } from './theme';
+import { ReadGame } from './ReadGame';
+import { configFor as trainFor } from './WordTrain';
+import { configFor as starsFor } from './SentenceStars';
 
 const learner: LearnerPayload = {
   id: 1,
@@ -135,6 +138,25 @@ function homeFor(name: string): HomeData {
 
 const noop = () => {};
 
+// Sample data for the read-aloud games: the same shape the server sends.
+const trainConfig = (letters: boolean) =>
+  trainFor({
+    startLevel: 1,
+    mode: letters ? 'letters' : 'words',
+    cars: letters ? { '1': 4, '2': 5, '3': 6 } : { '1': 3, '2': 4, '3': 5 },
+    levels: letters
+      ? { '1': { struggling: [], favoured: [], fallback: ['s', 'a', 't', 'p', 'i', 'n'] }, '2': { struggling: [], favoured: [], fallback: ['s', 'a', 't', 'p', 'i', 'n', 'm', 'd'] }, '3': { struggling: [], favoured: [], fallback: ['s', 'a', 't', 'p', 'i', 'n', 'm', 'd', 'o', 'g'] } }
+      : { '1': { struggling: ['hen'], favoured: [], fallback: ['cat', 'dog', 'sun', 'hat', 'pig', 'bed', 'cup', 'run', 'big'] }, '2': { struggling: [], favoured: [], fallback: ['frog', 'star', 'milk', 'nest', 'lamp', 'swim', 'gift', 'sock'] }, '3': { struggling: [], favoured: [], fallback: ['apple', 'table', 'happy', 'forest', 'purple', 'animal'] } },
+  });
+const starsConfig = starsFor({
+  startLevel: 1,
+  levels: {
+    '1': { preferred: [], fallback: ['The cat sat.', 'A dog can run.', 'I see a pig.', 'The sun is hot.'] },
+    '2': { preferred: [], fallback: ['The frog sat on a log.', 'We swim in the pond.', 'A fish can swim fast.'] },
+    '3': { preferred: [], fallback: ['The farmer feeds the chickens and the pigs.', 'We plant seeds in the garden and water them every day.', 'The rain stopped, and a bright rainbow came out.'] },
+  },
+});
+
 function screenFor(name: string) {
   switch (name) {
     case 'home':
@@ -221,6 +243,31 @@ function screenFor(name: string) {
       return <WarmUp letters={false} onDone={noop} demo="heard" />;
     case 'warmup-quiet':
       return <WarmUp letters onDone={noop} demo="quiet" />;
+    case 'train':
+    case 'train-partial':
+    case 'train-heard':
+    case 'train-letters':
+      return (
+        <ReadGame
+          key={name}
+          config={trainConfig(name === 'train-letters')}
+          firstName="Maria"
+          onExit={noop}
+          demo={name === 'train-partial' ? { matched: [true, false, true], tries: 1, note: 'Tara heard some of it. Try once more!' } : name === 'train-heard' ? { caught: true } : undefined}
+        />
+      );
+    case 'stars':
+    case 'stars-partial':
+    case 'stars-heard':
+      return (
+        <ReadGame
+          key={name}
+          config={starsConfig}
+          firstName="Maria"
+          onExit={noop}
+          demo={name === 'stars-partial' ? { matched: [true, true, false, true], tries: 1, note: 'Tara heard some of it. Try once more!' } : name === 'stars-heard' ? { caught: true, pos: 1 } : undefined}
+        />
+      );
     case 'waiting':
       return <Waiting />;
     case 'crash':

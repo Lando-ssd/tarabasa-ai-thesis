@@ -4,6 +4,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import type { Home as HomeData } from './api';
 import { Animation, Icon } from './ui';
 import { colors, fonts } from './theme';
+import { s } from './scale';
 
 // The reading path: a winding trail of round buttons, in the style children already know from language apps, drawn with
 // TaraBasa's own colours and faces. Each button is one of the four reading steps. Steps already left behind are green with
@@ -12,11 +13,11 @@ import { colors, fonts } from './theme';
 // Everything shown is real: the step comes from the first check and later readings, the ring from the same count the
 // teacher sees (config/progression.php). It never shows a score, only "great readings so far".
 
-const NODE = 76;
-const RING = 96;
-const OWL = 124; // the flying owl, drawn on a 1080 square with room round it
+const NODE = s(76);
+const RING = s(96);
+const OWL = s(124); // the flying owl, drawn on a 1080 square with room round it
 // How far each step sits to the left (minus) or right (plus) of the middle, so the trail winds like an S.
-const OFFSETS = [0, 52, 0, -52];
+const OFFSETS = [0, s(52), 0, -s(52)];
 
 const DONE = { bg: colors.ok, lip: '#1f6a41', icon: colors.white };
 const NOW = { bg: colors.orange, lip: colors.orangeDark, icon: colors.white };
@@ -63,7 +64,7 @@ export function ReadingPath({
         ) : null}
       </View>
 
-      <View style={{ paddingTop: 18 }} onLayout={(e) => { seen.current.rows = e.nativeEvent.layout.y; report(); }}>
+      <View style={{ paddingTop: s(18) }} onLayout={(e) => { seen.current.rows = e.nativeEvent.layout.y; report(); }}>
         {path.map((node, i) => {
           const done = node.step < current;
           const now = node.step === current;
@@ -134,7 +135,7 @@ function FlyingOwl({ side, calm }: { side: 'left' | 'right'; calm: boolean }) {
   }, [calm, hover]);
   return (
     <Animated.View
-      style={[styles.owl, side === 'left' ? { left: -16 } : { right: -16 }, { transform: [{ translateY: hover.interpolate({ inputRange: [0, 1], outputRange: [-5, 5] }) }] }]}
+      style={[styles.owl, side === 'left' ? { left: s(-16) } : { right: s(-16) }, { transform: [{ translateY: hover.interpolate({ inputRange: [0, 1], outputRange: [-5, 5] }) }] }]}
       pointerEvents="none"
     >
       <Animation name="bird" px={OWL} />
@@ -166,7 +167,7 @@ function Node({ state, trophy, progress, calm, onPress, label }: { state: 'done'
     if (state === 'now' && !calm) transform.push({ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] }) });
     if (pressed) transform.push({ translateY: 4 });
     return (
-      <Animated.View style={[styles.node, { backgroundColor: palette.bg, borderBottomColor: palette.lip }, pressed && { borderBottomWidth: 3 }, transform.length > 0 && { transform }]}>
+      <Animated.View style={[styles.node, { backgroundColor: palette.bg, borderBottomColor: palette.lip }, pressed && { borderBottomWidth: s(3) }, transform.length > 0 && { transform }]}>
         {state === 'done' ? <CheckMark /> : <Icon name={icon} size={state === 'ahead' ? 32 : 38} color={palette.icon} />}
       </Animated.View>
     );
@@ -191,7 +192,7 @@ function Node({ state, trophy, progress, calm, onPress, label }: { state: 'done'
 /** A plain, bold check mark (the icon set only has a checkbox and a circle), so a finished step reads at a glance. */
 function CheckMark() {
   return (
-    <Svg width={40} height={40} viewBox="0 0 40 40">
+    <Svg width={s(40)} height={s(40)} viewBox="0 0 40 40">
       <Path d="M8 21 L17 30 L33 11" stroke={colors.white} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );
@@ -255,9 +256,9 @@ function StartCard({ skill, progress, offset, onStart, onLayout }: { skill: stri
         accessibilityRole="button"
         accessibilityLabel="Start reading"
         onPress={onStart}
-        style={({ pressed }) => [styles.start, pressed && { transform: [{ translateY: 3 }], borderBottomWidth: 2 }]}
+        style={({ pressed }) => [styles.start, pressed && { transform: [{ translateY: 3 }], borderBottomWidth: s(2) }]}
       >
-        <Icon name="book-open" size={24} color={colors.orange} />
+        <Icon name="book-open" size={s(24)} color={colors.orange} />
         <Text maxFontSizeMultiplier={1.15} style={styles.startText}>
           START READING
         </Text>
@@ -294,22 +295,22 @@ function useCalmMotion() {
 }
 
 const styles = StyleSheet.create({
-  banner: { backgroundColor: colors.blue, borderBottomWidth: 5, borderBottomColor: colors.blueDark, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, gap: 1 },
-  bannerLabel: { fontFamily: fonts.uiBold, fontSize: 13, letterSpacing: 1.2, color: 'rgba(255,255,255,0.82)' },
-  bannerTitle: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32, color: colors.white },
-  bannerBlurb: { fontFamily: fonts.uiRegular, fontSize: 16, lineHeight: 20, color: 'rgba(255,255,255,0.94)' },
+  banner: { backgroundColor: colors.blue, borderBottomWidth: s(5), borderBottomColor: colors.blueDark, borderRadius: s(18), paddingHorizontal: s(16), paddingVertical: s(12), gap: s(1) },
+  bannerLabel: { fontFamily: fonts.uiBold, fontSize: s(13), letterSpacing: s(1.2), color: 'rgba(255,255,255,0.82)' },
+  bannerTitle: { fontFamily: fonts.display, fontSize: s(26), lineHeight: s(32), color: colors.white },
+  bannerBlurb: { fontFamily: fonts.uiRegular, fontSize: s(16), lineHeight: s(20), color: 'rgba(255,255,255,0.94)' },
   row: { alignItems: 'center' },
   nodeBox: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },
-  node: { width: NODE, height: NODE, borderRadius: NODE / 2, borderBottomWidth: 7, alignItems: 'center', justifyContent: 'center' },
-  name: { fontFamily: fonts.uiBold, fontSize: 17, lineHeight: 22, color: colors.ink, textAlign: 'center', marginTop: 2 },
-  owl: { position: 'absolute', top: -14 },
-  card: { alignSelf: 'stretch', backgroundColor: colors.orange, borderBottomWidth: 6, borderBottomColor: colors.orangeDark, borderRadius: 18, padding: 16, gap: 4, marginTop: 14, marginBottom: 4 },
-  pointer: { position: 'absolute', top: -9, left: '50%', width: 18, height: 18, borderRadius: 4, backgroundColor: colors.orange, transform: [{ rotate: '45deg' }] },
-  cardTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, color: colors.white },
-  cardSub: { fontFamily: fonts.uiBold, fontSize: 17, lineHeight: 22, color: colors.white },
-  cardHint: { fontFamily: fonts.uiRegular, fontSize: 16, lineHeight: 21, color: 'rgba(255,255,255,0.94)' },
-  start: { marginTop: 10, minHeight: 54, borderRadius: 14, backgroundColor: colors.white, borderBottomWidth: 5, borderBottomColor: '#f0d6bd', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
-  startText: { fontFamily: fonts.uiBold, fontSize: 19, letterSpacing: 1, color: colors.orange },
-  dots: { alignSelf: 'stretch', height: 38 },
-  dot: { position: 'absolute', left: '50%', width: 8, height: 8, borderRadius: 4 },
+  node: { width: NODE, height: NODE, borderRadius: NODE / 2, borderBottomWidth: s(7), alignItems: 'center', justifyContent: 'center' },
+  name: { fontFamily: fonts.uiBold, fontSize: s(17), lineHeight: s(22), color: colors.ink, textAlign: 'center', marginTop: s(2) },
+  owl: { position: 'absolute', top: s(-14) },
+  card: { alignSelf: 'stretch', backgroundColor: colors.orange, borderBottomWidth: s(6), borderBottomColor: colors.orangeDark, borderRadius: s(18), padding: s(16), gap: s(4), marginTop: s(14), marginBottom: s(4) },
+  pointer: { position: 'absolute', top: s(-9), left: '50%', width: s(18), height: s(18), borderRadius: s(4), backgroundColor: colors.orange, transform: [{ rotate: '45deg' }] },
+  cardTitle: { fontFamily: fonts.display, fontSize: s(22), lineHeight: s(28), color: colors.white },
+  cardSub: { fontFamily: fonts.uiBold, fontSize: s(17), lineHeight: s(22), color: colors.white },
+  cardHint: { fontFamily: fonts.uiRegular, fontSize: s(16), lineHeight: s(21), color: 'rgba(255,255,255,0.94)' },
+  start: { marginTop: s(10), minHeight: s(54), borderRadius: s(14), backgroundColor: colors.white, borderBottomWidth: s(5), borderBottomColor: '#f0d6bd', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: s(10) },
+  startText: { fontFamily: fonts.uiBold, fontSize: s(19), letterSpacing: s(1), color: colors.orange },
+  dots: { alignSelf: 'stretch', height: s(38) },
+  dot: { position: 'absolute', left: '50%', width: s(8), height: s(8), borderRadius: s(4) },
 });

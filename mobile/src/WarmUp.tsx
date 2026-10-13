@@ -7,6 +7,7 @@ import { levelShare, VOICE_DB, WARM_MAX_SECONDS, WARM_VOICE_SAMPLES } from './re
 import { discardRecording } from './recordingFiles';
 import { Animation, Btn, Icon, IconBtn, Panel, Pill, Screen, Small } from './ui';
 import { colors, fonts } from './theme';
+import { s } from './scale';
 
 type Outcome = 'none' | 'heard' | 'quiet';
 
@@ -38,11 +39,11 @@ export function WarmUp({
   return (
     <Screen
       footer={
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: s(10) }}>
           {heard ? (
             <>
               <View style={styles.result} accessibilityLiveRegion="polite">
-                <Icon name="check-circle" size={26} color={colors.ok} />
+                <Icon name="check-circle" size={s(26)} color={colors.ok} />
                 <Text maxFontSizeMultiplier={1.2} style={[styles.resultText, { color: colors.ok }]}>
                   I heard you! Your microphone works.
                 </Text>
@@ -65,7 +66,7 @@ export function WarmUp({
               />
               {outcome === 'quiet' ? (
                 <View style={styles.result} accessibilityLiveRegion="polite">
-                  <Icon name="info" size={24} color={colors.blueDark} />
+                  <Icon name="info" size={s(24)} color={colors.blueDark} />
                   <Text maxFontSizeMultiplier={1.2} style={[styles.resultText, { color: colors.ink }]}>
                     I did not hear anything. Check that the microphone is on, then tap it and try again.
                   </Text>
@@ -78,7 +79,7 @@ export function WarmUp({
       }
     >
       <View style={styles.top}>
-        <View style={{ flex: 1, alignItems: 'center', gap: 6 }}>
+        <View style={{ flex: 1, alignItems: 'center', gap: s(6) }}>
           <Text maxFontSizeMultiplier={1.2} style={styles.eyebrow}>
             Warm-up
           </Text>
@@ -87,7 +88,7 @@ export function WarmUp({
       </View>
 
       <View style={styles.owl}>
-        <Animation name="head" px={92} />
+        <Animation name="head" px={s(92)} />
       </View>
       <Panel style={styles.panel}>
         <View style={styles.directionRow}>
@@ -109,14 +110,14 @@ export function WarmUp({
 }
 
 const styles = StyleSheet.create({
-  top: { flexDirection: 'row', alignItems: 'center', minHeight: 52 },
-  eyebrow: { fontFamily: fonts.uiBold, fontSize: 17, color: colors.slate },
-  owl: { alignItems: 'center', marginBottom: -30, marginTop: 6, zIndex: 1 },
-  panel: { paddingTop: 36, gap: 14 },
-  directionRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  direction: { flex: 1, fontFamily: fonts.uiBold, fontSize: 20, lineHeight: 26, color: colors.ink },
-  wordCard: { backgroundColor: colors.white, borderRadius: 16, paddingVertical: 18, alignItems: 'center' },
-  word: { fontFamily: fonts.read, fontSize: 56, lineHeight: 72, color: colors.ink },
-  result: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center' },
-  resultText: { flexShrink: 1, fontFamily: fonts.uiBold, fontSize: 18, lineHeight: 24, textAlign: 'center' },
+  top: { flexDirection: 'row', alignItems: 'center', minHeight: s(52) },
+  eyebrow: { fontFamily: fonts.uiBold, fontSize: s(17), color: colors.slate },
+  owl: { alignItems: 'center', marginBottom: s(-30), marginTop: s(6), zIndex: 1 },
+  panel: { paddingTop: s(36), gap: s(14) },
+  directionRow: { flexDirection: 'row', alignItems: 'center', gap: s(10) },
+  direction: { flex: 1, fontFamily: fonts.uiBold, fontSize: s(20), lineHeight: s(26), color: colors.ink },
+  wordCard: { backgroundColor: colors.white, borderRadius: s(16), paddingVertical: s(18), alignItems: 'center' },
+  word: { fontFamily: fonts.read, fontSize: s(56), lineHeight: s(72), color: colors.ink },
+  result: { flexDirection: 'row', alignItems: 'center', gap: s(10), justifyContent: 'center' },
+  resultText: { flexShrink: 1, fontFamily: fonts.uiBold, fontSize: s(18), lineHeight: s(24), textAlign: 'center' },
 });

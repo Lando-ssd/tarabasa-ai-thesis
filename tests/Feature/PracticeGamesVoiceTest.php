@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * Practice Games with a voice: a Listen button, a say-it step, and the new speaking game Balloon Pop.
+ * Practice Games with a voice: every game is a reading game (Balloon Pop, Word Train, Sentence Stars), each with a Listen button.
  * Games stay free play, so nothing a child says may ever be saved or move points, streak or level.
  */
 class PracticeGamesVoiceTest extends TestCase
@@ -60,29 +60,136 @@ class PracticeGamesVoiceTest extends TestCase
 
     // ------------------------------------------------------------- the hub and the pages
 
-    public function test_the_games_hub_offers_three_games_and_says_games_are_never_graded(): void
+    public function test_the_games_hub_offers_three_read_aloud_games_and_says_games_are_never_graded(): void
     {
         $this->child();
 
         $this->get(route('learner.games.index'))->assertOk()
             ->assertSee('Balloon Pop')->assertSee('A balloon shows a word. Say the word out loud to pop it!')
-            ->assertSee('Hear a letter, then find it and its small twin.')
-            ->assertSee('you can hear the word first, and say it when you finish', false)
-            ->assertSee('what you say in a game is not graded')
-            ->assertSee('Where the words come from')
-            ->assertSee(route('learner.games.balloon-pop'), false);
+            ->assertSee('Word Train')->assertSee('Read the words on the train cars out loud')
+            ->assertSee('Sentence Stars')->assertSee('Read a sentence out loud to catch a star.')
+            ->assertSee('Every game is reading out loud')
+            ->assertSee('what you read in a game is not graded')
+            ->assertSee(route('learner.games.balloon-pop'), false)
+            ->assertSee(route('learner.games.word-train'), false)
+            ->assertSee(route('learner.games.sentence-stars'), false)
+            // the spelling and card matching games were not reading games, so they are gone
+            ->assertDontSee('Word Builder')->assertDontSee('Letter Match')->assertDontSee('Put the letters in order');
     }
 
     public function test_every_game_page_has_its_voice(): void
     {
         $this->child();
 
-        $this->get(route('learner.games.word-builder'))->assertOk()
-            ->assertSee('id="listenBtn"', false)->assertSee('tarabasaListenForWord', false)->assertSee('Now say it out loud.');
-        $this->get(route('learner.games.letter-match'))->assertOk()
-            ->assertSee('tarabasaSayLetter', false)->assertSee('Tap a card to turn it over and hear the letter.');
+        $this->get(route('learner.games.word-train'))->assertOk()
+            ->assertSee('id="listenBtn"', false)->assertSee('tarabasaListenForText', false)->assertSee('Read the train')
+            ->assertSee('There is no wrong answer here.');
+        $this->get(route('learner.games.sentence-stars'))->assertOk()
+            ->assertSee('id="listenBtn"', false)->assertSee('tarabasaListenForText', false)->assertSee('Read the sentence')
+            ->assertSee('There is no wrong answer here.');
         $this->get(route('learner.games.balloon-pop'))->assertOk()
             ->assertSee('Tap the microphone and say the word.')->assertSee('There is no wrong answer here.')->assertSee('tarabasaListenForWord', false);
+    }
+
+    public function test_every_game_page_uses_the_shared_lottie_animations_not_a_drawn_owl(): void
+    {
+        $this->child();
+
+        foreach ([route('learner.games.balloon-pop'), route('learner.games.word-train'), route('learner.games.sentence-stars')] as $url) {
+            $page = $this->get($url)->assertOk();
+            // The same library and files the Home page, the reading screens and the result screens use.
+            $page->assertSee('vendor/lottie-web-5.12.2.min.js', false)
+                ->assertSee('window.tarabasaAnimate', false)->assertSee('tara-owl-head', false)->assertSee('star-happy', false)
+                ->assertSee('role="img" aria-label="Tara the owl, listening"', false)
+                ->assertSee('role="img" aria-label="A happy star"', false);
+        }
+
+        // Both files exist where the pages point, and the library is hosted here (no outside server is needed).
+        foreach (['animations/learner/tara-owl-head.json', 'animations/learner/star-happy.json', 'vendor/lottie-web-5.12.2.min.js'] as $file) {
+            $this->assertFileExists(public_path($file));
+        }
+    }
+
+    public function test_the_two_retired_games_send_an_old_link_to_the_games_page(): void
+    {
+        $this->child();
+
+        $this->get('/learner/games/word-builder')->assertRedirect('/learner/games');
+        $this->get('/learner/games/letter-match')->assertRedirect('/learner/games');
+    }
+
+    public function test_the_hub_leads_with_the_game_that_fits_the_childs_step_and_words(): void
+    {
+        $kid = $this->child(['reading_rung' => 0]);
+        $this->get(route('learner.games.index'))->assertOk()->assertSee('Your reading path starts with letters.');
+
+        $kid->update(['reading_rung' => 1]);
+        $this->get(route('learner.games.index'))->assertSee('You are reading your first words.');
+
+        $kid->update(['reading_rung' => 4]);
+        $this->get(route('learner.games.index'))->assertSee('You are reading sentences. Try Sentence Stars!');
+
+        PersonalWordBank::create(['learner_id' => $kid->id, 'word' => 'hen', 'mastery_status' => 'Struggling']);
+        $this->get(route('learner.games.index'))->assertSee('You have some words that are still tricky.');
+    }
+
+    public function test_word_train_gives_a_child_on_the_letters_step_letters_and_everyone_else_words(): void
+    {
+        $this->child(['reading_rung' => 3]);
+        $this->get(route('learner.games.word-train'))->assertOk()
+            ->assertSee('var MODE = "words"', false)->assertSee('"fallback":["cat"', false);
+
+        $this->child(['reading_rung' => 0]);
+        $this->get(route('learner.games.word-train'))->assertOk()
+            ->assertSee('var MODE = "letters"', false)->assertSee('"fallback":["s","a","t","p","i","n"]', false);
+    }
+
+    public function test_sentence_stars_sends_the_levels_sentences_and_the_ones_that_suit_the_child(): void
+    {
+        $kid = $this->child();
+        PersonalWordBank::create(['learner_id' => $kid->id, 'word' => 'frog', 'mastery_status' => 'Struggling']);
+
+        $page = $this->get(route('learner.games.sentence-stars'))->assertOk();
+        $page->assertSee('The cat sat.')->assertSee('"preferred":["The frog sat on a log."', false);
+    }
+
+    public function test_a_row_or_a_sentence_can_be_checked_from_the_website_too(): void
+    {
+        $kid = $this->child();
+        Http::fake(['reading.test/analyze' => Http::response([
+            'accuracy' => ['accuracy_score' => 100, 'spoken_word_count' => 3, 'substitutions' => 0, 'deletions' => 0, 'insertions' => 0, 'word_feedback' => [
+                ['reference' => 'cat', 'spoken' => 'cat', 'status' => 'correct'], ['reference' => 'dog', 'spoken' => 'dog', 'status' => 'correct'], ['reference' => 'pig', 'spoken' => 'pig', 'status' => 'correct'],
+            ]],
+            'speed' => ['wcpm' => 40], 'prosody' => ['prosody_score' => 50],
+            'word_timestamps' => [['word' => 'cat', 'start' => 0, 'end' => 0.5, 'confidence' => 0.9], ['word' => 'dog', 'start' => 1, 'end' => 1.5, 'confidence' => 0.9], ['word' => 'pig', 'start' => 2, 'end' => 2.5, 'confidence' => 0.9]],
+        ])]);
+
+        $this->postJson(route('learner.games.check-text'), ['text' => 'cat dog pig', 'kind' => 'row', 'audio' => $this->clip()])
+            ->assertOk()->assertExactJson(['status' => 'heard', 'matched' => [true, true, true]]);
+
+        $this->assertSame(1, ReadingSession::count(), 'only the finished first check, nothing from the game');
+        $this->assertSame([40, 3], [$kid->fresh()->points, $kid->fresh()->streak]);
+
+        $this->postJson(route('learner.games.check-text'), ['text' => 'Cat Dog', 'kind' => 'row', 'audio' => $this->clip()])->assertStatus(422);
+        $this->postJson(route('learner.games.check-text'), ['text' => 'cat dog', 'kind' => 'maths', 'audio' => $this->clip()])->assertStatus(422);
+    }
+
+    public function test_the_new_games_report_a_finished_session_for_the_games_badges(): void
+    {
+        $kid = $this->child();
+
+        foreach (['word-train', 'sentence-stars'] as $game) {
+            $this->postJson(route('learner.games.finish', $game), ['level_reached' => 3, 'top_level_cleared' => true, 'had_perfect_round' => true, 'rounds' => 1])
+                ->assertOk()->assertJsonStructure(['newBadges']);
+            $this->assertSame(1, GamePlay::where('learner_id', $kid->id)->where('game', $game)->count());
+        }
+
+        // Each game's own badges, and "two different games on the same day", come from the real rows.
+        $earned = \App\Models\LearnerBadge::where('learner_id', $kid->id)->pluck('badge_code')->all();
+        foreach (['game_word_builder_rookie', 'game_word_builder_pro', 'game_letter_match_rookie', 'game_memory_master', 'game_lucky_match', 'game_practice_party'] as $code) {
+            $this->assertContains($code, $earned);
+        }
+        $this->assertNotContains('game_alphabet_ace', $earned, 'that one is for finishing a Balloon Pop round at level 3');
     }
 
     public function test_balloon_pop_uses_the_childs_own_tricky_words_first(): void
@@ -258,7 +365,7 @@ class PracticeGamesVoiceTest extends TestCase
         ]);
 
         // A request from this server cannot wake a sleeping Render service, so the page asks the health pages itself.
-        foreach ([route('learner.dashboard'), route('learner.games.index'), route('learner.games.balloon-pop')] as $url) {
+        foreach ([route('learner.dashboard'), route('learner.games.index'), route('learner.games.balloon-pop'), route('learner.games.word-train'), route('learner.games.sentence-stars')] as $url) {
             $page = $this->get($url)->assertOk();
             $page->assertSee('tb-wake:', false)->assertSee('https:\/\/reading.test\/health', false);
             $this->assertStringNotContainsString('SECRET-KEY', $page->getContent(), 'a key is never put on a page');

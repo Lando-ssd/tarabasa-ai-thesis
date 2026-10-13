@@ -5,6 +5,7 @@ import { CardScanner } from './CardScanner';
 import { looksLikeCode, normalizeCode } from './learnerCode';
 import { Animation, Btn, Busy, H1, Notice, P, Screen, Small, useKeyboardOpen } from './ui';
 import { colors, fonts, size } from './theme';
+import { s, SHORT_HEIGHT } from './scale';
 
 type Props = {
   onSignedIn: (result: api.LoginResult) => void;
@@ -66,11 +67,9 @@ export function SignIn({ onSignedIn, notice }: Props) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-      <Screen
-        footer={<Btn label="Log in" tone="blue" onPress={signIn} disabled={!ready} loading={busy} />}
-      >
+      <Screen anchor="content" footer={<Btn label="Log in" tone="blue" onPress={signIn} disabled={!ready} loading={busy} />}>
         <View style={styles.body}>
-          {keyboardOpen ? null : <Animation name="intro" px={132} />}
+          {keyboardOpen ? null : <Animation name="intro" px={SHORT_HEIGHT ? s(84) : s(140)} />}
           <H1 style={{ textAlign: 'center' }}>Hi there!</H1>
           <P style={{ textAlign: 'center' }}>Tap the button and show your card</P>
 
@@ -156,29 +155,29 @@ function PinBoxes({
 }
 
 const styles = StyleSheet.create({
-  body: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingVertical: 8 },
+  body: { alignItems: 'center', gap: s(10) },
   wide: { alignSelf: 'stretch' },
   field: {
     alignSelf: 'stretch',
     minHeight: size.field,
-    borderRadius: 14,
+    borderRadius: s(14),
     borderWidth: 2,
     borderColor: colors.line,
     backgroundColor: colors.white,
     textAlign: 'center',
     fontFamily: fonts.ui,
-    fontSize: 22,
-    letterSpacing: 1.5,
+    fontSize: s(20),
+    letterSpacing: s(1.5),
     color: colors.ink,
-    paddingVertical: 8,
+    paddingVertical: s(8),
   },
   fieldBad: { borderColor: colors.bad },
   pinWrap: { alignSelf: 'stretch' },
-  pinRow: { flexDirection: 'row', gap: 10, justifyContent: 'center' },
+  pinRow: { flexDirection: 'row', gap: s(10), justifyContent: 'center' },
   pinBox: {
-    width: 58,
+    width: s(46),
     height: size.field + 6,
-    borderRadius: 14,
+    borderRadius: s(14),
     borderWidth: 2,
     borderColor: colors.line,
     backgroundColor: colors.white,
@@ -186,7 +185,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pinBoxActive: { borderColor: colors.orange },
-  pinDot: { fontFamily: fonts.uiBold, fontSize: 30, color: colors.ink, lineHeight: 36 },
+  pinDot: { fontFamily: fonts.uiBold, fontSize: s(24), color: colors.ink, lineHeight: s(30) },
   // Invisible, but real: the phone's keypad is attached to this field.
-  pinHidden: { position: 'absolute', width: 1, height: 1, opacity: 0 },
+  pinHidden: { position: 'absolute', width: s(1), height: s(1), opacity: 0 },
 });
