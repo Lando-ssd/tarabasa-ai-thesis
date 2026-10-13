@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ParentAccount;
 use App\Models\Teacher;
 use App\Models\User;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -162,13 +162,22 @@ class AuthController extends Controller
 
     /**
      * Handles the actual click on the verification link in the email.
-     * Laravel's EmailVerificationRequest automatically checks the
-     * signature is valid and hasn't expired before this code even runs.
+     *
+     * The route's `signed` middleware checks the link is genuine and has not expired. The person does NOT have
+     * to be signed in: people open the email on a phone, in another browser, or while another account (an
+     * Admin) is signed in on the same computer, and a link that needs the matching session silently did
+     * nothing for them (the old route needed `auth` plus a matching user, so the account stayed "Email not
+     * verified" and the Admin could not approve it). The link carries the user's id and a hash of their email,
+     * so a valid link can only ever verify the one account it was made for.
      */
-    public function verifyEmail(EmailVerificationRequest $request)
+    public function verifyEmail(Request $request, int $id, string $hash)
     {
-        if (! $request->user()->hasVerifiedEmail()) {
-            $request->fulfill();
+        $user = User::find($id);
+
+        abort_unless($user && hash_equals(sha1($user->getEmailForVerification()), $hash), 403);
+
+        if (! $user->hasVerifiedEmail() && $user->markEmailAsVerified()) {
+            event(new Verified($user));
         }
 
         return redirect()->route('login')->with('status', 'Email verified! You can now log in normally.');

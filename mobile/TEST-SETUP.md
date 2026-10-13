@@ -6,7 +6,8 @@ It takes about 40 minutes the first time. Use made-up names and no photos: never
 ## 0. The live server must have the phone's server code first (a real blocker found on 2026-10-12, DONE the same evening)
 
 **Status: done.** `mobile-app` was merged into the live branch as `8e1caa4` and Render deployed it (checked at 20:43: the website
-pages load, the new phone routes answer "login required", `/privacy` has the phone-app section). Skip to step 1. The text below
+pages load, the new phone routes answer "login required", `/privacy` has the phone-app section). On 2026-10-13 it was merged again
+(`ed5c5c6`) so the live server also returns the reading path's progress; the APK to send is now 0.3.2. Skip to step 1. The text below
 says what was found and why.
 
 The phone app talks to the live website (https://tarabasa-ai.onrender.com). On 2026-10-12 the live website was still on the
@@ -39,6 +40,11 @@ tester starts if more than 15 minutes pass.
 A brand new child has nothing to read, so the Read tab would be empty. Stories come from a teacher:
 1. Sign up as a Teacher on the live site (a second email you can open), verify the email, and approve the teacher as Admin
    (Approvals).
+   **Known problem until the fix is live (found 2026-10-13):** the verify link in the email only worked when that teacher was signed in
+   in the same browser. Opened logged out, on a phone, or while the Admin is signed in on the same computer, it did nothing (or showed a
+   403) and Approve stayed locked. Workaround: open a private window, sign in as the TEACHER there, then paste the email's link (right
+   click the button, Copy link address) into that same window; reload Approvals. Links last 60 minutes ("Send the email again" makes a
+   new one). The fix is in `mobile-app` and needs merging into the live branch.
 2. Teacher: Activities, **Generate**: Grade 1, any skill, one text per level. It takes about two minutes and uses one of the
    two free credits. Approve what is written (drag a draft into Easy, Medium or Hard).
 3. Teacher: Classes, **New class** (Grade 1), then **Add learner** and type the child's learner code.
@@ -46,7 +52,7 @@ A brand new child has nothing to read, so the Read tab would be empty. Stories c
 
 ## 4. What to send the tester (privately, never in a group chat)
 
-- The app: `D:\tools\apk-out\TaraBasa-AI-0.3.1-test5.apk`. Many chat apps refuse .apk files. Put it in Google Drive, share a
+- The app: `D:\tools\apk-out\TaraBasa-AI-0.3.2-test6.apk`. Many chat apps refuse .apk files. Put it in Google Drive, share a
   link with only the tester, and ask them to download it on the phone.
 - `mobile/PHONE-TEST-CHECKLIST.md`.
 - The child's learner code and PIN, in a private message.
@@ -55,4 +61,4 @@ A brand new child has nothing to read, so the Read tab would be empty. Stories c
 ## 5. After the test
 
 Ask for the answers in the checklist's "What to send back", with screenshots. Send them to Claude. Fixes go into a new
-version (0.3.2, with a higher `versionCode`), built the same way, and the tester repeats only what changed.
+version (0.3.3, with a higher `versionCode`), built the same way, and the tester repeats only what changed.

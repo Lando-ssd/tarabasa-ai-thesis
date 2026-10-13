@@ -160,8 +160,9 @@ Four things that do not depend on the phone test, so the teammate's report on 0.
   recreated `android/`). Checked inside: live address present, no `127.0.0.1` or emulator address (the one word "localhost" in the bundle is a
   string inside React's own code, not an address the app calls), the crash screen text, START READING, the `Owl Bird` animation, the three
   game sounds, 10 permissions (same as 0.3.1), no signing key used (debug key, fine for tests).
-- **Needs the live server to have `pathProgress`** to show the ring and "1 of 3"; the live branch does NOT have it until `mobile-app` is
-  merged into it again (the phone works without it).
+- **Needs the live server to have `pathProgress`** to show the ring and "1 of 3". `mobile-app` was merged into the live branch again on
+  2026-10-13 (merge commit `ed5c5c6`, clean merge, full suite 356 passing, fast-forward push), so the live code has it. NOT yet confirmed
+  against the running site: that needs a login as the test child (the phone works without the field, it just leaves the ring out).
 - Still not proven on a real phone: everything listed in the 0.3.1 section above, plus how the flying owl looks and performs on Android.
 
 ## Reading path redesign (2026-10-12 night; PUSHED as 6175976 and 7097c65; in the 0.3.2 APK)
@@ -187,7 +188,9 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
    `mobile-app` was merged into `claude/admin-dashboard-approvals-62dcd0` (merge commit `8e1caa4`, fast-forward push, no migrations,
    packages or Docker changes). Render deployed it by 20:43: the website pages answer 200, the new phone routes answer 401 (they exist
    and want a login), and `/privacy` has "The phone app". Not yet tried with a real login from a phone.
-   The tester has NOT been sent anything yet (the owner waited until the whole Learner end was finished), so send 0.3.1, not 0.3.0.
+   A second merge on 2026-10-13 (`ed5c5c6`) added the `pathProgress` field for the reading path; website pages and `/privacy` answered 200
+   and the dashboard route 401 afterwards (the first request took 36 s, the service was waking or deploying).
+   The tester has NOT been sent anything yet (the owner waited until the whole Learner end was finished), so send 0.3.2, not 0.3.1 or 0.3.0.
 1. A tester runs `PHONE-TEST-CHECKLIST.md` on a real Android phone (0.3.1) and reports back. How to prepare it: `TEST-SETUP.md`.
    What to expect and what is risky: `APP-REVIEW.md`.
 2. Fix what that finds (most likely the microphone file format, upload time, the camera, or a screen that does not fit), and bump the
