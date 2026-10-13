@@ -154,7 +154,17 @@ Four things that do not depend on the phone test, so the teammate's report on 0.
   no localhost, the new screens, and the three game sounds. The teammate may still be testing 0.3.0 (`...-0.3.0-test4.apk`): wait for
   that report before sending 0.3.1. Older files (0.1.x, 0.2.0-test3) lack screens: do not send them.
 
-## Reading path redesign (2026-10-12 night, LOCAL, not pushed, not in any APK yet)
+## Version 0.3.2 (2026-10-13): the reading path, the flying owl, the crash screen's two line title
+- **Files:** `D:\tools\apk-out\TaraBasa-AI-0.3.2-test6.apk` (41.9 MiB, arm64 only, version 0.3.2, versionCode 6, SHA-256
+  `11b9580559566d4fa2a4f7d1edc31dc2f110b03916a5a4f7cfc7a755975463bd`, built from a copy in `D:\tb` in 13 min 46 s, prebuild cleared and
+  recreated `android/`). Checked inside: live address present, no `127.0.0.1` or emulator address (the one word "localhost" in the bundle is a
+  string inside React's own code, not an address the app calls), the crash screen text, START READING, the `Owl Bird` animation, the three
+  game sounds, 10 permissions (same as 0.3.1), no signing key used (debug key, fine for tests).
+- **Needs the live server to have `pathProgress`** to show the ring and "1 of 3"; the live branch does NOT have it until `mobile-app` is
+  merged into it again (the phone works without it).
+- Still not proven on a real phone: everything listed in the 0.3.1 section above, plus how the flying owl looks and performs on Android.
+
+## Reading path redesign (2026-10-12 night; PUSHED as 6175976 and 7097c65; in the 0.3.2 APK)
 The owner shared two screenshots of a language app's winding lesson path and asked for the same kind of path on Home, in TaraBasa's own
 colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the plain list on Home):
 - A blue banner "STEP 2 OF 4 / Word Builder / Sound out and read words", then the four steps as round buttons on an S shaped trail: steps already
@@ -169,7 +179,7 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
   (no `pathProgress` yet) still works: the ring and the count are simply left out.
 - On a short phone Home scrolls once, as it opens, just far enough to show the Start button (`Screen` got an optional `scrollRef`).
 - Gallery pictures of every step: `#gallery=path-1` ... `#gallery=path-4`. Checked at 390x844 and 360x640 and with the live local server.
-- NOT done: the website's Home already has its own road; it was not changed. A new APK (0.3.2) is needed to see this on a phone.
+- NOT done: the website's Home already has its own road; it was not changed. The 0.3.2 APK (see above) has it.
 
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
