@@ -216,6 +216,7 @@ export function Notice({ text, tone = 'error' }: { text: string; tone?: 'error' 
 const ANIMATIONS = {
   intro: require('../assets/animations/tara-owl-intro.json'),
   head: require('../assets/animations/tara-owl-head.json'),
+  bird: require('../assets/animations/owl-bird.json'),
   happy: require('../assets/animations/star-happy.json'),
   sad: require('../assets/animations/star-sad.json'),
 };

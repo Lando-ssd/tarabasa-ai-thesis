@@ -14,6 +14,7 @@ import { colors, fonts } from './theme';
 
 const NODE = 76;
 const RING = 96;
+const OWL = 124; // the flying owl, drawn on a 1080 square with room round it
 // How far each step sits to the left (minus) or right (plus) of the middle, so the trail winds like an S.
 const OFFSETS = [0, 52, 0, -52];
 
@@ -82,11 +83,7 @@ export function ReadingPath({
                 </Text>
               </View>
 
-              {now ? (
-                <View style={[styles.mascot, offset > 0 ? { left: 0 } : { right: 0 }]} pointerEvents="none">
-                  <Animation name="head" px={84} />
-                </View>
-              ) : null}
+              {now ? <FlyingOwl side={offset > 0 ? 'left' : 'right'} calm={calm} /> : null}
 
               {now ? (
                 <StartCard
@@ -116,6 +113,33 @@ function labelFor(node: { step: number; name: string }, done: boolean, now: bool
   if (!now) return `Step ${node.step}, ${node.name}, still ahead`;
   const count = progress && !progress.atTop ? ` ${progress.have} of ${progress.need} great readings so far.` : '';
   return `Step ${node.step}, ${node.name}, you are here.${count} Tap to start reading.`;
+}
+
+/**
+ * Tara the owl, flying beside the child's own step: the same flapping owl the website's road uses, hovering up and down a
+ * little. She hangs on the outer side, level with the button. Nothing moves for children who asked for less motion.
+ */
+function FlyingOwl({ side, calm }: { side: 'left' | 'right'; calm: boolean }) {
+  const hover = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (calm) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(hover, { toValue: 1, duration: 1500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(hover, { toValue: 0, duration: 1500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [calm, hover]);
+  return (
+    <Animated.View
+      style={[styles.owl, side === 'left' ? { left: -16 } : { right: -16 }, { transform: [{ translateY: hover.interpolate({ inputRange: [0, 1], outputRange: [-5, 5] }) }] }]}
+      pointerEvents="none"
+    >
+      <Animation name="bird" px={OWL} />
+    </Animated.View>
+  );
 }
 
 /** One round button on the trail. */
@@ -278,7 +302,7 @@ const styles = StyleSheet.create({
   nodeBox: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },
   node: { width: NODE, height: NODE, borderRadius: NODE / 2, borderBottomWidth: 7, alignItems: 'center', justifyContent: 'center' },
   name: { fontFamily: fonts.uiBold, fontSize: 17, lineHeight: 22, color: colors.ink, textAlign: 'center', marginTop: 2 },
-  mascot: { position: 'absolute', top: 6 },
+  owl: { position: 'absolute', top: -14 },
   card: { alignSelf: 'stretch', backgroundColor: colors.orange, borderBottomWidth: 6, borderBottomColor: colors.orangeDark, borderRadius: 18, padding: 16, gap: 4, marginTop: 14, marginBottom: 4 },
   pointer: { position: 'absolute', top: -9, left: '50%', width: 18, height: 18, borderRadius: 4, backgroundColor: colors.orange, transform: [{ rotate: '45deg' }] },
   cardTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, color: colors.white },

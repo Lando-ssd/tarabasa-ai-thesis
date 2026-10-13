@@ -161,8 +161,9 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
   left behind are green with a bold check, the child's own step is the orange star with a ring that fills one segment per great reading counted
   (3 needed, `config/progression.php`), steps ahead are grey with a lock and the last is a trophy. Small dots join the buttons (green once passed).
 - Under the child's own step an orange card: the skill ("Sounding Out Words"), "1 of 3 great readings so far", "Read 2 more really well to grow.",
-  and one big START READING button (this replaced Home's old separate button). Tara's head sits beside the trail. The star breathes gently unless the
-  phone is set to reduce motion. At the top step the ring turns gold and the card says "You are a Story Reader".
+  and one big START READING button (this replaced Home's old separate button). Beside the child's own step flies the SAME flapping owl the website's
+  road uses (`assets/animations/owl-bird.json`, copied from `public/animations/learner/owl-bird.json`), hovering up and down a little; the owner asked for the
+  flying bird instead of a still picture of the owl's head. The star breathes gently unless the phone is set to reduce motion. At the top step the ring turns gold and the card says "You are a Story Reader".
 - Real data: `GET /api/learner/dashboard` now also returns `pathProgress {have, need, atTop}` (`LearnerApiController::pathProgress`, from
   `ReadingProgression::progress`, read only; 2 new tests, `MobileApiTest` 29 passing). The phone treats it as optional, so the older live server
   (no `pathProgress` yet) still works: the ring and the count are simply left out.
