@@ -6806,7 +6806,7 @@ Blade pages at phone width.
   (Chrome's address bar hides and shows as a page scrolls, which changes the page height a little). Sample data is made up; the
   numbers shown (142 points, 3 days in a row) are what the real code computed from it, not typed in.
 
-## Teacher pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED to mobile-app as 07a5087, NOT merged to the live branch)
+## Teacher pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED as 07a5087 and MERGED INTO THE LIVE BRANCH as a5ceab0, deployed)
 
 The user asked "how about the teacher preview" right after the Parent one. Same method, same tool folder pattern:
 `tools/teacher-phone-preview/` (`CaptureTeacherPhoneTest.php`, `build_teacher_preview.py`, `TaraBasa-Teacher-Phone-Preview.html`,
@@ -6845,7 +6845,7 @@ It saves 22 real pages plus the window of each activity (the page fetches one wh
   (scaled font sizes), not the phone's own setting. The sample names, scores and readings are made up.
 - Full suite passed on the final code (405 tests, none added; this round changed styles, one script helper and a few markup lines).
 
-## Admin pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED to mobile-app as ae236bd, NOT merged to the live branch)
+## Admin pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED as ae236bd and MERGED INTO THE LIVE BRANCH as a5ceab0, deployed)
 
 The last role to be looked at on a phone ("continue whats next" after the Teacher push). Same method again: `tools/admin-phone-preview/`
 (`CaptureAdminPhoneTest.php`, `build_admin_preview.py`, `TaraBasa-Admin-Phone-Preview.html`, `README.md`). The capture builds Ada Admin,
