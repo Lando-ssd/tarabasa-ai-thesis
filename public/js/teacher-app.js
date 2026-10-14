@@ -54,9 +54,15 @@
   function openDlg(d) {
     if (!d) { return; }
     if (!d.open) { d.showModal(); }
+    revealTab($('.win-view:not([hidden])', d));
     var af = $('[data-af]:not([hidden])', d); if (af && !af.closest('[hidden]')) { af.focus(); }
   }
   function closeDlg(d) { if (d && d.open) { d.close(); } }
+  // On a small phone the tabs of a window sit in one row that can slide sideways, so the chosen tab must be in view.
+  function revealTab(view) {
+    var strip = view && $('.win-tabs .chips', view), on = strip && $('[aria-pressed="true"]', strip);
+    if (on && strip.scrollWidth > strip.clientWidth) { strip.scrollLeft = on.getBoundingClientRect().left - strip.getBoundingClientRect().left + strip.scrollLeft - 8; }
+  }
   TB.open = function (id) { openDlg(document.getElementById(id)); };
 
   // Show one named view of a window (a window can hold several: a class has Learners, Activities,
@@ -66,6 +72,7 @@
     var shown = $(':scope > .win-view[data-view="' + name + '"]', scope);
     if (shown) {
       var body = $('.win-body', shown); if (body) { body.scrollTop = 0; }
+      revealTab(shown);
       var af = $('[data-af]', shown); if (af) { af.focus(); }
     }
   }

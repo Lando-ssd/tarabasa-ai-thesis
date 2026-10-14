@@ -1,0 +1,231 @@
+<title>TaraBasa Admin Phone Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a header, then a control rail on the left and one phone on the right that scales to fit. The phone comes first on a narrow screen. */
+:root {
+  --bg: #eef3f8; --surface: #ffffff; --ink: #17324d; --muted: #56697a; --line: #d7e3ef;
+  --accent: #8a4b0f; --accent-ink: #ffffff; --sky: #fbf0e3; --chip: #f5f9fd; --device: #1f2d3b; --toast: #17324d; --toast-ink: #ffffff;
+  --font-display: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  --font-ui: 'Barlow Semi Condensed', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1a26; --surface: #152636; --ink: #e8f0f8; --muted: #9db2c6; --line: #2a425b;
+    --accent: #f0b46a; --accent-ink: #2a1703; --sky: #33240f; --chip: #1a2f44; --device: #0a121b; --toast: #e8f0f8; --toast-ink: #0e1a26;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1a26; --surface: #152636; --ink: #e8f0f8; --muted: #9db2c6; --line: #2a425b;
+  --accent: #f0b46a; --accent-ink: #2a1703; --sky: #33240f; --chip: #1a2f44; --device: #0a121b; --toast: #e8f0f8; --toast-ink: #0e1a26;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.45; padding-inline: 16px; padding-block: 20px 36px; }
+.head { max-width: 1180px; margin: 0 auto 18px; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1.1; margin: 0 0 6px; color: var(--accent); text-wrap: balance; }
+h2 { font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.lede { margin: 0; color: var(--muted); max-width: 60ch; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); } .stage { order: -1; position: static !important; } }
+.rail { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.group { display: flex; flex-direction: column; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+button.chip { font: inherit; font-weight: 600; color: var(--ink); background: var(--chip); border: 2px solid var(--line); border-radius: 999px; padding: 7px 14px; min-height: 40px; cursor: pointer; text-align: left; }
+button.chip:hover { border-color: var(--accent); }
+button.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.chip:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.size small { display: block; font-weight: 500; font-size: 12px; opacity: 0.8; }
+.note { background: var(--sky); border-radius: 14px; padding: 12px 14px; font-size: 14px; }
+.note p { margin: 0 0 6px; } .note p:last-child { margin: 0; }
+.note b { font-weight: 700; }
+details { border: 2px solid var(--line); border-radius: 14px; background: var(--surface); }
+summary { cursor: pointer; font-weight: 700; padding: 10px 14px; }
+details ul { margin: 0; padding: 0 16px 14px 32px; color: var(--muted); font-size: 14px; }
+details li { margin-bottom: 6px; }
+.stage { display: flex; flex-direction: column; align-items: center; min-width: 0; gap: 12px; position: sticky; top: 16px; }
+.stage-box { width: 100%; display: flex; justify-content: center; }
+.device { background: var(--device); padding: 12px; box-shadow: 0 28px 50px -22px rgba(10, 24, 40, 0.6); transform-origin: top center; }
+.screen { position: relative; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
+.screen iframe { display: block; border: 0; background: #fff; flex: none; }
+.bar-top { flex: none; height: 24px; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font: 700 11px/1 system-ui, sans-serif; color: #1f2d3b; background: #f1f3f4; }
+.urlbar { flex: none; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: #f1f3f4; border-bottom: 1px solid #dfe3e6; }
+.url { flex: 1; min-width: 0; height: 28px; border-radius: 14px; background: #fff; border: 1px solid #dfe3e6; display: flex; align-items: center; gap: 6px; padding: 0 10px; font: 500 12px/1 system-ui, sans-serif; color: #3c4043; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.url svg { flex: none; }
+.bar-bottom { flex: none; height: 24px; background: #fff; position: relative; }
+.bar-bottom::after { content: ""; position: absolute; left: 50%; top: 10px; width: 110px; height: 4px; margin-left: -55px; border-radius: 4px; background: #1f2d3b; opacity: 0.85; }
+.desk .bar-top, .desk .bar-bottom { display: none; }
+.toast { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); max-width: 86%; background: var(--toast); color: var(--toast-ink); padding: 10px 14px; border-radius: 12px; font: 600 13px/1.3 system-ui, sans-serif; text-align: center; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 5; }
+.toast.on { opacity: 0.96; }
+.cap { margin: 0; font-size: 14px; color: var(--muted); text-align: center; max-width: 60ch; }
+</style>
+
+<header class="head">
+  <h1>TaraBasa Admin Phone Preview</h1>
+  <p class="lede">What the Admin sees on a phone: the real Admin pages from the website, drawn at four phone sizes in a phone's browser. Tap the bottom bar, the cards and the buttons inside the phone: the approval windows open the way they do on the site.</p>
+</header>
+
+<div class="wrap">
+  <div class="rail">
+    <div class="group"><h2>Phone size</h2><div class="row" id="sizes" role="group" aria-label="Phone size"></div></div>
+    <div class="group"><h2>Main menu</h2><div class="row" id="g-menu" role="group" aria-label="Main menu pages"></div></div>
+    <div class="group"><h2>Other views</h2><div class="row" id="g-more" role="group" aria-label="Other views"></div></div>
+    <div class="group"><h2>Before signing in</h2><div class="row" id="g-out" role="group" aria-label="Pages before signing in"></div></div>
+
+    <div class="note">
+      <p><b>Sample accounts.</b> Ada Admin, three teachers waiting for approval, one rejected, two active, and four parents. All made up, and nothing is saved.</p>
+      <p><b>Preview only.</b> Buttons that change something (approve, reject, deactivate, send, check now) show a note instead. The menu, the windows and the links open.</p>
+    </div>
+
+    <details>
+      <summary>What this page is</summary>
+      <ul>
+        <li>Each screen is the website's own page, filled with sample data and saved as it looks at that moment.</li>
+        <li>The phone frame draws a browser address bar and the phone's status bar and gesture bar, so the space matches a real phone.</li>
+        <li>Laptop shows the same pages at 1280 x 800, to compare with the phone layout.</li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="stage">
+    <div class="stage-box" id="box">
+      <div class="device" id="device">
+        <div class="screen" id="screen">
+          <div class="bar-top" aria-hidden="true"><span>9:41</span><span>LTE 87%</span></div>
+          <div class="urlbar" aria-hidden="true">
+            <div class="url"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span id="url">tarabasa-ai.onrender.com</span></div>
+          </div>
+          <iframe id="page" title="TaraBasa AI admin page" src="about:blank"></iframe>
+          <div class="bar-bottom" aria-hidden="true"></div>
+          <div class="toast" id="toast" role="status"></div>
+        </div>
+      </div>
+    </div>
+    <p class="cap" id="cap"></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var SIZES = [
+    { key: 'small', label: 'Small phone', w: 360, h: 640 },
+    { key: 'common', label: 'Common phone', w: 390, h: 844 },
+    { key: 'large', label: 'Large phone', w: 430, h: 932 },
+    { key: 'tablet', label: 'Tablet', w: 768, h: 1024 },
+    { key: 'laptop', label: 'Laptop', w: 1280, h: 800, desk: true }
+  ];
+  // id, label, the address shown in the browser bar
+  var SCREENS = {
+    menu: [
+      ['overview', 'Overview', '/admin/dashboard'], ['approvals', 'Approvals', '/admin/approvals'], ['accounts', 'Accounts', '/admin/accounts'],
+      ['health', 'System health', '/admin/health'], ['log', 'Activity log', '/admin/log']
+    ],
+    more: [
+      ['approvals-rejected', 'Approvals, rejected', '/admin/approvals'], ['accounts-teachers', 'Accounts, teachers only', '/admin/accounts'], ['accounts-search', 'Accounts, a search', '/admin/accounts']
+    ],
+    out: [['login', 'Admin log in', '/login?role=admin']]
+  };
+  var state = { size: 'common', screen: 'overview' };
+  try {
+    var saved = JSON.parse(localStorage.getItem('tb-admin-preview') || '{}');
+    if (saved.size) state.size = saved.size;
+    if (saved.screen) state.screen = saved.screen;
+  } catch (e) {}
+
+  var $ = function (id) { return document.getElementById(id); };
+  var all = {};
+  Object.keys(SCREENS).forEach(function (g) { SCREENS[g].forEach(function (s) { all[s[0]] = s; }); });
+  if (!all[state.screen]) state.screen = 'overview';
+  if (!SIZES.some(function (s) { return s.key === state.size; })) state.size = 'common';
+
+  function chip(label, sub, onClick, key, group) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip' + (sub ? ' size' : ''); b.dataset.key = key; b.dataset.group = group;
+    b.innerHTML = label + (sub ? '<small>' + sub + '</small>' : '');
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  SIZES.forEach(function (s) { $('sizes').appendChild(chip(s.label, s.w + ' x ' + s.h, function () { state.size = s.key; render(true); }, s.key, 'size')); });
+  Object.keys(SCREENS).forEach(function (g) {
+    SCREENS[g].forEach(function (s) { $('g-' + g).appendChild(chip(s[1], '', function () { go(s[0]); }, s[0], 'screen')); });
+  });
+
+  function curSize() { return SIZES.filter(function (s) { return s.key === state.size; })[0]; }
+  function go(id) { state.screen = id; render(true); }
+
+  var docs = {};
+  var seq = 0;
+  function load(id) {
+    var frame = $('page');
+    seq += 1; var mine = seq;
+    function put(html) { if (mine !== seq) return; frame.srcdoc = html; }
+    if (docs[id]) return put(docs[id]);
+    fetch('screens/' + id + '.html').then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.text(); })
+      .then(function (html) { docs[id] = html; put(html); })
+      .catch(function () { if (mine === seq) { frame.removeAttribute('srcdoc'); frame.src = 'screens/' + id + '.html'; } });
+  }
+
+  function fit() {
+    var s = curSize();
+    var outerW = s.w + 24, outerH = s.h + 24;
+    var availW = $('box').clientWidth || outerW;
+    var availH = Math.max(480, window.innerHeight - 80);
+    var k = Math.min(1, availW / outerW, availH / outerH);
+    $('device').style.transform = 'scale(' + k + ')';
+    $('box').style.height = Math.round(outerH * k) + 'px';
+    return k;
+  }
+
+  function render(reload) {
+    var s = curSize(), scr = all[state.screen];
+    var dev = $('device'), screen = $('screen'), frame = $('page');
+    dev.style.width = (s.w + 24) + 'px'; dev.style.height = (s.h + 24) + 'px';
+    dev.style.borderRadius = (s.key === 'laptop' ? 14 : s.key === 'tablet' ? 30 : 46) + 'px';
+    screen.style.width = s.w + 'px'; screen.style.height = s.h + 'px';
+    screen.style.borderRadius = (s.key === 'laptop' ? 6 : s.key === 'tablet' ? 20 : 34) + 'px';
+    screen.classList.toggle('desk', !!s.desk);
+    var chrome = s.desk ? 40 : 24 + 40 + 24;
+    frame.style.width = s.w + 'px'; frame.style.height = (s.h - chrome) + 'px';
+    $('url').textContent = 'tarabasa-ai.onrender.com' + scr[2];
+    if (reload) load(state.screen);
+    document.querySelectorAll('button.chip').forEach(function (b) {
+      var on = b.dataset.group === 'size' ? b.dataset.key === state.size : b.dataset.key === state.screen;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var k = fit();
+    $('cap').textContent = s.label + ', ' + s.w + ' x ' + s.h + ' dp. The page area is ' + s.w + ' x ' + (s.h - chrome) + ' once the browser bar and the phone bars are counted' +
+      (k < 0.995 ? '. Drawn at ' + Math.round(k * 100) + '% to fit your window.' : '.');
+    try { localStorage.setItem('tb-admin-preview', JSON.stringify(state)); } catch (e) {}
+  }
+
+  var toastTimer = null;
+  function toast(text) {
+    var t = $('toast'); t.textContent = text; t.classList.add('on');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('on'); }, 2600);
+  }
+
+  // a tap inside the page: a link goes to the matching screen, a button that would change something says it is preview only
+  function route(href) {
+    var u;
+    try { u = new URL(href, 'http://localhost:8000'); } catch (e) { return toast('This link is not part of the preview.'); }
+    var q = u.searchParams, p = u.pathname.replace(/\/+$/, ''), id = null;
+    if (p === '/admin/dashboard') id = 'overview';
+    else if (p === '/admin/approvals') id = q.get('tab') === 'rejected' ? 'approvals-rejected' : 'approvals';
+    else if (p === '/admin/accounts') id = q.get('q') ? 'accounts-search' : q.get('filter') === 'teachers' ? 'accounts-teachers' : 'accounts';
+    else if (p === '/admin/health') id = 'health';
+    else if (p === '/admin/log') id = 'log';
+    else if (p === '/login') id = 'login';
+    if (id && all[id]) { go(id); return; }
+    toast('This part is not in the preview. It works on the real site.');
+  }
+  window.addEventListener('message', function (e) {
+    if (e.source !== $('page').contentWindow || !e.data) return;
+    if (e.data.tb === 'nav') route(e.data.href);
+    if (e.data.tb === 'form') toast('Preview only: nothing is saved or sent.');
+  });
+  window.addEventListener('resize', function () { fit(); });
+  render(true);
+})();
+</script>

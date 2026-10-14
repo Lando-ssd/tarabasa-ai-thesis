@@ -156,8 +156,9 @@
             @endforeach
           </div>
         @endif
+        <p class="note body-only">Suggestions match the group's reading level and the skill the adaptive engine says is next.</p>
       </div>
-      <footer class="win-foot"><span class="note">Suggestions match the group's reading level and the skill the adaptive engine says is next.</span><button type="button" class="btn ghost small spacer" data-close>Close</button></footer>
+      <footer class="win-foot"><span class="note foot-only">Suggestions match the group's reading level and the skill the adaptive engine says is next.</span><button type="button" class="btn ghost small spacer" data-close>Close</button></footer>
     </section>
 
     {{-- ---------- activities ---------- --}}

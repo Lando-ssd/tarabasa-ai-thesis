@@ -140,9 +140,9 @@
             @foreach ($o['assignments'] as $row)
               <tr>
                 <td><b>{{ $row['activity']->title }}</b></td>
-                <td>{{ $row['for'] }}</td>
-                <td>{{ $row['done'] }} of {{ $row['total'] }}</td>
-                <td>@if ($row['avg'] === null)<span class="note">no readings yet</span>@else<span class="bar1"><i style="width:{{ $row['avg'] }}%"></i></span>{{ $row['avg'] }}%@endif</td>
+                <td data-label="For">{{ $row['for'] }}</td>
+                <td data-label="Done">{{ $row['done'] }} of {{ $row['total'] }}</td>
+                <td data-label="Average">@if ($row['avg'] === null)<span class="note">no readings yet</span>@else<span class="bar1"><i style="width:{{ $row['avg'] }}%"></i></span>{{ $row['avg'] }}%@endif</td>
               </tr>
             @endforeach
           </tbody>

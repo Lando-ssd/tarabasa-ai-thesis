@@ -6729,7 +6729,7 @@ is "Add your child | TaraBasa AI". `parent/children/card` (the printable card) w
 - NOT touched: the Parent sign up and log in pages, and the Teacher sign up (they use the auth layout the user already liked).
 - This follows the approved Parent redesign (it is the leftover of it, not a new design), so no new preview was made.
 
-## Phone app: layout pass 2 and the hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+## Phone app: layout pass 2 and the hosted preview (2026-10-14, PUSHED to mobile-app as 8ebcda1; MERGED INTO THE LIVE BRANCH as 10e29cb, which carried the website side only: the phone app does not deploy)
 
 The user pasted a prompt written by another Claude ("adapt the phone app so every screen is laid out for a phone, layout only")
 and said to adjust it where it is not perfect. What did not fit, and what was decided: the phone app has ONLY Learner screens
@@ -6775,7 +6775,7 @@ approved preview's numbers (only near duplicates merged, not a strict 4/8 grid),
   pointerdown, mousedown, pointerup, mouseup and click (the harness does this). A tool permission check blocked `rm -rf` of an
   export folder: use a NEW output folder name instead of deleting.
 
-## Parent pages on a phone: review, fixes and a hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+## Parent pages on a phone: review, fixes and a hosted preview (2026-10-14, MERGED INTO THE LIVE BRANCH as 10e29cb and deployed; checked live: new page titles, the sign-in tap-area styles, the Parent stylesheets, key pages answer 200)
 
 The user asked for "the parents phone review side". Read as: the Parent screens as they look on a phone, reviewed like the child's
 app, with a link they can open without localhost. The Parent end is the website (no Parent screens in the phone app), so this is the
@@ -6805,6 +6805,68 @@ Blade pages at phone width.
 - **Not verified:** the hosted page inside claude.ai (private link; tested from a plain folder address), and a real phone's browser
   (Chrome's address bar hides and shows as a page scrolls, which changes the page height a little). Sample data is made up; the
   numbers shown (142 points, 3 days in a row) are what the real code computed from it, not typed in.
+
+## Teacher pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED to mobile-app as 07a5087, NOT merged to the live branch)
+
+The user asked "how about the teacher preview" right after the Parent one. Same method, same tool folder pattern:
+`tools/teacher-phone-preview/` (`CaptureTeacherPhoneTest.php`, `build_teacher_preview.py`, `TaraBasa-Teacher-Phone-Preview.html`,
+`README.md`; three steps, like the Parent one). The capture builds a made-up class in memory: Ms Elena Reyes (Sampaguita, Grade 1, and
+Dahlia, Grade 2), eight learners chosen so that every alert kind appears (Leo needs support, Ana is just starting to read, Rosa is
+ready to move up, Nico has gone quiet, Jun moved up a level), 12 activities in every state (drafts, placed in a level, rejected,
+two shared), assignments, a learner another teacher released for her to claim, and a second teacher still waiting for approval.
+It saves 22 real pages plus the window of each activity (the page fetches one when a card opens; the viewer answers that request).
+- **Hosted preview:** https://claude.ai/artifact/7d8hLtSikv6gWPqG2a4dBu (private to the user). Phone frame with a browser bar, four
+  phone sizes and a laptop, a screen picker, the bottom bar and links work, class windows and activity windows open, buttons that
+  would save show "preview only". Not opened from inside claude.ai (private link); tested from a plain local folder address.
+- **How it was checked:** 22 pages at 360x640, 390x844, 430x932 and 768x1024, and at 360 and 390 with text 20 percent larger (132
+  combinations), plus every view of every window (a class window has 7 views for each class, the Generate window, the "More"
+  sheet, the confirmations, and the 12 activity windows; 174 view checks at 360x640, 360x640 with larger text, and 390x844).
+  FINAL: 0 findings. The only things a measurement still lists are the six sign up and log in links, whose real tap area is an
+  invisible 48 to 54px (checked by touching points around each one, as in the Parent review). Laptop size was only used to compare.
+- **Real defects found and fixed** (all in `public/css/teacher-app.css`, appended at the end, plus small markup):
+  1. Tap targets: buttons, chips and tabs were 34 to 38px (avatar chip 38, Easy/Medium/Hard/Reject buttons 26, "Assign" 23, level
+     stepper 38); on phones they are now at least 44px, and small text links (card titles, Back, "see Alerts", the "why" summaries)
+     keep their look and gain an invisible tap area (padding with a matching negative margin, so the layout does not move).
+  2. Analytics "Assigned activities" table needed 297px plus padding, wider than a 360px (and 375px) phone: on phones each row is a
+     short stack with For, Done and Average labelled (`data-label` in `teacher/analytics.blade.php`).
+  3. Plain `1fr` columns let a long row push a page wider than the screen when text is larger (Analytics one learner, Alerts): on
+     phones they are `minmax(0,1fr)` (the shell and the card grids), and the routine update row wraps.
+  4. A learner's row in the class window cut names ("Domingo, J...") and a tag ran into the level: on phones (600px and under) the
+     level and step move to a second line under the name.
+  5. The class window's three tabs wrapped to two rows and the "Reading groups" footer note was long, leaving only 160 to 220px for
+     the content on the smallest phone (24px at larger text). Now the tabs are one row ("Groups" is the short name, "Reading
+     groups" is still read aloud; `revealTab()` in `teacher-app.js` keeps the chosen tab in view if it ever slides), and the note
+     moved from the footer to the end of the list on phones (`foot-only` / `body-only`). Content area: 266px (228px at larger text).
+  6. Copy: Home said "Drag each one into the level it belongs to" (a phone cannot drag; it uses the level buttons): now "Place each
+     one in the level it belongs to." The search placeholder ends with an ellipsis instead of being cut mid word.
+- **Not changed, noted:** drag and drop between levels needs a mouse (the "Move to" buttons are the phone way, and the preview
+  says so); a real phone and a real teacher have not used any of this; Admin pages were NOT reviewed on a phone (they share
+  `teacher-app.css`, so they got the tap sizes and the column fix, but were not measured); the 1.2x text test is a simulation
+  (scaled font sizes), not the phone's own setting. The sample names, scores and readings are made up.
+- Full suite passed on the final code (405 tests, none added; this round changed styles, one script helper and a few markup lines).
+
+## Admin pages on a phone: review, fixes and a hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+
+The last role to be looked at on a phone ("continue whats next" after the Teacher push). Same method again: `tools/admin-phone-preview/`
+(`CaptureAdminPhoneTest.php`, `build_admin_preview.py`, `TaraBasa-Admin-Phone-Preview.html`, `README.md`). The capture builds Ada Admin,
+three teachers waiting for approval (one has not confirmed the email), one rejected, two active, four parents (one deactivated), a short
+activity log and a service check (reader and recommender fine, the generator asleep, one failed call), and saves the 8 Admin screens plus
+the log in page.
+- **Hosted preview:** https://claude.ai/artifact/XBN7BbH9wbkbh6FkiDihYs (private to the user). Not opened from inside claude.ai (private
+  link); tested from a plain local folder address.
+- **Checked:** 9 pages at 360x640, 390x844, 430x932 and 768x1024, and at 360 and 390 with text 20 percent larger (54 combinations), plus
+  69 views of the windows (approve, reject, reopen, confirm email, deactivate, the More sheet) at 360x640, 360x640 with larger text and
+  390x844. FINAL: 0 findings; the only things a measurement lists are the three log in links whose real tap area is invisible and 48 to 54px.
+  The Admin already inherited the Teacher fixes (shared `teacher-app.css`: 44px controls and the `minmax(0,1fr)` columns), which is why so
+  little was left.
+- **Real defects found and fixed** (`public/css/admin-app.css`, appended; `admin/accounts.blade.php`):
+  1. The accounts table (six columns, about 660px) scrolled sideways inside its box, so the Account status and every action button sat off
+     the screen to the right with no hint, and emails broke mid word. Under 700px each row is a short card: name and email, then role,
+     school check, account and joined date (labelled through `data-label`), then the buttons.
+  2. The approval cards' detail list (School, Employee ID, Email...) gave half the card to the labels, so an email broke as "...@example.co"
+     and "m". Under 600px the label sits above its value (`dl.facts`).
+- **Not changed, noted:** a real phone and a real Admin have not used it; the 1.2x text test is a simulation; the sample accounts are
+  made up. Full suite passed (405 tests; nothing added, this round changed styles and two markup attributes).
 
 ## Before pushing this round (checklist for the next session)
 

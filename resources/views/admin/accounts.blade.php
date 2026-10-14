@@ -47,16 +47,16 @@
                 <span class="mail">{{ $a->email }}</span>
                 @unless ($verifiedMail)<span class="pill amber tinypill">Email not verified</span>@endunless
               </td>
-              <td>{{ $a->user_type }}</td>
-              <td>
+              <td class="role">{{ $a->user_type }}</td>
+              <td data-label="School check">
                 @if ($ts)
                   <span class="pill {{ ['Active' => 'ok', 'Pending' => 'amber', 'Rejected' => 'warn'][$ts] ?? '' }}">{{ $ts }}</span>
                 @else
                   <span class="pill mute">Not needed</span>
                 @endif
               </td>
-              <td><span class="pill {{ $a->status === 'Active' ? 'ok' : 'mute' }}">{{ $a->status }}</span></td>
-              <td class="nowrap">{{ $a->created_at->timezone('Asia/Manila')->format('M j, Y') }}</td>
+              <td data-label="Account"><span class="pill {{ $a->status === 'Active' ? 'ok' : 'mute' }}">{{ $a->status }}</span></td>
+              <td class="nowrap" data-label="Joined">{{ $a->created_at->timezone('Asia/Manila')->format('M j, Y') }}</td>
               <td class="acts">
                 @unless ($verifiedMail)
                   <form method="POST" action="{{ route('admin.users.resend-verification', $a) }}" style="display:inline">
