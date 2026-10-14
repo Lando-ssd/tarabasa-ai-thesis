@@ -7,7 +7,7 @@ import { SayWord, type SayResult } from './SayWord';
 import { useSession } from './session';
 import { Btn, Busy, Icon, IconBtn, Notice, Screen, Small } from './ui';
 import { colors, fonts, size, space } from './theme';
-import { s, SHORT_HEIGHT } from './scale';
+import { COMPACT_HEIGHT, s, SHORT_HEIGHT } from './scale';
 
 // Balloon Pop, the same rules as the website: five balloons show words, three of them are marked in turn, and the child says the
 // marked word to pop it. Each word gets two tries; "Tara is not sure" is never "wrong", and after two tries the balloon pops anyway.
@@ -94,6 +94,10 @@ function Play({ data, firstName, onExit }: { data: api.WordLevels; firstName: st
   const { height } = useWindowDimensions();
   // "short" here means not a tall phone: under about 950dp the word and its "hear it" button sit side by side so the balloons keep their room.
   const short = height < 950;
+  // On a phone the "Tara is not sure, try once more" note takes the place of the "Say this word" label, so the screen does not grow
+  // by a line (and jump) when it appears. A taller screen keeps it under the microphone, as before.
+  const noteAbove = short && !tapMode;
+  const showNoteAbove = noteAbove && tries > 0 && !busy;
   const target = order[pos];
   const word = words[target] ?? '';
 
@@ -221,9 +225,11 @@ function Play({ data, firstName, onExit }: { data: api.WordLevels; firstName: st
           ) : (
             <>
               <SayWord key={`${attempt}-${pos}-${tries}`} word={word} idleLabel={tries > 0 ? 'Tap the mic and try again' : 'Tap the mic and say the word'} onResult={sayResult} />
-              <Text maxFontSizeMultiplier={1.2} style={[styles.note, tries > 0 && { color: colors.blueDark }]} accessibilityLiveRegion="polite">
-                {tries > 0 ? note : ''}
-              </Text>
+              {noteAbove ? null : (
+                <Text maxFontSizeMultiplier={1.2} style={[styles.note, tries > 0 && { color: colors.blueDark }]} accessibilityLiveRegion="polite">
+                  {tries > 0 ? note : ''}
+                </Text>
+              )}
             </>
           )}
         </View>
@@ -236,8 +242,12 @@ function Play({ data, firstName, onExit }: { data: api.WordLevels; firstName: st
       </View>
 
       <View style={styles.target} accessible={!short} accessibilityLabel={`Say this word: ${word}`}>
-        <Text maxFontSizeMultiplier={1.15} style={styles.targetLabel}>
-          {tapMode ? 'Pop this word' : 'Say this word'}
+        <Text
+          maxFontSizeMultiplier={1.15}
+          style={[styles.targetLabel, showNoteAbove && styles.targetNote]}
+          accessibilityLiveRegion={showNoteAbove ? 'polite' : undefined}
+        >
+          {showNoteAbove ? note : tapMode ? 'Pop this word' : 'Say this word'}
         </Text>
         {short ? (
           // A short phone (about 640dp tall): the word and the "hear it" button sit side by side, so the balloons keep their room.
@@ -326,7 +336,7 @@ function Balloon({ word, color, w, isTarget, popped, tappable, delay, onPress }:
     <Animated.View
       style={{
         width: w,
-        height: h + 28,
+        height: h + (COMPACT_HEIGHT ? 18 : 28),
         alignItems: 'center',
         opacity: burst.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
         transform: [
@@ -348,7 +358,7 @@ function Balloon({ word, color, w, isTarget, popped, tappable, delay, onPress }:
         <View style={styles.shine} />
       </Pressable>
       <View style={[styles.knot, { borderBottomColor: color }]} />
-      <View style={styles.string} />
+      <View style={[styles.string, COMPACT_HEIGHT && { height: s(7) }]} />
       {isTarget && !popped ? (
         <View style={styles.pointer}>
           <Icon name="arrow-up" size={s(18)} color={colors.orangeDark} />
@@ -361,11 +371,12 @@ function Balloon({ word, color, w, isTarget, popped, tappable, delay, onPress }:
 const styles = StyleSheet.create({
   note: { fontFamily: fonts.uiBold, fontSize: s(15), lineHeight: s(20), color: colors.ink, textAlign: 'center', minHeight: s(20) },
   target: { alignItems: 'center', gap: space[6], marginTop: space[10] },
-  targetLabel: { fontFamily: fonts.ui, fontSize: s(14), color: colors.slate },
+  targetLabel: { fontFamily: fonts.ui, fontSize: s(14), lineHeight: s(20), color: colors.slate, textAlign: 'center' },
+  targetNote: { fontFamily: fonts.uiBold, color: colors.blueDark },
   targetShort: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[12] },
   targetRow: { backgroundColor: colors.orangeSoft, borderRadius: s(16), borderWidth: 2, borderColor: '#f3d6bb', paddingHorizontal: space[20], paddingVertical: space[4] },
   targetWord: { fontFamily: fonts.display, fontSize: s(38), lineHeight: s(48), color: colors.orange },
-  skyShort: { paddingBottom: space[12], minHeight: s(160) },
+  skyShort: { paddingBottom: space[8], minHeight: s(160) },
   sky: { marginTop: space[10], backgroundColor: colors.sky, borderRadius: s(22), paddingTop: space[10], paddingBottom: space[24], paddingHorizontal: space[8], minHeight: s(205), justifyContent: 'center' },
   balloon: { alignItems: 'center', justifyContent: 'center', overflow: 'visible', borderBottomRightRadius: s(40), borderBottomLeftRadius: s(40) },
   marked: { borderWidth: 4, borderColor: colors.white, shadowColor: colors.orange, shadowOpacity: 0.9, shadowRadius: 12, elevation: 10 },

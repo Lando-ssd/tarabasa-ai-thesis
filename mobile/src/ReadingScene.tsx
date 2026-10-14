@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import * as Speech from 'expo-speech';
 import { Animation, IconBtn, Panel, Pill, Screen, Small } from './ui';
-import { colors, fonts, READING_BASE, readingSteps, space } from './theme';
+import { colors, fonts, READING_BASE, readingSteps, size, space } from './theme';
 import { useSession } from './session';
 import { COMPACT_HEIGHT, s, SHORT_HEIGHT } from './scale';
 
@@ -61,7 +61,11 @@ export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, b
 
   const step = readingSteps[Math.min(Math.max(fontStep, 1), 5) - 1];
   const fontSize = Math.round(READING_BASE * step.scale);
-  const tile = letterTile(passage.kind === 'letters' ? passage.letters.length : 0, gridW);
+  // Until the panel has been measured, work out its width from the screen's (the column, less the side gutters and the panel's own padding),
+  // so the first picture already has three letter tiles to a row instead of jumping from two to three once the measurement arrives.
+  const { width: screenW } = useWindowDimensions();
+  const panelW = Math.min(size.maxWidth, screenW) - size.gutter * 2 - space[14] * 2;
+  const tile = letterTile(passage.kind === 'letters' ? passage.letters.length : 0, gridW || panelW);
 
   return (
     <Screen footer={footer}>
@@ -123,7 +127,7 @@ export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, b
             </View>
           </>
         ) : (
-          <View style={styles.letters} onLayout={(e) => setGridW(e.nativeEvent.layout.width)}>
+          <View style={[styles.letters, { maxWidth: tile.rowW }]} onLayout={(e) => setGridW(e.nativeEvent.layout.width)}>
             {passage.letters.map((letter, i) => (
               <View key={`${letter.upper}-${i}`} style={[styles.tile, tile.box]} accessible accessibilityLabel={`Letter ${letter.upper}`}>
                 <Text maxFontSizeMultiplier={1.1} style={[styles.tileText, tile.upper]}>
@@ -145,7 +149,7 @@ export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, b
 
 /**
  * The letter tiles share the panel's width, three to a row, so a row never wraps to two and pushes the last letters off
- * the screen. Before the panel has been measured they draw at their design size.
+ * the screen. `gridW` is the panel's measured width, or an estimate from the screen's width until the measurement arrives.
  */
 function letterTile(count: number, gridW: number) {
   const cols = Math.max(1, Math.min(3, count));
@@ -153,6 +157,8 @@ function letterTile(count: number, gridW: number) {
   const width = gridW ? Math.min(SHORT_HEIGHT ? s(72) : s(92), Math.floor((gridW - gap * (cols - 1)) / cols)) : s(76);
   const f = Math.min(width / s(76), 1.15);
   return {
+    // The row is never wider than its tiles, so six letters stay three and three even where the column is wide (a tablet).
+    rowW: width * cols + gap * (cols - 1),
     box: { width, height: Math.round(width * (SHORT_HEIGHT ? 1.25 : 1.32)) },
     upper: { fontSize: Math.round(s(44) * f), lineHeight: Math.round(s(56) * f) },
     lower: { fontSize: Math.round(s(22) * f), lineHeight: Math.round(s(26) * f) },
@@ -170,7 +176,7 @@ function Dots({ done, total }: { done: number; total: number }) {
 }
 
 const styles = StyleSheet.create({
-  top: { flexDirection: 'row', alignItems: 'center', gap: space[10], minHeight: s(52) },
+  top: { flexDirection: 'row', alignItems: 'center', gap: space[10], minHeight: SHORT_HEIGHT ? size.touch : s(52) },
   eyebrow: { fontFamily: fonts.uiBold, fontSize: s(17), color: colors.slate, textAlign: 'center' },
   dots: { flexDirection: 'row', gap: space[8], justifyContent: 'center', marginTop: space[2] },
   dot: { width: s(14), height: s(14), borderRadius: s(7), backgroundColor: colors.sky2 },
@@ -178,7 +184,7 @@ const styles = StyleSheet.create({
   dotNow: { backgroundColor: colors.orange },
 
   steps: { flexDirection: 'row', gap: space[6], marginTop: space[8] },
-  step: { flex: 1, minHeight: s(40), alignItems: 'center', justifyContent: 'center', borderRadius: s(12), backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, paddingHorizontal: space[2] },
+  step: { flex: 1, minHeight: SHORT_HEIGHT ? s(34) : s(40), alignItems: 'center', justifyContent: 'center', borderRadius: s(12), backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, paddingHorizontal: space[2] },
   stepOn: { backgroundColor: colors.orange, borderColor: colors.orange },
   stepText: { fontFamily: fonts.uiBold, fontSize: s(12.5), color: colors.slate, textAlign: 'center' },
 
@@ -186,14 +192,14 @@ const styles = StyleSheet.create({
   owl: { alignItems: 'center', marginBottom: s(-30), zIndex: 1 },
   owlCompact: { marginBottom: s(-24) },
   panel: { paddingTop: space[32], gap: space[12] },
-  panelShort: { paddingTop: space[14], gap: space[8] },
+  panelShort: { paddingTop: space[10], gap: space[8] },
   direction: { fontFamily: fonts.uiBold, fontSize: s(20), lineHeight: s(26), color: colors.ink, textAlign: 'center' },
   directionCompact: { fontSize: s(18), lineHeight: s(24) },
   directionShort: { fontSize: s(17), lineHeight: s(22) },
   sizer: { flexDirection: 'row', alignItems: 'center', gap: space[8] },
-  passage: { backgroundColor: colors.white, borderRadius: s(16), padding: space[14] },
+  passage: { backgroundColor: colors.white, borderRadius: s(16), padding: SHORT_HEIGHT ? space[10] : space[14] },
   passageText: { fontFamily: fonts.read, color: colors.ink },
-  letters: { flexDirection: 'row', flexWrap: 'wrap', gap: space[10], justifyContent: 'center' },
+  letters: { flexDirection: 'row', flexWrap: 'wrap', gap: space[10], justifyContent: 'center', alignSelf: 'center', width: '100%' },
   tile: { width: s(76), height: s(100), borderRadius: s(18), backgroundColor: colors.white, borderBottomWidth: s(5), borderBottomColor: colors.sky2, alignItems: 'center', justifyContent: 'center' },
   tileText: { fontFamily: fonts.display, fontSize: s(44), lineHeight: s(56), color: colors.orange },
   tileLower: { fontFamily: fonts.read, fontSize: s(22), lineHeight: s(26), color: colors.slate },

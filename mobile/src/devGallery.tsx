@@ -232,7 +232,8 @@ function screenFor(name: string) {
         <Quiz
           questions={[
             { question: 'What did the hen eat?', choices: ['Corn', 'Fish', 'Cake', 'Rocks'] },
-            { question: 'Who ran away?', choices: ['The fox', 'The pig'] },
+            { question: 'Who ran away?', choices: ['The fox', 'The pig', 'The little brown hen', 'Nobody ran away at all'] },
+            { question: 'Why did the hen go back to the barn when the rain began to fall?', choices: ['It was hungry', 'It wanted to stay dry', 'It was tired of running', 'It heard its friends calling from far away'] },
           ]}
           onBack={noop}
           onSubmit={noop}
