@@ -199,5 +199,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .avatar-grid{ grid-template-columns:repeat(3,1fr); }
   .name-row{ grid-template-columns:1fr; }
   .nav-row .btn{ padding-left:20px; padding-right:20px; }
+  /* The wizard's buttons share the row like a phone's own: Back narrow, Next wide, and Next alone on the first step. */
+  #navRow .btn{ white-space:nowrap; min-height:48px; padding-left:14px; padding-right:14px; font-size:clamp(15px, 4.6vw, 18px); }
+  #navRow #prevBtn{ flex:0 0 auto; min-width:84px; }
+  #navRow #nextBtn, #navRow #submitBtn{ flex:1 1 auto; }
+  #navRow.is-first #prevBtn{ display:none; }
 }
 @media (prefers-reduced-motion:reduce){ .step-enter{ animation:none; } *{ transition:none !important; } }

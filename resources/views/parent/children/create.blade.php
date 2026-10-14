@@ -426,6 +426,8 @@
     progressFill.style.width = (n / totalSteps * 100) + '%';
     progressLabel.textContent = `Step ${n} of ${totalSteps}`;
     prevBtn.style.visibility = n === 1 ? 'hidden' : 'visible';
+    // On a phone the first step has no Back button at all, so Next can use the whole row (the stylesheet decides; elsewhere Back only hides).
+    document.getElementById('navRow').classList.toggle('is-first', n === 1);
     if (n === 4) renderPlacementQuestions();
 
     nextBtn.classList.toggle('step-hidden', n === totalSteps);

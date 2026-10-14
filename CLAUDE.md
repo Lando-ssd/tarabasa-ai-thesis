@@ -6757,7 +6757,7 @@ approved preview's numbers (only near duplicates merged, not a strict 4/8 grid),
   screen/size combinations; every common screen fits without scrolling at 390x844 and larger. **At that point it still scrolled on
   the SMALLEST phone (360x640, about 592 usable):** warm-up "quiet" +17, the quiz +68 (three questions), "Your turn" +38, Balloon Pop
   +40. Long lists (Read, Games, Badges, Home, Results) scroll by design. These were fixed afterwards, see the next bullet.
-- **Smallest phone fit (2026-10-14, PUSHED to mobile-app as 0754420, not merged into the live branch; mobile only, nothing on the website changed; APK 0.4.2-test9 built from it, not sent)** The quiz is now ONE question at
+- **Smallest phone fit (2026-10-14, PUSHED to mobile-app as 0754420 and MERGED INTO THE LIVE BRANCH as 568d88f (2026-10-14, the owner said yes; only mobile/ and this file changed, suite 405 passing, live pages answer 200); mobile only, nothing on the website changed; APK 0.4.2-test9 built from it, not sent)** The quiz is now ONE question at
   a time (`Quiz` in `Story.tsx`: "Question 1 of 3" with three dots, a Next Question button that stays disabled until a choice is
   picked, Submit My Answers on the last question, the back arrow goes to the previous question and the first one goes back to the story;
   picks are kept; the answers are still sent in one go and still marked on the server). Three questions of four choices cannot fit
@@ -6814,8 +6814,13 @@ Blade pages at phone width.
   Teacher), the Progress session list and the Teacher session rows showed server (UTC) times: "1:30 AM" for something that
   happened at 9:30 AM in the Philippines, and Today/Yesterday flipped on the UTC day. They now go through `LearnerClock` (Asia/Manila);
   `NotificationLocalTimeTest` pins it (two tests).
-- **Not changed, noted:** the add-a-child wizard's Next button is a small right-aligned button, not full width; the auth pages the
-  user likes keep their look (only tap areas changed).- **Hosted preview:** https://claude.ai/artifact/EZv59sFSaGNrj8WKUU7qSW (private to the user). A phone frame with a browser address
+- **Not changed, noted:** the auth pages the user likes keep their look (only tap areas changed).
+- **Wizard buttons on a phone (2026-10-14, LOCAL commit, not pushed).** The add-a-child wizard's Back and Next were two small buttons
+  at the ends of the row. Under 520px wide, Next now fills the row (Back is gone on step 1; a class `is-first` on `#navRow` set in
+  `showStep()`), and on the other steps Back is narrow and Next/Complete setup takes the rest, always on one line and at least 48px
+  tall (`public/css/parent-focus.css`, `parent/children/create.blade.php`). Measured in the browser at 390, 360 and 320 wide (no sideways
+  overflow, one line, 48px) and at 1280 (unchanged: Back only hides, Next stays on the right). Nothing else about the wizard changed.
+- **Hosted preview:** https://claude.ai/artifact/EZv59sFSaGNrj8WKUU7qSW (private to the user). A phone frame with a browser address
   bar, five sizes (four phones and a laptop), a screen picker, and a working menu: a tap on a link inside a page asks the viewer to show
   the matching screen; a button that would save (log out, mark as read, unlock, save) shows a "preview only" note. Each screen is the
   page text handed to a frame; the pages are static, so a typed value or a changed filter is not remembered between screens.
