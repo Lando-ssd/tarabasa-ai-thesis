@@ -6754,10 +6754,25 @@ approved preview's numbers (only near duplicates merged, not a strict 4/8 grid),
   390x844, 430x932 and 768x1024 and reports sideways overflow, tap targets under 46dp, clipped text and how far the screen scrolls;
   a second part taps through Read, a story, My Turn, Games and the Shelf. Text 20 percent larger was simulated on the small phone.
   FINAL RESULT with the status bar and gesture bar emulated (24dp each, so heights match a real phone): 0 problems in 232
-  screen/size combinations; every common screen fits without scrolling at 390x844 and larger. **Still scrolls on the SMALLEST phone
-  (360x640, about 592 usable):** warm-up "quiet" +17, the quiz +68 (three questions), "Your turn" +38, Balloon Pop +40. Long lists
-  (Read, Games, Badges, Home, Results) scroll by design. One harness result (the letters check at 390x844 "+96") only happened with a
-  desktop sized test window and not in three direct checks: treated as a harness quirk.
+  screen/size combinations; every common screen fits without scrolling at 390x844 and larger. **At that point it still scrolled on
+  the SMALLEST phone (360x640, about 592 usable):** warm-up "quiet" +17, the quiz +68 (three questions), "Your turn" +38, Balloon Pop
+  +40. Long lists (Read, Games, Badges, Home, Results) scroll by design. These were fixed afterwards, see the next bullet.
+- **Smallest phone fit (2026-10-14, PUSHED to mobile-app as 0754420, not merged into the live branch; mobile only, nothing on the website changed; APK 0.4.2-test9 built from it, not sent)** The quiz is now ONE question at
+  a time (`Quiz` in `Story.tsx`: "Question 1 of 3" with three dots, a Next Question button that stays disabled until a choice is
+  picked, Submit My Answers on the last question, the back arrow goes to the previous question and the first one goes back to the story;
+  picks are kept; the answers are still sent in one go and still marked on the server). Three questions of four choices cannot fit
+  592dp at a 48dp tap, so paging was the real fix, not smaller text. The warm-up "quiet" state drops its hint line
+  (`WarmUp.tsx`). "Your turn" has a shorter direction ("Read it out loud. This try is free and not saved. 2 tries left."), the top
+  row is 48dp instead of 52, the panel and passage padding shrink on short phones and the step pills are 34 tall (`ReadingScene.tsx`).
+  Balloon Pop's "Tara is not sure, try once more" note now takes the place of the "Say this word" label on a phone instead of adding a
+  line under the microphone, and the balloon strings are shorter (`BalloonPop.tsx`). The letter tiles of the first check work out their
+  width from the screen until the panel has been measured (it used to draw two to a row on a 390 wide phone and only fix itself
+  when `onLayout` arrived, which a hidden test pane never delivers), and six letters stay three and three on a tablet
+  (`letterTile` `rowW`). RESULT at 360x640 with the system bars emulated: quiz (worst case, three questions, long choices), warm-up
+  quiet, "Your turn" for an 8 word story and Balloon Pop all fit without scrolling; letters check fits at 360, 390, 430 and 768 wide;
+  no tap under 46dp and no sideways overflow in a 25 screen sweep at 360x640 and 390x844. **Still scrolls by design:** a 24 word
+  story at Large text in "Your turn" (112dp: the passage scrolls, the microphone stays pinned) and any screen where the microphone
+  is blocked (the long blocked note grows the footer). Hosted preview republished (same Artifact address, version 2).
 - **Hosted preview (no localhost).** Artifact https://claude.ai/artifact/D5MUePwKUG4KWYeq3ivare (private to the user): the REAL
   app code built for the web in demo mode, drawn in a phone frame with four phone sizes and a screen picker (live tabs, the first
   check, reading, games, states). Demo mode = `EXPO_PUBLIC_DEMO=1` (or `#demo` in the dev address): `src/demoServer.ts` answers every
@@ -6765,8 +6780,10 @@ approved preview's numbers (only near duplicates merged, not a strict 4/8 grid),
   screen over as `window.__TB_HASH` because its frame has no address) and `demoStartTab()`, `App.tsx` `SystemBars` draws the two
   system bar strips, `storage.ts` keeps values in memory when a sandboxed frame refuses local storage. None of this runs in a phone
   build. To rebuild it: see the header of `mobile/tools/preview/make-preview.cjs` (export, run the script, copy
-  `TaraBasa-Phone-Preview.html`, publish the 7 files under `app/` as supporting files, about 3 MB). The seven fonts the app uses
-  are embedded in the script because a locked down page may refuse fonts from files.
+  `TaraBasa-Phone-Preview.html`, publish the files under `app/` as supporting files, about 3 MB). The seven fonts the app uses
+  are embedded in the script because a locked down page may refuse fonts from files. A republish to the same address must first
+  READ `app/index.html` (the tool refuses to replace a file you have not read) and should remove the old `app/_expo/.../index-<hash>.js`
+  by listing it with `null` in `files`.
 - **Not verified:** a real phone (system font scale, the Android keyboard with `KeyboardAvoidingView`, the status bar and gesture
   bar sizes are emulated at 24dp each); how the hosted page behaves inside claude.ai (the link is private, so it could only be
   tested from a plain folder address; it falls back to a plain frame address if the page text cannot be fetched); the microphone
@@ -6806,7 +6823,7 @@ Blade pages at phone width.
   (Chrome's address bar hides and shows as a page scrolls, which changes the page height a little). Sample data is made up; the
   numbers shown (142 points, 3 days in a row) are what the real code computed from it, not typed in.
 
-## Teacher pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED to mobile-app as 07a5087, NOT merged to the live branch)
+## Teacher pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED as 07a5087 and MERGED INTO THE LIVE BRANCH as a5ceab0, deployed)
 
 The user asked "how about the teacher preview" right after the Parent one. Same method, same tool folder pattern:
 `tools/teacher-phone-preview/` (`CaptureTeacherPhoneTest.php`, `build_teacher_preview.py`, `TaraBasa-Teacher-Phone-Preview.html`,
@@ -6845,7 +6862,7 @@ It saves 22 real pages plus the window of each activity (the page fetches one wh
   (scaled font sizes), not the phone's own setting. The sample names, scores and readings are made up.
 - Full suite passed on the final code (405 tests, none added; this round changed styles, one script helper and a few markup lines).
 
-## Admin pages on a phone: review, fixes and a hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+## Admin pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED as ae236bd and MERGED INTO THE LIVE BRANCH as a5ceab0, deployed)
 
 The last role to be looked at on a phone ("continue whats next" after the Teacher push). Same method again: `tools/admin-phone-preview/`
 (`CaptureAdminPhoneTest.php`, `build_admin_preview.py`, `TaraBasa-Admin-Phone-Preview.html`, `README.md`). The capture builds Ada Admin,

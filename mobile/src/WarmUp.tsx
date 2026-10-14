@@ -107,7 +107,8 @@ export function WarmUp({
           </Text>
         </View>
         <LevelBar share={level} />
-        <Small style={{ textAlign: 'center' }}>{heard ? 'Nice and clear.' : 'The bars move when the phone hears you.'}</Small>
+        {/* After a quiet try the note under the mic already explains what to do, so this hint steps aside to keep the screen on one page. */}
+        {outcome === 'quiet' ? null : <Small style={{ textAlign: 'center' }}>{heard ? 'Nice and clear.' : 'The bars move when the phone hears you.'}</Small>}
       </Panel>
     </Screen>
   );

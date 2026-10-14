@@ -211,6 +211,19 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
   it checked the demo flag BEFORE the platform, so the bundler could not drop it. It never ran (demo mode is off in a phone build), but it
   was removed anyway by putting the platform check first (`App.tsx`); the 0.4.1 file above is the second, clean build and replaced the first.
 - Send this one, not 0.4.0 or older: it is the only one with the layout fixes. The server side is unchanged and already live.
+  (Superseded by 0.4.2 below, which adds the smallest phone fit on top.)
+
+## Version 0.4.2 (2026-10-14): the smallest phone fit
+- **File:** `D:/tools/apk-out/TaraBasa-AI-0.4.2-test9.apk` (41.9 MiB, arm64 only, versionCode 9, SHA-256
+  `4a2a53bd0681715fe031d5e2e49d021f00bdf2b8cab2e9080d892bd329ab4141`, built from `D:	b` in 14.1 minutes on the first try, with only
+  about 1 GB of free memory). It carries everything in 0.4.1 plus the smallest phone fit (CLAUDE.md "Smallest phone fit"): the quiz one
+  question at a time, the warm-up "quiet" state, "Your turn" and Balloon Pop fitting a 360x640 phone, and the first check's six letter
+  tiles three to a row on every width.
+- **Checked inside:** versionName 0.4.2 / versionCode 9; the same 10 permissions as 0.4.0 and 0.4.1; the live address is present and the
+  emulator address and all of the preview's sample data (sample child code, sample story, the sample-data server) are absent; the quiz
+  text ("Question", "Next Question"), Word Train and Sentence Stars are present; Letter Match is absent. The word "localhost" appears once
+  but it is a library string, not the server address. NOT sent to anyone yet, and nothing in it has been proven on a real phone.
+- Send this one, not 0.4.1 or older: it is the latest. The server side is unchanged and already live.
 
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
@@ -220,7 +233,7 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
    and want a login), and `/privacy` has "The phone app". Not yet tried with a real login from a phone.
    A second merge on 2026-10-13 (`ed5c5c6`) added the `pathProgress` field for the reading path; website pages and `/privacy` answered 200
    and the dashboard route 401 afterwards (the first request took 36 s, the service was waking or deploying).
-   The tester has NOT been sent anything yet (the owner waited until the whole Learner end was finished), so send 0.4.1 (the latest), not 0.4.0, 0.3.2 or older.
+   The tester has NOT been sent anything yet (the owner waited until the whole Learner end was finished), so send 0.4.2 (the latest), not 0.4.1, 0.4.0, 0.3.2 or older.
 1. A tester runs `PHONE-TEST-CHECKLIST.md` on a real Android phone (0.3.1) and reports back. How to prepare it: `TEST-SETUP.md`.
    What to expect and what is risky: `APP-REVIEW.md`.
 2. Fix what that finds (most likely the microphone file format, upload time, the camera, or a screen that does not fit), and bump the

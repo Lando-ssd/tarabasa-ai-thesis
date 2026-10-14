@@ -7,7 +7,7 @@ import { ReadingScene } from './ReadingScene';
 import { Animation, Btn, Busy, H2, IconBtn, Notice, Panel, Screen, Small } from './ui';
 import { SendFailed, Waiting } from './Waiting';
 import { WordReview } from './WordReview';
-import { colors, fonts, space } from './theme';
+import { colors, fonts, size, space } from './theme';
 import { s } from './scale';
 
 type Scored = Extract<api.ReadingOutcome, { status: 'scored' }>;
@@ -152,7 +152,7 @@ export function Story({ id, onExit, onScored }: { id: number; onExit: () => void
   } else if (stage === 1) {
     direction =
       triesLeft > 0
-        ? `Your turn. Read it out loud. This is a free try and nothing is saved. ${triesLeft} ${triesLeft === 1 ? 'try' : 'tries'} left.`
+        ? `Read it out loud. This try is free and not saved. ${triesLeft} ${triesLeft === 1 ? 'try' : 'tries'} left.`
         : 'You used both free tries. Now read it for real.';
     below = feedback ? <PracticeFeedback result={feedback} /> : null;
     footer = (
@@ -193,47 +193,69 @@ export function PracticeFeedback({ result }: { result: PracticeScored }) {
   );
 }
 
-/** The comprehension questions, one big tile per choice. The right answer is never on the phone. */
+/**
+ * The comprehension questions, one question on the screen at a time with one big tile per choice. Three questions of four
+ * choices never fit a small phone at a thumb-sized tap, and one thing at a time is kinder to a young reader. The right
+ * answer is never on the phone.
+ */
 export function Quiz({ questions, onBack, onSubmit }: { questions: api.ActivityDetail['quizQuestions']; onBack: () => void; onSubmit: (answers: string[]) => void }) {
   const [picked, setPicked] = useState<Record<number, string>>({});
+  const [index, setIndex] = useState(0);
+  const total = questions.length;
+  const q = questions[Math.min(index, total - 1)];
+  const last = index >= total - 1;
+  const answered = picked[index] !== undefined;
   const done = questions.every((_, i) => picked[i] !== undefined);
+  const next = () => (last ? onSubmit(questions.map((_, i) => picked[i])) : setIndex(index + 1));
   return (
     <Screen
-      footer={<Btn label="Submit My Answers" onPress={() => onSubmit(questions.map((_, i) => picked[i]))} disabled={!done} accessibilityHint={done ? undefined : 'Answer every question first'} />}
+      footer={
+        <Btn
+          label={last ? 'Submit My Answers' : 'Next Question'}
+          onPress={next}
+          disabled={last ? !done : !answered}
+          accessibilityHint={(last ? done : answered) ? undefined : 'Pick an answer first'}
+        />
+      }
     >
       <View style={styles.quizTop}>
-        <IconBtn icon="caret-left" label="Go back" onPress={onBack} />
-        <Text maxFontSizeMultiplier={1.2} style={styles.quizTitle}>
-          A few questions
-        </Text>
-        <View style={{ width: s(48) }} />
-      </View>
-      <View style={{ gap: space[16], marginTop: space[8] }}>
-        {questions.map((q, i) => (
-          <View key={i} style={{ gap: space[8] }}>
-            <Text maxFontSizeMultiplier={1.2} style={styles.question}>
-              {i + 1}. {q.question}
-            </Text>
-            {q.choices.map((choice) => {
-              const on = picked[i] === choice;
-              return (
-                <Pressable
-                  key={choice}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
-                  onPress={() => setPicked({ ...picked, [i]: choice })}
-                  style={[styles.choice, on && styles.choiceOn]}
-                >
-                  <View style={[styles.radio, on && styles.radioOn]} />
-                  <Text maxFontSizeMultiplier={1.2} style={styles.choiceText}>
-                    {choice}
-                  </Text>
-                </Pressable>
-              );
-            })}
+        <IconBtn icon="caret-left" label={index === 0 ? 'Go back to the story' : 'Previous question'} onPress={() => (index === 0 ? onBack() : setIndex(index - 1))} />
+        <View style={{ flex: 1, alignItems: 'center', gap: space[4] }} accessible accessibilityLabel={`Question ${index + 1} of ${total}`}>
+          <Text maxFontSizeMultiplier={1.2} style={styles.quizTitle}>
+            Question {index + 1} of {total}
+          </Text>
+          <View style={styles.quizDots}>
+            {questions.map((_, i) => (
+              <View key={i} style={[styles.quizDot, picked[i] !== undefined && styles.quizDotDone, i === index && styles.quizDotNow]} />
+            ))}
           </View>
-        ))}
+        </View>
+        <View style={{ width: size.touch }} />
       </View>
+      {q ? (
+        <View style={{ gap: space[8], marginTop: space[12] }}>
+          <Text maxFontSizeMultiplier={1.2} style={styles.question}>
+            {q.question}
+          </Text>
+          {q.choices.map((choice) => {
+            const on = picked[index] === choice;
+            return (
+              <Pressable
+                key={choice}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: on }}
+                onPress={() => setPicked({ ...picked, [index]: choice })}
+                style={[styles.choice, on && styles.choiceOn]}
+              >
+                <View style={[styles.radio, on && styles.radioOn]} />
+                <Text maxFontSizeMultiplier={1.2} style={styles.choiceText}>
+                  {choice}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
     </Screen>
   );
 }
@@ -241,7 +263,11 @@ export function Quiz({ questions, onBack, onSubmit }: { questions: api.ActivityD
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[14] },
   quizTop: { flexDirection: 'row', alignItems: 'center', gap: space[10] },
-  quizTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.displayMedium, fontSize: s(22), color: colors.ink },
+  quizTitle: { textAlign: 'center', fontFamily: fonts.displayMedium, fontSize: s(22), lineHeight: s(30), color: colors.ink },
+  quizDots: { flexDirection: 'row', gap: space[8] },
+  quizDot: { width: s(12), height: s(12), borderRadius: s(6), backgroundColor: colors.sky2 },
+  quizDotDone: { backgroundColor: colors.ok },
+  quizDotNow: { backgroundColor: colors.orange },
   question: { fontFamily: fonts.read, fontSize: s(19), lineHeight: s(28), color: colors.ink },
   choice: { minHeight: s(56), flexDirection: 'row', alignItems: 'center', gap: space[12], backgroundColor: colors.white, borderWidth: 2, borderColor: colors.line, borderRadius: s(16), paddingHorizontal: space[14], paddingVertical: space[10] },
   choiceOn: { borderColor: colors.orange, backgroundColor: colors.orangeSoft },
