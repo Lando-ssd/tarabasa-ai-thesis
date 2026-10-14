@@ -6729,7 +6729,7 @@ is "Add your child | TaraBasa AI". `parent/children/card` (the printable card) w
 - NOT touched: the Parent sign up and log in pages, and the Teacher sign up (they use the auth layout the user already liked).
 - This follows the approved Parent redesign (it is the leftover of it, not a new design), so no new preview was made.
 
-## Phone app: layout pass 2 and the hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+## Phone app: layout pass 2 and the hosted preview (2026-10-14, PUSHED to mobile-app as 8ebcda1; MERGED INTO THE LIVE BRANCH as 10e29cb, which carried the website side only: the phone app does not deploy)
 
 The user pasted a prompt written by another Claude ("adapt the phone app so every screen is laid out for a phone, layout only")
 and said to adjust it where it is not perfect. What did not fit, and what was decided: the phone app has ONLY Learner screens
@@ -6775,7 +6775,7 @@ approved preview's numbers (only near duplicates merged, not a strict 4/8 grid),
   pointerdown, mousedown, pointerup, mouseup and click (the harness does this). A tool permission check blocked `rm -rf` of an
   export folder: use a NEW output folder name instead of deleting.
 
-## Parent pages on a phone: review, fixes and a hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+## Parent pages on a phone: review, fixes and a hosted preview (2026-10-14, MERGED INTO THE LIVE BRANCH as 10e29cb and deployed; checked live: new page titles, the sign-in tap-area styles, the Parent stylesheets, key pages answer 200)
 
 The user asked for "the parents phone review side". Read as: the Parent screens as they look on a phone, reviewed like the child's
 app, with a link they can open without localhost. The Parent end is the website (no Parent screens in the phone app), so this is the
