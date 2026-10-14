@@ -38,6 +38,7 @@
     position:absolute; top:-6px; left:0; display:inline-flex; align-items:center; gap:6px;
     color:var(--slate-600); font:600 13px/1 'Inter',sans-serif; text-decoration:none; padding:6px 2px; transition:color .15s ease;
   }
+  .home-link::after{ content:''; position:absolute; inset:-14px -10px; } /* a 44px tap area; what is drawn does not change */
   .home-link:hover{ color:var(--blue-600); }
   .home-link svg{ flex-shrink:0; transition:transform .15s ease; }
   .home-link:hover svg{ transform:translateX(-2px); }
@@ -74,12 +75,14 @@
   input.error{ border-color:var(--danger); }
   .pw-wrap{ position:relative; }
   .field-icon-btn{ position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--blue-500); padding:2px; display:flex; }
+  .field-icon-btn::after{ content:''; position:absolute; inset:-13px; }
 
-  .forgot-link{ display:inline-block; font-size:12px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:var(--blue-600); text-decoration:none; margin:2px 0 22px; border-bottom:1.5px dashed rgba(15,95,174,.35); padding-bottom:1px; transition:color .15s ease; }
+  .forgot-link{ position:relative; display:inline-block; font-size:12px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:var(--blue-600); text-decoration:none; margin:2px 0 22px; border-bottom:1.5px dashed rgba(15,95,174,.35); padding-bottom:1px; transition:color .15s ease; }
+  .forgot-link::after{ content:''; position:absolute; inset:-16px -8px; }
   .forgot-link:hover{ color:var(--blue-700); }
 
   .submit-btn{
-    width:100%; padding:14px; border:none; border-radius:14px; cursor:pointer;
+    width:100%; padding:14px; min-height:44px; border:none; border-radius:14px; cursor:pointer;
     font:800 14.5px/1 'Inter',sans-serif; letter-spacing:.03em; text-transform:uppercase;
     background:linear-gradient(160deg, var(--blue-500), var(--blue-700)); color:#fff;
     box-shadow: 0 4px 0 var(--blue-700), 0 16px 26px -12px rgba(15,95,174,.5), inset 0 2px 0 rgba(255,255,255,.3);
@@ -101,7 +104,8 @@
   .google-btn:hover{ border-color:var(--slate-300); box-shadow:0 4px 10px -4px rgba(19,31,43,.15); transform:translateY(-1px); }
 
   .switch-note{ text-align:center; font-size:13px; color:var(--slate-600); font-weight:500; margin:24px 0 0; }
-  .switch-note a{ display:block; margin-top:4px; color:var(--blue-600); font-weight:800; letter-spacing:.03em; text-transform:uppercase; font-size:12px; text-decoration:none; transition:color .15s ease; }
+  .switch-note a{ position:relative; display:block; margin-top:4px; color:var(--blue-600); font-weight:800; letter-spacing:.03em; text-transform:uppercase; font-size:12px; text-decoration:none; transition:color .15s ease; }
+  .switch-note a::after{ content:''; position:absolute; inset:-16px 0; }
   .switch-note a:hover{ color:var(--blue-700); }
 
   a:focus-visible, button:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }

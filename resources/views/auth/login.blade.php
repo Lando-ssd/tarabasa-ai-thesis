@@ -125,7 +125,7 @@
   </div>
 
   <style>
-    .scan-link{ margin-top:10px; display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border-radius:12px; border:1.5px solid var(--line); background:#fff; color:var(--blue-600); font:700 13.5px/1 'Inter',sans-serif; cursor:pointer; }
+    .scan-link{ margin-top:10px; display:inline-flex; align-items:center; gap:8px; padding:9px 14px; min-height:44px; border-radius:12px; border:1.5px solid var(--line); background:#fff; color:var(--blue-600); font:700 13.5px/1 'Inter',sans-serif; cursor:pointer; }
     .scan-link svg{ fill:currentColor; flex:none; }
     .scan-link:hover{ border-color:var(--blue-500); }
     .scan-link:focus-visible{ outline:2px solid var(--blue-500); outline-offset:2px; }

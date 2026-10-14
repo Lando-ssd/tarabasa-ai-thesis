@@ -43,7 +43,7 @@ export const fonts = {
 // Sizes follow Android's guidance for touch (48dp minimum) and the WCAG 2.2 target size rule, with room to spare
 // because the users are six to nine years old.
 export const size = {
-  touch: s(40), // the smallest thing that can be tapped (about 52dp on a 390 wide phone, above Android's 48dp)
+  touch: Math.max(48, s(40)), // the smallest thing that can be tapped: about 52dp on a 390 wide phone and never under Android's 48dp
   button: s(52), // the main buttons
   field: s(50),
   tabBar: s(52),
@@ -51,6 +51,24 @@ export const size = {
   maxWidth: 560, // on a tablet the content stays a readable column
   radius: s(14),
 };
+
+// The one spacing ladder for gaps, padding and margins (design sizes, grown by s() like everything else). A new value
+// belongs on this ladder; do not write a one-off number. Near duplicates in the old screens were merged into these steps.
+export const space = {
+  2: s(2),
+  4: s(4),
+  6: s(6),
+  8: s(8),
+  10: s(10),
+  12: s(12),
+  14: s(14),
+  16: s(16),
+  20: s(20),
+  24: s(24),
+  28: s(28),
+  32: s(32),
+  40: s(40),
+} as const;
 
 // How much larger the reading text is at each of the five text size steps (the website's A minus and A plus).
 export const readingSteps = [

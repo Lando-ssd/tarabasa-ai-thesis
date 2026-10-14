@@ -6,7 +6,7 @@ import { GameLoader, ReadGame, type ReadGameConfig } from './ReadGame';
 import { s } from './scale';
 import { useSession } from './session';
 import { Icon } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 
 // Word Train, the same rules as the website: a train of cars, each one a word (or, for a child still on the letters step, a
 // letter). The child reads the whole train out loud and it rolls away. The words come first from the child's own missed words,
@@ -109,10 +109,10 @@ function Wheels() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'flex-end', columnGap: s(10), rowGap: s(26), paddingBottom: s(10), paddingTop: s(8) },
+  row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'flex-end', columnGap: space[10], rowGap: space[24], paddingBottom: space[10], paddingTop: space[8] },
   engine: { width: s(46), height: s(46), borderRadius: s(13), backgroundColor: '#5b6b7a', alignItems: 'center', justifyContent: 'center', borderBottomWidth: s(6), borderBottomColor: 'rgba(0,0,0,0.2)' },
-  car: { minWidth: s(46), paddingHorizontal: s(9), paddingTop: s(9), paddingBottom: s(13), borderRadius: s(14), borderBottomWidth: s(6), borderBottomColor: 'rgba(0,0,0,0.18)', alignItems: 'center', justifyContent: 'center' },
-  carLetter: { minWidth: s(38), paddingHorizontal: s(7) },
+  car: { minWidth: s(46), paddingHorizontal: space[8], paddingTop: space[8], paddingBottom: space[12], borderRadius: s(14), borderBottomWidth: s(6), borderBottomColor: 'rgba(0,0,0,0.18)', alignItems: 'center', justifyContent: 'center' },
+  carLetter: { minWidth: s(38), paddingHorizontal: space[6] },
   coupler: { position: 'absolute', left: -s(14), top: '45%', width: s(14), height: s(5), borderRadius: s(3), backgroundColor: '#8aa0b4' },
   word: { fontFamily: fonts.read, fontWeight: '700', fontSize: s(18), lineHeight: s(24), color: colors.white },
   letter: { fontFamily: fonts.display, fontWeight: '400', fontSize: s(28), lineHeight: s(36) },

@@ -7,7 +7,7 @@ import { SayText } from './SayText';
 import type { SayResult } from './SayWord';
 import { s } from './scale';
 import { Btn, Busy, Notice, Screen, Small } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 
 // The play loop Word Train and Sentence Stars share, the same rules as the website's read-aloud games. The child is shown something
 // (a row of words or letters, a sentence), reads it out loud, and the same service that scores readings listens. A round is three
@@ -229,7 +229,7 @@ export function ReadGame<T extends { text: string }>({
       }
     >
       <GameHeader onBack={onExit} level={level} label={`Round ${attempt + 1} of ${MAX_ATTEMPTS}`} icons={config.levelIcons} />
-      <View style={{ marginTop: s(4), gap: s(4) }}>
+      <View style={{ marginTop: space[4], gap: space[4] }}>
         <Small style={{ textAlign: 'center' }}>
           {config.unit} {Math.min(pos + 1, TARGETS)} of {TARGETS}
         </Small>
@@ -241,7 +241,7 @@ export function ReadGame<T extends { text: string }>({
         {message ? <Celebrate text={message} big={message === 'Level up!'} /> : null}
       </View>
 
-      <View style={{ alignItems: 'center', marginTop: s(10) }}>
+      <View style={{ alignItems: 'center', marginTop: space[10] }}>
         <Btn
           label={config.hearLabel}
           icon="speaker-high"
@@ -258,9 +258,9 @@ export function ReadGame<T extends { text: string }>({
 }
 
 const styles = StyleSheet.create({
-  footer: { gap: s(8), alignItems: 'center' },
+  footer: { gap: space[8], alignItems: 'center' },
   note: { fontFamily: fonts.uiBold, fontSize: s(16), lineHeight: s(21), color: colors.ink, textAlign: 'center', minHeight: s(21) },
-  stage: { marginTop: s(10), backgroundColor: colors.sky, borderRadius: s(20), paddingVertical: s(12), paddingHorizontal: s(8), minHeight: s(210), justifyContent: 'center', overflow: 'hidden' },
+  stage: { marginTop: space[10], backgroundColor: colors.sky, borderRadius: s(20), paddingVertical: space[12], paddingHorizontal: space[8], minHeight: s(210), justifyContent: 'center', overflow: 'hidden' },
 });
 
 /** Loads what a game needs from the server, with the same "try again" every game shows when the internet is down. */
@@ -285,7 +285,7 @@ export function GameLoader<D>({ load, busyText, onExit, children }: { load: () =
   if (error) {
     return (
       <Screen anchor="content" footer={<Btn label="Back to Games" tone="ghost" onPress={onExit} />}>
-        <View style={{ gap: s(12) }}>
+        <View style={{ gap: space[12] }}>
           <Notice text={error} />
           <Btn label="Try Again" onPress={run} />
         </View>

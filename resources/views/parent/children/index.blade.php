@@ -43,7 +43,7 @@
             <span class="pill">Not assessed yet</span>
           @endif
           <span class="pill">@include('learner._badge-icon', ['icon' => 'star', 'class' => 'ico']) {{ $learner->points }} points</span>
-          <span class="pill">@include('learner._badge-icon', ['icon' => 'fire', 'class' => 'ico']) {{ $learner->readingDayStreak() }} days in a row</span>
+          <span class="pill">@include('learner._badge-icon', ['icon' => 'fire', 'class' => 'ico']) {{ $learner->readingDayStreak() }} {{ $learner->readingDayStreak() === 1 ? 'day' : 'days' }} in a row</span>
           @if ($learner->learning_style)<span class="pill">{{ $learner->learning_style }}</span>@endif
         </div>
         <div class="code-row">

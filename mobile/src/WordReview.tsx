@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { WordResult } from './api';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 import { Small } from './ui';
 import { s } from './scale';
 
@@ -58,15 +58,15 @@ export function WordReview({ words, extra }: { words: WordResult[]; extra?: stri
         })}
       </View>
       {extra && extra.length > 0 ? (
-        <Small style={{ marginTop: s(10) }}>You also said: {extra.join(', ')}. That is not in this story, but great effort reading out loud.</Small>
+        <Small style={{ marginTop: space[10] }}>You also said: {extra.join(', ')}. That is not in this story, but great effort reading out loud.</Small>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flow: { flexDirection: 'row', flexWrap: 'wrap', gap: s(6) },
-  chip: { borderRadius: s(10), paddingHorizontal: s(9), paddingVertical: s(4), alignItems: 'center' },
+  flow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[6] },
+  chip: { borderRadius: s(10), paddingHorizontal: space[8], paddingVertical: space[4], alignItems: 'center' },
   word: { fontFamily: fonts.read, fontSize: s(19), lineHeight: s(26) },
   note: { fontFamily: fonts.ui, fontSize: s(12.5), lineHeight: s(15) },
 });

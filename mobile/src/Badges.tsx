@@ -5,7 +5,7 @@ import type { Badge } from './api';
 import { Medal } from './Feedback';
 import { useSession } from './session';
 import { Btn, Busy, H1, H2, Notice, P, Screen, Small } from './ui';
-import { colors, fonts, size } from './theme';
+import { colors, fonts, size, space } from './theme';
 import { s } from './scale';
 
 /**
@@ -36,16 +36,16 @@ export function Badges() {
 
       {!home ? (
         homeError ? (
-          <View style={{ gap: s(12), marginTop: s(16) }}>
+          <View style={{ gap: space[12], marginTop: space[16] }}>
             <Notice text={homeError} />
             <Btn label="Try Again" onPress={reloadHome} />
           </View>
         ) : (
-          <Busy text="Getting your badges" style={{ marginTop: s(20) }} />
+          <Busy text="Getting your badges" style={{ marginTop: space[20] }} />
         )
       ) : (
         groups.map(([category, badges]) => (
-          <View key={category} style={{ marginTop: s(18) }}>
+          <View key={category} style={{ marginTop: space[16] }}>
             <H2>
               {category} <Text style={styles.count}>{badges.filter((b) => b.earned).length} of {badges.length}</Text>
             </H2>
@@ -99,8 +99,8 @@ function BadgeSheet({ badge, onClose }: { badge: Badge | null; onClose: () => vo
 
 const styles = StyleSheet.create({
   count: { fontFamily: fonts.ui, fontSize: s(15), color: colors.slate },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: s(8), rowGap: s(14) },
-  cell: { width: '33.333%', alignItems: 'center', gap: s(4), paddingHorizontal: s(4), minHeight: s(48) },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space[8], rowGap: space[14] },
+  cell: { width: '33.333%', alignItems: 'center', gap: space[4], paddingHorizontal: space[4], minHeight: s(48) },
   name: { fontFamily: fonts.ui, fontSize: s(14), lineHeight: s(17), color: colors.ink, textAlign: 'center' },
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(12,23,34,0.45)' },
   sheet: {
@@ -114,8 +114,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderTopLeftRadius: s(28),
     borderTopRightRadius: s(28),
-    padding: s(22),
+    padding: space[20],
     alignItems: 'center',
-    gap: s(10),
+    gap: space[10],
   },
 });

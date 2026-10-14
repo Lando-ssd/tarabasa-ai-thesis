@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 import { s } from './scale';
 
 /**
@@ -50,9 +50,9 @@ export class ErrorBoundary extends Component<{ children: ReactNode; onRestart?: 
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: s(16), padding: s(28), backgroundColor: colors.page },
+  page: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[16], padding: space[28], backgroundColor: colors.page },
   title: { fontFamily: fonts.display, fontSize: s(30), lineHeight: s(36), color: colors.orange, textAlign: 'center' },
   message: { fontFamily: fonts.ui, fontSize: s(19), lineHeight: s(27), color: colors.slate, textAlign: 'center', maxWidth: 360 },
-  button: { minHeight: s(56), minWidth: s(220), borderRadius: s(18), alignItems: 'center', justifyContent: 'center', backgroundColor: colors.orange, borderBottomWidth: s(6), borderBottomColor: colors.orangeDark, paddingHorizontal: s(28), marginTop: s(8) },
+  button: { minHeight: s(56), minWidth: s(220), borderRadius: s(18), alignItems: 'center', justifyContent: 'center', backgroundColor: colors.orange, borderBottomWidth: s(6), borderBottomColor: colors.orangeDark, paddingHorizontal: space[28], marginTop: space[8] },
   buttonText: { fontFamily: fonts.uiBold, fontSize: s(21), color: colors.white },
 });

@@ -6,8 +6,8 @@ import { MicButton } from './MicButton';
 import { levelShare, VOICE_DB, WARM_MAX_SECONDS, WARM_VOICE_SAMPLES } from './recording';
 import { discardRecording } from './recordingFiles';
 import { Animation, Btn, Icon, IconBtn, Panel, Pill, Screen, Small } from './ui';
-import { colors, fonts } from './theme';
-import { s } from './scale';
+import { colors, fonts, space } from './theme';
+import { COMPACT_HEIGHT, s, SHORT_HEIGHT } from './scale';
 
 type Outcome = 'none' | 'heard' | 'quiet';
 
@@ -35,11 +35,13 @@ export function WarmUp({
   const shown = letters ? 'A a' : 'sun';
   const ask = letters ? 'Tap the mic, then say the letter.' : 'Tap the mic, then say the word.';
   const heard = outcome === 'heard';
+  // The "I did not hear anything" note needs room, so while it shows (and on a short phone) the screen tightens up and Tara steps aside.
+  const tight = SHORT_HEIGHT || COMPACT_HEIGHT || outcome === 'quiet';
 
   return (
     <Screen
       footer={
-        <View style={{ gap: s(10) }}>
+        <View style={{ gap: space[10] }}>
           {heard ? (
             <>
               <View style={styles.result} accessibilityLiveRegion="polite">
@@ -78,8 +80,8 @@ export function WarmUp({
         </View>
       }
     >
-      <View style={styles.top}>
-        <View style={{ flex: 1, alignItems: 'center', gap: s(6) }}>
+      <View style={[styles.top, tight && styles.topShort]}>
+        <View style={[{ flex: 1, alignItems: 'center', gap: space[6] }, tight && { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' }]}>
           <Text maxFontSizeMultiplier={1.2} style={styles.eyebrow}>
             Warm-up
           </Text>
@@ -87,18 +89,20 @@ export function WarmUp({
         </View>
       </View>
 
-      <View style={styles.owl}>
-        <Animation name="head" px={s(92)} />
-      </View>
-      <Panel style={styles.panel}>
+      {outcome === 'quiet' ? null : (
+        <View style={[styles.owl, (SHORT_HEIGHT || COMPACT_HEIGHT) && styles.owlShort]}>
+          <Animation name="head" px={SHORT_HEIGHT ? s(60) : COMPACT_HEIGHT ? s(70) : s(92)} />
+        </View>
+      )}
+      <Panel style={[styles.panel, tight && styles.panelShort]}>
         <View style={styles.directionRow}>
           <Text maxFontSizeMultiplier={1.2} style={styles.direction}>
             {direction}
           </Text>
           <IconBtn icon="speaker-high" label="Hear the directions" onPress={() => Speech.speak(direction, { language: 'en-US', rate: 0.85 })} />
         </View>
-        <View style={styles.wordCard} accessible accessibilityLabel={letters ? 'The letter A' : 'The word sun'}>
-          <Text maxFontSizeMultiplier={1.1} style={styles.word}>
+        <View style={[styles.wordCard, tight && styles.wordCardShort]} accessible accessibilityLabel={letters ? 'The letter A' : 'The word sun'}>
+          <Text maxFontSizeMultiplier={1.1} style={[styles.word, tight && styles.wordShort]}>
             {shown}
           </Text>
         </View>
@@ -112,12 +116,17 @@ export function WarmUp({
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', minHeight: s(52) },
   eyebrow: { fontFamily: fonts.uiBold, fontSize: s(17), color: colors.slate },
-  owl: { alignItems: 'center', marginBottom: s(-30), marginTop: s(6), zIndex: 1 },
-  panel: { paddingTop: s(36), gap: s(14) },
-  directionRow: { flexDirection: 'row', alignItems: 'center', gap: s(10) },
+  owl: { alignItems: 'center', marginBottom: s(-30), zIndex: 1 },
+  panel: { paddingTop: space[32], gap: space[14] },
+  topShort: { minHeight: s(36) },
+  owlShort: { marginBottom: s(-22), marginTop: 0 },
+  panelShort: { paddingTop: space[24], gap: space[8] },
+  wordCardShort: { paddingVertical: space[8] },
+  wordShort: { fontSize: s(44), lineHeight: s(54) },
+  directionRow: { flexDirection: 'row', alignItems: 'center', gap: space[10] },
   direction: { flex: 1, fontFamily: fonts.uiBold, fontSize: s(20), lineHeight: s(26), color: colors.ink },
-  wordCard: { backgroundColor: colors.white, borderRadius: s(16), paddingVertical: s(18), alignItems: 'center' },
+  wordCard: { backgroundColor: colors.white, borderRadius: s(16), paddingVertical: space[16], alignItems: 'center' },
   word: { fontFamily: fonts.read, fontSize: s(56), lineHeight: s(72), color: colors.ink },
-  result: { flexDirection: 'row', alignItems: 'center', gap: s(10), justifyContent: 'center' },
+  result: { flexDirection: 'row', alignItems: 'center', gap: space[10], justifyContent: 'center' },
   resultText: { flexShrink: 1, fontFamily: fonts.uiBold, fontSize: s(18), lineHeight: s(24), textAlign: 'center' },
 });

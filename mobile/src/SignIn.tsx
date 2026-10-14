@@ -4,7 +4,7 @@ import * as api from './api';
 import { CardScanner } from './CardScanner';
 import { looksLikeCode, normalizeCode } from './learnerCode';
 import { Animation, Btn, Busy, H1, Notice, P, Screen, Small, useKeyboardOpen } from './ui';
-import { colors, fonts, size } from './theme';
+import { colors, fonts, size, space } from './theme';
 import { s, SHORT_HEIGHT } from './scale';
 
 type Props = {
@@ -155,7 +155,7 @@ function PinBoxes({
 }
 
 const styles = StyleSheet.create({
-  body: { alignItems: 'center', gap: s(10) },
+  body: { alignItems: 'center', gap: space[10] },
   wide: { alignSelf: 'stretch' },
   field: {
     alignSelf: 'stretch',
@@ -169,11 +169,11 @@ const styles = StyleSheet.create({
     fontSize: s(20),
     letterSpacing: s(1.5),
     color: colors.ink,
-    paddingVertical: s(8),
+    paddingVertical: space[8],
   },
   fieldBad: { borderColor: colors.bad },
   pinWrap: { alignSelf: 'stretch' },
-  pinRow: { flexDirection: 'row', gap: s(10), justifyContent: 'center' },
+  pinRow: { flexDirection: 'row', gap: space[10], justifyContent: 'center' },
   pinBox: {
     width: s(46),
     height: size.field + 6,

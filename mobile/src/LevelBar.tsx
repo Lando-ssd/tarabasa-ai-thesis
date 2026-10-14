@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { colors } from './theme';
+import { colors, space } from './theme';
 import { s } from './scale';
 
 /**
@@ -26,6 +26,6 @@ export function LevelBar({ share, bars = 14 }: { share: number; bars?: number })
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: s(4), height: s(34) },
+  row: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: space[4], height: s(34) },
   bar: { width: s(8), borderRadius: s(4), backgroundColor: colors.sky2 },
 });

@@ -38,8 +38,10 @@
     display:inline-flex; align-items:center; gap:6px; background:none; border:none;
     color:var(--slate-600); font:600 13px/1 'Inter',sans-serif; cursor:pointer;
     margin-bottom:14px; padding:2px; border-radius:6px; text-decoration:none;
-    transition:color .15s ease;
+    transition:color .15s ease; position:relative;
   }
+  /* the tap area is 44px tall; what is drawn does not change */
+  .back-link::after{ content:''; position:absolute; inset:-14px -10px; }
   .back-link:hover{ color:var(--blue-600); }
   .back-link svg{ transition:transform .15s ease; }
   .back-link:hover svg{ transform:translateX(-2px); }
@@ -125,7 +127,7 @@
      and genuinely sinks on press, matching the landing page's own button
      recipe instead of a flat gradient pill. */
   .submit-btn{
-    width:100%; padding:14.5px; border:none; border-radius:14px; font:700 16px/1 'Inter',sans-serif;
+    width:100%; padding:14.5px; min-height:44px; border:none; border-radius:14px; font:700 16px/1 'Inter',sans-serif;
     cursor:pointer; background:linear-gradient(160deg, var(--blue-500), var(--blue-700)); color:#fff;
     box-shadow:
       0 4px 0 var(--blue-700),
@@ -140,7 +142,8 @@
   }
   .submit-btn:disabled{ opacity:.65; cursor:not-allowed; transform:none; box-shadow:0 4px 0 var(--blue-700), 0 16px 26px -12px rgba(15,95,174,.6), inset 0 2px 0 rgba(255,255,255,.3); }
   .switch-note{ text-align:center; font-size:13.5px; color:var(--slate-600); font-weight:500; margin:20px 0 0; }
-  .switch-note a{ color:var(--blue-600); font-weight:700; text-decoration:none; transition:color .15s ease; }
+  .switch-note a{ color:var(--blue-600); font-weight:700; text-decoration:none; transition:color .15s ease; position:relative; }
+  .switch-note a::after{ content:''; position:absolute; inset:-16px -8px; }
   .switch-note a:hover{ text-decoration:underline; }
 
   a:focus-visible, button:focus-visible{

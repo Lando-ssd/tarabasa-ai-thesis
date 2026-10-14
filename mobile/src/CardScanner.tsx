@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, H2, Icon, IconBtn, P } from './ui';
 import { isGoodCard, normalizeCode } from './learnerCode';
-import { colors, fonts, size } from './theme';
+import { colors, fonts, size, space } from './theme';
 import { s } from './scale';
 
 type Props = {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   },
   frameOk: { borderColor: colors.ok, backgroundColor: 'rgba(255,255,255,0.85)' },
   frameBad: { borderColor: '#ff8a80' },
-  sheet: { width: '100%', maxWidth: size.maxWidth, backgroundColor: colors.white, borderRadius: s(24), padding: s(20), gap: s(14) },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: size.gutter, backgroundColor: 'rgba(12,23,34,0.78)', paddingTop: s(16) },
+  sheet: { width: '100%', maxWidth: size.maxWidth, backgroundColor: colors.white, borderRadius: s(24), padding: space[20], gap: space[14] },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: size.gutter, backgroundColor: 'rgba(12,23,34,0.78)', paddingTop: space[16] },
   hint: { fontFamily: fonts.ui, fontSize: s(19), lineHeight: s(26), color: colors.white, textAlign: 'center' },
 });

@@ -6,7 +6,7 @@ import type { Home as HomeData } from './api';
 import { ReadingPath } from './ReadingPath';
 import { useSession } from './session';
 import { Avatar, Btn, Busy, H2, Icon, Notice, Panel, Pill, Screen, Small } from './ui';
-import { colors, fonts, size } from './theme';
+import { colors, fonts, size, space } from './theme';
 import { s } from './scale';
 
 /**
@@ -59,21 +59,21 @@ export function Home({ onStartReading }: { onStartReading: () => void }) {
 
       {!home ? (
         homeError ? (
-          <View style={{ gap: s(12), marginTop: s(20) }}>
+          <View style={{ gap: space[12], marginTop: space[20] }}>
             <Notice text={homeError} />
             <Btn label="Try Again" onPress={reloadHome} />
           </View>
         ) : (
-          <Busy text="Getting your reading path" style={{ marginTop: s(24) }} />
+          <Busy text="Getting your reading path" style={{ marginTop: space[24] }} />
         )
       ) : (
-        <View style={{ gap: s(14), marginTop: s(14) }} onLayout={(e) => bringStartIntoView(e.nativeEvent.layout.y)}>
+        <View style={{ gap: space[14], marginTop: space[14] }} onLayout={(e) => bringStartIntoView(e.nativeEvent.layout.y)}>
           <ReadingPath path={home.readingPath} progress={home.pathProgress} onStart={onStartReading} onActionBottom={(y) => { actionBottom.current = y; }} />
           <View style={styles.row}>
             <WeeklyGoal goal={home.weeklyGoal} />
             <WeekChart days={home.growth.days} scale={home.growth.scale} />
           </View>
-          <Btn label="Log out" icon="sign-out" tone="ghost" compact onPress={confirmLogOut} style={{ alignSelf: 'center', marginTop: s(6) }} />
+          <Btn label="Log out" icon="sign-out" tone="ghost" compact onPress={confirmLogOut} style={{ alignSelf: 'center', marginTop: space[6] }} />
         </View>
       )}
     </Screen>
@@ -147,15 +147,15 @@ function WeekChart({ days, scale }: { days: HomeData['growth']['days']; scale: n
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: s(8) },
-  name: { fontFamily: fonts.displayMedium, fontSize: s(24), lineHeight: s(28), color: colors.ink },
-  row: { flexDirection: 'row', gap: s(10), alignItems: 'stretch' },
-  half: { flex: 1, padding: s(10), justifyContent: 'center' },
-  goal: { alignItems: 'center', gap: s(6) },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space[8] },
+  name: { fontFamily: fonts.displayMedium, fontSize: s(24), lineHeight: s(35), color: colors.ink },
+  row: { flexDirection: 'row', gap: space[10], alignItems: 'stretch' },
+  half: { flex: 1, padding: space[10], justifyContent: 'center' },
+  goal: { alignItems: 'center', gap: space[6] },
   goalNum: { fontFamily: fonts.display, fontSize: s(19), color: colors.ink },
   goalText: { fontFamily: fonts.ui, fontSize: s(14), lineHeight: s(18), color: colors.slate, textAlign: 'center' },
-  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: s(5) },
-  barCol: { flex: 1, alignItems: 'center', gap: s(4) },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: space[4] },
+  barCol: { flex: 1, alignItems: 'center', gap: space[4] },
   bar: { alignSelf: 'stretch', backgroundColor: colors.sky2, borderTopLeftRadius: s(6), borderTopRightRadius: s(6), borderBottomLeftRadius: s(3), borderBottomRightRadius: s(3) },
   barLabel: { fontFamily: fonts.ui, fontSize: s(12), color: colors.slate },
 });

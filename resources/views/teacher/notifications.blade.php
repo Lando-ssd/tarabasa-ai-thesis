@@ -132,7 +132,7 @@
           <span class="notif-ico {{ $kind }}">@include('learner._badge-icon', ['icon' => $icon, 'class' => 'ico'])</span>
           <span class="notif-text"><b>{{ $title }}</b><span class="d">{{ $n->message }}</span></span>
           <span class="notif-side">
-            <span>@unless ($n->is_read)<span class="new">New</span> @endunless{{ $n->timestamp->format($n->timestamp->isToday() || $n->timestamp->isYesterday() ? 'g:i A' : 'M j, g:i A') }}</span>
+            <span>@unless ($n->is_read)<span class="new">New</span> @endunless{{ ($when = \App\Support\LearnerClock::local($n->timestamp))->format($when->isSameDay(\App\Support\LearnerClock::now()) || $when->isSameDay(\App\Support\LearnerClock::now()->subDay()) ? 'g:i A' : 'M j, g:i A') }}</span>
             <span class="acts">
               @unless ($n->is_read)
                 <form method="POST" action="{{ route('notifications.read', $n) }}">@csrf<button type="submit" class="btn small ghost">Mark read</button></form>

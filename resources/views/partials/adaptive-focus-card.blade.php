@@ -16,7 +16,7 @@
 <div class="adaptive-card">
   <div class="adaptive-card-title">🎯 Adaptive Focus</div>
   @if (empty($focus))
-    <p class="adaptive-empty">{{ $learner->first_name }} hasn't completed their first-login reading check yet — this fills in once they do.</p>
+    <p class="adaptive-empty">{{ $learner->first_name }} hasn't completed their first-login reading check yet. This fills in once they do.</p>
   @else
     @php $upNext = collect($focus)->firstWhere('isUpNext', true); @endphp
     <p class="adaptive-headline">
@@ -29,7 +29,7 @@
     <div class="adaptive-chips">
       @foreach ($focus as $item)
         <span class="adaptive-chip {{ $item['isUpNext'] ? 'active' : '' }}">
-          {{ $item['label'] }}@if ($item['difficultyWord']) — {{ $item['difficultyWord'] }}@else — Not assessed @endif
+          {{ $item['label'] }}@if ($item['difficultyWord']): {{ $item['difficultyWord'] }}@else: Not assessed @endif
         </span>
       @endforeach
     </div>

@@ -6,7 +6,7 @@ import { GameLoader, ReadGame, type ReadGameConfig } from './ReadGame';
 import { s } from './scale';
 import { useSession } from './session';
 import { Icon } from './ui';
-import { colors, fonts } from './theme';
+import { colors, fonts, space } from './theme';
 
 // Sentence Stars, the same rules as the website: a sentence to read out loud. Reading it catches a star; three sentences make a
 // round. The sentences come first from the ones that contain a word the child has been missing or that practise their main kind
@@ -66,7 +66,7 @@ function SentenceView({ sentence, matched, caught, index }: { sentence: Sentence
 
   const long = sentence.tokens.length > 9;
   return (
-    <View style={{ gap: s(12) }} accessible accessibilityLabel={`Read the sentence: ${sentence.sentence}`}>
+    <View style={{ gap: space[12] }} accessible accessibilityLabel={`Read the sentence: ${sentence.sentence}`}>
       <View style={styles.stars}>
         {[0, 1, 2].map((i) => {
           const lit = i < index || (i === index && caught);
@@ -97,11 +97,11 @@ function SentenceView({ sentence, matched, caught, index }: { sentence: Sentence
 }
 
 const styles = StyleSheet.create({
-  stars: { flexDirection: 'row', justifyContent: 'center', gap: s(12) },
-  panel: { backgroundColor: colors.white, borderRadius: s(18), borderWidth: 2, borderColor: '#d6def0', borderBottomWidth: s(5), borderBottomColor: '#c9d3e6', paddingVertical: s(14), paddingHorizontal: s(10) },
+  stars: { flexDirection: 'row', justifyContent: 'center', gap: space[12] },
+  panel: { backgroundColor: colors.white, borderRadius: s(18), borderWidth: 2, borderColor: '#d6def0', borderBottomWidth: s(5), borderBottomColor: '#c9d3e6', paddingVertical: space[14], paddingHorizontal: space[10] },
   panelCaught: { borderColor: '#f6b93b', borderBottomColor: '#e0a21d' },
-  words: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: s(4), rowGap: s(4) },
-  chip: { paddingHorizontal: s(7), borderRadius: s(9) },
+  words: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: space[4], rowGap: space[4] },
+  chip: { paddingHorizontal: space[6], borderRadius: s(9) },
   chipHeard: { backgroundColor: colors.mint },
   word: { fontFamily: fonts.read, fontWeight: '500', fontSize: s(22), lineHeight: s(34), color: colors.ink },
   wordLong: { fontSize: s(18), lineHeight: s(28) },

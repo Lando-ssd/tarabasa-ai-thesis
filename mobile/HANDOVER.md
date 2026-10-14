@@ -197,6 +197,21 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - Send this one, not 0.3.x: the Games calls changed, so older builds cannot play the new games. The server side is already live (merged into
   the live branch as `9876f5c`).
 
+## Version 0.4.1 (2026-10-14): the layout pass 2 fixes
+- **File:** `D:/tools/apk-out/TaraBasa-AI-0.4.1-test8.apk` (41.9 MiB, arm64 only, versionCode 8, SHA-256
+  `4cea7652b33680c3536a32e8b496f6ad652cde9094b595c229ebae0624663058`, built from `D:	b` in about 12 minutes). It carries the layout pass
+  (see CLAUDE.md "Phone app: layout pass 2 and the hosted preview"): the spacing ladder, tap targets never under 48dp, the six letter tiles
+  three to a row, the warm-up, "Your turn" and Balloon Pop fitting common phones, a thin line above a pinned button only when the page scrolls.
+- **Checked inside:** versionName 0.4.1 / versionCode 8; the same 10 permissions as 0.4.0; the live address is present; Word Train, Sentence
+  Stars and the check-text call are present; Letter Match, the emulator address and ALL of the preview's sample data (sample child code, sample
+  story, the sample-data server) are absent. NOT sent to anyone yet, and nothing in it has been proven on a real phone.
+- **Two build notes.** (1) The first build of the day stopped halfway through Gradle with exit code 4 and no error text: the computer had only
+  about 1 GB of free memory (8 GB total, other programs open). The same build then finished on a plain retry. If it happens again, close other
+  programs first and retry. (2) The first finished build still had the preview's sample-data server inside the bundle, because the line that loads
+  it checked the demo flag BEFORE the platform, so the bundler could not drop it. It never ran (demo mode is off in a phone build), but it
+  was removed anyway by putting the platform check first (`App.tsx`); the 0.4.1 file above is the second, clean build and replaced the first.
+- Send this one, not 0.4.0 or older: it is the only one with the layout fixes. The server side is unchanged and already live.
+
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
    on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,
@@ -205,7 +220,7 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
    and want a login), and `/privacy` has "The phone app". Not yet tried with a real login from a phone.
    A second merge on 2026-10-13 (`ed5c5c6`) added the `pathProgress` field for the reading path; website pages and `/privacy` answered 200
    and the dashboard route 401 afterwards (the first request took 36 s, the service was waking or deploying).
-   The tester has NOT been sent anything yet (the owner waited until the whole Learner end was finished), so send 0.3.2, not 0.3.1 or 0.3.0.
+   The tester has NOT been sent anything yet (the owner waited until the whole Learner end was finished), so send 0.4.1 (the latest), not 0.4.0, 0.3.2 or older.
 1. A tester runs `PHONE-TEST-CHECKLIST.md` on a real Android phone (0.3.1) and reports back. How to prepare it: `TEST-SETUP.md`.
    What to expect and what is risky: `APP-REVIEW.md`.
 2. Fix what that finds (most likely the microphone file format, upload time, the camera, or a screen that does not fit), and bump the

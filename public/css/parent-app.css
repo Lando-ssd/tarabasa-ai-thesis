@@ -156,6 +156,7 @@ h3{ margin:0; font:700 22px/1.15 var(--font-game); }
 .code-row small{ display:block; font:600 13px/1 var(--font-game); letter-spacing:.1em; text-transform:uppercase; color:var(--soft); }
 .code-row code{ font:700 22px/1.2 var(--font-game); letter-spacing:.08em; }
 .code-row .copy{ margin-left:auto; }
+.code-row{ flex-wrap:wrap; } .code-row code{ white-space:nowrap; } /* the code is never split across two lines; the buttons drop below it when there is no room */
 .child-card .foot{ display:flex; gap:10px; margin-top:auto; }
 .child-card .foot .btn{ flex:1; }
 .note{ color:var(--muted); font-size:14px; }
@@ -226,7 +227,7 @@ input[readonly]{ background:var(--bg); color:var(--muted); }
   .sidebar{ display:none; }
   .phone-top{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:#fff; border-bottom:2px solid var(--line); position:sticky; top:0; z-index:20; }
   .phone-top .brand{ padding:0; font-size:28px; }
-  .phone-top .me-av{ width:38px; height:38px; font-size:18px; border:0; cursor:pointer; }
+  .phone-top .me-av{ width:44px; height:44px; font-size:19px; border:0; cursor:pointer; }
   .tabbar{ display:grid; grid-template-columns:repeat(5,1fr); position:fixed; left:0; right:0; bottom:0; z-index:30; background:#fff; border-top:2px solid var(--line); padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px)); }
   .tab{ position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 2px 6px; border:0; border-radius:12px; background:none; cursor:pointer; color:#6a8196; font:600 13.5px/1 var(--font-game); letter-spacing:.06em; text-transform:uppercase; }
   .tab .ico{ font-size:26px; }
@@ -236,7 +237,17 @@ input[readonly]{ background:var(--bg); color:var(--muted); }
   h1{ font-size:34px; }
   .focus{ grid-template-columns:auto minmax(0,1fr); }
   .focus .btn{ grid-column:1 / -1; }
-  .two, .grid2, .src, .profile-grid{ grid-template-columns:1fr; }
+  .two, .grid2, .profile-grid{ grid-template-columns:1fr; }
+  /* The two small stat tiles stay side by side on a phone, so the next card is not pushed off the first screen. */
+  .src{ gap:12px; }
+  .src .label{ font-size:13px; letter-spacing:.06em; line-height:1.2; }
+  .src .value{ font-size:34px; }
+  /* A thumb needs 44px: buttons, filter chips and rating stars reach it, and the small text link keeps its place but gets a full height target. */
+  .btn.small{ min-height:44px; }
+  .code-row > div:first-child{ flex:1 1 100%; } .code-row .btn{ flex:1; } .code-row .copy{ margin-left:0; }
+  .chip, .chip.plain{ min-height:44px; display:inline-flex; align-items:center; }
+  .star{ width:44px; height:44px; }
+  .link{ display:inline-flex; align-items:center; min-height:44px; margin:-9px 0; }
   .name-row{ grid-template-columns:1fr 1fr; } .name-row .field:first-child{ grid-column:1 / -1; }
   .alert{ flex-wrap:wrap; } .alert .btn{ margin-left:0; width:100%; }
   .item{ flex-wrap:wrap; } .item-time{ margin-left:56px; }

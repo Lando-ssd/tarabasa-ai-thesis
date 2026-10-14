@@ -1,5 +1,5 @@
 @extends('layouts.auth-login')
-@section('title', 'Reset password — TaraBasa AI')
+@section('title', 'Reset password | TaraBasa AI')
 @section('content')
 
   <h1>Set a new password</h1>

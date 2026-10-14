@@ -149,15 +149,19 @@ class NotificationController extends Controller
             : 'all';
     }
 
+    /** Today, Yesterday and so on are the family's own days (the Philippines), not the server's UTC days. */
     private function dayLabel(\Illuminate\Support\Carbon $timestamp): string
     {
-        if ($timestamp->isToday()) {
+        $local = \App\Support\LearnerClock::local($timestamp);
+        $today = \App\Support\LearnerClock::now()->startOfDay();
+
+        if ($local->isSameDay($today)) {
             return 'Today';
         }
-        if ($timestamp->isYesterday()) {
+        if ($local->isSameDay($today->copy()->subDay())) {
             return 'Yesterday';
         }
-        if ($timestamp->greaterThanOrEqualTo(now()->subDays(7))) {
+        if ($local->greaterThanOrEqualTo($today->copy()->subDays(6))) {
             return 'This week';
         }
 

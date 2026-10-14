@@ -9,6 +9,7 @@ import { Animation, Btn, H1, IconBtn, Notice, P, Screen } from './ui';
 import { WarmUp } from './WarmUp';
 import { SendFailed, Waiting } from './Waiting';
 import { s, SHORT_HEIGHT } from './scale';
+import { space } from './theme';
 
 type Phase =
   | { name: 'intro'; error?: string }
@@ -67,13 +68,13 @@ export function FirstCheck({ firstName, onDone }: { firstName: string; onDone: (
         <Screen
           anchor="content"
           footer={
-            <View style={{ flexDirection: 'row', gap: s(10), alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', gap: space[10], alignItems: 'center' }}>
               <IconBtn icon="speaker-high" label="Read it to me" onPress={() => Speech.speak(`Let's read together, ${firstName}! ${WELCOME}`, { language: 'en-US', rate: 0.85 })} />
               <Btn label="I'm Ready" style={{ flex: 1 }} onPress={loadItem} loading={phase.name === 'loading'} />
             </View>
           }
         >
-          <View style={{ alignItems: 'center', gap: s(12) }}>
+          <View style={{ alignItems: 'center', gap: space[12] }}>
             <Animation name="intro" px={SHORT_HEIGHT ? s(120) : s(185)} />
             <H1 style={{ textAlign: 'center' }}>Let's Read Together, {firstName}!</H1>
             <P style={{ textAlign: 'center' }}>{WELCOME}</P>

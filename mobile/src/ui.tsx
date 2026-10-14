@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import LottieView from 'lottie-react-native';
 import { ICON_PATHS } from './iconPaths';
-import { colors, fonts, size } from './theme';
+import { colors, fonts, size, space } from './theme';
 import { s } from './scale';
 
 // Small building blocks shared by every screen, so spacing, tap sizes and type stay the same everywhere.
@@ -258,6 +258,9 @@ type ScreenProps = {
 export function Screen({ children, footer, anchor = 'bottom', scroll = true, withTabBar, background = colors.page, contentStyle, scrollRef }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const bottom = withTabBar ? 0 : Math.max(insets.bottom, 12);
+  // When the story is taller than the space above the pinned button, a thin line on the button's edge shows that more sits above it.
+  const [box, setBox] = useState({ view: 0, content: 0 });
+  const scrolls = box.content > box.view + 2;
   const together = !!footer && anchor === 'content';
   const body = (
     <View style={[st.column, together && st.together, contentStyle]}>
@@ -275,6 +278,8 @@ export function Screen({ children, footer, anchor = 'bottom', scroll = true, wit
           contentContainerStyle={{ flexGrow: 1, paddingHorizontal: size.gutter, paddingBottom: footer && !together ? s(16) : bottom + s(20) }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          onLayout={(e) => setBox((b) => ({ ...b, view: e.nativeEvent.layout.height }))}
+          onContentSizeChange={(_w, h) => setBox((b) => ({ ...b, content: h }))}
         >
           {body}
         </ScrollView>
@@ -282,7 +287,7 @@ export function Screen({ children, footer, anchor = 'bottom', scroll = true, wit
         <View style={{ flex: 1, paddingHorizontal: size.gutter, paddingBottom: together ? bottom : 0 }}>{body}</View>
       )}
       {footer && !together ? (
-        <View style={[st.footer, { paddingBottom: bottom + 4 }]}>
+        <View style={[st.footer, { paddingBottom: bottom + 4 }, scrolls && st.footerEdge]}>
           <View style={st.column}>{footer}</View>
         </View>
       ) : null}
@@ -314,13 +319,13 @@ const st = StyleSheet.create({
     minHeight: size.button,
     borderRadius: s(16),
     borderBottomWidth: s(5),
-    paddingHorizontal: s(20),
+    paddingHorizontal: space[20],
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: s(10),
+    gap: space[10],
   },
-  btnCompact: { minHeight: size.touch, paddingHorizontal: s(16), borderBottomWidth: s(4) },
+  btnCompact: { minHeight: size.touch, paddingHorizontal: space[16], borderBottomWidth: s(4) },
   btnPressed: { transform: [{ translateY: 3 }], borderBottomWidth: s(2) },
   btnOff: { opacity: 0.55 },
   btnText: { fontFamily: fonts.uiBold, fontSize: s(19), lineHeight: s(24) },
@@ -334,28 +339,29 @@ const st = StyleSheet.create({
     borderBottomWidth: s(4),
   },
 
-  panel: { backgroundColor: colors.sky, borderRadius: s(22), borderBottomWidth: s(5), borderBottomColor: colors.sky2, padding: s(14) },
+  panel: { backgroundColor: colors.sky, borderRadius: s(22), borderBottomWidth: s(5), borderBottomColor: colors.sky2, padding: space[14] },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: s(6),
+    gap: space[6],
     minHeight: s(36),
     backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: colors.line,
     borderRadius: s(99),
-    paddingHorizontal: s(12),
+    paddingHorizontal: space[12],
   },
   pillText: { fontFamily: fonts.uiBold, fontSize: s(14), color: colors.ink },
   avatar: { backgroundColor: colors.sky2, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: colors.white },
   avatarText: { fontFamily: fonts.display, color: colors.blue },
-  busy: { flexDirection: 'row', alignItems: 'center', gap: s(10) },
-  notice: { flexDirection: 'row', alignItems: 'flex-start', gap: s(10), borderRadius: s(14), borderWidth: 1, padding: s(12) },
+  busy: { flexDirection: 'row', alignItems: 'center', gap: space[10] },
+  notice: { flexDirection: 'row', alignItems: 'flex-start', gap: space[10], borderRadius: s(14), borderWidth: 1, padding: space[12] },
   noticeText: { flex: 1, fontFamily: fonts.ui, fontSize: s(14), lineHeight: s(19) },
 
   column: { width: '100%', maxWidth: size.maxWidth, alignSelf: 'center', flexGrow: 1 },
   // The group (content and its button) sits in the middle of the screen; the button follows the content closely.
   together: { justifyContent: 'center' },
-  togetherFooter: { marginTop: s(18) },
-  footer: { paddingHorizontal: size.gutter, paddingTop: s(10), backgroundColor: colors.page },
+  togetherFooter: { marginTop: space[16] },
+  footer: { paddingHorizontal: size.gutter, paddingTop: space[10], backgroundColor: colors.page },
+  footerEdge: { borderTopWidth: 2, borderTopColor: colors.line },
 });
