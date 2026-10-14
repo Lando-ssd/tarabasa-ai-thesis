@@ -6770,7 +6770,7 @@ approved preview's numbers (only near duplicates merged, not a strict 4/8 grid),
 - **Not verified:** a real phone (system font scale, the Android keyboard with `KeyboardAvoidingView`, the status bar and gesture
   bar sizes are emulated at 24dp each); how the hosted page behaves inside claude.ai (the link is private, so it could only be
   tested from a plain folder address; it falls back to a plain frame address if the page text cannot be fetched); the microphone
-  (the preview cannot record). A new APK is needed to see any of this on a phone (app.json is still 0.4.0 / versionCode 7).
+  (the preview cannot record). A new APK is needed to see any of this on a phone: it is built, `TaraBasa-AI-0.4.1-test8.apk` (app.json 0.4.1 / versionCode 8, SHA-256 `4cea7652b336...3058`, in `D:/tools/apk-out`, checked inside, NOT sent to anyone yet; see mobile/HANDOVER.md).
 - **Tooling notes:** the browser pane cannot be driven with `el.click()` on React Native Web buttons; a real press needs
   pointerdown, mousedown, pointerup, mouseup and click (the harness does this). A tool permission check blocked `rm -rf` of an
   export folder: use a NEW output folder name instead of deleting.

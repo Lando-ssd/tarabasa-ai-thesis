@@ -19,7 +19,8 @@ import { DEMO, startHash } from './src/config';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Demo mode (hosted preview): answer from sample data. Never true in a phone build.
-if (DEMO && Platform.OS === 'web') require('./src/demoServer').installDemoServer();
+// (The platform check comes first on purpose: the bundler folds it away on a phone and then leaves the sample data out of the app.)
+if (Platform.OS === 'web' && DEMO) require('./src/demoServer').installDemoServer();
 
 const NAME_KEY = 'tarabasa_first_name';
 
