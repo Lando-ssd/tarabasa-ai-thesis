@@ -6757,7 +6757,7 @@ approved preview's numbers (only near duplicates merged, not a strict 4/8 grid),
   screen/size combinations; every common screen fits without scrolling at 390x844 and larger. **At that point it still scrolled on
   the SMALLEST phone (360x640, about 592 usable):** warm-up "quiet" +17, the quiz +68 (three questions), "Your turn" +38, Balloon Pop
   +40. Long lists (Read, Games, Badges, Home, Results) scroll by design. These were fixed afterwards, see the next bullet.
-- **Smallest phone fit (2026-10-14, PUSHED to mobile-app as 0754420, not merged into the live branch; mobile only, nothing on the website changed; no APK built for it yet).** The quiz is now ONE question at
+- **Smallest phone fit (2026-10-14, PUSHED to mobile-app as 0754420, not merged into the live branch; mobile only, nothing on the website changed; APK 0.4.2-test9 built from it, not sent)** The quiz is now ONE question at
   a time (`Quiz` in `Story.tsx`: "Question 1 of 3" with three dots, a Next Question button that stays disabled until a choice is
   picked, Submit My Answers on the last question, the back arrow goes to the previous question and the first one goes back to the story;
   picks are kept; the answers are still sent in one go and still marked on the server). Three questions of four choices cannot fit
