@@ -82,3 +82,30 @@ div.item.need{ cursor:default; }
   .svc-grid{ grid-template-columns:minmax(0,1fr); }
   .logl{ grid-template-columns:minmax(0,1fr); gap:2px; }
 }
+
+/* On a phone the label column took half the card, so an email address broke in the middle of a word ("...@example.co" and "m" on the
+   next line). The label now sits above its value and the value gets the whole width. */
+@media (max-width:600px){
+  dl.facts{ grid-template-columns:minmax(0,1fr); gap:0; }
+  dl.facts dt{ margin-top:8px; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; }
+  dl.facts dd{ word-break:normal; overflow-wrap:anywhere; }
+}
+
+/* The accounts table has six columns and needs about 660px. On a phone it scrolled sideways, which hid the Account status and the
+   action buttons off to the right. Each row becomes a short card instead: name and email, then role, school check, account and the
+   joined date in one wrapped line, then the buttons. */
+@media (max-width:700px){
+  .tw{ overflow:visible; }
+  .tw table, .tw tbody{ display:block; min-width:0; }
+  .tw thead{ display:none; }
+  .tw tr{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; padding:14px 10px; border-bottom:2px solid var(--line); }
+  .tw tbody tr:last-child{ border-bottom:0; }
+  .tw td{ display:block; padding:0; border:0; }
+  .tw td:first-child{ flex:1 0 100%; }
+  .tw td.role{ font-weight:600; }
+  .tw td[data-label]{ display:flex; align-items:center; gap:6px; }
+  .tw td[data-label]::before{ content:attr(data-label); color:var(--soft); font:600 12.5px/1 var(--font-game); letter-spacing:.08em; text-transform:uppercase; }
+  .tw .acts{ flex:1 0 100%; display:flex; flex-wrap:wrap; gap:8px; text-align:left; margin-top:4px; white-space:normal; }
+  .tw .acts .btn + .btn, .tw .acts form + .btn, .tw .acts .btn + form{ margin-left:0; }
+  .tw .mail{ word-break:normal; overflow-wrap:anywhere; }
+}

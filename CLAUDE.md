@@ -6806,7 +6806,7 @@ Blade pages at phone width.
   (Chrome's address bar hides and shows as a page scrolls, which changes the page height a little). Sample data is made up; the
   numbers shown (142 points, 3 days in a row) are what the real code computed from it, not typed in.
 
-## Teacher pages on a phone: review, fixes and a hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+## Teacher pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED to mobile-app as 07a5087, NOT merged to the live branch)
 
 The user asked "how about the teacher preview" right after the Parent one. Same method, same tool folder pattern:
 `tools/teacher-phone-preview/` (`CaptureTeacherPhoneTest.php`, `build_teacher_preview.py`, `TaraBasa-Teacher-Phone-Preview.html`,
@@ -6844,6 +6844,29 @@ It saves 22 real pages plus the window of each activity (the page fetches one wh
   `teacher-app.css`, so they got the tap sizes and the column fix, but were not measured); the 1.2x text test is a simulation
   (scaled font sizes), not the phone's own setting. The sample names, scores and readings are made up.
 - Full suite passed on the final code (405 tests, none added; this round changed styles, one script helper and a few markup lines).
+
+## Admin pages on a phone: review, fixes and a hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+
+The last role to be looked at on a phone ("continue whats next" after the Teacher push). Same method again: `tools/admin-phone-preview/`
+(`CaptureAdminPhoneTest.php`, `build_admin_preview.py`, `TaraBasa-Admin-Phone-Preview.html`, `README.md`). The capture builds Ada Admin,
+three teachers waiting for approval (one has not confirmed the email), one rejected, two active, four parents (one deactivated), a short
+activity log and a service check (reader and recommender fine, the generator asleep, one failed call), and saves the 8 Admin screens plus
+the log in page.
+- **Hosted preview:** https://claude.ai/artifact/XBN7BbH9wbkbh6FkiDihYs (private to the user). Not opened from inside claude.ai (private
+  link); tested from a plain local folder address.
+- **Checked:** 9 pages at 360x640, 390x844, 430x932 and 768x1024, and at 360 and 390 with text 20 percent larger (54 combinations), plus
+  69 views of the windows (approve, reject, reopen, confirm email, deactivate, the More sheet) at 360x640, 360x640 with larger text and
+  390x844. FINAL: 0 findings; the only things a measurement lists are the three log in links whose real tap area is invisible and 48 to 54px.
+  The Admin already inherited the Teacher fixes (shared `teacher-app.css`: 44px controls and the `minmax(0,1fr)` columns), which is why so
+  little was left.
+- **Real defects found and fixed** (`public/css/admin-app.css`, appended; `admin/accounts.blade.php`):
+  1. The accounts table (six columns, about 660px) scrolled sideways inside its box, so the Account status and every action button sat off
+     the screen to the right with no hint, and emails broke mid word. Under 700px each row is a short card: name and email, then role,
+     school check, account and joined date (labelled through `data-label`), then the buttons.
+  2. The approval cards' detail list (School, Employee ID, Email...) gave half the card to the labels, so an email broke as "...@example.co"
+     and "m". Under 600px the label sits above its value (`dl.facts`).
+- **Not changed, noted:** a real phone and a real Admin have not used it; the 1.2x text test is a simulation; the sample accounts are
+  made up. Full suite passed (405 tests; nothing added, this round changed styles and two markup attributes).
 
 ## Before pushing this round (checklist for the next session)
 
