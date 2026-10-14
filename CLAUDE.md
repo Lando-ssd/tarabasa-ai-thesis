@@ -6845,7 +6845,7 @@ It saves 22 real pages plus the window of each activity (the page fetches one wh
   (scaled font sizes), not the phone's own setting. The sample names, scores and readings are made up.
 - Full suite passed on the final code (405 tests, none added; this round changed styles, one script helper and a few markup lines).
 
-## Admin pages on a phone: review, fixes and a hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+## Admin pages on a phone: review, fixes and a hosted preview (2026-10-14, PUSHED to mobile-app as ae236bd, NOT merged to the live branch)
 
 The last role to be looked at on a phone ("continue whats next" after the Teacher push). Same method again: `tools/admin-phone-preview/`
 (`CaptureAdminPhoneTest.php`, `build_admin_preview.py`, `TaraBasa-Admin-Phone-Preview.html`, `README.md`). The capture builds Ada Admin,
