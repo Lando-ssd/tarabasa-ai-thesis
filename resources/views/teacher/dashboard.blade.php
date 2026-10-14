@@ -40,7 +40,7 @@
     <div class="list">
       <a class="item" href="{{ route('teacher.activities.index', ['view' => 'board']) }}">
         <span class="item-ico o">@include('learner._badge-icon', ['icon' => 'note-pencil', 'class' => 'ico'])</span>
-        <span class="item-body"><span class="item-title">{{ $draftCount }} {{ $draftCount === 1 ? 'draft' : 'drafts' }} to review</span><span class="item-sub">Drag each one into the level it belongs to.</span></span>
+        <span class="item-body"><span class="item-title">{{ $draftCount }} {{ $draftCount === 1 ? 'draft' : 'drafts' }} to review</span><span class="item-sub">Place each one in the level it belongs to.</span></span>
         @include('learner._badge-icon', ['icon' => 'caret-right', 'class' => 'ico go'])
       </a>
       @unless ($isPending)

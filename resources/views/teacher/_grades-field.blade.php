@@ -40,7 +40,7 @@
 </div>
 <style>
   .gr-opts{ display:flex; flex-direction:column; gap:8px; margin:2px 0 4px; }
-  .gr-opt{ position:relative; display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1.5px solid #e3ebf2; border-radius:12px; background:#fff; font-size:14px; font-weight:600; cursor:pointer; }
+  .gr-opt{ min-height:44px; position:relative; display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1.5px solid #e3ebf2; border-radius:12px; background:#fff; font-size:14px; font-weight:600; cursor:pointer; }
   .gr-opt input, .gr-c input{ position:absolute; opacity:0; pointer-events:none; }
   .gr-opt.on{ border-color:#1c7ed6; background:#eef6ff; }
   .gr-opt small{ display:block; font-weight:500; color:#5b6b7a; font-size:12px; margin-top:2px; }

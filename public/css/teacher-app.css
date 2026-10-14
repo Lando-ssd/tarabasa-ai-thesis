@@ -579,3 +579,60 @@ table.rep{ width:100%; border-collapse:collapse; font-size:13.5px; } table.rep t
 .acard .basis{ margin:0 0 8px; font-size:12.5px; color:var(--muted); }
 .acard .basis summary{ cursor:pointer; color:var(--blue-ink); font-weight:600; }
 .acard .basis p{ margin:6px 0 0; line-height:1.45; }
+
+/* ---------- phones: every control is at least 44px, so a thumb can hit it (October 2026 phone review) ----------
+   Buttons, chips and tabs simply get that height. Small text links keep their look and gain an invisible tap area:
+   the padding makes the area, and the matching negative margin keeps the layout exactly where it was. */
+@media (max-width:900px){
+  .btn.small, .btn.tiny, .chip.plain, .seg button, .lvbtns .lb, .stepper button{ min-height:44px; }
+  .btn.tiny{ padding:9px 14px 7px; font-size:15px; }
+  .lvbtns{ gap:8px; } .lvbtns .lb{ padding:10px 14px 8px; }
+  .stepper button{ width:44px; height:44px; }
+  .phone-top .me-av{ width:44px; height:44px; }
+  .back{ padding:13px 0; margin:-11px 0 -5px; }
+  .b-title{ padding:13px 0; margin:-13px 0; }
+  .d.warn a{ padding:15px 6px; margin:-15px -6px; }
+  .profile .teachhow summary, .acard .basis summary{ padding:13px 0; margin:-13px 0; }
+}
+
+/* The "Assigned activities" table cannot squeeze below about 300px, which is wider than a small phone leaves it, so on a phone each
+   row becomes a short stack: the activity's name, then For, Done and Average each on a line with its label in front. */
+@media (max-width:600px){
+  table.rep, table.rep tbody, table.rep tr, table.rep td{ display:block; width:auto; }
+  table.rep thead{ display:none; }
+  table.rep tr{ padding:10px 0; border-bottom:1px solid var(--lip); }
+  table.rep td{ border:0; padding:2px 0; }
+  table.rep td[data-label]::before{ content:attr(data-label); display:inline-block; min-width:76px; color:var(--soft); font:600 13px/1 var(--font-game); letter-spacing:.1em; text-transform:uppercase; }
+}
+
+/* A plain 1fr column grows to fit its widest unbreakable row, so with larger text a row could push the whole page wider than the
+   screen. minmax(0,1fr) lets the column shrink to the screen instead, and a long line is cut with an ellipsis or wraps. */
+@media (max-width:900px){
+  .shell{ grid-template-columns:minmax(0,1fr); }
+  .two, .split, .profile-grid, .g3, .g2, .lgrid, .grid2, .rg, .rv, .sugg-strip{ grid-template-columns:minmax(0,1fr); }
+  .notif-side{ flex-wrap:wrap; white-space:normal; row-gap:6px; }
+}
+
+/* A learner's row has an avatar, a name with a code and tags, and the reading level. On a small phone that is too much for one line:
+   the name was cut off ("Domingo, J...") and a tag ran into the level. The level and step move to a second line, under the name. */
+@media (max-width:600px){
+  .lrow{ flex-wrap:wrap; row-gap:2px; }
+  .lrow .lname{ flex:1 1 0; }
+  .lrow .lv{ flex:0 0 calc(100% - 50px); flex-direction:row; align-items:center; justify-content:space-between; gap:8px; margin:0 0 4px 50px; }
+  .lrow .ltags .pill{ white-space:normal; }
+}
+.search input{ text-overflow:ellipsis; }
+
+/* A class window has three tabs. On a small phone they sit in one row (it slides sideways only if the text is very large), with
+   "Groups" as the short name; the full name is still read aloud. The explaining note under Reading groups moves from the footer,
+   where it ate a third of the window, to the end of the list. */
+.body-only{ display:none; }
+@media (max-width:600px){
+  .win-tabs .chips{ flex-wrap:nowrap; gap:6px; overflow-x:auto; padding:2px 2px 6px; margin:-2px; scrollbar-width:none; }
+  .win-tabs .chips::-webkit-scrollbar{ display:none; }
+  .win-tabs .chip{ position:relative; flex:none; padding:8px 10px 7px; font-size:16.5px; }
+  .win-tabs .chip .n{ padding:2px 6px 1px; font-size:14px; }
+  .win-tabs .chip .lg{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  .win-tabs .chip .cap{ display:inline-block; } .win-tabs .chip .cap::first-letter{ text-transform:uppercase; }
+  .foot-only{ display:none; } .body-only{ display:block; margin-top:12px; }
+}

@@ -6806,6 +6806,45 @@ Blade pages at phone width.
   (Chrome's address bar hides and shows as a page scrolls, which changes the page height a little). Sample data is made up; the
   numbers shown (142 points, 3 days in a row) are what the real code computed from it, not typed in.
 
+## Teacher pages on a phone: review, fixes and a hosted preview (2026-10-14, COMMITTED LOCALLY, NOT PUSHED)
+
+The user asked "how about the teacher preview" right after the Parent one. Same method, same tool folder pattern:
+`tools/teacher-phone-preview/` (`CaptureTeacherPhoneTest.php`, `build_teacher_preview.py`, `TaraBasa-Teacher-Phone-Preview.html`,
+`README.md`; three steps, like the Parent one). The capture builds a made-up class in memory: Ms Elena Reyes (Sampaguita, Grade 1, and
+Dahlia, Grade 2), eight learners chosen so that every alert kind appears (Leo needs support, Ana is just starting to read, Rosa is
+ready to move up, Nico has gone quiet, Jun moved up a level), 12 activities in every state (drafts, placed in a level, rejected,
+two shared), assignments, a learner another teacher released for her to claim, and a second teacher still waiting for approval.
+It saves 22 real pages plus the window of each activity (the page fetches one when a card opens; the viewer answers that request).
+- **Hosted preview:** https://claude.ai/artifact/7d8hLtSikv6gWPqG2a4dBu (private to the user). Phone frame with a browser bar, four
+  phone sizes and a laptop, a screen picker, the bottom bar and links work, class windows and activity windows open, buttons that
+  would save show "preview only". Not opened from inside claude.ai (private link); tested from a plain local folder address.
+- **How it was checked:** 22 pages at 360x640, 390x844, 430x932 and 768x1024, and at 360 and 390 with text 20 percent larger (132
+  combinations), plus every view of every window (a class window has 7 views for each class, the Generate window, the "More"
+  sheet, the confirmations, and the 12 activity windows; 174 view checks at 360x640, 360x640 with larger text, and 390x844).
+  FINAL: 0 findings. The only things a measurement still lists are the six sign up and log in links, whose real tap area is an
+  invisible 48 to 54px (checked by touching points around each one, as in the Parent review). Laptop size was only used to compare.
+- **Real defects found and fixed** (all in `public/css/teacher-app.css`, appended at the end, plus small markup):
+  1. Tap targets: buttons, chips and tabs were 34 to 38px (avatar chip 38, Easy/Medium/Hard/Reject buttons 26, "Assign" 23, level
+     stepper 38); on phones they are now at least 44px, and small text links (card titles, Back, "see Alerts", the "why" summaries)
+     keep their look and gain an invisible tap area (padding with a matching negative margin, so the layout does not move).
+  2. Analytics "Assigned activities" table needed 297px plus padding, wider than a 360px (and 375px) phone: on phones each row is a
+     short stack with For, Done and Average labelled (`data-label` in `teacher/analytics.blade.php`).
+  3. Plain `1fr` columns let a long row push a page wider than the screen when text is larger (Analytics one learner, Alerts): on
+     phones they are `minmax(0,1fr)` (the shell and the card grids), and the routine update row wraps.
+  4. A learner's row in the class window cut names ("Domingo, J...") and a tag ran into the level: on phones (600px and under) the
+     level and step move to a second line under the name.
+  5. The class window's three tabs wrapped to two rows and the "Reading groups" footer note was long, leaving only 160 to 220px for
+     the content on the smallest phone (24px at larger text). Now the tabs are one row ("Groups" is the short name, "Reading
+     groups" is still read aloud; `revealTab()` in `teacher-app.js` keeps the chosen tab in view if it ever slides), and the note
+     moved from the footer to the end of the list on phones (`foot-only` / `body-only`). Content area: 266px (228px at larger text).
+  6. Copy: Home said "Drag each one into the level it belongs to" (a phone cannot drag; it uses the level buttons): now "Place each
+     one in the level it belongs to." The search placeholder ends with an ellipsis instead of being cut mid word.
+- **Not changed, noted:** drag and drop between levels needs a mouse (the "Move to" buttons are the phone way, and the preview
+  says so); a real phone and a real teacher have not used any of this; Admin pages were NOT reviewed on a phone (they share
+  `teacher-app.css`, so they got the tap sizes and the column fix, but were not measured); the 1.2x text test is a simulation
+  (scaled font sizes), not the phone's own setting. The sample names, scores and readings are made up.
+- Full suite passed on the final code (405 tests, none added; this round changed styles, one script helper and a few markup lines).
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.
