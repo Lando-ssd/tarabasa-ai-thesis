@@ -239,6 +239,20 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
   `/api/parent/*` routes until `mobile-app` is merged into the live branch and deployed (needs the owner's yes). The Learner screens still work.
   Not sent to anyone, and nothing in it has been proven on a real phone. Test with `PHONE-TEST-CHECKLIST-TEACHER-PARENT.md`.
 
+## Version 0.5.1 (2026-10-15 night): move a learner, school years
+- **File:** `D:/tools/apk-out/TaraBasa-AI-0.5.1-test11.apk` (42.1 MiB, arm64 only, versionCode 11, SHA-256
+  `22176b513c17a0006aca11aaa6a858978b2edc239963c5870e5ca396325e369f`, built from `D:\tb` in 17 min 33 s). It is 0.5.0 plus the Move card at the end of a
+  learner's page and the school year chips on Classes (a past year is read only). Source: branch `mobile-app`, commits `baec273` (the feature) and `89f39dd`
+  (the demo seeder; not in the app). **Send this one, not 0.5.0.** The tester pack is `D:/tools/apk-out/TaraBasa-0.5.1-tester-pack.zip` (the APK, its checksum,
+  a start page and the two checklists).
+- **Checked inside:** versionName 0.5.1 / versionCode 11; the same 10 permissions as 0.4.x and 0.5.0; the live address is present and `localhost:8123` and
+  the emulator address are absent; "Move to another", "School year", "This is a past school year" and the Teacher and Parent texts are present.
+- **Server side:** the live server answered 401 for `/api/teacher/home` and `/api/parent/home` on 2026-10-15 night (the Teacher and Parent routes ARE live: the
+  0.5.0 note above that says they are not was true only until the merge `10cc745`), but 404 for the new move route. So until `mobile-app` is merged into the live
+  branch again, the Move card and the year chips simply do not appear against the live server: the phone reads `years`, `canMove` and `moveTargets` as optional on
+  purpose (an older server cannot crash the Classes tab). Merge on the owner's word to switch them on.
+- **Not sent to anyone yet, and nothing in it has been proven on a real phone.**
+
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
    on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,
