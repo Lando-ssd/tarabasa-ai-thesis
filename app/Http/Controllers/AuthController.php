@@ -2,18 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ParentAccount;
-use App\Models\Teacher;
 use App\Models\User;
+use App\Services\AccountAuthService;
+use App\Services\AccountLoginRefused;
 use App\Support\EmailAddress;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
@@ -21,6 +15,9 @@ use Throwable;
 
 class AuthController extends Controller
 {
+    /** The sign in and sign up rules live in AccountAuthService, shared with the phone app's API. */
+    public function __construct(private readonly AccountAuthService $accounts) {}
+
     public function showTeacherRegister()
     {
         return view('auth.register-teacher');
@@ -33,54 +30,19 @@ class AuthController extends Controller
 
     /**
      * Teacher registration — Module 1.1.1 + 1.1.5.
-     * Creates the account, sends the real verification email, and logs
-     * the Teacher in immediately with limited access (per the Admin
-     * Actor Prompt: "a Pending Teacher can already log in to a
-     * locked-down dashboard"). Admin approval is a separate gate that
-     * happens later, not something this step waits on.
+     * Creates the account and sends the real confirmation email. With "confirm your email first" on (the default)
+     * nobody is signed in until they open the link; with it off, the Teacher is signed in at once with limited access
+     * (per the Admin Actor Prompt: "a Pending Teacher can already log in to a locked-down dashboard"). Admin
+     * approval is a separate gate that happens later, not something this step waits on.
      */
     public function storeTeacher(Request $request)
     {
         $this->normalizeEmailInput($request);
 
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'middle_initial' => ['nullable', 'string', 'max:5'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'email' => $this->registrationEmailRules(),
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'school_name' => ['required', 'string', 'max:255'],
-            'employee_id' => ['required', 'string', 'max:100'],
-            'contact_number' => ['nullable', 'string', 'max:30'],
-            ...Teacher::gradeRules(),
-        ], $this->registrationEmailMessages());
-        $grades = Teacher::gradesFromValidated($validated);
+        $validated = $request->validate($this->accounts->teacherRules(), $this->accounts->registrationEmailMessages());
+        $user = $this->accounts->registerTeacher($validated);
 
-        $user = DB::transaction(function () use ($validated, $grades) {
-            $user = User::create([
-                'first_name' => $validated['first_name'],
-                'middle_initial' => $validated['middle_initial'] ?? null,
-                'last_name' => $validated['last_name'],
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-                'user_type' => 'Teacher',
-                'contact_number' => $validated['contact_number'] ?? null,
-            ]);
-
-            Teacher::create([
-                'user_id' => $user->id,
-                'school_name' => $validated['school_name'],
-                'employee_id' => $validated['employee_id'],
-                'status' => 'Pending',
-                'free_generation_credits_remaining' => 2,
-                'grades_handled' => $grades,
-            ]);
-
-            return $user;
-        });
-
-        // With "confirm your email first" on (the default), nobody is signed in until they open the link, and an
-        // address we cannot send to is refused instead of leaving an account nobody can ever use.
+        // An address we cannot send to is refused instead of leaving an account nobody can ever use.
         if ($refused = $this->sendOrRefuse($user, $request)) {
             return $refused;
         }
@@ -97,36 +59,13 @@ class AuthController extends Controller
      * now uses separate First/Middle/Last inputs instead, matching the
      * Teacher registration pattern — a deliberate deviation from Figure 11,
      * not an oversight.
-     * Same non-blocking verification approach as Teacher, for consistency.
      */
     public function storeParent(Request $request)
     {
         $this->normalizeEmailInput($request);
 
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'middle_initial' => ['nullable', 'string', 'max:5'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'email' => $this->registrationEmailRules(),
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ], $this->registrationEmailMessages());
-
-        $user = DB::transaction(function () use ($validated) {
-            $user = User::create([
-                'first_name' => $validated['first_name'],
-                'middle_initial' => $validated['middle_initial'] ?? null,
-                'last_name' => $validated['last_name'],
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-                'user_type' => 'Parent',
-            ]);
-
-            ParentAccount::create([
-                'user_id' => $user->id,
-            ]);
-
-            return $user;
-        });
+        $validated = $request->validate($this->accounts->parentRules(), $this->accounts->registrationEmailMessages());
+        $user = $this->accounts->registerParent($validated);
 
         if ($refused = $this->sendOrRefuse($user, $request)) {
             return $refused;
@@ -135,42 +74,11 @@ class AuthController extends Controller
         return $this->registrationDone($user, 'parent');
     }
 
-    private function mustConfirmEmail(): bool
-    {
-        return (bool) config('auth.require_verified_email', true);
-    }
-
-    /** Emails are compared and stored in lower case, so "Pinky@Gmail.com" and "pinky@gmail.com" are one address. */
     private function normalizeEmailInput(Request $request): void
     {
         if (is_string($request->input('email'))) {
-            $request->merge(['email' => strtolower(trim($request->input('email')))]);
+            $request->merge(['email' => $this->accounts->normalizeEmail($request->input('email'))]);
         }
-    }
-
-    /** What a registration email must satisfy: a real looking address, a domain that can receive mail, no obvious typo, not taken. */
-    private function registrationEmailRules(): array
-    {
-        return [
-            'required',
-            // First, so a typo like "gmial.com" gets the helpful "Did you mean" instead of "does not look real".
-            function (string $attribute, mixed $value, \Closure $fail): void {
-                if (is_string($value) && ($hint = EmailAddress::suggestion($value))) {
-                    $fail("That address looks mistyped. Did you mean {$hint}?");
-                }
-            },
-            config('auth.check_email_domain') ? 'email:rfc,dns' : 'email',
-            'max:255',
-            Rule::unique('users', 'email'),
-        ];
-    }
-
-    private function registrationEmailMessages(): array
-    {
-        return [
-            'email.email' => 'That email address does not look real. Check the spelling, or use another address.',
-            'email.unique' => 'That email address already has an account. Log in instead, or use another address.',
-        ];
     }
 
     /**
@@ -180,22 +88,18 @@ class AuthController extends Controller
      */
     private function sendOrRefuse(User $user, Request $request): mixed
     {
-        if (! $this->mustConfirmEmail()) {
-            $this->sendVerificationEmail($user);
+        if (! $this->accounts->mustConfirmEmail()) {
+            $this->accounts->sendVerificationEmail($user);
             Auth::login($user);
 
             return null;
         }
 
-        if ($this->sendVerificationEmail($user)) {
+        if ($this->accounts->sendVerificationEmail($user)) {
             return null;
         }
 
-        DB::transaction(function () use ($user) {
-            Teacher::where('user_id', $user->id)->delete();
-            ParentAccount::where('user_id', $user->id)->delete();
-            $user->delete();
-        });
+        $this->accounts->discard($user);
 
         return back()
             ->withInput($request->except(['password', 'password_confirmation']))
@@ -208,34 +112,8 @@ class AuthController extends Controller
             'firstName' => $user->first_name,
             'email' => $user->email,
             'role' => $role,
-            'mustConfirm' => $this->mustConfirmEmail(),
+            'mustConfirm' => $this->accounts->mustConfirmEmail(),
         ]);
-    }
-
-    /**
-     * Sends the real confirmation email — but a registration must never
-     * fail just because SMTP is slow or unreachable. Confirmed for real:
-     * an unprotected send here could hang the whole request for ~60s and
-     * then return a raw 500, turning a mail-server problem into a broken
-     * registration. Every other external call in this app (Gemini,
-     * Reading-api, Adaptive_Recommendator) already degrades gracefully
-     * instead of crashing the user-facing flow — this brings registration
-     * in line with that same pattern.
-     */
-    private function sendVerificationEmail(User $user): bool
-    {
-        try {
-            $user->sendEmailVerificationNotification();
-
-            return true;
-        } catch (Throwable $e) {
-            Log::warning('Verification email failed to send.', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return false;
-        }
     }
 
     /**
@@ -245,14 +123,8 @@ class AuthController extends Controller
     public function resendVerification(Request $request)
     {
         $data = $request->validate(['email' => ['required', 'email', 'max:255']]);
-        $email = strtolower(trim($data['email']));
 
-        $user = User::where('email', $email)->first();
-
-        // One link a minute per address, whatever the answer was.
-        if ($user && $user->user_type !== 'Admin' && ! $user->hasVerifiedEmail() && Cache::add('resend-verification:'.$user->id, true, 60)) {
-            $this->sendVerificationEmail($user);
-        }
+        $this->accounts->resendVerification($data['email']);
 
         return redirect()->route('login')->with('status', 'If that address has an account that is still waiting to be confirmed, we sent a new link. Check your inbox and your spam folder.');
     }
@@ -263,21 +135,15 @@ class AuthController extends Controller
      * The route's `signed` middleware checks the link is genuine and has not expired. The person does NOT have
      * to be signed in: people open the email on a phone, in another browser, or while another account (an
      * Admin) is signed in on the same computer, and a link that needs the matching session silently did
-     * nothing for them (the old route needed `auth` plus a matching user, so the account stayed "Email not
-     * verified" and the Admin could not approve it). The link carries the user's id and a hash of their email,
-     * so a valid link can only ever verify the one account it was made for.
+     * nothing for them. The link carries the user's id and a hash of their email, so a valid link can only
+     * ever verify the one account it was made for.
      */
     public function verifyEmail(Request $request, int $id, string $hash)
     {
-        $user = User::find($id);
+        $user = $this->accounts->confirmFromLink($id, $hash);
 
-        if (! $user || ! hash_equals(sha1($user->getEmailForVerification()), $hash)) {
+        if (! $user) {
             return response()->view('auth.verify-link-problem', [], 403);
-        }
-
-        if (! $user->hasVerifiedEmail() && $user->markEmailAsVerified()) {
-            event(new Verified($user));
-            Log::info('Email address confirmed.', ['user_id' => $user->id]);
         }
 
         // A page of its own that names the address, not a quiet redirect: whoever opened the link, and
@@ -323,94 +189,21 @@ class AuthController extends Controller
             'role' => ['nullable', 'string', Rule::in(['teacher', 'parent', 'admin'])],
         ]);
 
-        // Rate limiting: 5 attempts per email+IP, then a 60-second cooldown.
-        // Plain Laravel (RateLimiter facade) — unrelated to the old
-        // Firebase-specific draft, which is superseded.
-        $throttleKey = strtolower($credentials['email']).'|'.$request->ip();
-
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
-            throw ValidationException::withMessages([
-                'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
-            ]);
-        }
-
-        $user = User::where('email', $credentials['email'])->first();
-
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            RateLimiter::hit($throttleKey, 60);
-
-            throw ValidationException::withMessages([
-                'email' => 'Invalid email or password.',
-            ]);
-        }
-
-        if ($blockedReason = $this->reasonLoginBlocked($user, $credentials['role'] ?? null)) {
+        try {
+            $user = $this->accounts->authenticate($credentials['email'], $credentials['password'], (string) $request->ip(), $credentials['role'] ?? null);
+        } catch (AccountLoginRefused $refused) {
             // Lets the sign in page offer "send the link again" right under the message.
-            if ($this->needsConfirming($user)) {
-                $request->session()->flash('unconfirmed_email', $user->email);
-            } else {
-                RateLimiter::hit($throttleKey, 60);
+            if ($refused->reason === 'email_not_confirmed') {
+                $request->session()->flash('unconfirmed_email', $refused->email);
             }
 
-            throw ValidationException::withMessages(['email' => $blockedReason]);
+            throw ValidationException::withMessages(['email' => $refused->getMessage()]);
         }
 
-        RateLimiter::clear($throttleKey);
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         return $this->redirectForUserType($user);
-    }
-
-    /**
-     * The same eligibility rules (role match / active / not-rejected)
-     * password login already enforced — pulled out so "Continue with
-     * Google" checks the exact same rules instead of risking a second,
-     * slightly-different copy. Returns a user-facing message when login
-     * should be blocked, or null when it's fine to proceed.
-     */
-    private function reasonLoginBlocked(User $user, ?string $submittedRole): ?string
-    {
-        // The role picked on the login form (Teacher/Parent/Admin login
-        // links, or the general "Log in" link with no role at all) must
-        // match the account's real user_type. Correct credentials on the
-        // wrong role's form are rejected with a specific message rather
-        // than silently logging the person in under their real role.
-        $roleMap = ['teacher' => 'Teacher', 'parent' => 'Parent', 'admin' => 'Admin'];
-
-        if ($submittedRole && ($roleMap[$submittedRole] ?? null) !== $user->user_type) {
-            return "This account is registered as a {$user->user_type}. Please use the {$user->user_type} login instead.";
-        }
-
-        // Account-level deactivation (Admin's "Deactivate" action) blocks
-        // login outright, regardless of correct credentials.
-        if ($user->status === 'Inactive') {
-            return 'This account has been deactivated. Contact your school\'s TaraBasa admin.';
-        }
-
-        // A Rejected Teacher gets a clear, specific rejection message even
-        // though their credentials are correct — per the Admin Actor Prompt.
-        if ($user->user_type === 'Teacher' && $user->teacher && $user->teacher->status === 'Rejected') {
-            // The Admin's reason, when they gave one, so the teacher knows what to fix or whom to show proof to.
-            $reason = trim((string) $user->teacher->rejection_reason);
-
-            return 'Your teacher registration was not approved.'.($reason !== '' ? ' Reason: '.rtrim($reason, '.').'.' : '').' Contact your school\'s TaraBasa admin.';
-        }
-
-        // The address must be confirmed first. Only said after the password was right, so it does not
-        // tell a stranger which addresses have accounts.
-        if ($this->needsConfirming($user)) {
-            return 'Please confirm your email first. Open the link we sent to '.EmailAddress::mask($user->email).' (look in spam too), then log in. Tap the button under this message to get a new link.';
-        }
-
-        return null;
-    }
-
-    /** A Teacher or Parent whose email has not been confirmed, while confirming is required. (The Admin is never held back.) */
-    private function needsConfirming(User $user): bool
-    {
-        return $this->mustConfirmEmail() && $user->user_type !== 'Admin' && ! $user->hasVerifiedEmail();
     }
 
     private function redirectForUserType(User $user)
@@ -488,7 +281,7 @@ class AuthController extends Controller
             $user->markEmailAsVerified();
         }
 
-        if ($blockedReason = $this->reasonLoginBlocked($user, $submittedRole)) {
+        if ($blockedReason = $this->accounts->reasonLoginBlocked($user, $submittedRole)) {
             return redirect()->route('login', ['role' => $submittedRole])
                 ->withErrors(['email' => $blockedReason]);
         }

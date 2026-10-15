@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AccountApiController;
 use App\Http\Controllers\Api\LearnerApiController;
 use App\Http\Controllers\Api\LearnerBookshelfApiController;
 use App\Http\Controllers\Api\LearnerDiagnosticApiController;
@@ -25,7 +26,22 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/learner/login', [LearnerApiController::class, 'login'])->name('api.learner.login');
 
-Route::middleware('auth:sanctum')->prefix('learner')->name('api.learner.')->group(function () {
+// Teacher and Parent sign in and sign up (email and password, the website's own rules). A Learner signs in with code and PIN above.
+// An Admin is never accepted here: Admin screens are on the website only.
+Route::prefix('auth')->name('api.auth.')->group(function () {
+    Route::post('/login', [AccountApiController::class, 'login'])->middleware('throttle:30,1')->name('login');
+    Route::post('/register/teacher', [AccountApiController::class, 'registerTeacher'])->middleware('throttle:10,1')->name('register.teacher');
+    Route::post('/register/parent', [AccountApiController::class, 'registerParent'])->middleware('throttle:10,1')->name('register.parent');
+    Route::post('/resend-verification', [AccountApiController::class, 'resendVerification'])->middleware('throttle:10,1')->name('resend');
+    Route::post('/forgot-password', [AccountApiController::class, 'forgotPassword'])->middleware('throttle:10,1')->name('forgot');
+
+    Route::middleware(['auth:sanctum', 'token.actor:teacher,parent'])->group(function () {
+        Route::get('/me', [AccountApiController::class, 'me'])->name('me');
+        Route::post('/logout', [AccountApiController::class, 'logout'])->name('logout');
+    });
+});
+
+Route::middleware(['auth:sanctum', 'token.actor:learner'])->prefix('learner')->name('api.learner.')->group(function () {
     Route::post('/logout', [LearnerApiController::class, 'logout'])->name('logout');
 
     // Diagnostic — deliberately NOT gated by the diagnostic-complete check,

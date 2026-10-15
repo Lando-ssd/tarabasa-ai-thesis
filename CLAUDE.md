@@ -6890,6 +6890,37 @@ the log in page.
 - **Not changed, noted:** a real phone and a real Admin have not used it; the 1.2x text test is a simulation; the sample accounts are
   made up. Full suite passed (405 tests; nothing added, this round changed styles and two markup attributes).
 
+## Phone app grows to Teacher, Parent and Learner: scope, slice 0 (server) and the design preview (2026-10-15, LOCAL, not pushed)
+
+On 2026-10-15 the owner said Admin is website only and the phone app should cover Teacher, Parent and Learner (until then it was
+Learner only). Answers to the scope questions: sign up INSIDE the app for Teachers and Parents too (the same rules as the website,
+in a proper phone design); a learner who logs out comes back to the Learner sign in screen (the owl, "Scan my card", the code and the
+4 digit PIN); build order is LEARNER first (the phone Learner end already matches the website, nothing was missing), then TEACHER,
+then PARENT; and a design preview first (Artifact `https://claude.ai/artifact/4SLFMBr4noX5UM3V3jRxo8`: 22 screens, sign in, sign up, Teacher and
+Parent, with the real owl head animation and icons; it is a drawing, not the app).
+- **Slice 0, the server foundation (built, 428 tests pass, 23 of them new).** `App\Services\AccountAuthService` now holds ALL
+  Teacher/Parent sign in and sign up rules (email rules and the typo hint, the registration rules and records, the confirmation email,
+  resend, the link check, who may sign in: wrong role form, deactivated, rejected, email not confirmed, the five-tries lock); the
+  website's `AuthController` was rewritten to call it (83 existing sign in tests pass unchanged). `App\Services\AccountLoginRefused`
+  carries the message and a short reason. New `Api\AccountApiController` and routes `POST /api/auth/login`, `/register/teacher`,
+  `/register/parent`, `/resend-verification`, `/forgot-password`, and (token needed) `GET /api/auth/me`, `POST /api/auth/logout`. Sign in
+  gives a Sanctum token and the account (role, name, and for a Teacher the status, school, grades and free credits); with "confirm your
+  email first" on (the default) sign up gives NO token, only `status: confirm_email`. An Admin is refused with
+  `admin_web_only` ("Admin accounts sign in on the website.") and never gets a token.
+- **The token fence (`EnsureTokenActor`, alias `token.actor:learner|teacher|parent`).** Learner, Teacher and Parent tokens are all
+  Sanctum tokens, so without this a Teacher's token would have reached `/api/learner/*` (whose controllers treat `$request->user()` as a
+  Learner). The Learner API group now carries `token.actor:learner`; the new auth routes carry `token.actor:teacher,parent`. It also
+  deletes the tokens of a deactivated or rejected account on its next call and refuses an unconfirmed Teacher or Parent and any Admin.
+  Tests: `tests/Feature/AccountApiTest.php`.
+- **Next, in order:** the owner approves (or changes) the preview; then the phone app gets a role aware shell (the app's session today is
+  Learner only: `session.tsx`, `SignIn.tsx`, `Main.tsx`), the email sign in and sign up screens, then the Teacher slices and the Parent
+  slices. Each needs its logic moved out of the big web controllers (`ClassController`, `ActivityController`, `AnalyticsController`,
+  `LearnerController`) into services the way the Learner side was, so the website and the phone cannot disagree.
+- **Decisions in the preview, to confirm:** a Teacher's tabs are Home, Classes, Activities, Alerts, More (Analytics, Promotions, Profile and Log
+  out are under More); a Parent's tabs are Home, Children, Progress, Activities, Alerts (Profile from the avatar); "Teacher or Parent? Log in
+  with email" is a quiet line under the Learner sign in; Google sign in is not in the app; the confirmation link still opens the website
+  page, then the person returns to the app; dragging cards between levels is replaced by the level buttons.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.
