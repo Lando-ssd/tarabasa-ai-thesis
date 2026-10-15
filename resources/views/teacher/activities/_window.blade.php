@@ -71,6 +71,12 @@
             <div class="skill-chips" style="margin-top:6px">@foreach ($a->reading_features as $f)<span class="skill">{{ $f }}</span>@endforeach</div>
           </div>
         @endif
+        @if (! empty($a->generation_basis['lines']))
+          <div class="block" style="margin:0 0 8px"><span class="eyebrow">Written for {{ $a->generation_basis['className'] ?? 'a class' }}</span>
+            <ul class="basis-list">@foreach ($a->generation_basis['lines'] as $line)<li>{{ $line }}</li>@endforeach</ul>
+            <p class="note" style="margin:4px 0 0">These facts came from the class's own readings when this was written. The AI was asked to use them.</p>
+          </div>
+        @endif
         @if ($a->movedByTeacher())
           <p class="note" style="margin:8px 0 0">The AI suggested <b>{{ $a->ai_difficulty_tier }}</b>. You placed it in <b>{{ $tier }}</b>. The AI is told about changes like this the next time you generate.</p>
         @endif

@@ -36,4 +36,23 @@ class LearnerClock
     {
         return $moment->copy()->setTimezone(config('app.timezone'));
     }
+
+    /** Today, Yesterday, This week or Earlier: the family's own days (the Philippines), not the server's UTC days. */
+    public static function dayLabel(mixed $timestamp): string
+    {
+        $local = self::local($timestamp);
+        $today = self::now()->startOfDay();
+
+        if ($local->isSameDay($today)) {
+            return 'Today';
+        }
+        if ($local->isSameDay($today->copy()->subDay())) {
+            return 'Yesterday';
+        }
+        if ($local->greaterThanOrEqualTo($today->copy()->subDays(6))) {
+            return 'This week';
+        }
+
+        return 'Earlier';
+    }
 }

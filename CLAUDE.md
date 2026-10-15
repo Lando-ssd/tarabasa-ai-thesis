@@ -6920,6 +6920,122 @@ Parent, with the real owl head animation and icons; it is a drawing, not the app
   out are under More); a Parent's tabs are Home, Children, Progress, Activities, Alerts (Profile from the avatar); "Teacher or Parent? Log in
   with email" is a quiet line under the Learner sign in; Google sign in is not in the app; the confirmation link still opens the website
   page, then the person returns to the app; dragging cards between levels is replaced by the level buttons.
+- **Slice 1, the phone app's role aware sign in and sign up (built 2026-10-15, LOCAL, not pushed; the owner approved the preview).** New in `mobile/src`:
+  `AuthFlow.tsx` (the child's own screen, then email sign in, create an account, Parent sign up, Teacher sign up, check your email, forgot
+  password; all rules and wording come from the server, the app only shows them, per field), `fields.tsx` (`Field` with the password eye,
+  `Segmented`, `Chips`, `TextLink`), `AccountApp.tsx` (the Teacher bar Home, Classes, Activities, Alerts, More and the Parent bar Home, Children,
+  Progress, Activities, Alerts; every screen except the account details and Log out says "Coming soon in the app"), `TabBar.tsx` (the one bar,
+  now shared with the child's `Main.tsx`). `api.ts` gained the `/api/auth/*` calls plus `getActor`/`saveActor` (the saved token says whose it is, so
+  the app opens the right screens after a restart; a phone that only ever held a child's token still opens as a child). `App.tsx` boots by actor
+  (`/api/auth/me` for a Teacher or Parent, 401 or 403 clears the sign in), and a child who logs out returns to the child's screen while a Teacher or
+  Parent returns to the email screen. `Screen` got a `header` slot (the back arrow that stays put). `SignIn.tsx` got the quiet "Teacher or Parent?
+  Log in with email" line. Checked in a browser against the local server with the real API: Teacher sign in and the More profile, Log out, Parent sign up
+  (client side messages, the server's "Did you mean gmail.com?" hint, "Almost there" with the masked address, refusal before confirming with "Send me a new link",
+  the real confirmation link, then sign in), the Parent profile, a restart keeping the sign in, and a child's code and PIN sign in still working. NOT tested:
+  a real phone, the Android keyboard with these forms, and the Admin refusal text in the app (covered by the server tests). `tsc --noEmit` is clean.
+- **Slice 2, Teacher Home and Classes on the phone (built 2026-10-15, LOCAL, not pushed; 448 tests pass, 12 of them new).** Server: the class rules moved
+  out of `ClassController` into `App\Services\TeacherClassService` (create and update rules and messages, the grade guard on a change, `join()` with the limit on
+  wrong codes, one grade per class, the reading level guard and telling the guardians, and `activitiesByClass()`); the website's controller now calls it
+  (76 related tests pass unchanged), and so does the new `Api\TeacherApiController`. `App\Support\TeacherRoster` turns a class, a learner and a learner's
+  one tag (Needs support, Starting to read, Moved up, Ready to move up, Quiet N days, from `TeacherAlerts`) into plain arrays. Routes (`token.actor:teacher`):
+  `GET /api/teacher/home`, `/classes` (`?school_year=`), `/classes/{id}`, `/classes/{id}/learners/{id}` (the website's learner window as data:
+  `LearnerProfile::forTeacher`), and, behind `teacher.active` (a Pending Teacher gets the website's JSON 403 and its own words), `POST /classes`,
+  `PUT /classes/{id}`, `POST /classes/{id}/learners` (a typed or scanned code; a refusal is a 422 `{ok:false,message}` in the website's wording). Another teacher's
+  class answers 404. Phone: `mobile/src/teacher/` (`TeacherHome`, `Classes` with `ClassForm`, `ClassScreen` with Learners, Groups and Activities, `LearnerScreen`,
+  `ClassScanner` (keeps scanning, checks the check digit on the phone, lists each result), `kit` with `TonePill`, `ListRow`, `Tile`, `useLoad`). Checked in a
+  browser against the local server with real demo data: Home numbers and the support banner, the class list, a class, a learner's page, a refused code (Grade 2
+  child into a Grade 1 class, the website's own sentence), adding a child by the last 5 characters (it opens that child's page), making a class and editing it.
+  NOT tested: the camera scanner itself (needs a real phone), the Pending teacher in the app (covered by `TeacherApiTest`), moving a learner to another class
+  (not built on the phone yet) and an old school year in the app.
+- **Preview fixes (2026-10-15):** the email sign in screens have the heading centered and no owl; on every sign up and add-a-child form the button now
+  follows the last field instead of sitting at the bottom (`.after` replaces the sticky footer), and the Teacher sign up fits the phone without scrolling.
+  Republished to the same Artifact (version 2).
+
+## "Write it for a class": generation based on a class's own readings (2026-10-15, BUILT LOCALLY, NOT PUSHED)
+
+The owner asked that the AI "train the pattern" and that activity generation have a real basis in how the learners learn. Said plainly, because it will be
+asked at the defense: **there is no trained model.** The project has no dataset of children's recordings to train one on, and the generator
+(gemini_activity_gen v3.1) accepts only a grade, a skill, an activity type, a topic and ONE free text field, `teacher_notes` (1000 characters). What was built
+instead is a rule based basis that feeds that one field, with every fact visible to the teacher:
+- **`App\Support\GenerationBasis::forClass($class, $activityType)`** reads the class's real data and returns `lines` (plain sentences for the teacher) and
+  `note` (at most 420 characters for the generator). Facts, all from rules the rest of the app already uses so nothing can disagree: the reading step most
+  of the class is on (`ReadingLevel::readiness` and `RUNG_LABELS`) with the comfortable and stretch word counts (`ActivityFit::limits`) and which of
+  Easy, Medium and Hard suit that step for the chosen grade and type (teacher only, the generator has its own ranges); the main kind of mistake that
+  at least 2 children repeat (`ErrorPatterns::forLearner` and `mainPattern`); words at least 2 children missed; topics at least 2 parents said their
+  children like. A thing is only said about the class when `MIN_SHARED` (2) children show it, so one child's habit is never called the class's. A class
+  with nothing to say (no learners, or no shared facts) is written as a plain general activity and the window says so.
+- **Generate window:** an optional "For a class" picker (only this school year's classes of the chosen grade; the list follows the grade because a class
+  holds one grade) beside Topic, and a "Based on this class's readings" box filled from `GET /teacher/activities/basis` (`activities.basis`, read only, own
+  class only, 422 otherwise) BEFORE Generate is pressed. The window does not get taller (checked: the two columns stay equal).
+- **Server:** `generate()` accepts `class_id`, checks it is the teacher's own, current year and of the grade asked for (`classForGeneration`), and works the
+  basis out itself from the class's data (never from the form). `activity_generations.class_id` and `.basis` (json), `activities.generation_basis` (json:
+  class name and lines), migration `2026_10_15_000100`. `GenerateActivitiesJob` sends `GenerationBasis::composeNotes([teacher's words, class note,
+  calibration note])` (the teacher's words always first, 1000 characters total) and saves the lines on each activity it writes; the activity's window shows
+  them as "Written for {class}". The teacher's own notes stay the activity's `teacher_notes` (the class note is not mixed in).
+- **Tests:** `tests/Feature/GenerationBasisTest.php` (8). Full suite 436 passing. Checked in a browser with the local demo data (Sampaguita: 6 learners, 3 lines
+  shown). NOT run against the live generator (it takes minutes and spends a credit), so how well Gemini follows the class note is unmeasured.
+- **Honest limits.** The thresholds (2 children, 420 characters) are the team's choice. The rules cannot learn from outcomes yet. The way to make it learn is data:
+  once real children use the phone and website, the readings (accuracy, missed words, step moves, what a teacher moved between levels) can be used to check and
+  tune these numbers (for example: do children read the activities written for their class better than general ones?). That comparison is the honest "training"
+  story for the thesis, and it needs the real phone test first.
+
+## Phone app: the rest of the Teacher screens and the whole Parent side (2026-10-15, BUILT LOCALLY, NOT PUSHED)
+
+The owner said "continue whats next till it finish" after the Teacher Home and Classes slice, so the Teacher Activities, Alerts and More screens and every Parent
+screen were built in one run, each with the same method as the Learner side: the rules move out of the big website controllers into shared services, the website
+and a thin `Api\*Controller` both call them, and the phone shows what the server says (words and numbers are the website's own).
+
+### Teacher: Activities, Alerts, More (server and phone)
+- **Server.** `TeacherActivityService` (place in a level or reject, restore, edit and approve, assign to a learner or class or focus group with the `ActivityFit`
+  check, assign to a class or reading group, share, start a generation), `AccountProfileService` (name and contact, password, a teacher's grades),
+  `TeacherPromotionService` (release and claim). `ActivityController`, `ProfileController`, `PromotionController` and `ClassController::assignActivity` now call them.
+  Phone routes (`routes/api.php`, `token.actor:teacher`): `GET /api/teacher/activities`, `/activities/{id}`, `/activities/generate-options`, `/activities/basis`,
+  `/activities/warm`, `POST /activities/generate`, `GET /activities/generations/{id}`, `POST .../dismiss`; behind `teacher.active`: place, restore, edit (PUT), assign,
+  share, `POST /classes/{id}/assign`; `GET /alerts`, `POST /alerts/{learner}/handled`, `POST /alerts/{learner}/assign`; `GET /analytics`; `GET /promotions`, release, claim;
+  and for both Teacher and Parent `PUT /api/auth/profile`, `/profile/password`, `/profile/grades`. A Pending Teacher can look and ask for new activities with
+  the 2 free credits (like the website); anything that touches students needs an Active one.
+- **Phone screens** (`mobile/src/teacher/`): `Activities` (Review / Approved / Rejected, search and level filter once there are more than 5, a draft card with
+  one tap per level and Reject, the generation notice that follows the background request every 4 seconds and survives leaving the screen),
+  `ActivityScreen` (the words, "Why this level", who it was given to, level buttons, edit and approve, give to a class or focus group or learner with the
+  "Too long" and "A stretch" notes and a disabled button for a blocked one, share free or paid, take back a rejection), `Generate` (grade, skill, kind of
+  reading, a counter for each level with its word range and how many you already have, "For a class" with the class's own basis shown BEFORE Write, topic,
+  notes, credits), `Alerts` (a single sliding row of filters, the evidence, "Why this is flagged", the suggested step with a one tap "Give it to X", Mark
+  handled, a red count on the bottom bar), `More` (Analytics, Promotions, My profile, Log out), `Analytics`, `Promotions` (two step release, claim into a class),
+  and `mobile/src/MyProfile.tsx` (shared with the Parent). Undo exists only for a REJECT, as on the website; moving a draft into a level is changed again with
+  the level buttons. Every move says what it did.
+- **Tested.** `TeacherApiTest` (12), `TeacherActivityApiTest` (12), `TeacherMoreApiTest` (8); then in the browser against the local server with the real demo data,
+  at 390x844 and 360x640: place, reject and Undo, edit form, give to a class (the long activity is refused for the Grade 1 classes with the website's own sentence),
+  a fake running generation turned Done and dismissed, the class basis for Sampaguita, an alert's one tap assignment, Analytics, Promotions (confirm step, Cancel),
+  profile save. NOT run: a real generation through the app (it spends a live credit and takes minutes; the server path is covered by tests).
+- Small fixes found on the way: "A easy activity" in the suggestion text (`ActivitySuggestions`) now says "An easy"; the segmented control's taps are 48 tall;
+  `Field` takes `lines` for a multi-line box; the draft preview no longer shows half of the fourth line.
+
+### Parent: all five tabs (server and phone)
+- **Server.** `ParentChildService` (the add-a-child questions and rules, the starting level worked out on the server from the three answers, the link with code
+  AND PIN with the same limits on wrong guesses, the notice to the other guardians), `ParentRepositoryService` (the Open Repository listing best match first, unlock,
+  rate), `App\Support\ParentInsights` (the plain level sentence and "practise at home"), `LearnerClock::dayLabel`. `LearnerController`, `RepositoryController`,
+  `AnalyticsController` and `NotificationController` call them (the website's behaviour is unchanged; 53 related tests pass). `Api\ParentApiController` and
+  `GET /api/parent/home`, `/children`, `/children/options`, `POST /children`, `POST /children/link`, `GET /children/{id}/card` (name, code and the QR drawn by our own
+  server, never the PIN), `GET /progress`, `GET /repository`, `POST /repository/{id}/unlock` and `/rate`, `GET /alerts`, `POST /alerts/{id}/read`, `POST /alerts/read-all`
+  (`token.actor:parent`; a Parent only reaches the children linked to their account, anything else is 404 or falls back to their first child, never an error).
+- **Phone screens** (`mobile/src/parent/`): Home (child chips with a red dot for a flagged child, a banner when the latest reading was flagged, days in a row, points,
+  words a minute, this week's goal, badges, who started the readings, recent readings), Children (a card for each child, the child's card with the Learner Code and QR
+  for a teacher to scan, add a child in five steps, link an existing child), Progress (the Phil-IRI level with its plain sentence, "Practise at home" when the readings
+  show a clear pattern, the week, a small bar chart of recent accuracy with the same thing in words, the history), Activities (best match first with "Right level for X"
+  and "Practises Y", Free / Paid / Unlocked, "Only what suits X", a free unlock in one tap, a paid one with the simulated confirm, 1 to 5 stars), Alerts (grouped by
+  day, an alert that needs a look in red, tap to mark read, Mark all as read, an unread count on the bottom bar). The profile opens from the picture at the top of Home
+  and Progress, with Log out at its end.
+- **Tested.** `ParentApiTest` (21). In the browser as the demo parent at 390x844 and 360x640: every tab, the whole add-a-child wizard (the record was checked in the
+  database: Developing from two yes answers, the reading stage, the character, the answers kept; the test child was deleted), the child's card, a wrong code and PIN
+  refusal in the website's words, a paid unlock with the confirm step and a rating (both removed afterwards), marking an alert read. **A real bug was found in the
+  browser, not by the tests:** `childRow() + [...]` kept the short `level` and silently dropped `level.plain`; fixed with `array_merge`, and the test now looks for the
+  sentence itself (the first test only checked "not an empty string", which `null` also passes). Remember: PHP's `+` keeps the LEFT value for a repeated key.
+- **Honest limits.** No avatar photo upload in the phone wizard (a photo needs storage that survives a restart, which the server does not have: the website's photos
+  vanish on a redeploy too); the Parent profile has no grades box (a Parent has none); no push notifications, so an alert shows when the app is opened; the QR is
+  checked by the server tests but a real phone's camera scanning it has not been tried; the hosted design preview and `demoServer.ts` still show only the Learner end, so
+  a link to the Teacher and Parent screens needs the demo data extended (not done); the whole Teacher and Parent phone app is untested on a real phone and by a real
+  teacher or parent. Nothing here is committed or pushed; the live server does not have these API routes until the branch is merged and deployed, so a build that
+  points at the live address cannot use the Teacher or Parent screens before that.
 
 ## Before pushing this round (checklist for the next session)
 

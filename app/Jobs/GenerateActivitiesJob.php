@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Activity;
 use App\Models\ActivityGeneration;
 use App\Services\ActivityAiClient;
+use App\Support\GenerationBasis;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -79,13 +80,16 @@ class GenerateActivitiesJob implements ShouldQueue
                 'activity_type' => $generation->activity_type,
                 'variants_per_level' => max($wanted),
                 'topic' => $generation->topic,
-                // What the teacher moved to another level before goes to the generator with the
-                // notes it already accepts, so it can calibrate. Only the teacher's own words are
-                // saved on the activities.
-                'teacher_notes' => $this->notesWithCalibration(
+                // The notes field is the one channel the generator reads: the teacher's own words, then
+                // what the class's real readings say (when the request was written for a class), then
+                // what the teacher moved to another level before, so it can calibrate. Only the
+                // teacher's own words are saved as the activities' notes; the class basis is saved
+                // beside them as `generation_basis`, so the reasons stay visible.
+                'teacher_notes' => GenerationBasis::composeNotes([
                     $generation->teacher_notes,
+                    $generation->basis['note'] ?? null,
                     Activity::calibrationNote($teacher->id, $generation->grade_level, $generation->activity_type),
-                ),
+                ]),
             ], self::AI_WAIT_SECONDS);
         } catch (\RuntimeException $e) {
             $this->finish($generation, ActivityGeneration::FAILED, $e->getMessage().' Nothing was charged.');
@@ -114,6 +118,9 @@ class GenerateActivitiesJob implements ShouldQueue
                 'activity_type' => $generation->activity_type,
                 'topic' => $generation->topic,
                 'teacher_notes' => $generation->teacher_notes,
+                'generation_basis' => ($generation->basis['enough'] ?? false)
+                    ? ['className' => $generation->basis['className'], 'lines' => $generation->basis['lines']]
+                    : null,
             ], $wanted);
 
             return $rows;
@@ -157,20 +164,5 @@ class GenerateActivitiesJob implements ShouldQueue
             'created_count' => $count,
             'finished_at' => now(),
         ]);
-    }
-
-    /** The teacher's own notes first, then the calibration note, kept inside the service's limit. */
-    private function notesWithCalibration(?string $notes, ?string $calibration): ?string
-    {
-        $notes = trim((string) $notes);
-
-        if ($calibration !== null) {
-            $room = 1000 - strlen($notes) - ($notes === '' ? 0 : 1);
-            $calibration = $room > 40 ? Str::limit($calibration, $room, '') : null;
-        }
-
-        $combined = trim($notes.($notes !== '' && $calibration ? "\n" : '').($calibration ?? ''));
-
-        return $combined === '' ? null : $combined;
     }
 }

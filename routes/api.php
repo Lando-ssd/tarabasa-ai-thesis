@@ -6,6 +6,12 @@ use App\Http\Controllers\Api\LearnerBookshelfApiController;
 use App\Http\Controllers\Api\LearnerDiagnosticApiController;
 use App\Http\Controllers\Api\LearnerGamesApiController;
 use App\Http\Controllers\Api\LearnerReadingApiController;
+use App\Http\Controllers\Api\ParentApiController;
+use App\Http\Controllers\Api\ProfileApiController;
+use App\Http\Controllers\Api\TeacherActivityApiController;
+use App\Http\Controllers\Api\TeacherMoreApiController;
+use App\Http\Controllers\Api\TeacherApiController;
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\LearnerReadingController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,7 +44,77 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
     Route::middleware(['auth:sanctum', 'token.actor:teacher,parent'])->group(function () {
         Route::get('/me', [AccountApiController::class, 'me'])->name('me');
         Route::post('/logout', [AccountApiController::class, 'logout'])->name('logout');
+
+        // Their own details: name and contact number, password, and (a Teacher) the grades they handle.
+        Route::put('/profile', [ProfileApiController::class, 'update'])->name('profile.update');
+        Route::put('/profile/password', [ProfileApiController::class, 'password'])->middleware('throttle:10,1')->name('profile.password');
+        Route::put('/profile/grades', [ProfileApiController::class, 'grades'])->name('profile.grades');
     });
+});
+
+// The Teacher's screens in the phone app. Looking is open to a Pending Teacher (like the website); anything that changes
+// something needs an Active one ('teacher.active' answers a Pending Teacher with a JSON 403 and the website's own words).
+Route::middleware(['auth:sanctum', 'token.actor:teacher'])->prefix('teacher')->name('api.teacher.')->group(function () {
+    Route::get('/home', [TeacherApiController::class, 'home'])->name('home');
+    Route::get('/classes', [TeacherApiController::class, 'classes'])->name('classes.index');
+    Route::get('/classes/{class}', [TeacherApiController::class, 'showClass'])->whereNumber('class')->name('classes.show');
+    Route::get('/classes/{class}/learners/{learner}', [TeacherApiController::class, 'showLearner'])->whereNumber(['class', 'learner'])->name('classes.learners.show');
+
+    // Alerts (who needs support, who is ready to move up), the Analytics overview, and Promotions: looking is open to a Pending Teacher.
+    Route::get('/alerts', [TeacherMoreApiController::class, 'alerts'])->name('alerts.index');
+    Route::post('/alerts/{learner}/handled', [TeacherMoreApiController::class, 'handled'])->whereNumber('learner')->name('alerts.handled');
+    Route::get('/analytics', [TeacherMoreApiController::class, 'analytics'])->name('analytics');
+    Route::get('/promotions', [TeacherMoreApiController::class, 'promotions'])->name('promotions.index');
+
+    // Activities: the review list, My activities and one activity. Asking for new ones is open to a Pending Teacher too (the 2 free
+    // credits, Teacher Actor Prompt Step 3); the request is written in the background and these routes follow it.
+    Route::get('/activities', [TeacherActivityApiController::class, 'index'])->name('activities.index');
+    Route::get('/activities/generate-options', [TeacherActivityApiController::class, 'generateOptions'])->name('activities.generate-options');
+    Route::get('/activities/basis', [ActivityController::class, 'basis'])->name('activities.basis');
+    Route::get('/activities/warm', [ActivityController::class, 'warm'])->name('activities.warm');
+    Route::post('/activities/generate', [TeacherActivityApiController::class, 'generate'])->middleware('throttle:20,1')->name('activities.generate');
+    Route::get('/activities/generations/{generation}', [ActivityController::class, 'generationStatus'])->whereNumber('generation')->name('activities.generation');
+    Route::post('/activities/generations/{generation}/dismiss', [ActivityController::class, 'dismissGeneration'])->whereNumber('generation')->name('activities.generation.dismiss');
+    Route::get('/activities/{activity}', [TeacherActivityApiController::class, 'show'])->whereNumber('activity')->name('activities.show');
+
+    Route::middleware('teacher.active')->group(function () {
+        Route::post('/activities/{activity}/place', [TeacherActivityApiController::class, 'place'])->whereNumber('activity')->name('activities.place');
+        Route::post('/activities/{activity}/restore', [TeacherActivityApiController::class, 'restore'])->whereNumber('activity')->name('activities.restore');
+        Route::put('/activities/{activity}', [TeacherActivityApiController::class, 'edit'])->whereNumber('activity')->name('activities.edit');
+        Route::post('/activities/{activity}/assign', [TeacherActivityApiController::class, 'assign'])->whereNumber('activity')->name('activities.assign');
+        Route::post('/activities/{activity}/share', [TeacherActivityApiController::class, 'share'])->whereNumber('activity')->name('activities.share');
+        Route::post('/classes/{class}/assign', [TeacherActivityApiController::class, 'assignToClass'])->whereNumber('class')->name('classes.assign');
+
+        Route::post('/alerts/{learner}/assign', [TeacherMoreApiController::class, 'assignSuggested'])->whereNumber('learner')->name('alerts.assign');
+        Route::post('/promotions/{learner}/release', [TeacherMoreApiController::class, 'release'])->whereNumber('learner')->name('promotions.release');
+        Route::post('/promotions/{record}/claim', [TeacherMoreApiController::class, 'claim'])->whereNumber('record')->name('promotions.claim');
+
+        Route::post('/classes', [TeacherApiController::class, 'storeClass'])->name('classes.store');
+        Route::put('/classes/{class}', [TeacherApiController::class, 'updateClass'])->whereNumber('class')->name('classes.update');
+        Route::post('/classes/{class}/learners', [TeacherApiController::class, 'joinLearner'])->whereNumber('class')->middleware('throttle:60,1')->name('classes.learners.join');
+    });
+});
+
+// The Parent's screens in the phone app. A Parent has no approval step, so everything here is open to a signed in Parent, and only
+// ever reaches the children linked to their own account.
+Route::middleware(['auth:sanctum', 'token.actor:parent'])->prefix('parent')->name('api.parent.')->group(function () {
+    Route::get('/home', [ParentApiController::class, 'home'])->name('home');
+
+    Route::get('/children', [ParentApiController::class, 'children'])->name('children.index');
+    Route::get('/children/options', [ParentApiController::class, 'childOptions'])->name('children.options');
+    Route::post('/children', [ParentApiController::class, 'storeChild'])->middleware('throttle:10,1')->name('children.store');
+    Route::post('/children/link', [ParentApiController::class, 'linkChild'])->middleware('throttle:20,1')->name('children.link');
+    Route::get('/children/{learner}/card', [ParentApiController::class, 'card'])->whereNumber('learner')->name('children.card');
+
+    Route::get('/progress', [ParentApiController::class, 'progress'])->name('progress');
+
+    Route::get('/repository', [ParentApiController::class, 'repository'])->name('repository.index');
+    Route::post('/repository/{listing}/unlock', [ParentApiController::class, 'unlock'])->whereNumber('listing')->name('repository.unlock');
+    Route::post('/repository/{listing}/rate', [ParentApiController::class, 'rate'])->whereNumber('listing')->name('repository.rate');
+
+    Route::get('/alerts', [ParentApiController::class, 'alerts'])->name('alerts.index');
+    Route::post('/alerts/read-all', [ParentApiController::class, 'markAllRead'])->name('alerts.read-all');
+    Route::post('/alerts/{notification}/read', [ParentApiController::class, 'markRead'])->whereNumber('notification')->name('alerts.read');
 });
 
 Route::middleware(['auth:sanctum', 'token.actor:learner'])->prefix('learner')->name('api.learner.')->group(function () {

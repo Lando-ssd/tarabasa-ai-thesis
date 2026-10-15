@@ -203,6 +203,8 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
     // Wakes the generator (it sleeps when idle) as the Generate window opens.
     Route::get('/activities/warm', [ActivityController::class, 'warm'])->name('activities.warm');
+    // The lines a class's readings say, shown in the Generate window before the teacher presses Generate.
+    Route::get('/activities/basis', [ActivityController::class, 'basis'])->name('activities.basis');
     // A "Generate activities" request is written in the background: the Activities page asks how
     // far it has got, and dismisses the notice once the teacher has seen how it ended. Read and
     // acknowledge only, so no 'teacher.active' guard (the request itself needs no approval).

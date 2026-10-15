@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BackHandler, View } from 'react-native';
 import type { ReadingOutcome } from './api';
 import { Badges } from './Badges';
 import { BalloonPop } from './BalloonPop';
@@ -15,9 +14,8 @@ import { WordTrain } from './WordTrain';
 import { useSession } from './session';
 import { Shelf } from './Shelf';
 import { Story } from './Story';
-import { Icon } from './ui';
-import { colors, fonts, size, space } from './theme';
-import { s } from './scale';
+import { TabBar, type TabItem } from './TabBar';
+import { colors } from './theme';
 import { demoStartTab } from './config';
 
 type Tab = 'home' | 'read' | 'games' | 'badges' | 'shelf';
@@ -29,7 +27,7 @@ type ReadRoute =
 type GamesRoute = { name: 'hub' } | { name: 'play'; game: GameKey };
 type ShelfRoute = { name: 'list' } | { name: 'reread'; id: number };
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
+const TABS: TabItem<Tab>[] = [
   { key: 'home', label: 'Home', icon: 'house' },
   { key: 'read', label: 'Read', icon: 'book-open' },
   { key: 'games', label: 'Games', icon: 'game-controller' },
@@ -130,42 +128,7 @@ export function Main() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.page }}>
       <View style={{ flex: 1 }}>{screen}</View>
-      {reading ? null : <TabBar active={tab} onChange={goTab} />}
+      {reading ? null : <TabBar tabs={TABS} active={tab} onChange={goTab} />}
     </View>
   );
 }
-
-function TabBar({ active, onChange }: { active: Tab; onChange: (tab: Tab) => void }) {
-  const insets = useSafeAreaInsets();
-  return (
-    <View style={[styles.bar, { paddingBottom: insets.bottom }]} accessibilityRole="tablist">
-      {TABS.map((t) => {
-        const on = t.key === active;
-        return (
-          <Pressable
-            key={t.key}
-            accessibilityRole="tab"
-            accessibilityLabel={t.label}
-            accessibilityState={{ selected: on }}
-            onPress={() => onChange(t.key)}
-            style={({ pressed }) => [styles.tab, pressed && { opacity: 0.6 }]}
-          >
-            <View style={[styles.mark, on && styles.markOn]} />
-            <Icon name={t.icon} size={s(28)} color={on ? colors.orange : colors.slate} />
-            <Text maxFontSizeMultiplier={1.1} style={[styles.label, on && { color: colors.orangeDark }]}>
-              {t.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', borderTopWidth: 2, borderTopColor: colors.line, backgroundColor: colors.white },
-  tab: { flex: 1, height: size.tabBar, alignItems: 'center', justifyContent: 'center', gap: space[2] },
-  mark: { position: 'absolute', top: 0, width: s(28), height: s(4), borderBottomLeftRadius: s(4), borderBottomRightRadius: s(4), backgroundColor: 'transparent' },
-  markOn: { backgroundColor: colors.orange },
-  label: { fontFamily: fonts.uiBold, fontSize: s(13), color: colors.slate },
-});

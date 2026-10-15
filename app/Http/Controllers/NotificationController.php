@@ -114,7 +114,7 @@ class NotificationController extends Controller
             ->get();
 
         $byLearner = $notifications->groupBy(fn ($n) => $n->learner->first_name ?? 'Unknown')
-            ->map(fn ($group) => $group->groupBy(fn ($n) => $this->dayLabel($n->timestamp)));
+            ->map(fn ($group) => $group->groupBy(fn ($n) => \App\Support\LearnerClock::dayLabel($n->timestamp)));
 
         return view('parent.notifications', [
             'user' => $request->user(),
@@ -147,24 +147,5 @@ class NotificationController extends Controller
         return in_array($request->query('filter'), ['attention', 'routine'], true)
             ? $request->query('filter')
             : 'all';
-    }
-
-    /** Today, Yesterday and so on are the family's own days (the Philippines), not the server's UTC days. */
-    private function dayLabel(\Illuminate\Support\Carbon $timestamp): string
-    {
-        $local = \App\Support\LearnerClock::local($timestamp);
-        $today = \App\Support\LearnerClock::now()->startOfDay();
-
-        if ($local->isSameDay($today)) {
-            return 'Today';
-        }
-        if ($local->isSameDay($today->copy()->subDay())) {
-            return 'Yesterday';
-        }
-        if ($local->greaterThanOrEqualTo($today->copy()->subDays(6))) {
-            return 'This week';
-        }
-
-        return 'Earlier';
     }
 }

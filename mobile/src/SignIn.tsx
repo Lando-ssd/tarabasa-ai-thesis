@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as api from './api';
 import { CardScanner } from './CardScanner';
+import { TextLink } from './fields';
 import { looksLikeCode, normalizeCode } from './learnerCode';
 import { Animation, Btn, Busy, H1, Notice, P, Screen, Small, useKeyboardOpen } from './ui';
 import { colors, fonts, size, space } from './theme';
@@ -11,13 +12,15 @@ type Props = {
   onSignedIn: (result: api.LoginResult) => void;
   /** A note shown above the form, such as "You were signed out". */
   notice?: string | null;
+  /** Opens the email sign in for Teachers and Parents. A quiet line under the button; children never need it. */
+  onEmail?: () => void;
 };
 
 /**
  * Sign in. "Scan my card" is the main way in: the printed card holds the learner code, and the child still types the
  * secret PIN. Typing the code is the backup. The main button sits at the bottom of the screen, where the thumb is.
  */
-export function SignIn({ onSignedIn, notice }: Props) {
+export function SignIn({ onSignedIn, notice, onEmail }: Props) {
   const [code, setCode] = useState('');
   const [pin, setPin] = useState('');
   const [scanning, setScanning] = useState(false);
@@ -67,7 +70,15 @@ export function SignIn({ onSignedIn, notice }: Props) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-      <Screen anchor="content" footer={<Btn label="Log in" tone="blue" onPress={signIn} disabled={!ready} loading={busy} />}>
+      <Screen
+        anchor="content"
+        footer={
+          <View style={{ alignSelf: 'stretch', gap: space[4] }}>
+            <Btn label="Log in" tone="blue" onPress={signIn} disabled={!ready} loading={busy} />
+            {onEmail ? <TextLink lead="Teacher or Parent?" label="Log in with email" onPress={onEmail} /> : null}
+          </View>
+        }
+      >
         <View style={styles.body}>
           {keyboardOpen ? null : <Animation name="intro" px={SHORT_HEIGHT ? s(84) : s(140)} />}
           <H1 style={{ textAlign: 'center' }}>Hi there!</H1>

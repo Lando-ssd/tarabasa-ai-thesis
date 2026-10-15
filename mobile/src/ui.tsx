@@ -249,13 +249,15 @@ type ScreenProps = {
   contentStyle?: StyleProp<ViewStyle>;
   /** Lets a screen scroll itself (Home brings the child's own step into view). */
   scrollRef?: Ref<ScrollView>;
+  /** A row that stays at the top while the rest scrolls, such as a back arrow. */
+  header?: ReactNode;
 };
 
 /**
  * One screen. Keeps content clear of the notch, the status bar and the gesture bar, scrolls on a short phone,
  * keeps a readable column on a wide one, and pins the main action to the bottom edge.
  */
-export function Screen({ children, footer, anchor = 'bottom', scroll = true, withTabBar, background = colors.page, contentStyle, scrollRef }: ScreenProps) {
+export function Screen({ children, footer, anchor = 'bottom', scroll = true, withTabBar, background = colors.page, contentStyle, scrollRef, header }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const bottom = withTabBar ? 0 : Math.max(insets.bottom, 12);
   // When the story is taller than the space above the pinned button, a thin line on the button's edge shows that more sits above it.
@@ -271,6 +273,7 @@ export function Screen({ children, footer, anchor = 'bottom', scroll = true, wit
 
   return (
     <View style={{ flex: 1, backgroundColor: background, paddingTop: insets.top + 8 }}>
+      {header ? <View style={[st.header, { paddingHorizontal: size.gutter }]}>{header}</View> : null}
       {scroll ? (
         <ScrollView
           ref={scrollRef}
@@ -361,6 +364,7 @@ const st = StyleSheet.create({
   column: { width: '100%', maxWidth: size.maxWidth, alignSelf: 'center', flexGrow: 1 },
   // The group (content and its button) sits in the middle of the screen; the button follows the content closely.
   together: { justifyContent: 'center' },
+  header: { width: '100%', maxWidth: size.maxWidth + size.gutter * 2, alignSelf: 'center', flexDirection: 'row', alignItems: 'center' },
   togetherFooter: { marginTop: space[16] },
   footer: { paddingHorizontal: size.gutter, paddingTop: space[10], backgroundColor: colors.page },
   footerEdge: { borderTopWidth: 2, borderTopColor: colors.line },

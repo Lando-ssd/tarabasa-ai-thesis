@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Learner;
 use App\Models\PromotionRecord;
 use App\Models\SchoolClass;
+use App\Services\TeacherPromotionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PromotionController extends Controller
 {
+    public function __construct(private readonly TeacherPromotionService $promotions) {}
+
     /**
      * Grade Promotions — Teacher Actor Prompt Step 9. Release/Claim tabs,
      * viewable while Pending (same rule as Class Management/Analytics —
@@ -75,84 +78,29 @@ class PromotionController extends Controller
      */
     public function release(Request $request, Learner $learner): RedirectResponse
     {
-        $teacher = $request->user()->teacher;
-        $class = $learner->schoolClass;
-
-        abort_unless($class && $class->teacher_id === $teacher->id, 403, 'That learner is not in one of your classes.');
-        abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
-
-        $gradeNumber = (int) substr($learner->grade_level, 6);
-        abort_if($gradeNumber >= 3, 403, 'Grade 3 has no next grade — this Learner cannot be released for promotion.');
-
-        $nextGrade = 'Grade '.($gradeNumber + 1);
-
-        PromotionRecord::create([
-            'learner_id' => $learner->id,
-            'released_by_teacher_id' => $teacher->id,
-            'next_grade' => $nextGrade,
-            'status' => 'Pending',
-            'released_from_class_id' => $class->id,
-        ]);
-
-        $learner->update(['class_id' => null]);
+        $record = $this->promotions->release($request->user()->teacher, $learner);
 
         return redirect()
             ->route('teacher.promotions.index')
-            ->with('status', "{$learner->first_name} released for promotion to {$nextGrade}.");
+            ->with('status', "{$learner->first_name} released for promotion to {$record->next_grade}.");
     }
 
     /**
-     * Claim: classId AND gradeLevel both set from the claimed class —
-     * gradeLevel is never manually typed anywhere in this flow. The
-     * claimed class is re-verified server-side (ownership, grade match,
-     * current school year) — never trusted just because the form only
-     * listed valid options.
+     * Claim: the class and the learner's grade are both set from the claimed class (see TeacherPromotionService, which the phone app
+     * calls too).
      */
     public function claim(Request $request, PromotionRecord $record): RedirectResponse
     {
-        $teacher = $request->user()->teacher;
-
         abort_if($record->status !== 'Pending', 403, 'This promotion has already been claimed.');
 
         $validated = $request->validate([
             'class_id' => ['required', 'integer'],
         ]);
 
-        $class = SchoolClass::where('teacher_id', $teacher->id)
-            ->where('id', $validated['class_id'])
-            ->where('school_year', SchoolClass::currentSchoolYear())
-            ->first();
-
-        abort_unless($class && $class->grade_level === $record->next_grade, 403, 'That class is not a valid claim target.');
-
-        // Two teachers pressing Claim for the same learner at the same moment: only one can win.
-        // The record is locked and its status read again inside the lock; the other is told it is gone.
-        $claimed = \Illuminate\Support\Facades\DB::transaction(function () use ($record, $teacher, $class) {
-            $locked = PromotionRecord::whereKey($record->id)->lockForUpdate()->first();
-            if ($locked === null || $locked->status !== 'Pending') {
-                return false;
-            }
-
-            $locked->update([
-                'claimed_by_teacher_id' => $teacher->id,
-                'status' => 'Claimed',
-                'claimed_at' => now(),
-                'claimed_into_class_id' => $class->id,
-            ]);
-
-            $locked->learner->update([
-                'class_id' => $class->id,
-                'grade_level' => $class->grade_level,
-            ]);
-
-            return true;
-        });
-
-        abort_unless($claimed, 403, 'This promotion has already been claimed.');
-        $record->refresh();
+        $done = $this->promotions->claim($request->user()->teacher, $record, (int) $validated['class_id']);
 
         return redirect()
             ->route('teacher.promotions.index', ['tab' => 'claim'])
-            ->with('status', "{$record->learner->first_name} claimed into \"{$class->name}\".");
+            ->with('status', "{$done['record']->learner->first_name} claimed into \"{$done['class']->name}\".");
     }
 }

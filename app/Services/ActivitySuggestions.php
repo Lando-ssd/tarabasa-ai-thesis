@@ -271,7 +271,7 @@ class ActivitySuggestions
             return null;
         }
 
-        $why = 'A '.strtolower($tier).' activity of yours that this learner has not been given.';
+        $why = ($tier === 'Easy' ? 'An ' : 'A ').strtolower($tier).' activity of yours that this learner has not been given.';
         if ($pattern !== null && ErrorPatterns::fit($pick, $pattern, $missed) > 0.15) {
             $why = 'Practises '.strtolower(ErrorPatterns::CATEGORIES[$pattern]['label']).', which this learner keeps missing.';
         }
