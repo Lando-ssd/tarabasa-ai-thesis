@@ -7037,6 +7037,35 @@ and a thin `Api\*Controller` both call them, and the phone shows what the server
   teacher or parent. It was pushed to `mobile-app` (commit `1470694`, with slice 0 `f410de0`) and then merged into the live branch, so the live server has these API routes once Render has deployed (check `GET /api/teacher/home` answers 401, not 404), so a build that
   points at the live address cannot use the Teacher or Parent screens before that.
 
+## Phone app: moving a learner and past school years (2026-10-15 evening, BUILT LOCALLY, NOT PUSHED; the 0.5.0 APK does NOT have it)
+
+Two Teacher gaps from the list of what the phone lacked, closed after the 0.5.0 build (so a new APK, 0.5.1, is needed to carry them).
+- **Move a learner to another class.** The rule moved out of `ClassController::moveLearner` into `TeacherClassService::move()` (ownership, past year read only,
+  the learner must be in that class, the target is one of the teacher's OTHER classes of the same year, then the same `ClassLevel::joinRefusal` grade and reading
+  level guard as joining) and `moveTargets()` (the teacher's other classes of the same year that take the child's grade). The website's Move button and the new
+  `POST /api/teacher/classes/{class}/learners/{learner}/move` (behind `teacher.active`) both call it; a refusal is a 422 under `to_class_id` in the website's words.
+  `GET .../learners/{id}` now returns `canMove` and `moveTargets`. Phone: a white "Move to another Grade 1 class" card at the end of a learner's page (class chips and
+  one button that names the target); after a move the app goes back to the class page, which says what happened.
+- **School years.** `GET /api/teacher/classes` now returns `years` (every year the teacher has classes in, newest first, this year always included). Phone: a row of
+  year chips on Classes when there is more than one; a past year says it can only be read and has no New class button.
+- **Tested.** `TeacherClassMoveApiTest` (5); the website's own move tests (`ClassGradeAndMovesTest`, `ClassLevelTest`) still pass after the refactor. In the browser against
+  the local server: the year chips and a read-only past year, a refused move (Miguel reads above Sampaguita's general level: the guard's own sentence is shown in red) and
+  a successful one (Maria, a Non-reader, moved and moved back).
+
+## Demo accounts without email, and the phone app tolerating an older server (2026-10-15 night, COMMITTED on mobile-app, NOT pushed)
+
+- **`database/seeders/DemoAccountsSeeder.php`** (`php artisan db:seed --class=DemoAccountsSeeder`). The owner could not sign in with real Gmail addresses on localhost because
+  `MAIL_MAILER=log` never sends the confirmation email (and a new Teacher or Parent must confirm first). The seeder makes `demo.teacher@example.com` (already confirmed and
+  Active, handles Grade 1 and 2, has a class) and `demo.parent@example.com` (one child, Maria Demo, PIN 1234, in the teacher's class). The password is written ONLY in the
+  seeder's header (not in chat). It is idempotent (resets the two accounts, adds a class or a child only when there is none), is NOT part of `DatabaseSeeder`, and refuses to
+  run on a production server unless `DEMO_ACCOUNTS_PASSWORD` (12+ characters) is set, because the default password is in a public repository. `DemoAccountsSeederTest` (4).
+  For the LIVE site the owner has the Admin's "Confirm email myself" button instead (it is on the live branch); there is no shell on Render's free tier to run the seeder there.
+- **Local only:** the owner's own test accounts (`sample1`, `sample2`, `sample4`, `morbsben7`, `sample5`) were marked confirmed (and `sample5`, a Teacher, approved) in the local
+  SQLite database by hand. Nothing on the live site was touched.
+- **Phone 0.5.1** (`mobile/app.json` 0.5.1 / versionCode 11) carries the move-learner card and the school year chips. `ClassList.years`, `LearnerPage.canMove` and
+  `.moveTargets` are OPTIONAL in `api.ts` and read with `?? []`, because the live server does not have them until this branch is merged (a check on 2026-10-15 night: the
+  Teacher and Parent routes answered 401, the move route answered 404). Without that, an older server would have crashed the Classes tab.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.
