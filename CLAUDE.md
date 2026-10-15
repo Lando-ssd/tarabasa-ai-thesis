@@ -6979,7 +6979,7 @@ instead is a rule based basis that feeds that one field, with every fact visible
   tune these numbers (for example: do children read the activities written for their class better than general ones?). That comparison is the honest "training"
   story for the thesis, and it needs the real phone test first.
 
-## Phone app: the rest of the Teacher screens and the whole Parent side (2026-10-15, BUILT LOCALLY, NOT PUSHED)
+## Phone app: the rest of the Teacher screens and the whole Parent side (2026-10-15, PUSHED to mobile-app as 1470694 and MERGED INTO THE LIVE BRANCH on the owner's word the same day)
 
 The owner said "continue whats next till it finish" after the Teacher Home and Classes slice, so the Teacher Activities, Alerts and More screens and every Parent
 screen were built in one run, each with the same method as the Learner side: the rules move out of the big website controllers into shared services, the website
@@ -7034,7 +7034,7 @@ and a thin `Api\*Controller` both call them, and the phone shows what the server
   vanish on a redeploy too); the Parent profile has no grades box (a Parent has none); no push notifications, so an alert shows when the app is opened; the QR is
   checked by the server tests but a real phone's camera scanning it has not been tried; the hosted design preview and `demoServer.ts` still show only the Learner end, so
   a link to the Teacher and Parent screens needs the demo data extended (not done); the whole Teacher and Parent phone app is untested on a real phone and by a real
-  teacher or parent. Nothing here is committed or pushed; the live server does not have these API routes until the branch is merged and deployed, so a build that
+  teacher or parent. It was pushed to `mobile-app` (commit `1470694`, with slice 0 `f410de0`) and then merged into the live branch, so the live server has these API routes once Render has deployed (check `GET /api/teacher/home` answers 401, not 404), so a build that
   points at the live address cannot use the Teacher or Parent screens before that.
 
 ## Before pushing this round (checklist for the next session)
