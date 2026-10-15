@@ -61,7 +61,26 @@
               <label for="genType">Activity type</label>
               <select id="genType" name="activity_type" data-keep="{{ old('activity_type') }}" required></select>
             </div>
-            <div class="field"><label for="gTopic">Topic <span class="opt">optional</span></label><input type="text" id="gTopic" name="topic" placeholder="e.g. Animals" maxlength="200" value="{{ old('topic') }}"></div>
+            {{-- The class and the topic share a row, so choosing a class does not make the window taller. --}}
+            @if (($genClasses ?? collect())->isNotEmpty())
+              <div class="grid2">
+                <div class="field">
+                  <label for="gClass">For a class <span class="opt">optional</span></label>
+                  <select id="gClass" name="class_id" data-basis-url="{{ route('teacher.activities.basis') }}">
+                    <option value="">No class</option>
+                    @foreach ($genClasses as $c)<option value="{{ $c['id'] }}" data-grade="{{ $c['grade'] }}" @selected((string) old('class_id') === (string) $c['id'])>{{ $c['name'] }} ({{ $c['grade'] }})</option>@endforeach
+                  </select>
+                </div>
+                <div class="field"><label for="gTopic">Topic <span class="opt">optional</span></label><input type="text" id="gTopic" name="topic" placeholder="e.g. Animals" maxlength="200" value="{{ old('topic') }}"></div>
+              </div>
+              <div class="basis-box" id="genBasis" hidden aria-live="polite">
+                <span class="eyebrow">Based on this class's readings</span>
+                <ul class="basis-list" id="genBasisList"></ul>
+                <p class="note" id="genBasisNote"></p>
+              </div>
+            @else
+              <div class="field"><label for="gTopic">Topic <span class="opt">optional</span></label><input type="text" id="gTopic" name="topic" placeholder="e.g. Animals" maxlength="200" value="{{ old('topic') }}"></div>
+            @endif
             <div class="field" style="margin-bottom:0"><label for="gNotes">Notes for the AI <span class="opt">optional</span></label><textarea id="gNotes" name="teacher_notes" maxlength="1000" placeholder="e.g. Use words with the sh sound">{{ old('teacher_notes') }}</textarea></div>
           </div>
 

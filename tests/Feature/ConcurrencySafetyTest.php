@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\LearnerController;
 use App\Jobs\GenerateActivitiesJob;
 use App\Models\Activity;
 use App\Models\ActivityGeneration;
@@ -172,7 +171,8 @@ class ConcurrencySafetyTest extends TestCase
     public function test_a_learner_code_that_clashes_is_drawn_again(): void
     {
         $tries = 0;
-        $controller = new LearnerController();
+        // The retry lives in the service both the website and the phone app call when a parent adds a child.
+        $controller = app(\App\Services\ParentChildService::class);
         $method = new \ReflectionMethod($controller, 'withFreshCode');
 
         $kid = $method->invoke($controller, function () use (&$tries) {

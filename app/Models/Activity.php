@@ -24,6 +24,7 @@ class Activity extends Model
         'variant_label',
         'topic',
         'teacher_notes',
+        'generation_basis',
         'title',
         'instructions',
         'passage_text',
@@ -42,6 +43,7 @@ class Activity extends Model
             'target_skills' => 'array',
             'reading_features' => 'array',
             'follow_up_questions' => 'array',
+            'generation_basis' => 'array',
             'shared_to_repository' => 'boolean',
         ];
     }

@@ -7,6 +7,7 @@ use App\Models\ActivityAssignment;
 use App\Models\Learner;
 use App\Models\SchoolClass;
 use App\Services\ActivitySuggestions;
+use App\Services\TeacherClassService;
 use App\Support\ActivityFit;
 use App\Support\ReadingLevel;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,8 @@ use Illuminate\View\View;
 
 class ClassController extends Controller
 {
+    public function __construct(private readonly TeacherClassService $classes) {}
+
     /**
      * Class Management — Teacher Actor Prompt, Step 6.
      * Viewable by a Pending Teacher (locked/explained) or an Active one
@@ -74,7 +77,7 @@ class ClassController extends Controller
             ->orderBy('title')
             ->get();
 
-        $classActivities = $this->activitiesByClass($teacher->id, $classes);
+        $classActivities = $this->classes->activitiesByClass($teacher->id, $classes);
 
         // What the class cards and windows show about reading levels: the level mix, the reading
         // groups made automatically from each learner's latest level, the level-check flags and
@@ -156,22 +159,9 @@ class ClassController extends Controller
     {
         $teacher = $request->user()->teacher;
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            // Only the grades the Teacher said they handle (Profile). Enforced here, so a forged
-            // request cannot open a class for another grade.
-            'grade_level' => ['required', Rule::in($teacher->gradesAllowed())],
-            'section' => ['required', 'string', 'max:255'],
-            'group_tag' => ['nullable', 'string', 'max:255'],
-            'school_year' => ['required', 'string', 'max:20'],
-        ], [
-            'grade_level.in' => 'You handle '.implode(' and ', $teacher->gradesAllowed()).'. Change the grades you handle in Profile to open a class for another grade.',
-        ]);
+        $validated = $request->validate($this->classes->createRules($teacher), $this->classes->createMessages($teacher));
 
-        $class = SchoolClass::create([
-            'teacher_id' => $teacher->id,
-            ...$validated,
-        ]);
+        $class = $this->classes->create($teacher, $validated);
 
         return redirect()
             ->route('teacher.classes.index', ['school_year' => $class->school_year])
@@ -195,31 +185,9 @@ class ClassController extends Controller
         abort_if($class->teacher_id !== $teacher->id, 403);
         abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            // The class's own grade stays allowed even if the Teacher later narrowed the grades
-            // they handle, so an old class can still be renamed.
-            'grade_level' => ['required', Rule::in(array_unique([...$teacher->gradesAllowed(), $class->grade_level]))],
-            'section' => ['required', 'string', 'max:255'],
-            'group_tag' => ['nullable', 'string', 'max:255'],
-        ], [
-            'grade_level.in' => 'You handle '.implode(' and ', $teacher->gradesAllowed()).'. Change the grades you handle in Profile to use another grade.',
-        ]);
+        $validated = $request->validate($this->classes->updateRules($teacher, $class), $this->classes->updateMessages($teacher));
 
-        // A class holds ONE grade, so its grade cannot be changed under learners who would no longer fit it (that would
-        // quietly merge grades). Nobody is moved or removed: the teacher is told who is in the way.
-        $outOfPlace = $class->learners()->get()->reject(fn (Learner $l) => (new SchoolClass(['grade_level' => $validated['grade_level']]))->acceptsGrade($l->grade_level));
-
-        if ($outOfPlace->isNotEmpty()) {
-            $names = $outOfPlace->take(3)->map(fn (Learner $l) => "{$l->first_name} ({$l->grade_level})")->implode(', ');
-            $more = $outOfPlace->count() > 3 ? ' and '.($outOfPlace->count() - 3).' more' : '';
-
-            throw ValidationException::withMessages([
-                'grade_level' => "{$names}{$more} would no longer fit: a {$validated['grade_level']} class is only for {$validated['grade_level']} learners. Move them to a class of their own grade first, then change this.",
-            ]);
-        }
-
-        $class->update($validated);
+        $this->classes->update($class, $validated);
 
         return $this->backToClass($class, 'learners')->with('status', "Class \"{$class->name}\" updated.");
     }
@@ -246,59 +214,15 @@ class ClassController extends Controller
             'learner_code.required' => 'Type the last 5 characters of the Learner Code.',
         ]);
 
-        // The last 5 characters (the 4 digits and check digit of TB26-48293, or the 5 digits of an
-        // older TB-12345), or the whole code. See App\Support\LearnerCode.
-        // A wrong code is limited per teacher: the last 5 characters are only about ten thousand
-        // possibilities, and a teacher who tried them all would see every unenrolled child's name.
-        $joinKey = 'join-learner|teacher:'.$teacher->id;
-        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($joinKey, 10)) {
-            $minutes = (int) ceil(\Illuminate\Support\Facades\RateLimiter::availableIn($joinKey) / 60);
+        // The rules (the last 5 characters or a whole code, the limit on wrong codes, one grade per class, the reading level
+        // guard, telling the guardians) live in TeacherClassService, which the phone app calls too.
+        $result = $this->classes->join($request->user(), $teacher, $class, $validated['learner_code']);
 
-            return $this->joinFailure($request, "Too many codes that did not match. Please wait {$minutes} ".($minutes === 1 ? 'minute' : 'minutes').' and try again.');
+        if (! $result['ok']) {
+            return $this->joinFailure($request, $result['message']);
         }
 
-        $typed = trim($validated['learner_code']);
-        $tail = strtoupper(preg_replace('/^TB[0-9]{0,2}-?/i', '', preg_replace('/\s+/', '', $typed)));
-
-        if (! \App\Support\LearnerCode::looksLikeCode($typed) && ! preg_match('/^[A-Z0-9]{5}$/', $tail)) {
-            return $this->joinFailure($request, 'Type the last 5 characters of the Learner Code, like 48293.');
-        }
-
-        $matches = \App\Support\LearnerCode::matching(\App\Support\LearnerCode::looksLikeCode($typed) ? $typed : $tail);
-
-        if ($matches->count() > 1) {
-            return $this->joinFailure($request, 'More than one learner ends in those characters. Type the whole code, like TB26-48293.');
-        }
-
-        $learner = $matches->first();
-
-        if (! $learner) {
-            \Illuminate\Support\Facades\RateLimiter::hit($joinKey, 900);
-
-            return $this->joinFailure($request, 'No learner found with that code. Check it and try again.');
-        }
-
-        if ($learner->class_id !== null) {
-            \Illuminate\Support\Facades\RateLimiter::hit($joinKey, 900);
-
-            return $this->joinFailure($request, 'This learner is already enrolled in a class.');
-        }
-
-        // A class holds one grade, and is taught at one general level: a learner of another grade, or one who already
-        // reads well above the class, cannot be added (typed or scanned, the same answer).
-        if ($refusal = \App\Support\ClassLevel::joinRefusal($teacher, $class->loadMissing('learners'), $learner)) {
-            return $this->joinFailure($request, $refusal);
-        }
-
-        $learner->update(['class_id' => $class->id]);
-
-        // The child's guardians are told, so a child is never added to a class without them knowing.
-        \App\Models\Notification::notifyForLearner(
-            $learner,
-            \App\Models\Notification::TYPE_CLASS_JOINED,
-            "{$learner->first_name} was added to the class \"{$class->name}\" by {$request->user()->first_name} {$request->user()->last_name}".($teacher->school_name ? " ({$teacher->school_name})" : '').'.',
-            includeTeacher: false
-        );
+        $learner = $result['learner'];
 
         // The QR scanner adds a whole class in one go and reads this answer instead of following a redirect.
         if ($request->expectsJson()) {
@@ -345,51 +269,19 @@ class ClassController extends Controller
         ]);
         $band = $validated['reading_band'] ?? null;
 
-        $activity = Activity::where('created_by_teacher_id', $teacher->id)
-            ->where('status', 'Approved')
-            ->find($validated['activity_id']);
+        // The rules (not given twice, can the learners read it, the reading group) live in TeacherActivityService, which the phone
+        // app calls too.
+        $done = app(\App\Services\TeacherActivityService::class)->assignToClass($teacher, $class, (int) $validated['activity_id'], $band);
 
-        if (! $activity) {
-            throw ValidationException::withMessages(['activity_id' => 'Choose one of your approved activities.']);
-        }
-
-        // Already given to the whole class covers every group too.
-        $already = ActivityAssignment::where('activity_id', $activity->id)->where('class_id', $class->id)
-            ->where(fn ($q) => $q->whereNull('reading_band')->when($band, fn ($x) => $x->orWhere('reading_band', $band)))
-            ->exists();
-
-        if ($already) {
-            throw ValidationException::withMessages(['activity_id' => $band
-                ? 'That activity is already given to this reading group.'
-                : 'That activity is already assigned to this class.']);
-        }
-
-        // Can the learners who would receive it read it? Decided here, on the server, so the note on the screen
-        // cannot be skipped: an activity far too long for them cannot be forced through (see ActivityFit).
-        $learners = $class->learners()->get();
-        if ($band) {
-            $learners = ReadingLevel::groups($learners)[$band];
-        }
-        $audience = $band ? 'the '.strtolower(ReadingLevel::GROUPS[$band]['title']).' group' : 'this class';
-        $fit = ActivityFit::forAudience($activity, $learners, $audience);
-
-        if ($fit['verdict'] === ActivityFit::BLOCKED) {
+        if ($done['blocked'] !== null) {
             if (($validated['return'] ?? null) === 'activities') {
-                return redirect()->route('teacher.activities.index', ['tab' => 'mine'])->with('classError', $fit['note']);
+                return redirect()->route('teacher.activities.index', ['tab' => 'mine'])->with('classError', $done['blocked']);
             }
 
-            throw ValidationException::withMessages(['activity_id' => $fit['note']]);
+            throw ValidationException::withMessages(['activity_id' => $done['blocked']]);
         }
 
-        ActivityAssignment::create([
-            'activity_id' => $activity->id,
-            'class_id' => $class->id,
-            'reading_band' => $band,
-            'assigned_by_teacher_id' => $teacher->id,
-        ]);
-
-        $who = $band ? 'the '.strtolower(ReadingLevel::GROUPS[$band]['title']).' group in '.$class->name : $class->name;
-        $message = "\"{$activity->title}\" assigned to {$who}.".($fit['verdict'] === ActivityFit::CAUTION ? ' Note: '.$fit['note'] : '');
+        $message = $done['message'];
 
         if (($validated['return'] ?? null) === 'activities') {
             return redirect()->route('teacher.activities.index', ['tab' => 'mine'])->with('status', $message);
@@ -441,45 +333,5 @@ class ClassController extends Controller
             'open' => $class->id,
             'tab' => $tab,
         ]);
-    }
-
-    /**
-     * What each class has been given: activities assigned to the class itself, and ones assigned
-     * to a group tag the class carries. Only Approved activities count. A class assignment wins
-     * over a group one for the same activity.
-     *
-     * @return array<int, Collection<int, array{activity: Activity, via: string, tag: ?string, on: mixed}>>
-     */
-    private function activitiesByClass(int $teacherId, Collection $classes): array
-    {
-        $assignments = ActivityAssignment::where('assigned_by_teacher_id', $teacherId)
-            ->where(fn ($q) => $q->whereNotNull('class_id')->orWhereNotNull('group_tag'))
-            ->with('activity')
-            ->orderBy('assigned_at')
-            ->get()
-            ->filter(fn (ActivityAssignment $a) => $a->activity && $a->activity->status === 'Approved');
-
-        $byClass = [];
-
-        foreach ($classes as $class) {
-            $rows = collect();
-
-            foreach ($assignments as $a) {
-                if ($a->class_id === $class->id && $a->reading_band === null) {
-                    $rows->put($a->activity_id.'|', ['activity' => $a->activity, 'via' => 'class', 'tag' => null, 'band' => null, 'on' => $a->assigned_at]);
-                } elseif ($a->class_id === $class->id) {
-                    $rows->put($a->activity_id.'|'.$a->reading_band, ['activity' => $a->activity, 'via' => 'band', 'tag' => null, 'band' => $a->reading_band, 'on' => $a->assigned_at]);
-                } elseif ($class->group_tag && $a->group_tag === $class->group_tag && ! $rows->has($a->activity_id.'|')) {
-                    $rows->put($a->activity_id.'|', ['activity' => $a->activity, 'via' => 'group', 'tag' => $a->group_tag, 'band' => null, 'on' => $a->assigned_at]);
-                }
-            }
-
-            // Given to the whole class (or through a focus group) already covers a reading group.
-            $rows = $rows->reject(fn ($row, $key) => $row['via'] === 'band' && $rows->has($row['activity']->id.'|'));
-
-            $byClass[$class->id] = $rows->values();
-        }
-
-        return $byClass;
     }
 }

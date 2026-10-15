@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\GenerateActivitiesJob;
 use App\Support\ActivityFit;
+use App\Support\GenerationBasis;
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
 use App\Models\ActivityGeneration;
@@ -12,6 +13,7 @@ use App\Models\OpenRepositoryListing;
 use App\Models\SchoolClass;
 use App\Services\ActivityAiClient;
 use App\Services\ActivitySuggestions;
+use App\Services\TeacherActivityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +26,8 @@ use Illuminate\View\View;
 
 class ActivityController extends Controller
 {
+    public function __construct(private readonly TeacherActivityService $activities) {}
+
     /** Drafts shown on the To review tab at a time, and activities per page on My activities. */
     private const TRAY = 4;
 
@@ -52,87 +56,9 @@ class ActivityController extends Controller
      */
     public function generate(Request $request): RedirectResponse
     {
-        $teacher = $request->user()->teacher;
-
-        if ($teacher->free_generation_credits_remaining <= 0) {
-            $reason = $teacher->status === 'Active'
-                ? 'Share an approved activity to the Repository to earn 2 more.'
-                : 'More free credits unlock once your school verification is approved.';
-
-            throw ValidationException::withMessages([
-                'credits' => "You're out of free generation credits. {$reason}",
-            ]);
-        }
-
-        $competencies = config('activity_competencies.competencies');
-        $max = (int) config('activity_levels.max_per_level');
-
-        $validated = $request->validate([
-            'grade_level' => ['required', Rule::in(['Grade 1', 'Grade 2', 'Grade 3'])],
-            'competency' => ['required', Rule::in(array_keys($competencies))],
-            'activity_type' => ['required', 'string'],
-            'levels' => ['required', 'array'],
-            'levels.Easy' => ['nullable', 'integer', 'min:0', "max:{$max}"],
-            'levels.Medium' => ['nullable', 'integer', 'min:0', "max:{$max}"],
-            'levels.Hard' => ['nullable', 'integer', 'min:0', "max:{$max}"],
-            'topic' => ['nullable', 'string', 'max:200'],
-            'teacher_notes' => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        $wanted = collect(config('activity_levels.tiers'))
-            ->mapWithKeys(fn (string $tier) => [$tier => (int) ($validated['levels'][$tier] ?? 0)])
-            ->all();
-
-        if (array_sum($wanted) === 0) {
-            throw ValidationException::withMessages(['levels' => 'Choose at least one level to generate.']);
-        }
-
-        // The API rejects an activity_type that isn't mapped to the chosen competency (422) —
-        // check it here too, so the Teacher gets an immediate, specific message.
-        $allowedTypes = $competencies[$validated['competency']]['activity_types'];
-        if (! in_array($validated['activity_type'], $allowedTypes, true)) {
-            throw ValidationException::withMessages([
-                'activity_type' => 'That activity type isn\'t available for the selected skill.',
-            ]);
-        }
-
-        // One at a time: a second request now could spend a credit the first one still needs. The
-        // check and the new request are made together under a lock on the teacher's row, so two
-        // clicks at the same moment cannot both get through.
-        $generation = \Illuminate\Support\Facades\DB::transaction(function () use ($teacher, $validated, $wanted) {
-            \App\Models\Teacher::whereKey($teacher->id)->lockForUpdate()->first();
-
-            if (ActivityGeneration::activeFor($teacher->id)) {
-                return null;
-            }
-
-            return ActivityGeneration::create([
-                'teacher_id' => $teacher->id,
-                'status' => ActivityGeneration::QUEUED,
-                'grade_level' => $validated['grade_level'],
-                'competency' => $validated['competency'],
-                'activity_type' => $validated['activity_type'],
-                'topic' => $validated['topic'] ?? null,
-                'teacher_notes' => $validated['teacher_notes'] ?? null,
-                'levels' => $wanted,
-            ]);
-        });
-
-        if ($generation === null) {
-            throw ValidationException::withMessages([
-                'generate' => 'Your last request is still being written. It shows at the top of Activities. Wait for it to finish, then ask for more.',
-            ]);
-        }
-
-        // Normally this only queues the work and returns at once. If the queue is set to run
-        // inline (QUEUE_CONNECTION=sync), it runs here and the result is known right away.
-        try {
-            GenerateActivitiesJob::dispatch($generation->id);
-        } catch (\Throwable $e) {
-            Log::error('Could not run the activity generation', ['generation' => $generation->id, 'error' => $e->getMessage()]);
-        }
-
-        $generation->refresh();
+        // The rules (credits, levels, the type for the skill, "write it for my class", one request at a time) live in
+        // TeacherActivityService, which the phone app calls too.
+        $generation = $this->activities->startGeneration($request->user()->teacher, $request->all());
 
         if ($generation->status === ActivityGeneration::FAILED) {
             $generation->update(['acknowledged_at' => now()]);
@@ -151,6 +77,29 @@ class ActivityController extends Controller
         return redirect()
             ->route('teacher.activities.index', ['view' => 'board'])
             ->with('status', 'The AI is writing your '.$total.' '.Str::plural('activity', $total).'. You can keep working. They appear in To review when they are ready.');
+    }
+
+    /**
+     * What the Generate window shows under "Write it for": the lines a class's readings say, so the teacher sees
+     * the basis before pressing Generate. Read only (no 'teacher.active' guard), and only for the teacher's own class.
+     */
+    public function basis(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'class_id' => ['required', 'integer'],
+            'grade_level' => ['required', Rule::in(['Grade 1', 'Grade 2', 'Grade 3'])],
+            'activity_type' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        try {
+            $class = $this->activities->classForGeneration($request->user()->teacher->id, (int) $data['class_id'], $data['grade_level']);
+        } catch (ValidationException $e) {
+            return response()->json(['ok' => false, 'message' => $e->errors()['class_id'][0]], 422);
+        }
+
+        $basis = GenerationBasis::forClass($class, $data['activity_type'] ?? null);
+
+        return response()->json(['ok' => true, 'enough' => $basis['enough'], 'lines' => $basis['lines']]);
     }
 
     /**
@@ -241,6 +190,11 @@ class ActivityController extends Controller
             // Approved activities not yet shared: what earns a teacher with no credits more.
             'shareable' => $activities->where('status', 'Approved')->where('shared_to_repository', false)->count(),
             'openGenerate' => $request->boolean('generate') || old('form') === 'generate',
+            // The classes a request can be written for: this school year's, with the grade each one holds.
+            'genClasses' => SchoolClass::where('teacher_id', $teacher->id)->orderBy('name')->get()
+                ->reject(fn ($c) => SchoolClass::isYearPast($c->school_year))
+                ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'grade' => $c->grade_level])
+                ->values(),
         ]);
     }
 
@@ -290,12 +244,7 @@ class ActivityController extends Controller
 
         $validated = $request->validate(['level' => ['nullable', Rule::in(config('activity_levels.tiers'))]]);
 
-        $activity->update([
-            'status' => 'Approved',
-            'difficulty_tier' => $validated['level'] ?? $activity->difficulty_tier,
-        ]);
-
-        return $this->respond($request, $this->approvedMessage($activity));
+        return $this->respond($request, $this->activities->approve($activity, $validated['level'] ?? null));
     }
 
     /**
@@ -312,23 +261,11 @@ class ActivityController extends Controller
             'level' => ['required', Rule::in([...config('activity_levels.tiers'), 'reject'])],
         ]);
 
-        if ($validated['level'] === 'reject') {
-            abort_if($activity->status !== 'Draft', 403, 'Only a Draft can be rejected.');
+        $done = $this->activities->place($activity, $validated['level']);
 
-            $activity->update(['status' => 'Rejected']);
-
-            return $this->respond($request, "\"{$activity->title}\" rejected.", [
-                'undo' => ['url' => route('teacher.activities.restore', $activity), 'label' => 'Undo'],
-            ]);
-        }
-
-        abort_if($activity->status === 'Rejected', 403, 'Restore a rejected activity before placing it in a level.');
-
-        $wasDraft = $activity->status === 'Draft';
-
-        $activity->update(['status' => 'Approved', 'difficulty_tier' => $validated['level']]);
-
-        return $this->respond($request, $wasDraft ? $this->approvedMessage($activity) : "Moved to {$activity->difficulty_tier}.");
+        return $this->respond($request, $done['message'], $done['undo'] ? [
+            'undo' => ['url' => route('teacher.activities.restore', $activity), 'label' => 'Undo'],
+        ] : []);
     }
 
     /**
@@ -340,26 +277,9 @@ class ActivityController extends Controller
         $this->authorizeOwnership($request, $activity);
         abort_if($activity->status !== 'Draft', 403, 'Only a Draft can be edited.');
 
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:140'],
-            'instructions' => ['required', 'string', 'max:500'],
-            'passage_text' => ['required', 'string', 'max:6000'],
-            'level' => ['nullable', Rule::in(config('activity_levels.tiers'))],
-        ]);
+        $validated = $request->validate($this->activities->editRules());
 
-        $activity->update([
-            'title' => $validated['title'],
-            'instructions' => $validated['instructions'],
-            'passage_text' => $validated['passage_text'],
-            // reference_text (the text a reading is scored against) must stay in sync with
-            // passage_text, or a later reading would be scored against stale, pre-edit text.
-            'reference_text' => preg_replace('/\s+/', ' ', trim($validated['passage_text'])),
-            'word_count' => Activity::countWords($validated['passage_text']),
-            'difficulty_tier' => $validated['level'] ?? $activity->difficulty_tier,
-            'status' => 'Approved',
-        ]);
-
-        return back()->with('status', "\"{$activity->title}\" updated and approved in {$activity->difficulty_tier}.");
+        return back()->with('status', $this->activities->edit($activity, $validated));
     }
 
     /**
@@ -368,11 +288,8 @@ class ActivityController extends Controller
     public function reject(Request $request, Activity $activity): RedirectResponse|JsonResponse
     {
         $this->authorizeOwnership($request, $activity);
-        abort_if($activity->status !== 'Draft', 403, 'Only a Draft can be rejected.');
 
-        $activity->update(['status' => 'Rejected']);
-
-        return $this->respond($request, "\"{$activity->title}\" rejected.", [
+        return $this->respond($request, $this->activities->reject($activity), [
             'undo' => ['url' => route('teacher.activities.restore', $activity), 'label' => 'Undo'],
         ]);
     }
@@ -383,11 +300,8 @@ class ActivityController extends Controller
     public function restore(Request $request, Activity $activity): RedirectResponse|JsonResponse
     {
         $this->authorizeOwnership($request, $activity);
-        abort_if($activity->status !== 'Rejected', 403, 'Only a rejected activity can be restored.');
 
-        $activity->update(['status' => 'Draft']);
-
-        return $this->respond($request, "\"{$activity->title}\" is back in To review.");
+        return $this->respond($request, $this->activities->restore($activity));
     }
 
     /**
@@ -402,73 +316,21 @@ class ActivityController extends Controller
         $this->authorizeOwnership($request, $activity);
         abort_if($activity->status !== 'Approved', 403, 'Only an Approved activity can be assigned.');
 
-        $teacher = $request->user()->teacher;
-
         $validated = $request->validate([
             'assign_learner_id' => ['nullable', 'integer'],
             'assign_class_id' => ['nullable', 'integer'],
             'assign_group_tag' => ['nullable', 'string'],
         ]);
 
-        $targets = array_filter([
-            'learner_id' => $validated['assign_learner_id'] ?? null,
-            'class_id' => $validated['assign_class_id'] ?? null,
-            'group_tag' => $validated['assign_group_tag'] ?? null,
-        ], fn ($value) => $value !== null && $value !== '');
+        $message = $this->activities->assign(
+            $request->user()->teacher,
+            $activity,
+            isset($validated['assign_learner_id']) ? (int) $validated['assign_learner_id'] : null,
+            isset($validated['assign_class_id']) ? (int) $validated['assign_class_id'] : null,
+            $validated['assign_group_tag'] ?? null,
+        );
 
-        if (count($targets) !== 1) {
-            throw ValidationException::withMessages([
-                'assign_target' => 'Choose exactly one: a Learner, a Class, or a Group.',
-            ]);
-        }
-
-        if (isset($targets['learner_id'])) {
-            $learner = Learner::whereHas('schoolClass', fn ($q) => $q->where('teacher_id', $teacher->id))
-                ->find($targets['learner_id']);
-            abort_if(! $learner, 403, 'That learner is not in one of your classes.');
-        }
-
-        if (isset($targets['class_id'])) {
-            $class = SchoolClass::where('teacher_id', $teacher->id)->find($targets['class_id']);
-            abort_if(! $class, 403, 'That class is not yours.');
-            abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
-        }
-
-        if (isset($targets['group_tag'])) {
-            $hasTag = SchoolClass::where('teacher_id', $teacher->id)
-                ->where('group_tag', $targets['group_tag'])
-                ->exists();
-            abort_if(! $hasTag, 403, 'That group tag is not used by any of your classes.');
-        }
-
-        // Can the learners who would receive it read it? Decided on the server (see ActivityFit): an activity far
-        // too long for them cannot be forced through, whichever screen the Teacher gave it from.
-        if (isset($targets['learner_id'])) {
-            $audience = collect([$learner]);
-            $audienceName = $learner->first_name;
-        } elseif (isset($targets['class_id'])) {
-            $audience = $class->learners()->get();
-            $audienceName = $class->name;
-        } else {
-            $audience = Learner::whereHas('schoolClass', fn ($q) => $q->where('teacher_id', $teacher->id)->where('group_tag', $targets['group_tag']))->get();
-            $audienceName = 'the '.$targets['group_tag'].' group';
-        }
-
-        $fit = ActivityFit::forAudience($activity, $audience, $audienceName);
-
-        if ($fit['verdict'] === ActivityFit::BLOCKED) {
-            throw ValidationException::withMessages(['assign_target' => $fit['note']]);
-        }
-
-        ActivityAssignment::create([
-            'activity_id' => $activity->id,
-            'learner_id' => $targets['learner_id'] ?? null,
-            'class_id' => $targets['class_id'] ?? null,
-            'group_tag' => $targets['group_tag'] ?? null,
-            'assigned_by_teacher_id' => $teacher->id,
-        ]);
-
-        return back()->with('status', "\"{$activity->title}\" assigned.".($fit['verdict'] === ActivityFit::CAUTION ? ' Note: '.$fit['note'] : ''));
+        return back()->with('status', $message);
     }
 
     /**
@@ -482,49 +344,14 @@ class ActivityController extends Controller
         abort_if($activity->status !== 'Approved', 403, 'Only an Approved activity can be shared.');
         abort_if($activity->shared_to_repository, 403, 'This activity has already been shared.');
 
-        $validated = $request->validate([
-            'price_type' => ['required', Rule::in(['Free', 'Paid'])],
-            'price' => ['required_if:price_type,Paid', 'nullable', 'numeric', 'min:0.01'],
-        ]);
+        $validated = $request->validate($this->activities->shareRules());
 
-        $teacher = $request->user()->teacher;
-
-        // Done under a lock and checked again inside it: two clicks (or two tabs) at the same moment
-        // used to both pass the check above, list the activity twice and pay out the 2 credits twice.
-        $shared = \Illuminate\Support\Facades\DB::transaction(function () use ($activity, $teacher, $validated) {
-            $fresh = Activity::whereKey($activity->id)->lockForUpdate()->first();
-            if ($fresh === null || $fresh->shared_to_repository) {
-                return false;
-            }
-
-            OpenRepositoryListing::create([
-                'activity_id' => $activity->id,
-                'teacher_id' => $teacher->id,
-                'price_type' => $validated['price_type'],
-                'price' => $validated['price_type'] === 'Paid' ? $validated['price'] : 0,
-            ]);
-
-            $fresh->update(['shared_to_repository' => true]);
-            $teacher->increment('free_generation_credits_remaining', 2);
-
-            return true;
-        });
-
-        abort_unless($shared, 403, 'This activity has already been shared.');
-
-        return back()->with('status', "\"{$activity->title}\" shared to the Repository. You earned 2 free credits.");
+        return back()->with('status', $this->activities->share($request->user()->teacher, $activity, $validated));
     }
 
     private function authorizeOwnership(Request $request, Activity $activity): void
     {
         abort_if($activity->created_by_teacher_id !== $request->user()->teacher->id, 403);
-    }
-
-    private function approvedMessage(Activity $activity): string
-    {
-        return $activity->movedByTeacher()
-            ? "Approved in {$activity->difficulty_tier}. The AI suggested {$activity->ai_difficulty_tier}. Your choice is saved."
-            : "Approved in {$activity->difficulty_tier}.";
     }
 
     /** A background call (drag and drop) gets JSON; a plain form gets a redirect with a flash. */

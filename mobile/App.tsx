@@ -11,7 +11,8 @@ import { FirstCheck } from './src/FirstCheck';
 import { Main } from './src/Main';
 import { sweepRecordings } from './src/recordingFiles';
 import { SessionContext, type Session } from './src/session';
-import { SignIn } from './src/SignIn';
+import { AccountApp } from './src/AccountApp';
+import { AuthFlow } from './src/AuthFlow';
 import { Animation, Btn, Busy, H2, Notice, P, Screen } from './src/ui';
 import { colors } from './src/theme';
 import { DEMO, startHash } from './src/config';
@@ -27,7 +28,8 @@ const NAME_KEY = 'tarabasa_first_name';
 type Boot =
   | { phase: 'boot' }
   | { phase: 'offline'; message: string }
-  | { phase: 'out'; notice?: string }
+  | { phase: 'out'; notice?: string; start?: 'learner' | 'email' }
+  | { phase: 'account'; account: api.Account }
   | { phase: 'in'; learner: api.LearnerPayload; firstCheck: boolean; home: api.Home | null };
 
 // Developer only, browser only. On a wide browser window the app is drawn inside a phone (src/PhoneFrame.tsx) so the real
@@ -80,6 +82,20 @@ function App() {
       setState({ phase: 'out' });
       return;
     }
+    // A Teacher or a Parent signed in with email; a child with a code and PIN. The saved sign in says which.
+    if ((await api.getActor()) !== 'learner') {
+      try {
+        setState({ phase: 'account', account: (await api.accountMe()).account });
+      } catch (e) {
+        if (e instanceof api.ApiError && (e.status === 401 || e.status === 403)) {
+          await api.clearToken();
+          setState({ phase: 'out', start: 'email', notice: e.status === 403 ? e.message : 'Please log in again.' });
+        } else {
+          setState({ phase: 'offline', message: e instanceof Error ? e.message : 'We could not reach TaraBasa.' });
+        }
+      }
+      return;
+    }
     try {
       const home = await api.home();
       setState({ phase: 'in', learner: home.learner, firstCheck: false, home });
@@ -104,20 +120,24 @@ function App() {
 
   const leave = useCallback(async (notice?: string) => {
     sweepRecordings();
+    const actor = await api.getActor();
     try {
-      await api.logout();
+      if (actor === 'learner') await api.logout();
+      else await api.accountLogout();
     } catch {
       /* the saved sign in is removed either way */
     }
     await api.clearToken();
     await storage.removeItem(NAME_KEY);
-    setState({ phase: 'out', notice });
+    // A child who logs out comes back to the child's own screen. A Teacher or Parent comes back to the email screen.
+    setState({ phase: 'out', notice, start: actor === 'learner' ? 'learner' : 'email' });
   }, []);
 
   // If the server ever says the sign in is no longer good, go back to sign in instead of showing errors.
   useEffect(() => {
-    api.setUnauthorizedHandler(() => {
-      api.clearToken().finally(() => setState({ phase: 'out', notice: 'Please log in again.' }));
+    api.setUnauthorizedHandler(async () => {
+      const actor = await api.getActor();
+      api.clearToken().finally(() => setState({ phase: 'out', notice: 'Please log in again.', start: actor === 'learner' ? 'learner' : 'email' }));
     });
     return () => api.setUnauthorizedHandler(null);
   }, []);
@@ -139,14 +159,24 @@ function App() {
         ) : state.phase === 'offline' ? (
           <Offline message={state.message} onRetry={boot} />
         ) : state.phase === 'out' ? (
-          <SignIn
+          <AuthFlow
+            key={state.start ?? 'learner'}
+            start={state.start}
             notice={state.notice}
-            onSignedIn={async (result) => {
+            onLearner={async (result) => {
               await api.saveToken(result.token);
+              await api.saveActor('learner');
               await storage.setItem(NAME_KEY, result.learner.firstName);
               setState({ phase: 'in', learner: result.learner, firstCheck: result.needsDiagnostic, home: null });
             }}
+            onAccount={async (login) => {
+              await api.saveToken(login.token);
+              await api.saveActor(login.account.role);
+              setState({ phase: 'account', account: login.account });
+            }}
           />
+        ) : state.phase === 'account' ? (
+          <AccountApp account={state.account} onSignOut={() => leave()} />
         ) : (
           <SignedIn key={state.learner.firstName} initial={state} onSignOut={() => leave()} />
         )}

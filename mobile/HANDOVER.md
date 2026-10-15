@@ -225,6 +225,20 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
   but it is a library string, not the server address. NOT sent to anyone yet, and nothing in it has been proven on a real phone.
 - Send this one, not 0.4.1 or older: it is the latest. The server side is unchanged and already live.
 
+## Version 0.5.0 (2026-10-15): the Teacher and Parent screens
+- **File:** `D:/tools/apk-out/TaraBasa-AI-0.5.0-test10.apk` (42.1 MiB, arm64 only, versionCode 10, SHA-256
+  `71eb982a952ce3047c00b23902a9c8848bfab81a062c6e203f013cd00a9889d6`, built from `D:	b` in 17 min 37 s). It carries everything in 0.4.2 plus the
+  whole Teacher app (Home, Classes with camera scan, Activities review with level buttons, Generate for a class, Alerts, More with Analytics,
+  Promotions and My profile) and the whole Parent app (Home, Children with the QR card, add a child in five steps, link a child with code and
+  PIN, Progress, Activities with unlock and rating, Alerts, profile). See CLAUDE.md "Phone app: the rest of the Teacher screens and the whole
+  Parent side". Source: branch `mobile-app`, commit `1470694` (the APK was built from exactly that code).
+- **Checked inside:** versionName 0.5.0 / versionCode 10; the same 10 permissions as 0.4.x; the live address is present and `localhost:8123` and
+  the emulator address are absent; the Teacher and Parent texts and their API paths are present ("Write new activities", "Add my child",
+  "Link this child", "Practise at home", `api/parent/home`, `api/teacher/alerts`).
+- **It cannot use the Teacher or Parent screens against the live server yet.** The live server does not have the new `/api/teacher/*` and
+  `/api/parent/*` routes until `mobile-app` is merged into the live branch and deployed (needs the owner's yes). The Learner screens still work.
+  Not sent to anyone, and nothing in it has been proven on a real phone. Test with `PHONE-TEST-CHECKLIST-TEACHER-PARENT.md`.
+
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
    on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,

@@ -43,14 +43,15 @@ class ActivityGeneration extends Model
     public const EXTRA_SECONDS_PER_TEXT = 20;
 
     protected $fillable = [
-        'teacher_id', 'status', 'grade_level', 'competency', 'activity_type', 'topic',
-        'teacher_notes', 'levels', 'created_count', 'message', 'started_at', 'finished_at', 'acknowledged_at',
+        'teacher_id', 'class_id', 'status', 'grade_level', 'competency', 'activity_type', 'topic',
+        'teacher_notes', 'basis', 'levels', 'created_count', 'message', 'started_at', 'finished_at', 'acknowledged_at',
     ];
 
     protected function casts(): array
     {
         return [
             'levels' => 'array',
+            'basis' => 'array',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
             'acknowledged_at' => 'datetime',

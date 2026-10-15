@@ -440,9 +440,43 @@
       var pr = e.target.closest('[data-preset]');
       if (pr) { var v = pr.getAttribute('data-preset'); TIERS.forEach(function (t) { n[t] = (v === 'all' || v === t) ? 3 : 0; }); fillLevels(); }
     });
+    /* "Write it for a class": only classes of the chosen grade are offered (a class holds one grade),
+       and the lines the class's readings say are shown before Generate is pressed. */
+    var cls = $('#gClass', gen), basisBox = $('#genBasis', gen), basisList = $('#genBasisList', gen), basisNote = $('#genBasisNote', gen), basisSeq = 0;
+    var syncClasses = function () {
+      if (!cls) { return; }
+      var g = $('#gGrade').value, bad = false;
+      $$('option[data-grade]', cls).forEach(function (o) {
+        var ok = o.getAttribute('data-grade') === g;
+        o.hidden = !ok; o.disabled = !ok;
+        if (!ok && o.selected) { bad = true; }
+      });
+      if (bad) { cls.value = ''; }
+    };
+    var loadBasis = function () {
+      if (!cls) { return; }
+      var id = cls.value, mine = ++basisSeq;
+      if (!id) { basisBox.hidden = true; return; }
+      basisBox.hidden = false;
+      basisList.innerHTML = '<li>Reading the class...</li>'; basisNote.textContent = '';
+      var qs = 'class_id=' + encodeURIComponent(id) + '&grade_level=' + encodeURIComponent($('#gGrade').value) + '&activity_type=' + encodeURIComponent($('#genType').value);
+      fetch(cls.getAttribute('data-basis-url') + '?' + qs, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (mine !== basisSeq) { return; }
+          if (!d.ok) { basisList.innerHTML = '<li>' + esc(d.message || 'That class cannot be used for this request.') + '</li>'; basisNote.textContent = ''; return; }
+          basisList.innerHTML = d.lines.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('');
+          basisNote.textContent = d.enough
+            ? 'The AI is told these facts. You can change anything it writes.'
+            : 'Not enough yet to change what the AI writes, so it is a general activity.';
+        })
+        .catch(function () { if (mine === basisSeq) { basisList.innerHTML = '<li>The class could not be read just now. Your request is still written for it.</li>'; basisNote.textContent = ''; } });
+    };
     gen.addEventListener('change', function (e) {
-      if (e.target.id === 'genComp') { $('#genType').removeAttribute('data-keep'); fillTypes(); }
-      if (e.target.id === 'gGrade' || e.target.id === 'genType') { fillLevels(); }
+      if (e.target.id === 'genComp') { $('#genType').removeAttribute('data-keep'); fillTypes(); loadBasis(); }
+      if (e.target.id === 'gGrade') { syncClasses(); fillLevels(); loadBasis(); }
+      if (e.target.id === 'genType') { fillLevels(); loadBasis(); }
+      if (e.target.id === 'gClass') { loadBasis(); }
     });
     var form = $('#genForm');
     form.addEventListener('submit', function () {
@@ -450,6 +484,8 @@
       $$('[data-gen-cancel]', gen).forEach(function (b) { b.disabled = true; });
     });
     fillTypes();
+    syncClasses();
+    loadBasis();
   }
 
   /* =====================================================

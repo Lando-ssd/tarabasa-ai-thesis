@@ -321,6 +321,11 @@ select.mini.wide{ min-width:140px; padding:10px 34px 9px 14px; font-size:15px; b
 .stepper output{ min-width:30px; text-align:center; font:700 28px/1 var(--font-game); }
 .gen-total{ margin-top:6px; padding:10px 14px; border-radius:14px; background:var(--blue-bg); color:var(--blue-ink); font-size:14.5px; }
 .gen-total b{ font:700 22px/1 var(--font-game); }
+/* "Write it for a class": what the class's readings say, in the Generate window and on each activity written from it. */
+.basis-box{ margin:0 0 12px; padding:8px 12px; border-radius:14px; background:var(--blue-bg); border:2px solid #cfe3f7; max-height:150px; overflow:auto; }
+.basis-list{ margin:3px 0 0; padding-left:18px; font-size:13px; line-height:1.35; color:var(--ink); }
+.basis-list li + li{ margin-top:2px; }
+.basis-box .note{ margin:3px 0 0; font-size:12.5px; }
 .gen-time{ display:inline-block; margin-left:6px; padding:3px 10px 2px; border-radius:999px; background:#ffffff; border:2px solid #cfe3f7; font:700 16px/1.2 var(--font-game); letter-spacing:.03em; white-space:nowrap; }
 .gen-time:empty{ display:none; }
 .codebox{ display:flex; align-items:center; border:2px solid var(--line); border-radius:14px; background:#fff; overflow:hidden; }

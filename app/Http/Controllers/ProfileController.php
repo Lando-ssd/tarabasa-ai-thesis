@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AccountProfileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -10,6 +11,8 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(private readonly AccountProfileService $profile) {}
+
     /**
      * Genuinely missing feature — no actor prompt mentions a Profile
      * screen at all, so this is built from reasonable judgment rather
@@ -45,70 +48,30 @@ class ProfileController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $user = $request->user();
+        $validated = $request->validate($this->profile->profileRules(), $this->profile->profileMessages());
 
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255', 'regex:'.self::NAME_REGEX],
-            'middle_initial' => ['nullable', 'string', 'max:5'],
-            'last_name' => ['required', 'string', 'max:255', 'regex:'.self::NAME_REGEX],
-            'contact_number' => ['nullable', 'string', 'max:30'],
-        ], [
-            'first_name.regex' => 'First name may only contain letters, spaces, hyphens, and apostrophes, no numbers.',
-            'last_name.regex' => 'Last name may only contain letters, spaces, hyphens, and apostrophes, no numbers.',
-        ]);
-
-        $user->update($validated);
+        $this->profile->updateProfile($request->user(), $validated);
 
         return back()->with('status', 'Profile updated.');
     }
 
     /**
-     * Which grades a Teacher handles (one grade, or several, with a separate class for each). Class
-     * creation offers only these. Existing classes are never touched by a change here, and a class
-     * is still only for its own grade, so a teacher who handles more grades just opens more classes.
+     * Which grades a Teacher handles (one grade, or several, with a separate class for each). Class creation offers only these. Existing
+     * classes are never touched by a change here, and a class is still only for its own grade, so a teacher who handles more grades just
+     * opens more classes.
      */
     public function updateGrades(Request $request): RedirectResponse
     {
         abort_unless($request->user()->user_type === 'Teacher', 403);
 
         $validated = $request->validate(\App\Models\Teacher::gradeRules());
-        $grades = \App\Models\Teacher::gradesFromValidated($validated);
 
-        $teacher = $request->user()->teacher;
-        $teacher->update(['grades_handled' => $grades]);
-
-        $message = 'Grades updated. New classes will offer: '.implode(', ', $grades).'. Each class still holds one grade only.';
-
-        // Classes of a grade the teacher no longer handles stay as they are, but cannot take new learners.
-        $left = \App\Models\SchoolClass::where('teacher_id', $teacher->id)
-            ->where('school_year', \App\Models\SchoolClass::currentSchoolYear())
-            ->whereNotIn('grade_level', $grades)
-            ->get();
-
-        if ($left->isNotEmpty()) {
-            $message .= ' You still have '.$left->map(fn ($c) => "{$c->name} ({$c->grade_level})")->implode(', ')
-                .'. They stay as they are, but they cannot take new learners until you handle that grade again.';
-        }
-
-        return back()->with('status', $message);
+        return back()->with('status', $this->profile->updateGrades($request->user()->teacher, $validated));
     }
 
     public function updatePassword(Request $request): RedirectResponse
     {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'current_password' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
-
-        if (! Hash::check($validated['current_password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'current_password' => 'That current password is incorrect.',
-            ]);
-        }
-
-        $user->update(['password' => Hash::make($validated['password'])]);
+        $this->profile->changePassword($request->user(), $request->validate($this->profile->passwordRules()));
 
         return back()->with('status', 'Password changed.');
     }
