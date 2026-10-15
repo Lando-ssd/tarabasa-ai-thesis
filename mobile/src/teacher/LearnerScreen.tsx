@@ -1,18 +1,25 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import * as api from '../api';
-import { Notice, H2, P, Panel, Screen, Small } from '../ui';
+import { Chips } from '../fields';
+import { Btn, Notice, H2, P, Panel, Screen, Small } from '../ui';
 import { Initial, Loading, TonePill, TopBar, useLoad } from './kit';
 import { colors, fonts, space } from '../theme';
 import { s } from '../scale';
 
-type Props = { classId: number; id: number; onBack: () => void };
+type Props = {
+  classId: number;
+  id: number;
+  onBack: () => void;
+  /** The child was moved to another class: the app goes back to this class's page, which no longer lists them, and says what happened. */
+  onMoved: (message: string) => void;
+};
 
 /**
  * One learner, for the teacher: where the child reads now, what the parent shared, what suits them and how to teach it. The
  * website's learner window, in one column. Every line is worked out on the server, the same way the website works it out.
  */
-export function LearnerScreen({ classId, id, onBack }: Props) {
+export function LearnerScreen({ classId, id, onBack, onMoved }: Props) {
   const { data, error, reload } = useLoad(() => api.teacherLearner(classId, id), [classId, id]);
 
   if (!data) {
@@ -107,8 +114,48 @@ export function LearnerScreen({ classId, id, onBack }: Props) {
             </Small>
           </Section>
         ) : null}
+
+        {data.canMove && (data.moveTargets ?? []).length > 0 ? <Move classId={classId} learner={l} targets={data.moveTargets ?? []} onMoved={onMoved} /> : null}
       </View>
     </Screen>
+  );
+}
+
+/**
+ * Move to another class of the same grade. The app only suggests this (the level check above); the teacher decides. The child's own
+ * grade does not change: this is a teaching decision, not a promotion. The server checks the grade and reading level again.
+ */
+function Move({ classId, learner, targets, onMoved }: { classId: number; learner: api.RosterLearner; targets: api.MoveTarget[]; onMoved: (message: string) => void }) {
+  const [picked, setPicked] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const chosen = targets.find((t) => t.id === picked) ?? null;
+  const label = (t: api.MoveTarget) => `${t.name} (${t.section})`;
+
+  async function move() {
+    if (busy || !chosen) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const done = await api.moveLearner(classId, learner.id, chosen.id);
+      onMoved(done.message);
+    } catch (e) {
+      // The refusal for a class the child does not fit comes back under to_class_id, in the website's words.
+      setError(api.fieldErrors(e).to_class_id ?? (e instanceof Error ? e.message : 'Something went wrong. Please try again.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    // A white card, not the blue panel the other sections use: the class chips are light blue and would vanish into a blue panel.
+    <View style={st.card}>
+      <H2>{`Move to another ${learner.grade ?? ''} class`.replace('  ', ' ')}</H2>
+      <Small>You decide. {learner.firstName} keeps their own grade and their readings. Only your other classes of the same grade are listed.</Small>
+      <Chips label="Class to move to" options={targets.map(label)} picked={chosen ? [label(chosen)] : []} onToggle={(name) => setPicked(targets.find((t) => label(t) === name)?.id ?? null)} />
+      {error ? <Notice text={error} /> : null}
+      <Btn label={chosen ? `Move ${learner.firstName} to ${chosen.name}` : 'Pick a class'} tone="ghost" compact disabled={!chosen} loading={busy} onPress={move} />
+    </View>
   );
 }
 
@@ -133,6 +180,7 @@ function Line({ label, value }: { label: string; value: string }) {
 }
 
 const st = StyleSheet.create({
+  card: { backgroundColor: colors.white, borderRadius: s(18), borderWidth: 2, borderColor: colors.line, borderBottomWidth: s(5), padding: space[14], gap: space[8] },
   value: { fontFamily: fonts.ui, fontSize: s(17), lineHeight: s(23), color: colors.ink },
   bullet: { flexDirection: 'row', gap: space[8], alignItems: 'flex-start' },
   dot: { width: s(8), height: s(8), borderRadius: s(4), backgroundColor: colors.orange, marginTop: s(8) },

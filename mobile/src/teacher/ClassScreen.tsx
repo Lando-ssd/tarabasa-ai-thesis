@@ -16,6 +16,8 @@ type Props = {
   onLearner: (learnerId: number) => void;
   onEdit: (card: api.ClassCard) => void;
   refreshKey: number;
+  /** What the last action said, such as a learner moved out of this class. */
+  flash?: string | null;
 };
 
 /** The reading group a Phil-IRI level belongs to, the same split the website uses (Non-reader and Frustration share the first). */
@@ -25,7 +27,7 @@ const GROUP_OF: Record<string, 'support' | 'instructional' | 'independent'> = { 
  * One class: its learners (with a tag for the ones who need you), its reading groups and what it has been given, plus the two
  * ways to add a child: scan the printed card, or type the last 5 characters of the code. Both go through the website's rules.
  */
-export function ClassScreen({ id, onBack, onLearner, onEdit, refreshKey }: Props) {
+export function ClassScreen({ id, onBack, onLearner, onEdit, refreshKey, flash }: Props) {
   const { data, error, reload } = useLoad(() => api.teacherClass(id), [id, refreshKey]);
   const [tab, setTab] = useState<Tab>('learners');
   const [typing, setTyping] = useState(false);
@@ -56,6 +58,7 @@ export function ClassScreen({ id, onBack, onLearner, onEdit, refreshKey }: Props
             onChange={setTab}
           />
 
+          {flash ? <Notice tone="info" text={flash} /> : null}
           {card!.readOnly ? <Notice tone="info" text="This is a past school year, so it can only be read." /> : null}
 
           {tab === 'learners' ? (

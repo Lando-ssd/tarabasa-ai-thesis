@@ -67,9 +67,13 @@ class TeacherApiController extends Controller
         $classes = SchoolClass::where('teacher_id', $teacher->id)->where('school_year', $year)->with('learners')->orderBy('name')->get();
         $byClass = $this->classes->activitiesByClass($teacher->id, $classes);
 
+        // Every school year this teacher has classes in, newest first, with this one always among them (so the picker never loses it).
+        $years = SchoolClass::where('teacher_id', $teacher->id)->distinct()->pluck('school_year')->push($current)->unique()->sortDesc()->values();
+
         return response()->json([
             'schoolYear' => $year,
             'currentSchoolYear' => $current,
+            'years' => $years,
             'readOnly' => SchoolClass::isYearPast($year),
             'grades' => $teacher->gradesAllowed(),
             'classes' => $classes->map(fn (SchoolClass $c) => TeacherRoster::classCard($c, $byClass))->values(),
@@ -161,10 +165,26 @@ class TeacherApiController extends Controller
 
         $class->load('learners');
 
+        // Moving a child takes an Active teacher and a school year in progress; the choices are this teacher's other classes of the child's grade.
+        $canMove = $teacher->status === 'Active' && ! SchoolClass::isYearPast($class->school_year);
+
         return response()->json([
             'learner' => TeacherRoster::learner($learner, TeacherRoster::tags($teacher), ReadingLevel::levelChecks($class->learners)),
             'profile' => LearnerProfile::forTeacher($learner),
+            'canMove' => $canMove,
+            'moveTargets' => $canMove ? $this->classes->moveTargets($teacher, $class, $learner)->map(fn (SchoolClass $c) => ['id' => $c->id, 'name' => $c->name, 'grade' => $c->grade_level, 'section' => $c->section])->values() : [],
         ]);
+    }
+
+    /** Move a learner to another of this teacher's classes of the same year. A refusal comes back as a 422 under `to_class_id`, in the website's words. */
+    public function moveLearner(Request $request, SchoolClass $class, Learner $learner): JsonResponse
+    {
+        $this->mine($request, $class, writing: true);
+        $validated = $request->validate(['to_class_id' => ['required', 'integer']], ['to_class_id.required' => 'Choose the class to move to.']);
+
+        $target = $this->classes->move($request->user()->teacher, $class, $learner, (int) $validated['to_class_id']);
+
+        return response()->json(['message' => "{$learner->first_name} {$learner->last_name} moved to \"{$target->name}\".", 'class' => ['id' => $target->id, 'name' => $target->name]]);
     }
 
     /** The class must be this Teacher's own, and (to change it) not from a past school year. A forged id gets the same 404 as a missing one. */

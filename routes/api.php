@@ -92,6 +92,7 @@ Route::middleware(['auth:sanctum', 'token.actor:teacher'])->prefix('teacher')->n
         Route::post('/classes', [TeacherApiController::class, 'storeClass'])->name('classes.store');
         Route::put('/classes/{class}', [TeacherApiController::class, 'updateClass'])->whereNumber('class')->name('classes.update');
         Route::post('/classes/{class}/learners', [TeacherApiController::class, 'joinLearner'])->whereNumber('class')->middleware('throttle:60,1')->name('classes.learners.join');
+        Route::post('/classes/{class}/learners/{learner}/move', [TeacherApiController::class, 'moveLearner'])->whereNumber(['class', 'learner'])->name('classes.learners.move');
     });
 });
 

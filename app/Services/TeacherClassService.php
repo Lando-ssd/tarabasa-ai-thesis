@@ -163,6 +163,54 @@ class TeacherClassService
     }
 
     /**
+     * Where a learner can be moved: this Teacher's OTHER classes of the same school year that take the learner's grade. A class holds
+     * one grade, so a child is only ever offered classes of their own grade.
+     *
+     * @return Collection<int, SchoolClass>
+     */
+    public function moveTargets(Teacher $teacher, SchoolClass $class, Learner $learner): Collection
+    {
+        return SchoolClass::where('teacher_id', $teacher->id)
+            ->where('school_year', $class->school_year)
+            ->where('id', '!=', $class->id)
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (SchoolClass $other) => $other->acceptsGrade($learner->grade_level))
+            ->values();
+    }
+
+    /**
+     * Move a learner to another of this Teacher's classes in the same school year. The system only suggests this (the level check on
+     * the roster); the Teacher decides. The learner's own grade is not touched: moving a strong reader to a higher class is a teaching
+     * decision, not a promotion. The same grade and reading level rules as joining apply (ClassLevel::joinRefusal).
+     *
+     * @throws ValidationException with the message under `to_class_id`
+     */
+    public function move(Teacher $teacher, SchoolClass $class, Learner $learner, int $toClassId): SchoolClass
+    {
+        abort_if($class->teacher_id !== $teacher->id, 403);
+        abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
+        abort_if($learner->class_id !== $class->id, 404);
+
+        $target = SchoolClass::where('teacher_id', $teacher->id)
+            ->where('school_year', $class->school_year)
+            ->where('id', '!=', $class->id)
+            ->find($toClassId);
+
+        if (! $target) {
+            throw ValidationException::withMessages(['to_class_id' => 'Choose one of your other classes.']);
+        }
+
+        if ($refusal = ClassLevel::joinRefusal($teacher, $target->loadMissing('learners'), $learner)) {
+            throw ValidationException::withMessages(['to_class_id' => $refusal]);
+        }
+
+        $learner->update(['class_id' => $target->id]);
+
+        return $target;
+    }
+
+    /**
      * What each class has been given: activities assigned to the class itself, and ones assigned
      * to a group tag the class carries. Only Approved activities count. A class assignment wins
      * over a group one for the same activity.
