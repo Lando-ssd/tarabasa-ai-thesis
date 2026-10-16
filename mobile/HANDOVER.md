@@ -253,6 +253,16 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
   purpose (an older server cannot crash the Classes tab). Merge on the owner's word to switch them on.
 - **Not sent to anyone yet, and nothing in it has been proven on a real phone.**
 
+## Version 0.5.2 (2026-10-16): a new PIN for a child who forgot theirs
+- **File:** `D:/tools/apk-out/TaraBasa-AI-0.5.2-test12.apk` (42.2 MiB, arm64 only, versionCode 12, SHA-256 `6e83a84f0edb140df24df0eefe9a5dfd8497072c5dccbd94ddb1171f07fcc953`).
+  It is 0.5.1 plus the Parent "New PIN" screen (Children, the child's card), the child's "Forgot my PIN?" help on the sign in
+  screen, and the PIN alerts (a key icon on "PIN Locked" and "PIN Changed"). Source: branch `mobile-app`, commit `76631eb`.
+  The tester pack is `D:/tools/apk-out/TaraBasa-0.5.2-tester-pack.zip` (the APK, its checksum, a start page and the two checklists;
+  the Teacher and Parent checklist has the new step 5b under Parent). **Send this one, not 0.5.1.**
+- **Server side:** the new PIN route is live on Render (merged to the live branch on 2026-10-15; `POST /api/parent/children/{id}/pin`
+  answers 401 when not signed in), together with the move and school year routes, so every 0.5.2 feature works against the live server.
+- **Not proven:** a real phone, the Android keyboard with the password and PIN fields, the big PIN digits on a small screen.
+
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
    on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,
