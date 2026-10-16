@@ -4,6 +4,7 @@ import type { Account, ClassCard, ClassList, ParentChild } from './api';
 import { MyProfile } from './MyProfile';
 import { AddChild } from './parent/AddChild';
 import { ChildCard, Children, LinkChild } from './parent/Children';
+import { ResetPin } from './parent/ResetPin';
 import { ParentActivities } from './parent/ParentActivities';
 import { ParentAlerts } from './parent/ParentAlerts';
 import { ParentHome } from './parent/ParentHome';
@@ -232,7 +233,7 @@ function TeacherApp({ account: initial, onSignOut }: Props) {
   );
 }
 
-type ChildrenRoute = { name: 'list' } | { name: 'add' } | { name: 'link' } | { name: 'card'; child: ParentChild };
+type ChildrenRoute = { name: 'list' } | { name: 'add' } | { name: 'link' } | { name: 'card'; child: ParentChild } | { name: 'pin'; child: ParentChild };
 
 function ParentApp({ account: initial, onSignOut }: Props) {
   const [account, setAccount] = useState(initial);
@@ -263,6 +264,10 @@ function ParentApp({ account: initial, onSignOut }: Props) {
   const back = useCallback(() => {
     if (profile) {
       setProfile(false);
+      return true;
+    }
+    if (tab === 'children' && route.name === 'pin') {
+      setRoute({ name: 'card', child: route.child });
       return true;
     }
     if (tab === 'children' && route.name !== 'list') {
@@ -328,8 +333,11 @@ function ParentApp({ account: initial, onSignOut }: Props) {
             setChildId(route.child.id);
             goTab('progress');
           }}
+          onNewPin={() => setRoute({ name: 'pin', child: route.child })}
         />
       );
+    } else if (route.name === 'pin') {
+      screen = <ResetPin child={route.child} onBack={() => setRoute({ name: 'card', child: route.child })} onDone={() => setRoute({ name: 'card', child: route.child })} />;
     } else {
       screen = <Children refreshKey={refresh} flash={flash} onOpen={(child) => setRoute({ name: 'card', child })} onAdd={() => setRoute({ name: 'add' })} onLink={() => setRoute({ name: 'link' })} />;
     }

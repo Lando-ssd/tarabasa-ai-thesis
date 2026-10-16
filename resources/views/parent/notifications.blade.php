@@ -45,10 +45,11 @@
         <div class="list">
           @foreach ($notifications as $notification)
             @php
-              $isAttention = $notification->type === \App\Models\Notification::TYPE_NEEDS_ATTENTION;
+              $isPin = in_array($notification->type, [\App\Models\Notification::TYPE_PIN_LOCKED, \App\Models\Notification::TYPE_PIN_CHANGED], true);
+              $isAttention = in_array($notification->type, [\App\Models\Notification::TYPE_NEEDS_ATTENTION, \App\Models\Notification::TYPE_PIN_LOCKED], true);
               $kind = $isAttention ? 'attention' : ($notification->type === \App\Models\Notification::TYPE_LEVEL_CONFIRMED ? 'level' : 'summary');
-              $icon = $isAttention ? 'warning-circle' : ($kind === 'level' ? 'trend-up' : 'check-circle');
-              $title = $isAttention ? 'Needs a look' : $notification->type;
+              $icon = $isPin ? 'key' : ($isAttention ? 'warning-circle' : ($kind === 'level' ? 'trend-up' : 'check-circle'));
+              $title = $notification->type === \App\Models\Notification::TYPE_NEEDS_ATTENTION ? 'Needs a look' : $notification->type;
             @endphp
             @if (! $notification->is_read)
               <form method="POST" action="{{ route('notifications.read', $notification) }}" class="notif-form">

@@ -77,6 +77,23 @@
     padding:11px 14px; font-size:15px; font-weight:700; margin-bottom:18px; text-align:left;
   }
 
+  .inline-ok{
+    background:var(--sky-100, #e6f4ff); color:var(--blue-700); border:1.5px solid var(--blue-500); border-radius:14px;
+    padding:11px 14px; font-size:15px; font-weight:700; margin-bottom:18px; text-align:left;
+  }
+  .forgot-btn{
+    display:inline-block; margin-top:16px; padding:8px 6px; background:none; border:0; cursor:pointer;
+    font:700 16px/1.2 'Baloo 2',sans-serif; color:var(--blue-600); text-decoration:underline; text-underline-offset:3px;
+  }
+  .forgot-box{
+    margin-top:10px; padding:16px 16px 14px; border-radius:18px; text-align:left; background:#fff;
+    border:2px solid var(--blue-500); box-shadow:0 4px 0 rgba(15,95,174,.18);
+  }
+  .forgot-box h2{ margin:0 0 6px; font:800 22px/1.1 'Baloo 2',sans-serif; color:var(--slate-800, #15283a); }
+  .forgot-box ol{ margin:8px 0 8px; padding-left:22px; font-size:17px; line-height:1.55; color:var(--slate-600); }
+  .forgot-box ol b{ color:var(--slate-800, #15283a); }
+  .forgot-box p{ margin:0; font-size:16px; line-height:1.5; color:var(--slate-600); }
+
   .big-btn{
     width:100%; margin-top:6px; padding:17px; border:none; border-radius:16px;
     font:800 17px/1 'Baloo 2',sans-serif; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;
@@ -103,6 +120,10 @@
       <svg viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-speaker-high"></use></svg>
     </button>
   </p>
+
+  @if (session('status'))
+    <div class="inline-ok" role="status">{{ session('status') }}</div>
+  @endif
 
   @if ($errors->any())
     <div class="inline-error">{{ $errors->first() }}</div>
@@ -137,6 +158,23 @@
     <button type="submit" class="big-btn" id="submitBtn">Let's Go</button>
   </form>
 
+  {{-- A child cannot reset their own PIN (no email, and a sibling could), so this says who can and how. --}}
+  <button type="button" class="forgot-btn" id="forgotBtn" aria-expanded="false" aria-controls="forgotBox">Forgot my PIN?</button>
+  <div class="forgot-box" id="forgotBox" hidden>
+    <h2>Ask your grown-up!
+      <button type="button" class="speak-btn" data-speak="Ask your grown-up. They can make you a new PIN. They open TaraBasa, tap Children, tap your name, and tap New PIN." aria-label="Hear this">
+        <svg viewBox="0 0 256 256" aria-hidden="true" focusable="false"><use href="{{ asset('icons/badges.svg') }}#ph-speaker-high"></use></svg>
+      </button>
+    </h2>
+    <p>Your grown-up can make you a new PIN. They:</p>
+    <ol>
+      <li>Open <b>TaraBasa</b> on the website or the app.</li>
+      <li>Tap <b>Children</b>, then your name.</li>
+      <li>Tap <b>New PIN</b>.</li>
+    </ol>
+    <p>Then you can sign in with your new PIN.</p>
+  </div>
+
   <a href="{{ route('landing') }}" class="back-link">Back to home</a>
 </div>
 
@@ -148,6 +186,19 @@
     autoplay: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     path: '{{ asset("animations/tarabasa-learner-login-hero.json") }}'
   });
+
+  // "Forgot my PIN?" opens and closes the help.
+  const forgotBtn = document.getElementById('forgotBtn'), forgotBox = document.getElementById('forgotBox');
+  forgotBtn.addEventListener('click', () => {
+    const open = forgotBox.hidden;
+    forgotBox.hidden = !open;
+    forgotBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) { forgotBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  });
+  // After a lock ("Too many attempts. Ask your grown-up...") the help is already open: that is the moment it is needed.
+  @if ($errors->has('pin') && str_contains($errors->first('pin'), 'grown-up'))
+  forgotBtn.click();
+  @endif
 
   const boxes = document.querySelectorAll('#pinBoxes .pin-box');
   const pinInput = document.getElementById('pinInput');

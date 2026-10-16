@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Learner;
+use App\Services\LearnerPinService;
 use App\Services\ParentChildService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -153,5 +154,21 @@ class LearnerController extends Controller
         return redirect()
             ->route('parent.children.index')
             ->with('status', "You're now linked to {$learner->first_name} as a guardian.");
+    }
+
+    /**
+     * "New PIN" on My children: a guardian makes a new PIN for a child who forgot theirs. Every rule lives in LearnerPinService (a linked
+     * guardian only, their password again, 3 changes a day, no weak PINs). A PIN the system made is flashed to the next page ONCE so it
+     * can be read out; nothing keeps it.
+     */
+    public function resetPin(Request $request, Learner $learner, LearnerPinService $pins): RedirectResponse
+    {
+        $validated = $request->validate(LearnerPinService::formRules(), LearnerPinService::formMessages());
+
+        $result = $pins->reset($request->user(), $learner, $validated['password'], $validated['mode'], $validated['pin'] ?? null);
+
+        return redirect()->route('parent.children.index')
+            ->with('status', $result['message'])
+            ->with('new_pin', $result['pin'] === null ? null : ['learner_id' => $learner->id, 'pin' => $result['pin']]);
     }
 }

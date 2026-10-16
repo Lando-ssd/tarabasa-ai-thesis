@@ -4,7 +4,7 @@ import * as api from './api';
 import { CardScanner } from './CardScanner';
 import { TextLink } from './fields';
 import { looksLikeCode, normalizeCode } from './learnerCode';
-import { Animation, Btn, Busy, H1, Notice, P, Screen, Small, useKeyboardOpen } from './ui';
+import { Animation, Btn, Busy, H1, H2, Notice, P, Panel, Screen, Small, useKeyboardOpen } from './ui';
 import { colors, fonts, size, space } from './theme';
 import { s, SHORT_HEIGHT } from './scale';
 
@@ -27,6 +27,8 @@ export function SignIn({ onSignedIn, notice, onEmail }: Props) {
   const [busy, setBusy] = useState(false);
   const [slow, setSlow] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The help for a child who forgot the PIN. It opens by itself after a lock, which is the moment it is needed.
+  const [forgot, setForgot] = useState(false);
   const pinInput = useRef<TextInput>(null);
   const keyboardOpen = useKeyboardOpen();
 
@@ -55,7 +57,9 @@ export function SignIn({ onSignedIn, notice, onEmail }: Props) {
       onSignedIn(await api.login(normalizeCode(code), pin));
     } catch (e) {
       setPin('');
-      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      const message = e instanceof Error ? e.message : 'Something went wrong. Please try again.';
+      setError(message);
+      if (message.includes('grown-up')) setForgot(true);
     } finally {
       setBusy(false);
     }
@@ -80,7 +84,7 @@ export function SignIn({ onSignedIn, notice, onEmail }: Props) {
         }
       >
         <View style={styles.body}>
-          {keyboardOpen ? null : <Animation name="intro" px={SHORT_HEIGHT ? s(84) : s(140)} />}
+          {keyboardOpen || forgot ? null : <Animation name="intro" px={SHORT_HEIGHT ? s(84) : s(140)} />}
           <H1 style={{ textAlign: 'center' }}>Hi there!</H1>
           <P style={{ textAlign: 'center' }}>Tap the button and show your card</P>
 
@@ -105,6 +109,19 @@ export function SignIn({ onSignedIn, notice, onEmail }: Props) {
           />
 
           <PinBoxes pin={pin} onChange={setPin} inputRef={pinInput} onDone={signIn} />
+
+          {/* A child cannot reset their own PIN (no email, and a sibling could). This says who can, and how. */}
+          <TextLink label={forgot ? 'Hide the help' : 'Forgot my PIN?'} onPress={() => setForgot((v) => !v)} />
+          {forgot ? (
+            <Panel style={styles.help}>
+              <H2>Ask your grown-up!</H2>
+              <P>Your grown-up can make you a new PIN. They:</P>
+              <P>1. Open TaraBasa on the website or the app.</P>
+              <P>2. Tap Children, then your name.</P>
+              <P>3. Tap New PIN.</P>
+              <Small>Then you can log in with your new PIN.</Small>
+            </Panel>
+          ) : null}
 
           {notice ? <Notice tone="info" text={notice} /> : null}
           {error ? <Notice text={error} /> : null}
@@ -168,6 +185,7 @@ function PinBoxes({
 const styles = StyleSheet.create({
   body: { alignItems: 'center', gap: space[10] },
   wide: { alignSelf: 'stretch' },
+  help: { alignSelf: 'stretch', gap: space[6] },
   field: {
     alignSelf: 'stretch',
     minHeight: size.field,

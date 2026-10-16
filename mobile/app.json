@@ -2,7 +2,7 @@
   "expo": {
     "name": "TaraBasa AI",
     "slug": "tarabasa-ai",
-    "version": "0.5.1",
+    "version": "0.5.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.tarabasaai.app",
-      "versionCode": 11,
+      "versionCode": 12,
       "adaptiveIcon": {
         "backgroundColor": "#0062CF",
         "foregroundImage": "./assets/android-icon-foreground.png",

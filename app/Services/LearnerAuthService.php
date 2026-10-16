@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
 use App\Models\Learner;
+use App\Models\Notification;
 use App\Models\OpenRepositoryListing;
 use App\Support\ActivityFit;
 use App\Support\ErrorPatterns;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -25,35 +27,47 @@ use Illuminate\Validation\ValidationException;
 class LearnerAuthService
 {
     /**
-     * No password, no email — just learnerCode + a 4-digit PIN. A 4-digit
+     * No password, no email, just learnerCode + a 4-digit PIN. A 4-digit
      * PIN has only 10,000 combinations, so this is throttled far more
      * aggressively than the adult login: 5 wrong attempts locks out for
-     * 15 minutes. Keyed by the raw submitted code (not a resolved Learner
-     * ID) so an unknown code and a real code with a wrong PIN are
-     * throttled identically — neither the error nor the lockout behavior
-     * may reveal whether the code itself exists. Throws the same
-     * ValidationException shape either channel already renders correctly
-     * (Blade re-shows the form with the error; Laravel's JSON exception
-     * rendering — already forced for api/* requests — turns it into a
-     * real 422 with the same message).
+     * 15 minutes. An unknown code and a real code with a wrong PIN are
+     * throttled and answered identically (and take about as long), so neither
+     * the error nor the lockout may reveal whether the code itself exists.
+     *
+     * The count of wrong tries belongs to the code, the address AND the PIN
+     * that is set at that moment. So when a guardian makes a new PIN
+     * (LearnerPinService) the child starts again with a clean count and is
+     * not left locked out of the PIN they were just given.
+     *
+     * When a real child reaches the lock, their guardians are told once, with
+     * the way out (a new PIN). Throws the same ValidationException shape either
+     * channel already renders correctly (Blade re-shows the form with the error;
+     * Laravel's JSON exception rendering, already forced for api/* requests,
+     * turns it into a real 422 with the same message).
      */
     public function authenticate(string $rawCode, string $pin, string $ip): Learner
     {
         $code = \App\Support\LearnerCode::normalize($rawCode);
-        $throttleKey = 'learner-login:'.$code.'|'.$ip;
+        $learner = Learner::where('learner_code', $code)->first();
+        $throttleKey = 'learner-login:'.$code.'|'.$ip.'|'.substr(sha1((string) $learner?->pin), 0, 8);
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $minutes = (int) ceil(RateLimiter::availableIn($throttleKey) / 60);
 
             throw ValidationException::withMessages([
-                'pin' => "Too many attempts. Try again in {$minutes} minute".($minutes === 1 ? '' : 's').'.',
+                'pin' => "Too many attempts. Ask your grown-up for a new PIN, or try again in {$minutes} minute".($minutes === 1 ? '' : 's').'.',
             ]);
         }
 
-        $learner = Learner::where('learner_code', $code)->first();
+        // A code that does not exist still does the same amount of hashing work as one that does.
+        $matches = Hash::check($pin, $learner?->pin ?? Hash::make(bin2hex(random_bytes(8))));
 
-        if (! $learner || ! Hash::check($pin, $learner->pin)) {
+        if (! $learner || ! $matches) {
             RateLimiter::hit($throttleKey, 900);
+
+            if ($learner && RateLimiter::tooManyAttempts($throttleKey, 5)) {
+                $this->tellGuardiansAboutTheLock($learner);
+            }
 
             throw ValidationException::withMessages([
                 'pin' => 'Incorrect code or PIN.',
@@ -63,6 +77,21 @@ class LearnerAuthService
         RateLimiter::clear($throttleKey);
 
         return $learner;
+    }
+
+    /** Once per lock: a locked child may just have forgotten the PIN, and the guardian is the only one who can fix that. */
+    private function tellGuardiansAboutTheLock(Learner $learner): void
+    {
+        if (! Cache::add('pin-lock-notified:'.$learner->id, 1, 900)) {
+            return;
+        }
+
+        Notification::notifyForLearner(
+            $learner,
+            Notification::TYPE_PIN_LOCKED,
+            "{$learner->first_name} tried the wrong PIN 5 times and is locked out for 15 minutes. If {$learner->first_name} forgot it, you can make a new one: Children, then New PIN.",
+            includeTeacher: false,
+        );
     }
 
     /**

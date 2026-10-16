@@ -803,6 +803,13 @@ export const linkChild = (body: { learner_code: string; pin: string; relationshi
 
 export const childCard = (id: number) => request<{ name: string; firstName: string; code: string; qrSvg: string }>(`/api/parent/children/${id}/card`);
 
+/**
+ * A guardian makes a new PIN for a child who forgot theirs. `generate` returns the PIN once in `pin` (null for `choose`, which the guardian
+ * typed). A refusal is a 422 under `password` or `pin` in the website's words: a wrong password, three changes already made today, an easy PIN.
+ */
+export const resetChildPin = (id: number, body: { mode: 'generate' | 'choose'; password: string; pin?: string; pin_confirmation?: string }) =>
+  request<{ pin: string | null; message: string }>(`/api/parent/children/${id}/pin`, json(body));
+
 export const parentProgress = (learnerId: number | null) => request<ParentProgress>(withChild('/api/parent/progress', learnerId));
 
 export const parentRepository = (learnerId: number | null, filter: 'all' | 'free' | 'paid' | 'unlocked', best: boolean) =>

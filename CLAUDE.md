@@ -7066,6 +7066,45 @@ Two Teacher gaps from the list of what the phone lacked, closed after the 0.5.0 
   `.moveTargets` are OPTIONAL in `api.ts` and read with `?? []`, because the live server does not have them until this branch is merged (a check on 2026-10-15 night: the
   Teacher and Parent routes answered 401, the move route answered 404). Without that, an older server would have crashed the Classes tab.
 
+## Generate activities: a request could hang on "Running" for ever (found and fixed 2026-10-15, LOCAL, not committed)
+
+The owner saw a local generation "running" for 8 minutes. The log showed `Maximum execution time of 30 seconds exceeded` 33 seconds after the request started. Cause: with no
+queue worker (always the case on a local `php artisan serve`), the page that watches a request runs the job itself after 45 seconds, as a WEB request with PHP's usual 30 second
+limit; `GenerateActivitiesJob::handle()` first waits for a sleeping generator to wake (`awaitReady`, up to 100 s) and only `generateBundle()` raised the limit, so PHP killed the
+request, the row stayed `Running`, and nothing closed it until the 20 minute safety net. The generator itself was fine (the same request answered in 10 seconds when sent directly).
+Fix in `app/Jobs/GenerateActivitiesJob.php`: `set_time_limit(AI_WAIT_SECONDS + 300)` at the top of `handle()`, and `register_shutdown_function(closeIfStillRunning)` so a fatal error that
+skips `failed()` closes the request as Failed ("Nothing was charged") at once. Two tests in `ActivityGenerationBackgroundTest` (15 pass). Verified through the real app with no worker
+against the live generator: queued, picked up by the page after about 45 s, Done at 55 s, one draft, one credit. On Render the entrypoint runs a worker, so this was only reachable
+when that worker is not running, but the fix makes both paths safe. A local worker (`php artisan queue:work`) would also hide the problem.
+
+## A child forgot their PIN: a guardian makes a new one (2026-10-15 night, BUILT LOCALLY, NOT COMMITTED; needs the owner's word to commit and merge)
+
+The owner asked what should happen when a learner's PIN is forgotten, for the best Parent end UX, with a way to make a new PIN, a constraint, and the result on the live site.
+- **Who can reset it: only a guardian linked to the child.** A child has no email and no other proof of who they are, and a brother or classmate could reset a PIN they do not
+  know. Teachers cannot (they only join a child by code). The child's own screens say who can: "Forgot my PIN?" on the website child login and in the phone app (an "Ask your
+  grown-up!" box: open TaraBasa, Children, your name, New PIN), which opens by itself after a lockout.
+- **The rules, all on the server** (`App\Services\LearnerPinService`, shared by the website `LearnerController::resetPin` and the phone `POST /api/parent/children/{id}/pin`):
+  1. a linked guardian only (anyone else gets 404, not 403, so a child cannot be probed); 2. the guardian's OWN PASSWORD again (a child holding an unlocked parent's phone must not be
+  enough; 5 wrong passwords lock that for 15 minutes); 3. at most 3 changes per child per 24 hours (`PinRules::CHANGES_PER_DAY`); 4. a PIN the guardian chooses may not be four of the
+  same number or a straight run (1111, 1234, 4321) or the PIN it replaces, and the made-up PIN follows the same rules (`App\Support\PinRules`, `random_int`); 5. the old PIN stops at
+  once, the child's phone sign ins (Sanctum tokens) are deleted, a website sign in ends at its next page (`EnsureLearnerLoggedIn` compares a per-child fingerprint of the PIN hash kept
+  in the session: `LearnerPinService::stamp`, "id:fingerprint"; a sign in with no fingerprint is just given one so the deploy signs nobody out), and the child's count of wrong tries
+  starts again; 6. the OTHER guardians get an alert "PIN Changed" (not the one who did it, never the teacher); 7. nothing stores or logs a PIN: `learner_pin_changes` (new table) holds
+  who, how (generated or chosen) and when. A made-up PIN is flashed to the next page ONCE (web) or returned once in `pin` (API); `$exceptions->dontFlash(['pin','pin_confirmation'])` so a
+  mistyped PIN is never written back into a form.
+- **The lockout** (`LearnerAuthService::authenticate`): the counter key is now code + address + a fingerprint of the child's CURRENT PIN hash, so a new PIN gives a clean count and the
+  child is not left locked out of the PIN they were just given. When a real child reaches the 5th wrong try, every guardian gets ONE alert "PIN Locked" (cache dedupe, 15 minutes) that
+  says how to fix it; it counts as "needs attention". The message is "Too many attempts. Ask your grown-up for a new PIN, or try again in N minutes." A code that does not exist gets the
+  same answer and the same amount of hashing work and tells nobody.
+- **Screens.** Website: My children, each card has a "New PIN" button opening a window (Make one for me / I'll choose one, your password, the rules in plain words; the result window shows
+  big digit boxes once with "write it down, we cannot show it again"). Phone: the child's card has "New PIN" (`mobile/src/parent/ResetPin.tsx`, the same two ways, the same words from the
+  server, big digits once). The child website login also shows "Your PIN was changed. Please sign in with the new PIN." after being signed out.
+- **Not done / honest limits.** The wizard that first sets a PIN still allows 1234 (many tests and the demo seeder use it); only a reset enforces the easy PIN rules. A parent who also lost their
+  password uses the normal forgot password. A second guardian who forgot the PIN while LINKING a child needs the first guardian to reset it and tell them. No email is sent about a PIN
+  change (in-app alert only). The Lottie / real phone behaviour is untested as always. Needs a phone build after 0.5.1 (0.5.2) to reach the phone; the website and the API change reach
+  Render when this branch is merged (the new table is made by the normal `migrate --force` at deploy; nothing existing is rewritten).
+- **Tests.** `tests/Feature/ChildPinResetTest.php` (19: every rule above, the website and the phone API, the locked child recovering at once, the alerts, a stranger and a teacher refused).
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

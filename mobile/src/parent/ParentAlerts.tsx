@@ -93,7 +93,7 @@ export function ParentAlerts({ refreshKey, onUnread }: Props) {
                   <H2>{g.day}</H2>
                   {g.items.map((a) => (
                     <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={`${a.read ? '' : 'Unread. '}${a.child ? `${a.child}. ` : ''}${a.message}`} accessibilityHint={a.read ? undefined : 'Marks it as read'} onPress={() => read(a)} style={[st.card, !a.read && st.unread, a.attention && st.attention]}>
-                      <Icon name={a.attention ? 'warning-circle' : 'check-circle'} size={s(28)} color={a.attention ? colors.bad : colors.ok} />
+                      <Icon name={a.type.startsWith('PIN') ? 'key' : a.attention ? 'warning-circle' : 'check-circle'} size={s(28)} color={a.attention ? colors.bad : colors.ok} />
                       <View style={{ flex: 1, gap: space[2] }}>
                         {a.child ? <Small>{a.child}</Small> : null}
                         <Text maxFontSizeMultiplier={1.25} style={[st.message, !a.read && { fontFamily: fonts.uiBold }]}>

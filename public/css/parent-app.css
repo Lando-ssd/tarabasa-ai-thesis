@@ -297,3 +297,31 @@ a.me-av{ text-decoration:none; }
 .qr-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
 .qr-x{ position:absolute; top:12px; right:12px; width:38px; height:38px; display:grid; place-items:center; border:2px solid var(--line); border-radius:12px; background:#fff; color:var(--muted); cursor:pointer; font-size:20px; }
 .code-row .btn.small{ white-space:nowrap; }
+
+/* ---------- New PIN window (My children): forgot a child's PIN ---------- */
+.pin-dlg{ width:min(94vw,440px); }
+.pin-in{ text-align:left; max-height:92vh; overflow:auto; }
+.pin-in h3{ padding-right:46px; margin-bottom:6px; }
+.pin-lead{ margin:0 0 14px; color:var(--muted); font-size:15px; }
+.pin-form{ display:flex; flex-direction:column; gap:14px; }
+.pin-modes{ display:grid; gap:10px; }
+.pin-mode{ display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border:2px solid var(--line); border-radius:16px; cursor:pointer; background:#fff; box-shadow:0 3px 0 var(--lip); }
+.pin-mode input{ margin-top:3px; width:20px; height:20px; accent-color:var(--blue); flex:none; }
+.pin-mode b{ display:block; font:700 19px/1.1 var(--font-game); letter-spacing:.02em; text-transform:none; color:var(--ink); }
+.pin-mode small{ display:block; margin-top:3px; color:var(--muted); font:400 13.5px/1.35 'Inter',system-ui,sans-serif; letter-spacing:0; text-transform:none; }
+.pin-mode:has(input:checked){ border-color:var(--blue); background:var(--blue-bg); }
+.pin-mode:focus-within{ outline:3px solid var(--orange); outline-offset:2px; }
+.pin-choose[hidden]{ display:none; }
+.pin-pair{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.pin-form > label, .pin-pair label{ display:block; font:600 15px/1.2 var(--font-game); letter-spacing:.08em; text-transform:uppercase; color:var(--soft); }
+.pin-form label input{ display:block; margin-top:6px; }
+.pin-pair input{ text-align:center; font:700 26px/1 var(--font-game); letter-spacing:.3em; padding:12px 8px; }
+.pin-pair input::placeholder{ font:400 14px/1 'Inter',system-ui,sans-serif; letter-spacing:0; color:var(--soft); }
+.pin-pw small{ display:block; margin-top:2px; font:400 13px/1.3 'Inter',system-ui,sans-serif; letter-spacing:0; text-transform:none; color:var(--muted); }
+.pin-hint{ margin:0; color:var(--muted); font-size:13.5px; line-height:1.45; }
+.pin-err{ margin:0; padding:10px 14px; font-size:14.5px; }
+.pin-digits{ display:flex; gap:10px; justify-content:center; margin:8px 0 16px; }
+.pin-digits span{ width:64px; height:78px; display:grid; place-items:center; border-radius:16px; background:var(--blue-bg); border:2px solid var(--blue-line); box-shadow:0 4px 0 #cfe3f7; font:700 44px/1 var(--font-game); color:var(--blue-ink); }
+.pin-warn{ margin:0 0 12px; padding:10px 14px; border-radius:14px; background:var(--amber-bg); color:var(--amber); font-size:14.5px; text-align:center; }
+.pin-notes{ margin:0 0 16px; padding:0 0 0 20px; color:var(--muted); font-size:14px; line-height:1.6; }
+@media (max-width:480px){ .pin-digits span{ width:56px; height:70px; font-size:38px; } }

@@ -8,6 +8,7 @@ use App\Models\Notification;
 use App\Models\OpenRepositoryListing;
 use App\Models\ParentAccount;
 use App\Models\ReadingSession;
+use App\Services\LearnerPinService;
 use App\Services\ParentChildService;
 use App\Services\ParentRepositoryService;
 use App\Support\ChildSummary;
@@ -35,6 +36,7 @@ class ParentApiController extends Controller
     public function __construct(
         private readonly ParentChildService $children,
         private readonly ParentRepositoryService $repository,
+        private readonly LearnerPinService $pins,
     ) {}
 
     // ------------------------------------------------------------------ home
@@ -138,6 +140,19 @@ class ParentApiController extends Controller
         ]);
     }
 
+    /**
+     * A guardian makes a new PIN for a child who forgot theirs (LearnerPinService holds every rule). `mode` is `generate` (the system makes
+     * one, returned ONCE in `pin`) or `choose` (the guardian types it, so nothing comes back). A refusal is a 422 under `password` or `pin`.
+     */
+    public function resetPin(Request $request, Learner $learner): JsonResponse
+    {
+        $validated = $request->validate(LearnerPinService::formRules(), LearnerPinService::formMessages());
+
+        $result = $this->pins->reset($request->user(), $learner, $validated['password'], $validated['mode'], $validated['pin'] ?? null);
+
+        return response()->json($result);
+    }
+
     // ------------------------------------------------------------------ progress
 
     /** One child's progress: level in plain words, what to practise at home, the week, the accuracy of recent readings and the history. */
@@ -237,8 +252,8 @@ class ParentApiController extends Controller
         $filter = in_array($request->query('filter'), ['attention', 'routine'], true) ? $request->query('filter') : 'all';
 
         $rows = Notification::where('recipient_user_id', $userId)
-            ->when($filter === 'attention', fn ($q) => $q->where('type', Notification::TYPE_NEEDS_ATTENTION))
-            ->when($filter === 'routine', fn ($q) => $q->whereIn('type', [Notification::TYPE_SESSION_SUMMARY, Notification::TYPE_LEVEL_CONFIRMED, Notification::TYPE_GUARDIAN_LINKED, Notification::TYPE_CLASS_JOINED]))
+            ->when($filter === 'attention', fn ($q) => $q->whereIn('type', [Notification::TYPE_NEEDS_ATTENTION, Notification::TYPE_PIN_LOCKED]))
+            ->when($filter === 'routine', fn ($q) => $q->whereIn('type', [Notification::TYPE_SESSION_SUMMARY, Notification::TYPE_LEVEL_CONFIRMED, Notification::TYPE_GUARDIAN_LINKED, Notification::TYPE_CLASS_JOINED, Notification::TYPE_PIN_CHANGED]))
             ->with('learner')
             ->orderByDesc('timestamp')
             ->orderByDesc('id')
@@ -251,7 +266,7 @@ class ParentApiController extends Controller
             'alerts' => $rows->map(fn (Notification $n) => [
                 'id' => $n->id,
                 'type' => $n->type,
-                'attention' => $n->type === Notification::TYPE_NEEDS_ATTENTION,
+                'attention' => in_array($n->type, [Notification::TYPE_NEEDS_ATTENTION, Notification::TYPE_PIN_LOCKED], true),
                 'message' => $n->message,
                 'read' => (bool) $n->is_read,
                 'childId' => $n->learner_id,
