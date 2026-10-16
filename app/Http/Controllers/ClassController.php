@@ -299,28 +299,11 @@ class ClassController extends Controller
     {
         $teacher = $request->user()->teacher;
 
-        abort_if($class->teacher_id !== $teacher->id, 403);
-        abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
-        abort_if($learner->class_id !== $class->id, 404);
-
         $validated = $request->validate(['to_class_id' => ['required', 'integer']], [
             'to_class_id.required' => 'Choose the class to move to.',
         ]);
 
-        $target = SchoolClass::where('teacher_id', $teacher->id)
-            ->where('school_year', $class->school_year)
-            ->where('id', '!=', $class->id)
-            ->find($validated['to_class_id']);
-
-        if (! $target) {
-            throw ValidationException::withMessages(['to_class_id' => 'Choose one of your other classes.']);
-        }
-
-        if ($refusal = \App\Support\ClassLevel::joinRefusal($teacher, $target->loadMissing('learners'), $learner)) {
-            throw ValidationException::withMessages(['to_class_id' => $refusal]);
-        }
-
-        $learner->update(['class_id' => $target->id]);
+        $target = $this->classes->move($teacher, $class, $learner, (int) $validated['to_class_id']);
 
         return $this->backToClass($class, 'learners')->with('status', "{$learner->first_name} {$learner->last_name} moved to \"{$target->name}\".");
     }

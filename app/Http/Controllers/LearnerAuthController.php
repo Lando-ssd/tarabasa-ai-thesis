@@ -50,6 +50,7 @@ class LearnerAuthController extends Controller
 
         Auth::guard('learner')->login($learner);
         $request->session()->regenerate();
+        $request->session()->put('learner_pin_stamp', \App\Services\LearnerPinService::stamp($learner));
 
         // PlacementDiagnostic_Addition.txt Part 2: checked right after PIN
         // success, before the normal Dashboard. The standing

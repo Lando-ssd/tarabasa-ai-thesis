@@ -52,6 +52,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // A PIN typed into a form that fails validation must not be written into the next page.
+        $exceptions->dontFlash(['pin', 'pin_confirmation']);
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

@@ -92,12 +92,16 @@ Route::middleware(['auth:sanctum', 'token.actor:teacher'])->prefix('teacher')->n
         Route::post('/classes', [TeacherApiController::class, 'storeClass'])->name('classes.store');
         Route::put('/classes/{class}', [TeacherApiController::class, 'updateClass'])->whereNumber('class')->name('classes.update');
         Route::post('/classes/{class}/learners', [TeacherApiController::class, 'joinLearner'])->whereNumber('class')->middleware('throttle:60,1')->name('classes.learners.join');
+        Route::post('/classes/{class}/learners/{learner}/move', [TeacherApiController::class, 'moveLearner'])->whereNumber(['class', 'learner'])->name('classes.learners.move');
     });
 });
 
 // The Parent's screens in the phone app. A Parent has no approval step, so everything here is open to a signed in Parent, and only
 // ever reaches the children linked to their own account.
 Route::middleware(['auth:sanctum', 'token.actor:parent'])->prefix('parent')->name('api.parent.')->group(function () {
+    // A guardian makes a new PIN for a child who forgot theirs (password again, 3 changes a day, no weak PINs: LearnerPinService).
+    Route::post('/children/{learner}/pin', [ParentApiController::class, 'resetPin'])->whereNumber('learner')->middleware('throttle:20,1')->name('children.pin');
+
     Route::get('/home', [ParentApiController::class, 'home'])->name('home');
 
     Route::get('/children', [ParentApiController::class, 'children'])->name('children.index');

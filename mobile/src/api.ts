@@ -424,7 +424,7 @@ export type ClassCard = {
   groups: { key: 'support' | 'instructional' | 'independent'; title: string; sub: string; count: number }[];
 };
 
-export type ClassList = { schoolYear: string; currentSchoolYear: string; readOnly: boolean; grades: string[]; classes: ClassCard[] };
+export type ClassList = { schoolYear: string; currentSchoolYear: string; /** Every school year this teacher has classes in, newest first. */ years?: string[]; readOnly: boolean; grades: string[]; classes: ClassCard[] };
 
 export type ClassDetail = {
   class: ClassCard;
@@ -437,8 +437,14 @@ export type ClassDetail = {
 export type ClassBody = { name: string; grade_level: string; section: string; group_tag?: string };
 
 /** What the parent shared, where the child reads now, and what suits them: the website's learner window, as data. */
+/** Another class of the same grade a child can be moved to. */
+export type MoveTarget = { id: number; name: string; grade: string; section: string };
+
 export type LearnerPage = {
   learner: RosterLearner;
+  /** Moving needs an Active teacher and a school year in progress. */
+  canMove?: boolean;
+  moveTargets?: MoveTarget[];
   profile: {
     stage: string | null;
     language: string | null;
@@ -466,6 +472,9 @@ export const teacherClass = (id: number) => request<ClassDetail>(`/api/teacher/c
 export const teacherLearner = (classId: number, learnerId: number) => request<LearnerPage>(`/api/teacher/classes/${classId}/learners/${learnerId}`);
 
 export const createClass = (body: ClassBody & { school_year: string }) => request<{ class: ClassCard }>('/api/teacher/classes', json(body));
+
+export const moveLearner = (classId: number, learnerId: number, toClassId: number) =>
+  request<{ message: string; class: { id: number; name: string } }>(`/api/teacher/classes/${classId}/learners/${learnerId}/move`, json({ to_class_id: toClassId }));
 
 export const updateClass = (id: number, body: ClassBody) =>
   request<{ class: ClassCard }>(`/api/teacher/classes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -793,6 +802,13 @@ export const linkChild = (body: { learner_code: string; pin: string; relationshi
   request<{ child: ParentChild; message: string }>('/api/parent/children/link', json(body));
 
 export const childCard = (id: number) => request<{ name: string; firstName: string; code: string; qrSvg: string }>(`/api/parent/children/${id}/card`);
+
+/**
+ * A guardian makes a new PIN for a child who forgot theirs. `generate` returns the PIN once in `pin` (null for `choose`, which the guardian
+ * typed). A refusal is a 422 under `password` or `pin` in the website's words: a wrong password, three changes already made today, an easy PIN.
+ */
+export const resetChildPin = (id: number, body: { mode: 'generate' | 'choose'; password: string; pin?: string; pin_confirmation?: string }) =>
+  request<{ pin: string | null; message: string }>(`/api/parent/children/${id}/pin`, json(body));
 
 export const parentProgress = (learnerId: number | null) => request<ParentProgress>(withChild('/api/parent/progress', learnerId));
 

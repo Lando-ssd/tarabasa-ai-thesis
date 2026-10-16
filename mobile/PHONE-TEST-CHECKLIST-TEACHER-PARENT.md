@@ -29,6 +29,11 @@ Write down for each one: **worked / did not work / odd**, and what the screen sa
    or show the Parent app's child card on another phone). Does the camera open, does a green result appear, does it keep scanning?
    Then try **Add with a code** and type the last 5 characters of a code.
 5. **A child of the wrong grade.** Try to add a Grade 2 child to a Grade 1 class. It must be refused with a sentence that names both grades.
+5b. **Move a learner.** Tap a learner's row in a class and scroll to the end of their page. If the teacher has another class of the same grade you
+    should see **Move to another Grade 1 class**. Pick a class, press the button that names it, and check the app goes back to the class and says
+    where the child went. A class of another grade must never be offered. (If that card is missing, write it down: it needs the newest server.)
+5c. **School years.** On Classes, if the teacher has classes in more than one school year, chips appear at the top. A past year must say it
+    can only be read and must have no New class button. (With only one year there are no chips: that is correct.)
 6. **Write activities.** Activities, **Write new activities**. Pick a grade, a skill, a kind of reading and ONE level.
    Pick a class under **For a class** and read the box it shows. Press **Write**. It takes about two minutes (the free server may sleep
    first). Leave the screen, use another tab, come back: the blue notice should still be there with a timer. When it is done it turns
@@ -53,6 +58,10 @@ Write down for each one: **worked / did not work / odd**, and what the screen sa
 5. **Link a child.** On a second Parent account, Children, **Link an existing child**: a wrong PIN must be refused with one message
    (it must not say whether the code or the PIN was wrong). The right code and PIN should link the child, and the first Parent should
    get an alert.
+5b. **Forgot the PIN.** Children, tap the child, **New PIN**. (a) Pick **Make one for me**, type the parent password, press **Make a new PIN**: big numbers appear ONCE.
+    Write them down, press Done, and check the child can sign in with them (and the old PIN no longer works). (b) Try **I'll choose one** with 1111 or 1234: it must be refused with a
+    sentence. (c) Try a wrong password: it must say so. (d) After 3 new PINs in a day the 4th must be refused. (e) On the child sign in screen tap **Forgot my PIN?**: it should say to ask the
+    grown-up. After 5 wrong PINs the child is locked and the help should open by itself, and the parent should get a red alert ("PIN Locked").
 6. **Progress.** The level in plain words, "Practise at home" (only after several readings), the chart, the history.
 7. **Activities.** Needs a Teacher to have shared an activity to the Repository first. Unlock a free one in one tap, a paid one with
    the confirm step (nothing is charged). Rate it with the stars. Then check that the child sees it in their own app under extra practice.

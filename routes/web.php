@@ -265,6 +265,8 @@ Route::middleware(['auth', 'parent'])->prefix('parent')->name('parent.')->group(
     Route::post('/children/link', [LearnerController::class, 'storeLink'])->name('children.link.submit');
     // The child's printable card with their QR code (only for a child the Parent is linked to).
     Route::get('/children/{learner}/card', [LearnerController::class, 'card'])->whereNumber('learner')->name('children.card');
+    // A guardian makes a new PIN for a child who forgot theirs.
+    Route::post('/children/{learner}/pin', [LearnerController::class, 'resetPin'])->whereNumber('learner')->middleware('throttle:20,1')->name('children.pin');
 
     // Progress — Parent Actor Prompt Step 7.
     Route::get('/progress', [AnalyticsController::class, 'parentIndex'])->name('progress');

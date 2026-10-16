@@ -66,7 +66,72 @@
         </dialog>
         <div class="foot">
           <a href="{{ route('parent.progress', ['learner_id' => $learner->id]) }}" class="btn ghost small">See progress</a>
+          <button type="button" class="btn ghost small" data-qr-open="pin-{{ $learner->id }}">@include('learner._badge-icon', ['icon' => 'key', 'class' => 'ico']) New PIN</button>
         </div>
+
+        {{-- Forgot the PIN? A guardian makes a new one. The rules (password again, 3 a day, no easy PINs) are enforced by LearnerPinService; this only asks nicely. --}}
+        @php
+          $madePin = session('new_pin');
+          $madeForThis = is_array($madePin) && ($madePin['learner_id'] ?? null) === $learner->id ? $madePin['pin'] : null;
+          $formFailed = (string) old('pin_form') === (string) $learner->id && $errors->any();
+        @endphp
+        <dialog id="pin-{{ $learner->id }}" class="qr-dlg pin-dlg" aria-labelledby="pin-title-{{ $learner->id }}" @if ($madeForThis || $formFailed) data-open @endif>
+          <div class="qr-in pin-in">
+            <button type="button" class="qr-x" data-qr-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+
+            @if ($madeForThis)
+              <h3 id="pin-title-{{ $learner->id }}">{{ $learner->first_name }}'s new PIN</h3>
+              <div class="pin-digits" role="img" aria-label="New PIN: {{ implode(' ', str_split($madeForThis)) }}">
+                @foreach (str_split($madeForThis) as $digit)<span>{{ $digit }}</span>@endforeach
+              </div>
+              <p class="pin-warn"><b>Tell {{ $learner->first_name }} now, or write it down.</b> For safety, TaraBasa cannot show this PIN again.</p>
+              <ul class="pin-notes">
+                <li>The old PIN does not work any more.</li>
+                <li>{{ $learner->first_name }} is signed out on any other device.</li>
+                <li>{{ $learner->first_name }} can type the new PIN right away.</li>
+              </ul>
+              <div class="qr-actions"><button type="button" class="btn small" data-qr-close>Done</button></div>
+            @else
+              <h3 id="pin-title-{{ $learner->id }}">New PIN for {{ $learner->first_name }}</h3>
+              <p class="pin-lead">Forgot the PIN? Make a new one. The old PIN stops working right away.</p>
+
+              <form method="POST" action="{{ route('parent.children.pin', $learner) }}" class="pin-form" autocomplete="off" novalidate>
+                @csrf
+                <input type="hidden" name="pin_form" value="{{ $learner->id }}">
+                @php $mode = $formFailed ? old('mode', 'generate') : 'generate'; @endphp
+
+                <div class="pin-modes" role="radiogroup" aria-label="How to make the new PIN">
+                  <label class="pin-mode"><input type="radio" name="mode" value="generate" @checked($mode === 'generate')><span><b>Make one for me</b><small>We pick a random PIN and show it once.</small></span></label>
+                  <label class="pin-mode"><input type="radio" name="mode" value="choose" @checked($mode === 'choose')><span><b>I'll choose one</b><small>Four numbers {{ $learner->first_name }} can remember.</small></span></label>
+                </div>
+
+                <div class="pin-choose" @if ($mode !== 'choose') hidden @endif>
+                  <div class="pin-pair">
+                    <label>New PIN<input type="text" name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="4 numbers" class="@if ($formFailed && $errors->has('pin')) error @endif"></label>
+                    <label>Again<input type="text" name="pin_confirmation" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="Type it again" class="@if ($formFailed && $errors->has('pin_confirmation')) error @endif"></label>
+                  </div>
+                  <p class="pin-hint">Not allowed: four of the same number (1111) or a run (1234, 4321), or the PIN {{ $learner->first_name }} has now.</p>
+                </div>
+
+                <label class="pin-pw">Your TaraBasa password <small>so we know it is you</small>
+                  <input type="password" name="password" autocomplete="current-password" required class="@if ($formFailed && $errors->has('password')) error @endif">
+                </label>
+
+                @if ($formFailed)
+                  @foreach (['password', 'pin', 'pin_confirmation', 'mode'] as $field)
+                    @if ($errors->has($field))<div class="flash error pin-err" role="alert">{{ $errors->first($field) }}</div>@endif
+                  @endforeach
+                @endif
+
+                <p class="pin-hint">You can make up to 3 new PINs a day for each child. The other guardians are told when a PIN changes.</p>
+                <div class="qr-actions">
+                  <button type="submit" class="btn small" data-pin-submit>Make a new PIN</button>
+                  <button type="button" class="btn ghost small" data-qr-close>Cancel</button>
+                </div>
+              </form>
+            @endif
+          </div>
+        </dialog>
       </div>
     @endforeach
   </div>
@@ -86,6 +151,26 @@
   });
   document.querySelectorAll('dialog.qr-dlg').forEach(function (d) {
     d.addEventListener('click', function (e) { if (e.target === d || e.target.closest('[data-qr-close]')) { d.close(); } });
+  });
+
+  // A "New PIN" window that has a result or an error to show opens by itself when the page loads.
+  document.querySelectorAll('dialog[data-open]').forEach(function (d) { if (d.showModal) { d.showModal(); } });
+
+  // The New PIN form: the PIN boxes only show for "I'll choose one", only numbers can be typed, and one press sends it once.
+  document.querySelectorAll('.pin-form').forEach(function (form) {
+    var choose = form.querySelector('.pin-choose');
+    var submit = form.querySelector('[data-pin-submit]');
+    function sync() {
+      var mode = form.querySelector('input[name="mode"]:checked').value;
+      choose.hidden = mode !== 'choose';
+      submit.textContent = mode === 'choose' ? 'Save new PIN' : 'Make a new PIN';
+    }
+    form.querySelectorAll('input[name="mode"]').forEach(function (r) { r.addEventListener('change', sync); });
+    form.querySelectorAll('input[name="pin"], input[name="pin_confirmation"]').forEach(function (i) {
+      i.addEventListener('input', function () { i.value = i.value.replace(/\D/g, '').slice(0, 4); });
+    });
+    form.addEventListener('submit', function () { submit.disabled = true; submit.textContent = 'Working...'; });
+    sync();
   });
 
   // The copy buttons: copy the Learner Code, and say so on the button for a moment.

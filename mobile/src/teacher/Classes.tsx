@@ -8,6 +8,9 @@ import { colors, fonts, space } from '../theme';
 import { s } from '../scale';
 
 type ListProps = {
+  /** The school year being shown (null is this year). Kept by the app, so coming back from a class keeps the same year. */
+  year: string | null;
+  onYear: (year: string | null) => void;
   /** Only an Active teacher may make a class or add learners. */
   active: boolean;
   onOpen: (id: number) => void;
@@ -18,6 +21,9 @@ type ListProps = {
   onLoaded?: (list: api.ClassList) => void;
 };
 
+/** "2026-2027" as "2026 to 2027", and "(this year)" on the one in progress. */
+const yearLabel = (year: string, current: string) => `${year.replace('-', ' to ')}${year === current ? ' (now)' : ''}`;
+
 /** A section is typed by the teacher: "A" or "Section A". Say "Section A" either way, never "Section Section A". */
 export const sectionText = (section: string) => (/^section\b/i.test(section.trim()) ? section.trim() : `Section ${section.trim()}`);
 
@@ -25,8 +31,8 @@ const GROUP_TONE: Record<string, Tone> = { support: 'red', instructional: 'blue'
 const GROUP_SHORT: Record<string, string> = { support: 'Support', instructional: 'Instructional', independent: 'Independent' };
 
 /** Classes: one card for each class of this school year. A class holds one grade, as on the website. */
-export function Classes({ active, onOpen, onNew, refreshKey, onLoaded }: ListProps) {
-  const { data, error, reload } = useLoad(() => api.teacherClasses(), [refreshKey]);
+export function Classes({ year, onYear, active, onOpen, onNew, refreshKey, onLoaded }: ListProps) {
+  const { data, error, reload } = useLoad(() => api.teacherClasses(year ?? undefined), [year, refreshKey]);
   useEffect(() => {
     if (data) onLoaded?.(data);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -41,6 +47,19 @@ export function Classes({ active, onOpen, onNew, refreshKey, onLoaded }: ListPro
           <Loading error={error} onRetry={reload} text="Getting your classes" />
         ) : (
           <>
+            {(data.years ?? []).length > 1 ? (
+              <Chips
+                label="School year"
+                options={(data.years ?? []).map((y) => yearLabel(y, data.currentSchoolYear))}
+                picked={[yearLabel(data.schoolYear, data.currentSchoolYear)]}
+                onToggle={(label) => {
+                  const picked = (data.years ?? []).find((y) => yearLabel(y, data.currentSchoolYear) === label) ?? null;
+                  onYear(picked === data.currentSchoolYear ? null : picked);
+                }}
+              />
+            ) : null}
+            {data.readOnly ? <Notice tone="info" text="This is a past school year, so it can only be read." /> : null}
+
             {data.classes.map((c) => (
               <ClassCardView key={c.id} card={c} onPress={() => onOpen(c.id)} />
             ))}
@@ -51,7 +70,7 @@ export function Classes({ active, onOpen, onNew, refreshKey, onLoaded }: ListPro
               </View>
             ) : null}
 
-            {active ? (
+            {data.readOnly ? null : active ? (
               <Btn label="New class" tone="ghost" icon="plus" onPress={onNew} />
             ) : (
               <Banner tone="amber" icon="info" title="New classes open once you are approved" text="Your school details are being checked." />

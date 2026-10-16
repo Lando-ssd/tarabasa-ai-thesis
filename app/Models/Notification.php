@@ -19,6 +19,11 @@ class Notification extends Model
 
     public const TYPE_CLASS_JOINED = 'Class Joined';
 
+    /** A guardian set a new PIN for the child (told to the OTHER guardians), and a child was locked out after five wrong PINs (told to every guardian). */
+    public const TYPE_PIN_CHANGED = 'PIN Changed';
+
+    public const TYPE_PIN_LOCKED = 'PIN Locked';
+
     protected $fillable = [
         'recipient_user_id',
         'learner_id',
@@ -55,7 +60,7 @@ class Notification extends Model
      * $includeTeacher is false for the diagnostic case (Step 7 says
      * Parent(s) only — no Teacher is involved in a diagnostic at all).
      */
-    public static function notifyForLearner(Learner $learner, string $type, string $message, bool $includeTeacher = true): void
+    public static function notifyForLearner(Learner $learner, string $type, string $message, bool $includeTeacher = true, ?int $exceptUserId = null): void
     {
         $recipientUserIds = collect();
 
@@ -71,6 +76,11 @@ class Notification extends Model
         );
 
         foreach ($recipientUserIds->unique() as $userId) {
+            // The person who did the thing does not need telling about it.
+            if ($exceptUserId !== null && (int) $userId === $exceptUserId) {
+                continue;
+            }
+
             self::create([
                 'recipient_user_id' => $userId,
                 'learner_id' => $learner->id,
