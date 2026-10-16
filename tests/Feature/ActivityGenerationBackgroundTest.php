@@ -330,4 +330,32 @@ class ActivityGenerationBackgroundTest extends TestCase
             ->assertSee('>Share one<', false)
             ->assertSee(e(route('teacher.activities.index', ['view' => 'list', 'status' => 'Approved'])), false);
     }
+
+    public function test_the_job_raises_the_php_time_limit_before_it_waits_for_a_sleeping_generator(): void
+    {
+        [, $teacher] = $this->teacher('Active', 0);
+        $generation = $this->request($teacher);
+
+        // A page that runs the job itself has PHP's 30 second limit; the wait for a cold generator alone can be longer.
+        set_time_limit(30);
+        (new GenerateActivitiesJob($generation->id))->handle(app(ActivityAiClient::class));
+
+        $this->assertGreaterThan(800, (int) ini_get('max_execution_time'));
+    }
+
+    public function test_a_request_cut_off_while_running_is_closed_as_failed_at_once_and_a_finished_one_is_left_alone(): void
+    {
+        [, $teacher] = $this->teacher();
+        $cut = $this->request($teacher, ['status' => ActivityGeneration::RUNNING, 'started_at' => now()]);
+        $done = $this->request($teacher, ['status' => ActivityGeneration::DONE, 'message' => '2 drafts added.', 'created_count' => 2]);
+
+        GenerateActivitiesJob::closeIfStillRunning($cut->id);
+        GenerateActivitiesJob::closeIfStillRunning($done->id);
+
+        $this->assertSame(ActivityGeneration::FAILED, $cut->fresh()->status);
+        $this->assertStringContainsString('Nothing was charged', $cut->fresh()->message);
+        $this->assertNotNull($cut->fresh()->finished_at);
+        $this->assertSame(ActivityGeneration::DONE, $done->fresh()->status);
+        $this->assertSame('2 drafts added.', $done->fresh()->message);
+    }
 }

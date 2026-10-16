@@ -42,6 +42,11 @@ class GenerateActivitiesJob implements ShouldQueue
 
     public function handle(ActivityAiClient $activityAi): void
     {
+        // When no worker is running, the page that is watching the request runs this job itself, as a web request with PHP's usual
+        // 30 second limit. Waiting for a sleeping generator to wake (below) can alone take longer, and PHP then killed the request
+        // and left it on "Running" for ever. The limit must be longer than every wait in here (the same rule the AI clients follow).
+        set_time_limit(self::AI_WAIT_SECONDS + 300);
+
         $generation = ActivityGeneration::with('teacher')->find($this->generationId);
 
         if (! $generation) {
@@ -57,6 +62,10 @@ class GenerateActivitiesJob implements ShouldQueue
         if (! $taken) {
             return;
         }
+
+        // A fatal error (the time limit, memory) skips failed() below, so if this script ends while the request is still Running, close it
+        // as Failed instead of leaving the teacher looking at "Writing..." until the 20 minute safety net.
+        register_shutdown_function([self::class, 'closeIfStillRunning'], $generation->id);
 
         $teacher = $generation->teacher;
 
@@ -140,6 +149,22 @@ class GenerateActivitiesJob implements ShouldQueue
             $count.' '.Str::plural('draft', $count)." added to To review: {$generation->summary()}.",
             $count,
         );
+    }
+
+    /** Run when the script ends: a request still marked Running at that point was cut off, so say so and stop the waiting. */
+    public static function closeIfStillRunning(int $generationId): void
+    {
+        try {
+            ActivityGeneration::where('id', $generationId)
+                ->where('status', ActivityGeneration::RUNNING)
+                ->update([
+                    'status' => ActivityGeneration::FAILED,
+                    'message' => 'The request stopped before it finished. Nothing was charged. Please try again.',
+                    'finished_at' => now(),
+                ]);
+        } catch (Throwable) {
+            // The database may already be closed while the process shuts down. The 20 minute safety net still applies.
+        }
     }
 
     /** The worker calls this when the job dies (timed out, or an error nothing caught). */
