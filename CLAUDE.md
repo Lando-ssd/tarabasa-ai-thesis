@@ -7149,6 +7149,31 @@ plus a web page that explains how). Built so a person does it themselves, and th
   Render's disk vanish on every sleep anyway, so the file removal mostly matters when a persistent disk is added. Needs a phone build after 0.5.2 (0.5.3) to reach the phone.
 - **Tests:** `tests/Feature/DataErasureTest.php` (28: every rule above, each condition, the website, the phone API, the Admin, the screens and the Privacy page).
 
+## A grade is only for its own grade: activities too, not just learners (2026-10-17, BUILT LOCALLY, NOT PUSHED)
+
+The owner noticed that a teacher could still "add a grade 2" where only Grade 1 belongs, and asked for the constraint, a note and a warning, for a one-grade AND a multi-grade
+teacher alike. The learner side of the rule already existed (`SchoolClass::acceptsGrade`, `ClassLevel::gradeRefusal`). The holes were on the ACTIVITY side and in Promotions:
+- **A Grade 2 activity could be given to a Grade 1 class, group or learner** (`TeacherActivityService::assign` / `assignToClass`, the alert one click assign, the phone API), the class
+  window even listed "Other grades" on purpose, and the suggestions fell back to another grade "when there is nothing else". A teacher could also write an activity for a grade they do
+  not handle (the window only offered theirs; the server accepted any), and could claim a promoted learner into an old class of a grade they no longer handle.
+- **One rule, `App\Support\GradeMatch`**, used by every Teacher screen and service: `forLearner`, `forAudience(..., $classes)` (a class, or every class that carries a group tag) and
+  `teacherRefusal`. It returns the same shape the length rule (`ActivityFit`) does, with verdict `blocked` and `reason = 'grade'`, so every screen that already says "this cannot be
+  assigned here" and switches the button off does it for a grade too. It never touches the Learner side (`ActivityFit::forLearner` is still what the child's picker and the progression
+  use: that is "can this child read it", not "is it the right grade").
+  Cases: a class of another grade (names it, says give it to a class of the activity's grade); a group tag that reaches ANY class of another grade (names the classes, says keep each
+  tag to one grade or give it class by class); a learner of another grade; an older class that still holds a learner of another grade (blocked until that learner is moved, said by name).
+- **Screens.** The activity window's Assign view opens with "One grade only. This is a Grade 2 activity, so it can only go to Grade 2 classes and learners, even if you handle more than
+  one grade", other-grade choices carry an "Other grade" tag (instead of "Too long") and cannot be assigned. The class window's Assign no longer lists other grades at all (its hint says
+  how many are hidden and why); an activity given before this rule is tagged "Other grade" in the class's Activities tab. The phone's Give screen has the same note and tag
+  (`Fit.reason`). Generate refuses a grade the teacher does not handle on the server too (the window already only offered theirs).
+- **Suggestions** (`ActivitySuggestions`): a hard filter, never another grade, for a reading group, a class with no readings and one learner.
+- **Promotions:** a claim needs the class's grade to be one the teacher handles (`TeacherPromotionService::claim`), the claim list, the "Claim (N)" menu count and the phone list use the
+  same rule, and where a teacher has such a class but no longer handles the grade the screen says "You do not handle Grade 2 ..." instead of an empty list (`note` in the phone API).
+- **Not changed, deliberately:** the Parent's Open Repository still lets a parent unlock an activity of any grade for their child (it ranks and can filter by the child's level, but does
+  not forbid); say so if the owner wants it closed too. Learner pickers and reading never reject an activity because of its grade.
+- **Tests:** `tests/Feature/GradeMatchTest.php` (14: class, class window route, learner, group tag, older mixed class, alert assign, window text and tags, phone API, suggestions, writing,
+  claiming, the phone promotions note, the rule itself, the class window flag).
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

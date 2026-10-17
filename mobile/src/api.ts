@@ -536,7 +536,8 @@ export type ActivityList = {
   activities: ActivityRow[];
 };
 
-export type Fit = { verdict: 'ok' | 'caution' | 'blocked' | 'unknown'; note: string | null };
+/** `reason` is 'grade' when it is blocked because it is another grade (a class only gets activities of its own grade), otherwise it is about length. */
+export type Fit = { verdict: 'ok' | 'caution' | 'blocked' | 'unknown'; note: string | null; reason?: string | null };
 
 export type ActivityPage = ActivityRow & {
   instructions: string;
@@ -631,7 +632,7 @@ export type AnalyticsOverview = {
 
 export type PromotionsData = {
   release: { id: number; name: string; grade: string; learners: { id: number; name: string; nextGrade: string | null }[] }[];
-  claim: { id: number; name: string; nextGrade: string; releasedBy: string | null; releasedAt: string | null; classes: { id: number; name: string }[] }[];
+  claim: { id: number; name: string; nextGrade: string; releasedBy: string | null; releasedAt: string | null; classes: { id: number; name: string }[]; note?: string | null }[];
   claimable: number;
 };
 

@@ -164,6 +164,7 @@
       <div class="win-body">
         <form id="assign-{{ $id }}" method="POST" action="{{ route('teacher.activities.assign', $a) }}" data-busy="Assigning">
           @csrf
+          <div class="help" style="margin-bottom:12px">@include('learner._badge-icon', ['icon' => 'info', 'class' => 'ico'])<div><b>One grade only.</b> This is a {{ $a->grade_level }} activity, so it can only go to {{ $a->grade_level }} classes and learners, even if you handle more than one grade. Anything marked "Other grade" cannot be chosen.</div></div>
           <div class="chips" style="margin-bottom:14px" role="group" aria-label="Assign to">
             <button type="button" class="chip plain" data-assign-type="class" aria-pressed="true">A class</button>
             <button type="button" class="chip plain" data-assign-type="group" aria-pressed="false">A group</button>
@@ -174,7 +175,7 @@
             <div class="opt-list">
               @forelse ($assignClasses as $c)
                 @php $f = $fitClass[$c->id]; @endphp
-                <label class="opt-row" style="cursor:pointer"><input type="radio" name="assign_class_id" value="{{ $c->id }}" style="width:auto" data-fit="{{ $f['verdict'] }}" data-fit-note="{{ $f['note'] }}"><span><b>{{ $c->name }}@include('teacher._fit-pill', ['verdict' => $f['verdict']])</b><small>{{ $c->grade_level }} · {{ $c->section }}</small></span></label>
+                <label class="opt-row" style="cursor:pointer"><input type="radio" name="assign_class_id" value="{{ $c->id }}" style="width:auto" data-fit="{{ $f['verdict'] }}" data-fit-note="{{ $f['note'] }}"><span><b>{{ $c->name }}@include('teacher._fit-pill', ['verdict' => $f['verdict'], 'reason' => $f['reason'] ?? null])</b><small>{{ $c->grade_level }} · {{ $c->section }}</small></span></label>
               @empty
                 <p class="note">You have no classes for this school year yet.</p>
               @endforelse
@@ -184,7 +185,7 @@
             <div class="opt-list">
               @forelse ($assignGroupTags as $tag)
                 @php $f = $fitGroup[$tag]; @endphp
-                <label class="opt-row" style="cursor:pointer"><input type="radio" name="assign_group_tag" value="{{ $tag }}" style="width:auto" disabled data-fit="{{ $f['verdict'] }}" data-fit-note="{{ $f['note'] }}"><span><b>{{ $tag }}@include('teacher._fit-pill', ['verdict' => $f['verdict']])</b><small>Every class that uses this tag</small></span></label>
+                <label class="opt-row" style="cursor:pointer"><input type="radio" name="assign_group_tag" value="{{ $tag }}" style="width:auto" disabled data-fit="{{ $f['verdict'] }}" data-fit-note="{{ $f['note'] }}"><span><b>{{ $tag }}@include('teacher._fit-pill', ['verdict' => $f['verdict'], 'reason' => $f['reason'] ?? null])</b><small>Every class that uses this tag</small></span></label>
               @empty
                 <p class="note">None of your classes has a group tag yet. Add one when you edit a class.</p>
               @endforelse
@@ -199,7 +200,7 @@
             <div class="opt-list" id="al-{{ $id }}">
               @foreach ($assignLearners as $l)
                 @php $f = $fitLearner[$l->id]; @endphp
-                <label class="opt-row" style="cursor:pointer" data-search="{{ strtolower($l->first_name.' '.$l->last_name.' '.$l->learner_code) }}" @if ($loop->index >= 5) hidden @endif><input type="radio" name="assign_learner_id" value="{{ $l->id }}" style="width:auto" disabled data-fit="{{ $f['verdict'] }}" data-fit-note="{{ $f['note'] }}"><span><b>{{ $l->first_name }} {{ $l->last_name }}@include('teacher._fit-pill', ['verdict' => $f['verdict']])</b><small>{{ $l->learner_code }} · {{ $l->schoolClass->name ?? '' }}</small></span></label>
+                <label class="opt-row" style="cursor:pointer" data-search="{{ strtolower($l->first_name.' '.$l->last_name.' '.$l->learner_code) }}" @if ($loop->index >= 5) hidden @endif><input type="radio" name="assign_learner_id" value="{{ $l->id }}" style="width:auto" disabled data-fit="{{ $f['verdict'] }}" data-fit-note="{{ $f['note'] }}"><span><b>{{ $l->first_name }} {{ $l->last_name }}@include('teacher._fit-pill', ['verdict' => $f['verdict'], 'reason' => $f['reason'] ?? null])</b><small>{{ $l->learner_code }} · {{ $l->schoolClass->name ?? '' }}</small></span></label>
               @endforeach
             </div>
             <p class="note" data-empty hidden>No learner matches.</p>

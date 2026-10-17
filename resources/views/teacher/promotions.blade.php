@@ -94,7 +94,7 @@
             <span class="item-sub">Released from {{ $record->releasedFromGrade() }} by {{ $record->releasedByTeacher->user->first_name ?? 'a teacher' }} · needs {{ $record->next_grade }}</span>
           </span>
           @if ($matching->isEmpty())
-            <span class="note">You have no {{ $record->next_grade }} class this year.</span>
+            <span class="note">@if ($notHandled[$record->id] ?? false)You do not handle {{ $record->next_grade }}, so your {{ $record->next_grade }} class cannot take new learners. Change the grades you handle in Profile if that is wrong.@else You have no {{ $record->next_grade }} class this year.@endif</span>
           @elseif ($isActive)
             <button type="button" class="btn small green" data-open="claimDlg" data-fill="claim" data-name="{{ $learner->first_name }} {{ $learner->last_name }}" data-meta="Released from {{ $record->releasedFromGrade() }} · needs {{ $record->next_grade }}" data-action="{{ route('teacher.promotions.claim', $record) }}" data-classes="{{ $matching->map(fn ($c) => ['id' => $c->id, 'label' => $c->name.' · '.$c->grade_level.' · '.$c->section])->values()->toJson() }}">Claim</button>
           @else

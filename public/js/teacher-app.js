@@ -535,12 +535,15 @@
       var level = view.getAttribute('data-level') || 'all', taken = (CD.taken[cid] || []).map(String);
       $$('[data-level-chip]', view).forEach(function (c) { c.setAttribute('aria-pressed', c.getAttribute('data-level-chip') === level ? 'true' : 'false'); });
       var pool = CD.approved.filter(function (a) { return taken.indexOf(String(a.id)) < 0 && (level === 'all' || a.tier === level); });
+      // A class only gets activities of its own grade (a Grade 1 class is never offered a Grade 2 activity), so the others are not listed, and the hint says so.
       var same = pool.filter(function (a) { return a.grade === grade; }), other = pool.filter(function (a) { return a.grade !== grade; });
       var sel = $('select[name="activity_id"]', view), keep = sel.value;
       var fitOf = function (a) { return (a.fit && a.fit[cid]) || null; };
       var grp = function (label, list) { return list.length ? '<optgroup label="' + esc(label) + '">' + list.map(function (a) { var f = fitOf(a); return '<option value="' + a.id + '"' + (String(a.id) === keep ? ' selected' : '') + '>' + esc(a.title + ' (' + a.tier + ', ' + a.words + ' words)' + (f ? (f.v === 'blocked' ? ', too long for this class' : ', a stretch for some') : '')) + '</option>'; }).join('') + '</optgroup>' : ''; };
-      sel.innerHTML = '<option value="">Choose an activity</option>' + grp(grade + ' activities', same) + grp('Other grades', other);
-      $('[data-assign-hint]', view).textContent = pool.length ? pool.length + ' approved ' + (pool.length === 1 ? 'activity' : 'activities') + ' to choose from.' : 'Nothing left to assign at this level. Approve more drafts on the Activities screen.';
+      sel.innerHTML = '<option value="">Choose an activity</option>' + grp(grade + ' activities', same);
+      var hint = same.length ? same.length + ' approved ' + grade + ' ' + (same.length === 1 ? 'activity' : 'activities') + ' to choose from.' : 'No ' + grade + ' activity left to assign at this level. Approve more drafts on the Activities screen.';
+      if (other.length) { hint += ' ' + other.length + ' of another grade ' + (other.length === 1 ? 'is' : 'are') + ' not listed: a ' + grade + ' class only gets ' + grade + ' activities, even if you handle more than one grade.'; }
+      $('[data-assign-hint]', view).textContent = hint;
       showPreview(view);
     };
     TB.buildAssign = buildAssign;

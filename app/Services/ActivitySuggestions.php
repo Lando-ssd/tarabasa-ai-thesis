@@ -9,6 +9,7 @@ use App\Models\SchoolClass;
 use App\Models\Teacher;
 use App\Support\ActivityFit;
 use App\Support\ErrorPatterns;
+use App\Support\GradeMatch;
 use App\Support\ReadingLevel;
 use Illuminate\Support\Collection;
 
@@ -113,7 +114,7 @@ class ActivitySuggestions
     /**
      * Suggestions for one reading group of a class: the group's level decides the activity level,
      * the skill most of the group is weakest in comes first, and what the class already has is
-     * left out. Grade of the class first; another grade only when there is nothing else.
+     * left out. Only the class's own grade (a Grade 1 class is never offered a Grade 2 activity).
      *
      * @param  Collection<int, Learner>  $learners  the learners in that group
      * @return Collection<int, array>
@@ -128,9 +129,10 @@ class ActivitySuggestions
         // Only an activity every child in the group can read (see ActivityFit): the level name alone says how hard it
         // is for its grade, not whether THIS group can read it. A group with no suitable activity gets none, and the
         // screen says so, rather than being handed one that is too long.
+        // Only the class's own grade: a Grade 1 class is never offered a Grade 2 activity, even when there is nothing else to offer.
         $pool = $this->approved($teacher)
             ->where('difficulty_tier', $tier)
-            ->reject(fn (Activity $a) => $given->contains($a->id))
+            ->reject(fn (Activity $a) => $given->contains($a->id) || GradeMatch::differs($a->grade_level, $class->grade_level))
             ->filter(fn (Activity $a) => ActivityFit::suitsAll($a, $learners))
             ->values();
 
@@ -250,7 +252,7 @@ class ActivitySuggestions
         $pool = $this->approved($teacher)
             ->where('difficulty_tier', $tier)
             ->reject(fn (Activity $a) => $given->contains($a->id) || $direct->contains($a->id))
-            ->filter(fn (Activity $a) => ActivityFit::forLearner($a, $learner)['verdict'] !== ActivityFit::BLOCKED)
+            ->filter(fn (Activity $a) => GradeMatch::forLearner($a, $learner)['verdict'] !== ActivityFit::BLOCKED)
             ->values();
 
         // When there is a pattern in the child's mistakes (see ErrorPatterns), the activity that

@@ -25,6 +25,7 @@ class TeacherNav
                 ->where('school_year', SchoolClass::currentSchoolYear())
                 ->pluck('grade_level')
                 ->unique()
+                ->intersect($teacher->gradesAllowed())   // a grade the teacher no longer handles cannot be claimed into
             : collect();
 
         return [

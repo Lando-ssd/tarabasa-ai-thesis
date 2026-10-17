@@ -253,6 +253,7 @@ function AssignView({ a, busy, problem, onBack, onGive }: { a: api.ActivityPage;
     <Screen withTabBar header={<IconBtn icon="caret-left" label="Back" onPress={onBack} />} footer={<Btn label={chosen ? `Give to ${chosen.title}` : 'Pick who gets it'} onPress={give} disabled={!chosen || blocked} loading={busy} />}>
       <View style={{ gap: space[12], paddingTop: space[8] }}>
         <TopBar title="Give this activity" sub={a.title} />
+        <Notice tone="info" text={`One grade only. This is a ${a.grade} activity, so it can only go to ${a.grade} classes and learners, even if you handle more than one grade.`} />
         <Segmented
           options={[
             { key: 'class', label: 'Class' },
@@ -278,7 +279,7 @@ function AssignView({ a, busy, problem, onBack, onGive }: { a: api.ActivityPage;
                 key={o.key}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={`${o.title}${o.fit.verdict === 'blocked' ? ', too long for them' : ''}`}
+                accessibilityLabel={`${o.title}${o.fit.verdict === 'blocked' ? (o.fit.reason === 'grade' ? ', another grade' : ', too long for them') : ''}`}
                 onPress={() => setPicked(o.key)}
                 style={[st.option, on && st.optionOn]}
               >
@@ -289,7 +290,7 @@ function AssignView({ a, busy, problem, onBack, onGive }: { a: api.ActivityPage;
                   {o.sub ? <Small>{o.sub}</Small> : null}
                   {o.fit.note ? <Small style={{ color: o.fit.verdict === 'blocked' ? colors.bad : colors.warn }}>{o.fit.note}</Small> : null}
                 </View>
-                {o.fit.verdict !== 'ok' && o.fit.verdict !== 'unknown' ? <TonePill text={o.fit.verdict === 'blocked' ? 'Too long' : 'A stretch'} tone={FIT_TONE[o.fit.verdict]} /> : null}
+                {o.fit.verdict !== 'ok' && o.fit.verdict !== 'unknown' ? <TonePill text={o.fit.verdict === 'blocked' ? (o.fit.reason === 'grade' ? 'Other grade' : 'Too long') : 'A stretch'} tone={FIT_TONE[o.fit.verdict]} /> : null}
               </Pressable>
             );
           })

@@ -146,9 +146,12 @@ class TeacherMoreApiController extends Controller
                 'nextGrade' => $r->next_grade,
                 'releasedBy' => $r->releasedByTeacher?->user ? trim($r->releasedByTeacher->user->first_name.' '.$r->releasedByTeacher->user->last_name) : null,
                 'releasedAt' => $r->released_at ? LearnerClock::local($r->released_at)->format('M j') : null,
-                'classes' => $classes->where('grade_level', $r->next_grade)->map(fn (SchoolClass $c) => ['id' => $c->id, 'name' => $c->name])->values(),
+                'classes' => $classes->where('grade_level', $r->next_grade)->whereIn('grade_level', $teacher->gradesAllowed())->map(fn (SchoolClass $c) => ['id' => $c->id, 'name' => $c->name])->values(),
+                'note' => $classes->where('grade_level', $r->next_grade)->isNotEmpty() && ! in_array($r->next_grade, $teacher->gradesAllowed(), true)
+                    ? "You do not handle {$r->next_grade}, so your {$r->next_grade} class cannot take new learners. Change the grades you handle in your profile if that is wrong."
+                    : null,
             ])->values(),
-            'claimable' => $pending->filter(fn (PromotionRecord $r) => $classes->where('grade_level', $r->next_grade)->isNotEmpty())->count(),
+            'claimable' => $pending->filter(fn (PromotionRecord $r) => $classes->where('grade_level', $r->next_grade)->whereIn('grade_level', $teacher->gradesAllowed())->isNotEmpty())->count(),
         ]);
     }
 

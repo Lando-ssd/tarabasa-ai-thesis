@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\GenerateActivitiesJob;
 use App\Support\ActivityFit;
+use App\Support\GradeMatch;
 use App\Support\GenerationBasis;
 use App\Models\Activity;
 use App\Models\ActivityAssignment;
@@ -216,9 +217,9 @@ class ActivityController extends Controller
 
         // How this activity fits each place it could be given (see ActivityFit): said next to each choice, and
         // checked again on the server when Assign is pressed.
-        $fitClass = $classes->mapWithKeys(fn ($c) => [$c->id => ActivityFit::forAudience($activity, $learners->where('class_id', $c->id), $c->name)]);
-        $fitGroup = $tags->mapWithKeys(fn ($tag) => [$tag => ActivityFit::forAudience($activity, $learners->whereIn('class_id', $classes->where('group_tag', $tag)->pluck('id')), 'the '.$tag.' group')]);
-        $fitLearner = $learners->mapWithKeys(fn ($l) => [$l->id => ActivityFit::forLearner($activity, $l)]);
+        $fitClass = $classes->mapWithKeys(fn ($c) => [$c->id => GradeMatch::forAudience($activity, $learners->where('class_id', $c->id), $c->name, [$c])]);
+        $fitGroup = $tags->mapWithKeys(fn ($tag) => [$tag => GradeMatch::forAudience($activity, $learners->whereIn('class_id', $classes->where('group_tag', $tag)->pluck('id')), 'the '.$tag.' group', $classes->where('group_tag', $tag))]);
+        $fitLearner = $learners->mapWithKeys(fn ($l) => [$l->id => GradeMatch::forLearner($activity, $l)]);
 
         return view('teacher.activities._window', [
             'activity' => $activity->load('assignments.learner', 'assignments.schoolClass', 'repositoryListing.ratings'),
