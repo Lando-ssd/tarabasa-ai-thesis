@@ -1,2 +1,2 @@
-{{-- A small tag next to a choice in an Assign window: whether the learners it is for can read this activity (ActivityFit). Expects $verdict. --}}
-@if ($verdict === \App\Support\ActivityFit::BLOCKED)<span class="fitpill blocked">Too long</span>@elseif ($verdict === \App\Support\ActivityFit::CAUTION)<span class="fitpill caution">A stretch</span>@endif
+{{-- A small tag next to a choice in an Assign window: whether the learners it is for can read this activity (ActivityFit), or that it is another grade (GradeMatch). Expects $verdict, and $reason when there is one. --}}
+@if ($verdict === \App\Support\ActivityFit::BLOCKED)<span class="fitpill blocked">{{ ($reason ?? null) === \App\Support\GradeMatch::REASON ? 'Other grade' : 'Too long' }}</span>@elseif ($verdict === \App\Support\ActivityFit::CAUTION)<span class="fitpill caution">A stretch</span>@endif

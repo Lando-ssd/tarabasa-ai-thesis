@@ -202,7 +202,7 @@
             @foreach ($acts as $row)
               @php $a = $row['activity']; @endphp
               <div class="arow static">
-                <div class="atitle"><b>{{ $a->title }}</b><span>{{ $a->grade_level }} · {{ $a->typeLabel() }} · {{ $a->word_count }} words</span></div>
+                <div class="atitle"><b>{{ $a->title }}@if (\App\Support\GradeMatch::differs($a->grade_level, $c->grade_level)) <span class="fitpill blocked" title="Given before a class was limited to its own grade. A {{ $c->grade_level }} class should only get {{ $c->grade_level }} activities.">Other grade</span>@endif</b><span>{{ $a->grade_level }} · {{ $a->typeLabel() }} · {{ $a->word_count }} words</span></div>
                 <span class="pill t-{{ strtolower($a->difficulty_tier) }}">{{ $a->difficulty_tier }}</span>
                 <span class="astate">{{ match ($row['via']) { 'class' => 'Given to this class', 'band' => 'Given to the '.strtolower(\App\Support\ReadingLevel::GROUPS[$row['band']]['title']).' group', default => 'Through focus group '.$row['tag'] } }}@if ($row['on']) · {{ $row['on']->format('M j') }}@endif</span>
               </div>

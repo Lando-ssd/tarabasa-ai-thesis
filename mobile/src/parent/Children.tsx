@@ -68,7 +68,7 @@ function ChildRow({ c, onPress }: { c: api.ParentChildRow; onPress: () => void }
  * The child's card: the Learner Code in big letters and a QR code that holds the code only (never the PIN). A teacher scans it to
  * add the child to a class. The QR is drawn by the server, so no outside service ever sees the code.
  */
-export function ChildCard({ child, onBack, onProgress, onNewPin }: { child: api.ParentChild; onBack: () => void; onProgress: () => void; onNewPin: () => void }) {
+export function ChildCard({ child, onBack, onProgress, onNewPin, onRemove }: { child: api.ParentChild; onBack: () => void; onProgress: () => void; onNewPin: () => void; onRemove: () => void }) {
   const { data, error, reload } = useLoad(() => api.childCard(child.id), [child.id]);
 
   return (
@@ -92,6 +92,13 @@ export function ChildCard({ child, onBack, onProgress, onNewPin }: { child: api.
             <Btn label={`See ${data.firstName}'s progress`} icon="chart-bar" onPress={onProgress} />
             {/* Forgot the PIN? Only a guardian can make a new one (the child has no email, and a brother could reset a PIN they do not know). */}
             <Btn label="New PIN" icon="key" tone="ghost" onPress={onNewPin} accessibilityHint={`Make a new PIN for ${data.firstName}`} />
+            {/* Removing a child deletes their profile when this is the only guardian, so it lives at the very end of the card, away from the everyday buttons. */}
+            <Btn
+              label={(child.otherGuardians ?? 0) > 0 ? `Remove me from ${data.firstName}` : `Delete ${data.firstName}'s profile`}
+              tone="ghost"
+              onPress={onRemove}
+              accessibilityHint={(child.otherGuardians ?? 0) > 0 ? `${data.firstName} has another guardian, so this only removes you` : `Deletes ${data.firstName}'s profile and every reading record for good`}
+            />
           </>
         )}
       </View>

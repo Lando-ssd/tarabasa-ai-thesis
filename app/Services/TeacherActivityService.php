@@ -10,6 +10,7 @@ use App\Models\OpenRepositoryListing;
 use App\Models\SchoolClass;
 use App\Models\Teacher;
 use App\Support\ActivityFit;
+use App\Support\GradeMatch;
 use App\Support\GenerationBasis;
 use App\Support\ReadingLevel;
 use Illuminate\Support\Facades\DB;
@@ -165,18 +166,17 @@ class TeacherActivityService
             abort_if(! $hasTag, 403, 'That group tag is not used by any of your classes.');
         }
 
+        // A grade is only for its own grade (GradeMatch): a Grade 2 activity cannot go to a Grade 1 learner or class, or to a group tag that
+        // reaches a class of another grade, even when the teacher handles both grades. Checked first, whichever screen it was given from.
         if (isset($targets['learner_id'])) {
-            $audience = collect([$learner]);
-            $audienceName = $learner->first_name;
+            $fit = GradeMatch::forLearner($activity, $learner);
         } elseif (isset($targets['class_id'])) {
-            $audience = $class->learners()->get();
-            $audienceName = $class->name;
+            $fit = GradeMatch::forAudience($activity, $class->learners()->get(), $class->name, [$class]);
         } else {
+            $tagged = SchoolClass::where('teacher_id', $teacher->id)->where('group_tag', $targets['group_tag'])->get();
             $audience = Learner::whereHas('schoolClass', fn ($q) => $q->where('teacher_id', $teacher->id)->where('group_tag', $targets['group_tag']))->get();
-            $audienceName = 'the '.$targets['group_tag'].' group';
+            $fit = GradeMatch::forAudience($activity, $audience, 'the '.$targets['group_tag'].' group', $tagged);
         }
-
-        $fit = ActivityFit::forAudience($activity, $audience, $audienceName);
 
         if ($fit['verdict'] === ActivityFit::BLOCKED) {
             throw ValidationException::withMessages(['assign_target' => $fit['note']]);
@@ -229,7 +229,7 @@ class TeacherActivityService
             $learners = ReadingLevel::groups($learners)[$band];
         }
         $audience = $band ? 'the '.strtolower(ReadingLevel::GROUPS[$band]['title']).' group' : 'this class';
-        $fit = ActivityFit::forAudience($activity, $learners, $audience);
+        $fit = GradeMatch::forAudience($activity, $learners, $audience, [$class]);
 
         if ($fit['verdict'] === ActivityFit::BLOCKED) {
             return ['blocked' => $fit['note'], 'message' => null, 'band' => $band];
@@ -358,6 +358,11 @@ class TeacherActivityService
 
         if (array_sum($wanted) === 0) {
             throw ValidationException::withMessages(['levels' => 'Choose at least one level to generate.']);
+        }
+
+        // The grade must be one this teacher handles: the window only offers those, and this stops a request made another way.
+        if ($refusal = GradeMatch::teacherRefusal($teacher, $validated['grade_level'], 'write an activity')) {
+            throw ValidationException::withMessages(['grade_level' => $refusal]);
         }
 
         // The API rejects an activity_type that isn't mapped to the chosen competency (422): check it here too, so the Teacher gets an

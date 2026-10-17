@@ -9,6 +9,7 @@ use App\Models\SchoolClass;
 use App\Services\ActivitySuggestions;
 use App\Services\TeacherClassService;
 use App\Support\ActivityFit;
+use App\Support\GradeMatch;
 use App\Support\ReadingLevel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -113,7 +114,7 @@ class ClassController extends Controller
                 $fit = [];
                 if (! $isPastYear) {
                     foreach ($classes as $c) {
-                        $f = ActivityFit::forAudience($a, $c->learners, 'this class');
+                        $f = GradeMatch::forAudience($a, $c->learners, 'this class', [$c]);
                         if (in_array($f['verdict'], [ActivityFit::BLOCKED, ActivityFit::CAUTION], true)) {
                             $fit[$c->id] = ['v' => $f['verdict'], 'n' => $f['note']];
                         }

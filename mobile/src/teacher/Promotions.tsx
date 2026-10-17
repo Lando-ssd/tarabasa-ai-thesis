@@ -119,7 +119,7 @@ export function Promotions({ active, onBack }: { active: boolean; onBack: () => 
                         </View>
                       </View>
                       {r.classes.length === 0 ? (
-                        <Small>You have no {r.nextGrade} class this school year, so you cannot claim this learner.</Small>
+                        <Small>{r.note ?? `You have no ${r.nextGrade} class this school year, so you cannot claim this learner.`}</Small>
                       ) : (
                         <>
                           {r.classes.length > 1 ? (

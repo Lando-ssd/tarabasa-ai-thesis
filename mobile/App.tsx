@@ -118,14 +118,17 @@ function App() {
     boot();
   }, [boot]);
 
-  const leave = useCallback(async (notice?: string) => {
+  const leave = useCallback(async (notice?: string, tellServer = true) => {
     sweepRecordings();
     const actor = await api.getActor();
-    try {
-      if (actor === 'learner') await api.logout();
-      else await api.accountLogout();
-    } catch {
-      /* the saved sign in is removed either way */
+    // A deleted account has no sign in left to end on the server, and asking would only be answered with "please log in again".
+    if (tellServer) {
+      try {
+        if (actor === 'learner') await api.logout();
+        else await api.accountLogout();
+      } catch {
+        /* the saved sign in is removed either way */
+      }
     }
     await api.clearToken();
     await storage.removeItem(NAME_KEY);
@@ -176,7 +179,7 @@ function App() {
             }}
           />
         ) : state.phase === 'account' ? (
-          <AccountApp account={state.account} onSignOut={() => leave()} />
+          <AccountApp account={state.account} onSignOut={() => leave()} onDeleted={(message) => leave(message, false)} />
         ) : (
           <SignedIn key={state.learner.firstName} initial={state} onSignOut={() => leave()} />
         )}

@@ -126,7 +126,9 @@
             $attention = $n->type === Notification::TYPE_NEEDS_ATTENTION;
             $kind = $attention ? 'attention' : ($n->type === Notification::TYPE_LEVEL_CONFIRMED ? 'level' : 'summary');
             $icon = $attention ? 'warning-circle' : ($kind === 'level' ? 'trend-up' : 'check-circle');
-            $title = $attention ? 'Low score' : ($kind === 'level' ? 'Level confirmed' : 'Session summary');
+            $removed = $n->type === Notification::TYPE_LEARNER_REMOVED;
+            $title = $attention ? 'Low score' : ($kind === 'level' ? 'Level confirmed' : ($removed ? 'Learner removed' : 'Session summary'));
+            $icon = $removed ? 'users-three' : $icon;
         @endphp
         <div class="notif {{ ! $n->is_read ? 'unread' : '' }}" style="margin-bottom:8px">
           <span class="notif-ico {{ $kind }}">@include('learner._badge-icon', ['icon' => $icon, 'class' => 'ico'])</span>

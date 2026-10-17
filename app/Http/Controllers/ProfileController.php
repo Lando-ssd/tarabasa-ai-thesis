@@ -3,15 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Services\AccountProfileService;
+use App\Services\DataErasureService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function __construct(private readonly AccountProfileService $profile) {}
+    public function __construct(private readonly AccountProfileService $profile, private readonly DataErasureService $erasure) {}
 
     /**
      * Genuinely missing feature — no actor prompt mentions a Profile
@@ -43,6 +45,8 @@ class ProfileController extends Controller
         return view($view, [
             'user' => $user,
             'teacher' => $user->user_type === 'Teacher' ? $user->teacher : null,
+            // What deleting the account would do, told on the screen before anyone is asked for a password.
+            'erase' => $this->erasure->accountImpact($user),
         ]);
     }
 
@@ -67,6 +71,36 @@ class ProfileController extends Controller
         $validated = $request->validate(\App\Models\Teacher::gradeRules());
 
         return back()->with('status', $this->profile->updateGrades($request->user()->teacher, $validated));
+    }
+
+    /**
+     * A Teacher or Parent deletes their own account (password again, and a tick). DataErasureService holds every rule and says what it
+     * takes with it; this only signs the browser out afterwards.
+     */
+    public function destroy(Request $request, DataErasureService $erasure): RedirectResponse
+    {
+        abort_if($request->user()->user_type === 'Admin', 403);
+
+        // Its own error bag: this page also has a "new password" field, and a wrong password here must not light that one up.
+        $data = $request->validateWithBag('erase', [
+            'password' => ['required', 'string'],
+            'confirm' => ['accepted'],
+        ], [
+            'password.required' => 'Type your password, so we know it is you.',
+            'confirm.accepted' => 'Tick the box to say you understand this cannot be undone.',
+        ]);
+
+        try {
+            $message = $erasure->deleteOwnAccount($request->user(), $data['password']);
+        } catch (ValidationException $e) {
+            throw $e->errorBag('erase');
+        }
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/')->with('status', $message);
     }
 
     public function updatePassword(Request $request): RedirectResponse

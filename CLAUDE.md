@@ -7105,6 +7105,87 @@ The owner asked what should happen when a learner's PIN is forgotten, for the be
   Render when this branch is merged (the new table is made by the normal `migrate --force` at deploy; nothing existing is rewritten).
 - **Tests.** `tests/Feature/ChildPinResetTest.php` (19: every rule above, the website and the phone API, the locked child recovering at once, the alerts, a stranger and a teacher refused).
 
+## Deleting a child or an account (2026-10-17, BUILT LOCALLY, NOT PUSHED)
+
+The live Privacy page promised "a parent can ask for a child's records, or an adult for their own account, to be removed" but nothing in the app could do it (the old
+note "account deletion is still open" in this file). This is also what an app store asks of an app that lets people create accounts (Google Play: an in-app deletion path
+plus a web page that explains how). Built so a person does it themselves, and the Admin can do it for someone who cannot sign in.
+- **One service, `App\Services\DataErasureService`**, called by the website, the phone API and the Admin. Rules (each enforced on the server, each tested):
+  1. A guardian removes a child (`removeChild`; a stranger or a teacher gets 404 or 403, nothing is deleted). With ANOTHER guardian linked it only UNLINKS this parent
+     (one parent must not destroy the other's access; an unlock paid for the child moves to the guardian who stays; this parent's alerts about the child go). Alone as a
+     guardian it deletes the child for good: every table row about the child (written out table by table, so it does not depend on the database enforcing cascades, including
+     `repository_ratings`, which has a `learner_id`), the child's phone sign ins and the photo file.
+  2. Deleting your own account (`deleteOwnAccount`, Teacher or Parent, never an Admin) needs your password again (5 wrong = 15 minutes locked, same limiter style as the PIN).
+     A Parent's account takes the children who have no other guardian (the ones with another guardian are kept and re-pointed), the ratings they gave and their links. A Teacher's
+     account takes their classes, assignments, generation requests, alert marks and Repository listings (with the unlocks and ratings on them). The learners STAY with their
+     parents, just without a class. The activities a Teacher wrote STAY (children's reading history points at them) but lose the author, `teacher_notes` and `generation_basis`.
+  3. A Teacher who released learners for promotion that nobody has claimed yet CANNOT delete (those children would be stuck between grades); `accountImpact()['blocked']` says so.
+     Promotion history rows the teacher released (already Claimed) are deleted with them: accepted, cosmetic.
+  4. The Admin (`deleteByAdmin`, route `admin.users.delete`, Accounts list, "Delete account" window with a reason list; "Other" needs a note) can delete a Teacher or Parent
+     account, never an Admin. The Activity log keeps the Admin's name and the reason but NOT the person's name (`AdminAction::recordErasure`: "a Parent account"), and earlier log
+     rows about that person are scrubbed (`target_name`, `detail`).
+  5. `data_erasures` (new table, `DataErasure::note`) records that a deletion happened: kind (child, account, unlinked), role, who asked (self or admin), how many children went,
+     when. No name, email, code or id. A test pins the column list so nobody adds one by accident.
+  6. Sessions: the user's Sanctum tokens, `sessions` rows (database sessions) and `password_reset_tokens` are removed; the browser that deleted is logged out and the session
+     invalidated. A failed deletion is rolled back whole and says nothing was deleted.
+- **Screens.** Website: My children has a quiet "Remove {name}" link under each card (not a third button: the card's button row is too narrow) opening a dialog that says
+  which of the two outcomes it is, asks for the password and a tick; Profile (Parent and Teacher) has a "Delete my account" card that lists exactly what would happen (from
+  `accountImpact`, plain sentences) before the window asks for the password; the Teacher card shows the promotion blocker instead of the button when it applies. These forms use
+  the `erase` error bag, because the Profile page also has a "new password" field. Phone app: `RemoveChild.tsx` (from the child's card, last button), `DeleteAccount.tsx`
+  (My profile, Teacher through More and Parent through the picture at the top; fetches `GET /api/auth/account/erase-info` first); a red `Btn tone="danger"`; after an account
+  is deleted `App.tsx leave(message, false)` skips the server logout call (the token is gone, and the call would answer 401 and overwrite the notice) and shows "Your account was
+  deleted." on the sign in screen. `GET /api/parent/children` now returns `otherGuardians` per child so the screen can say which outcome it is.
+- **Privacy page** (`/privacy#delete`, the URL to give an app store as the "how to request deletion" page) now describes the real steps; its date is 17 October 2026. If
+  `PRIVACY_CONTACT_EMAIL` is set it also says people who cannot sign in can write to that address and the administrator deletes it for them.
+- **Everyone affected is told, and the screen never makes a parent read an "if"** (the owner asked to "make sure the ifs", and that it be definitive). The child's link and its
+  heading say exactly what will happen: "Delete Mia's profile" when the parent is the only guardian, "Remove me from Ben" when another guardian is linked (same on the phone). Guardians
+  who stay get a `Guardian Removed` alert ("Carla (Mother) is no longer a guardian of Ben.": first name and relationship only, never to the person who left); the class teacher gets a
+  `Learner Removed` message with NO name ("A learner in Sampaguita was removed. Their parent deleted the profile."; none when the child had no class). Both types are in the Updates
+  filter; the Teacher's routine list titles it "Learner removed". The creator flag (`is_creator`) is not used by any rule, so the creator leaving changes nothing for the guardian who
+  stays. A Teacher blocked by an unclaimed promotion release is freed when the child's parent deletes that child. A generation running when its Teacher is deleted writes nothing and
+  charges nothing. The Admin sees the blocker in the flash (the shell prints `$errors->first()`).
+- **Honest limits.** Nothing emails the person afterwards. Backups held
+  by the hosting services are outside the app. The Teacher's `activity_generations` queued job may fail harmlessly if it was running during deletion. Uploaded child photos on
+  Render's disk vanish on every sleep anyway, so the file removal mostly matters when a persistent disk is added. Needs a phone build after 0.5.2 (0.5.3) to reach the phone.
+- **Tests:** `tests/Feature/DataErasureTest.php` (28: every rule above, each condition, the website, the phone API, the Admin, the screens and the Privacy page).
+- **Basis (checked by search on 2026-10-17; read the official statute before quoting it in the manuscript):** the Data Privacy Act of 2012 (Republic Act 10173), Section 16(e), gives a
+  data subject the right to suspend, withdraw or order the blocking, removal or destruction of personal data in the controller's filing system (grounds include data no longer necessary
+  for the purpose it was collected for, or unlawfully obtained); the Implementing Rules carry it as Rule VIII, Section 34(e). The National Privacy Commission's own material and
+  Philippine law commentaries agree on this. The law does not require destroying records another lawful basis keeps, which is why the Admin log keeps a reason without a name and why the
+  `data_erasures` line holds no identity. Google Play's "app account deletion" policy (support.google.com/googleplay/android-developer/answer/13327111) requires an app that lets people
+  create an account to offer BOTH an in-app path to delete the account and its data AND a web link where a person can ask for it (for someone who uninstalled the app), and the link is
+  entered in the Data safety form: the in-app screens and `/privacy#delete` are those two. The one decision that is the team's own, not the law's: a co-guardian removing a child only
+  unlinks (so one parent cannot erase what the other is also responsible for).
+
+## A grade is only for its own grade: activities too, not just learners (2026-10-17, BUILT LOCALLY, NOT PUSHED)
+
+The owner noticed that a teacher could still "add a grade 2" where only Grade 1 belongs, and asked for the constraint, a note and a warning, for a one-grade AND a multi-grade
+teacher alike. The learner side of the rule already existed (`SchoolClass::acceptsGrade`, `ClassLevel::gradeRefusal`). The holes were on the ACTIVITY side and in Promotions:
+- **A Grade 2 activity could be given to a Grade 1 class, group or learner** (`TeacherActivityService::assign` / `assignToClass`, the alert one click assign, the phone API), the class
+  window even listed "Other grades" on purpose, and the suggestions fell back to another grade "when there is nothing else". A teacher could also write an activity for a grade they do
+  not handle (the window only offered theirs; the server accepted any), and could claim a promoted learner into an old class of a grade they no longer handle.
+- **One rule, `App\Support\GradeMatch`**, used by every Teacher screen and service: `forLearner`, `forAudience(..., $classes)` (a class, or every class that carries a group tag) and
+  `teacherRefusal`. It returns the same shape the length rule (`ActivityFit`) does, with verdict `blocked` and `reason = 'grade'`, so every screen that already says "this cannot be
+  assigned here" and switches the button off does it for a grade too. It never touches the Learner side (`ActivityFit::forLearner` is still what the child's picker and the progression
+  use: that is "can this child read it", not "is it the right grade").
+  Cases: a class of another grade (names it, says give it to a class of the activity's grade); a group tag that reaches ANY class of another grade (names the classes, says keep each
+  tag to one grade or give it class by class); a learner of another grade; an older class that still holds a learner of another grade (blocked until that learner is moved, said by name).
+- **Screens.** The activity window's Assign view opens with "One grade only. This is a Grade 2 activity, so it can only go to Grade 2 classes and learners, even if you handle more than
+  one grade", other-grade choices carry an "Other grade" tag (instead of "Too long") and cannot be assigned. The class window's Assign no longer lists other grades at all (its hint says
+  how many are hidden and why); an activity given before this rule is tagged "Other grade" in the class's Activities tab. The phone's Give screen has the same note and tag
+  (`Fit.reason`). Generate refuses a grade the teacher does not handle on the server too (the window already only offered theirs).
+- **Suggestions** (`ActivitySuggestions`): a hard filter, never another grade, for a reading group, a class with no readings and one learner.
+- **Promotions:** a claim needs the class's grade to be one the teacher handles (`TeacherPromotionService::claim`), the claim list, the "Claim (N)" menu count and the phone list use the
+  same rule, and where a teacher has such a class but no longer handles the grade the screen says "You do not handle Grade 2 ..." instead of an empty list (`note` in the phone API).
+- **Not changed, deliberately:** the Parent's Open Repository still lets a parent unlock an activity of any grade for their child (it ranks and can filter by the child's level, but does
+  not forbid); say so if the owner wants it closed too. Learner pickers and reading never reject an activity because of its grade.
+- **Basis:** the curriculum is written grade by grade (the MATATAG curriculum guides in `docs/manuscript/` list competencies and codes per grade, for example the first check's EN2PWS and
+  EN3CAT codes), and the activity generator aligns every bundle to the guide of the grade it is asked for, so an activity is only a match for a class of the grade it was written for.
+  DepEd's own multigrade class (two or more grades under one teacher, DepEd Orders 96 s.1997 and 81 s.2009) is deliberately NOT modelled: a teacher who handles several grades opens one class
+  per grade, and the owner's rule is that a Grade 1 class is for Grade 1, a Grade 2 class for Grade 2, and so on. Re-read the exact DepEd wording on deped.gov.ph before quoting it.
+- **Tests:** `tests/Feature/GradeMatchTest.php` (14: class, class window route, learner, group tag, older mixed class, alert assign, window text and tags, phone API, suggestions, writing,
+  claiming, the phone promotions note, the rule itself, the class window flag).
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

@@ -67,6 +67,10 @@ Write down for each one: **worked / did not work / odd**, and what the screen sa
    the confirm step (nothing is charged). Rate it with the stars. Then check that the child sees it in their own app under extra practice.
 8. **Alerts.** Tap an alert: it should turn plain and the number should go down. Try **Mark all as read**.
 9. **Profile and Log out.** Tap the picture at the top of Home.
+10. **Delete (use a throwaway account and a made-up child only).** (a) Children, tap a child, scroll to the end, **Remove**: it must say whether it deletes the child for good (you are the
+    only guardian) or only removes you (another guardian is linked). A wrong password must be refused; the right password and the tick must remove the child from the list.
+    (b) Profile, **Delete my account**: it first lists exactly what would be deleted, then asks for the password. After deleting, the app returns to the sign in screen and says the account
+    was deleted, and signing in with that email must no longer work. (Never do this on the account you still need.)
 
 ## Things that only a real phone can show (please note them even if everything "works")
 - The camera: scanning a QR card on both the Teacher screens and the sign in screen, in a dim room and in sunlight.

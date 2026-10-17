@@ -325,3 +325,22 @@ a.me-av{ text-decoration:none; }
 .pin-warn{ margin:0 0 12px; padding:10px 14px; border-radius:14px; background:var(--amber-bg); color:var(--amber); font-size:14.5px; text-align:center; }
 .pin-notes{ margin:0 0 16px; padding:0 0 0 20px; color:var(--muted); font-size:14px; line-height:1.6; }
 @media (max-width:480px){ .pin-digits span{ width:56px; height:70px; font-size:38px; } }
+
+/* ---- Deleting a child or an account (red is for what cannot be undone) ---- */
+.btn.danger{ color:var(--danger); border-color:#f0b3b3; }
+.btn.danger-fill{ background:linear-gradient(180deg,#e25a5a,var(--danger)); color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.18); border:0; box-shadow:0 5px 0 #a83232, 0 12px 18px -10px rgba(168,50,50,.5), inset 0 2px 0 rgba(255,255,255,.28); }
+.btn.danger-fill:active{ box-shadow:0 2px 0 #a83232, inset 0 2px 0 rgba(255,255,255,.28); }
+.erase-card{ border-color:#f0b3b3; }
+.erase-list{ margin:0 0 14px; padding:0 0 0 20px; color:var(--muted); font-size:14.5px; line-height:1.6; }
+.erase-list li{ margin:0 0 6px; }
+.erase-form{ display:flex; flex-direction:column; gap:14px; text-align:left; }
+.erase-form > label.pin-pw{ display:block; font:600 15px/1.2 var(--font-game); letter-spacing:.08em; text-transform:uppercase; color:var(--soft); }
+.erase-form label input[type="password"]{ display:block; margin-top:6px; }
+.erase-check{ display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border:2px solid var(--line); border-radius:14px; background:#fff; cursor:pointer; font-size:15px; line-height:1.35; color:var(--ink); }
+.erase-check input{ flex:none; width:22px; height:22px; margin-top:1px; accent-color:var(--danger); }
+.erase-check:has(input:checked){ border-color:#f0b3b3; background:var(--danger-bg); }
+.erase-check:focus-within{ outline:3px solid var(--orange); outline-offset:2px; }
+.rm-row{ margin-top:6px; text-align:center; }
+.rm-link{ min-height:44px; padding:10px 12px; background:none; border:0; border-radius:10px; color:var(--danger); font:600 14.5px/1.2 'Inter',system-ui,sans-serif; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.rm-link:hover{ background:var(--danger-bg); }
+.rm-link:focus-visible{ outline:3px solid var(--orange); outline-offset:2px; }

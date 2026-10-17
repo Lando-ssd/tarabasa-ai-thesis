@@ -9,6 +9,7 @@ use App\Models\Learner;
 use App\Models\SchoolClass;
 use App\Services\TeacherActivityService;
 use App\Support\ActivityFit;
+use App\Support\GradeMatch;
 use App\Support\ReadingLevel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -95,12 +96,12 @@ class TeacherActivityApiController extends Controller
             $classes = SchoolClass::where('teacher_id', $teacher->id)->orderBy('name')->get()->reject(fn ($c) => SchoolClass::isYearPast($c->school_year))->values();
             $learners = Learner::whereIn('class_id', $classes->pluck('id'))->with(['schoolClass', 'readingSessions'])->orderBy('first_name')->get();
             $tags = $classes->pluck('group_tag')->filter()->unique()->values();
-            $fit = fn (array $f) => ['verdict' => $f['verdict'], 'note' => $f['note'] ?? null];
+            $fit = fn (array $f) => ['verdict' => $f['verdict'], 'note' => $f['note'] ?? null, 'reason' => $f['reason'] ?? null];
 
             $payload['targets'] = [
-                'classes' => $classes->map(fn (SchoolClass $c) => ['id' => $c->id, 'name' => $c->name, 'grade' => $c->grade_level, 'fit' => $fit(ActivityFit::forAudience($activity, $learners->where('class_id', $c->id), $c->name))])->values(),
-                'groups' => $tags->map(fn ($tag) => ['tag' => $tag, 'fit' => $fit(ActivityFit::forAudience($activity, $learners->whereIn('class_id', $classes->where('group_tag', $tag)->pluck('id')), 'the '.$tag.' group'))])->values(),
-                'learners' => $learners->map(fn (Learner $l) => ['id' => $l->id, 'name' => trim($l->first_name.' '.$l->last_name), 'className' => $l->schoolClass?->name, 'fit' => $fit(ActivityFit::forLearner($activity, $l))])->values(),
+                'classes' => $classes->map(fn (SchoolClass $c) => ['id' => $c->id, 'name' => $c->name, 'grade' => $c->grade_level, 'fit' => $fit(GradeMatch::forAudience($activity, $learners->where('class_id', $c->id), $c->name, [$c]))])->values(),
+                'groups' => $tags->map(fn ($tag) => ['tag' => $tag, 'fit' => $fit(GradeMatch::forAudience($activity, $learners->whereIn('class_id', $classes->where('group_tag', $tag)->pluck('id')), 'the '.$tag.' group', $classes->where('group_tag', $tag)))])->values(),
+                'learners' => $learners->map(fn (Learner $l) => ['id' => $l->id, 'name' => trim($l->first_name.' '.$l->last_name), 'className' => $l->schoolClass?->name, 'fit' => $fit(GradeMatch::forLearner($activity, $l))])->values(),
             ];
         }
 

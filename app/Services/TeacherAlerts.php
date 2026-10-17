@@ -10,6 +10,7 @@ use App\Models\SchoolClass;
 use App\Models\Teacher;
 use App\Models\TeacherAlertAction;
 use App\Support\ActivityFit;
+use App\Support\GradeMatch;
 use App\Support\ErrorPatterns;
 use Illuminate\Validation\ValidationException;
 use App\Support\LearnerClock;
@@ -412,7 +413,7 @@ class TeacherAlerts
     public function assign(Teacher $teacher, Learner $learner, Activity $activity, string $kind): ActivityAssignment
     {
         // An activity far too long for this child cannot be given from an alert either (see ActivityFit).
-        $fit = ActivityFit::forLearner($activity, $learner);
+        $fit = GradeMatch::forLearner($activity, $learner);
 
         if ($fit['verdict'] === ActivityFit::BLOCKED) {
             throw ValidationException::withMessages(['activity_id' => $fit['note']]);

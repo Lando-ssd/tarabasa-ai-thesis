@@ -59,6 +59,10 @@ class TeacherPromotionService
 
         abort_unless($class && $class->grade_level === $record->next_grade, 403, 'That class is not a valid claim target.');
 
+        // A class holds one grade, and a teacher only takes learners into a grade they handle: a Grade 1 teacher with an old Grade 2 class
+        // (from when they handled both) cannot claim into it. The refusal says so and where to change it.
+        abort_unless(in_array($class->grade_level, $teacher->gradesAllowed(), true), 403, "You do not handle {$class->grade_level}, so {$class->name} cannot take new learners. Change the grades you handle in Profile if that is wrong.");
+
         $claimed = DB::transaction(function () use ($record, $teacher, $class) {
             $locked = PromotionRecord::whereKey($record->id)->lockForUpdate()->first();
             if ($locked === null || $locked->status !== 'Pending') {

@@ -6,6 +6,7 @@ use App\Console\Commands\SyncAdminAccount;
 use App\Models\AdminAction;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\DataErasureService;
 use App\Services\ServiceCheck;
 use App\Support\AdminHealth;
 use App\Support\EmailAddress;
@@ -45,6 +46,7 @@ class AdminController extends Controller
     ];
 
     private const PER_PAGE = 25;
+
 
     /** Overview: what needs the Admin today, then the numbers, then the latest Admin actions. */
     public function dashboard(Request $request): View
@@ -150,6 +152,7 @@ class AdminController extends Controller
             'filter' => $filter,
             'q' => $q,
             'confirmReasons' => self::CONFIRM_REASONS,
+            'eraseReasons' => DataErasureService::ADMIN_REASONS,
             'counts' => [
                 'all' => (clone $base)->count(),
                 'teachers' => (clone $base)->where('user_type', 'Teacher')->count(),
@@ -355,5 +358,25 @@ class AdminController extends Controller
         AdminAction::record($request->user(), 'confirmed_email', $user, $data['reason'], $data['note'] ?? null);
 
         return back()->with('status', "{$name}'s email is confirmed. They can log in now.");
+    }
+
+    /**
+     * Deletes a Teacher or Parent account on request (the Privacy page says a person can ask the administrator). DataErasureService holds
+     * every rule and says what goes with it. A reason is required and kept in the activity log; the log keeps no name.
+     */
+    public function deleteAccount(Request $request, User $user, DataErasureService $erasure): RedirectResponse
+    {
+        abort_if($user->user_type === 'Admin', 403);
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'in:'.implode(',', DataErasureService::ADMIN_REASONS)],
+            'note' => [$request->input('reason') === 'Other' ? 'required' : 'nullable', 'string', 'max:140'],
+        ], [
+            'reason.required' => 'Pick why you are deleting this account.',
+            'reason.in' => 'Pick one of the listed reasons.',
+            'note.required' => 'Add a short note for "Other".',
+        ]);
+
+        return back()->with('status', $erasure->deleteByAdmin($request->user(), $user, $data['reason'], $data['note'] ?? null));
     }
 }

@@ -641,3 +641,14 @@ table.rep{ width:100%; border-collapse:collapse; font-size:13.5px; } table.rep t
   .win-tabs .chip .cap{ display:inline-block; } .win-tabs .chip .cap::first-letter{ text-transform:uppercase; }
   .foot-only{ display:none; } .body-only{ display:block; margin-top:12px; }
 }
+
+/* ---- Deleting an account (red is for what cannot be undone) ---- */
+.btn.danger-fill{ background:linear-gradient(180deg,#e25a5a,var(--danger)); color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.18); border:0; box-shadow:0 5px 0 #a83232, 0 12px 18px -10px rgba(168,50,50,.5), inset 0 2px 0 rgba(255,255,255,.28); }
+.btn.danger-fill:active{ box-shadow:0 2px 0 #a83232, inset 0 2px 0 rgba(255,255,255,.28); }
+.erase-card{ border-color:#f0b3b3; }
+.erase-list{ margin:0 0 14px; padding:0 0 0 20px; color:var(--muted); font-size:14.5px; line-height:1.6; }
+.erase-list li{ margin:0 0 6px; }
+.erase-check{ display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border:2px solid var(--line); border-radius:14px; background:#fff; cursor:pointer; font-size:15px; line-height:1.35; color:var(--ink); }
+.erase-check input{ flex:none; width:22px; height:22px; margin-top:1px; accent-color:var(--danger); }
+.erase-check:has(input:checked){ border-color:#f0b3b3; background:var(--danger-bg); }
+.erase-check:focus-within{ outline:3px solid var(--orange); outline-offset:2px; }

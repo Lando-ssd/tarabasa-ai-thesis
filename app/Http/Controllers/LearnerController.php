@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Learner;
+use App\Services\DataErasureService;
 use App\Services\LearnerPinService;
 use App\Services\ParentChildService;
 use Illuminate\Http\RedirectResponse;
@@ -73,9 +74,18 @@ class LearnerController extends Controller
             ->orderBy('first_name')
             ->get();
 
+        // Children who have another guardian: removing one of those only unlinks this parent (the window says which).
+        $sharedIds = \Illuminate\Support\Facades\DB::table('parent_learners')
+            ->whereIn('learner_id', $learners->pluck('id'))
+            ->where('parent_id', '!=', $parent->id)
+            ->pluck('learner_id')
+            ->flip()
+            ->all();
+
         return view('parent.children.index', [
             'parent' => $parent,
             'learners' => $learners,
+            'sharedIds' => $sharedIds,
         ]);
     }
 
@@ -170,5 +180,24 @@ class LearnerController extends Controller
         return redirect()->route('parent.children.index')
             ->with('status', $result['message'])
             ->with('new_pin', $result['pin'] === null ? null : ['learner_id' => $learner->id, 'pin' => $result['pin']]);
+    }
+
+    /**
+     * A guardian removes a child's profile (DataErasureService holds every rule: a linked guardian only, their password again, and with
+     * another guardian linked it only unlinks this one). The window it came from reopens with the reason if it is refused.
+     */
+    public function removeChild(Request $request, Learner $learner, DataErasureService $erasure): RedirectResponse
+    {
+        $data = $request->validate([
+            'password' => ['required', 'string'],
+            'confirm' => ['accepted'],
+        ], [
+            'password.required' => 'Type your password, so we know it is you.',
+            'confirm.accepted' => 'Tick the box to say you understand this cannot be undone.',
+        ]);
+
+        $result = $erasure->removeChild($request->user(), $learner, $data['password']);
+
+        return redirect()->route('parent.children.index')->with('status', $result['message']);
     }
 }

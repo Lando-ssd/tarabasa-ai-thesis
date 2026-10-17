@@ -536,7 +536,8 @@ export type ActivityList = {
   activities: ActivityRow[];
 };
 
-export type Fit = { verdict: 'ok' | 'caution' | 'blocked' | 'unknown'; note: string | null };
+/** `reason` is 'grade' when it is blocked because it is another grade (a class only gets activities of its own grade), otherwise it is about length. */
+export type Fit = { verdict: 'ok' | 'caution' | 'blocked' | 'unknown'; note: string | null; reason?: string | null };
 
 export type ActivityPage = ActivityRow & {
   instructions: string;
@@ -631,7 +632,7 @@ export type AnalyticsOverview = {
 
 export type PromotionsData = {
   release: { id: number; name: string; grade: string; learners: { id: number; name: string; nextGrade: string | null }[] }[];
-  claim: { id: number; name: string; nextGrade: string; releasedBy: string | null; releasedAt: string | null; classes: { id: number; name: string }[] }[];
+  claim: { id: number; name: string; nextGrade: string; releasedBy: string | null; releasedAt: string | null; classes: { id: number; name: string }[]; note?: string | null }[];
   claimable: number;
 };
 
@@ -652,6 +653,8 @@ export type ParentChild = {
   /** The child's latest reading was flagged for extra support. */
   flagged: boolean;
   level: ParentLevel;
+  /** How many other guardians the child has. Removing a child who has one only removes this parent. Missing means none (a child just added). */
+  otherGuardians?: number;
 };
 
 export type ParentSession = {
@@ -810,6 +813,12 @@ export const childCard = (id: number) => request<{ name: string; firstName: stri
 export const resetChildPin = (id: number, body: { mode: 'generate' | 'choose'; password: string; pin?: string; pin_confirmation?: string }) =>
   request<{ pin: string | null; message: string }>(`/api/parent/children/${id}/pin`, json(body));
 
+/**
+ * A guardian removes a child. Alone as a guardian: the profile and every record are deleted for good (`erased` true). With another
+ * guardian linked: only this parent is removed. A refusal is a 422 under `password` in the website's words.
+ */
+export const removeChild = (id: number, password: string) => request<{ erased: boolean; message: string }>(`/api/parent/children/${id}/remove`, json({ password }));
+
 export const parentProgress = (learnerId: number | null) => request<ParentProgress>(withChild('/api/parent/progress', learnerId));
 
 export const parentRepository = (learnerId: number | null, filter: 'all' | 'free' | 'paid' | 'unlocked', best: boolean) =>
@@ -890,6 +899,12 @@ export const updateProfile = (body: { first_name: string; middle_initial?: strin
 
 export const changePassword = (body: { current_password: string; password: string; password_confirmation: string }) =>
   request<{ message: string }>('/api/auth/profile/password', put(body));
+
+/** What deleting the signed in account would do, in plain sentences, and why it cannot be done yet (`blocked`) when that is so. */
+export const eraseInfo = () => request<{ lines: string[]; blocked: string | null }>('/api/auth/account/erase-info');
+
+/** Deletes the signed in Teacher's or Parent's own account (password again). Every sign in goes with it. */
+export const deleteAccount = (password: string) => request<{ message: string }>('/api/auth/profile/delete', json({ password }));
 
 export const updateGrades = (body: { grades_mode: 'single' | 'multi'; grades_handled: string[] }) => request<{ message: string; account: Account }>('/api/auth/profile/grades', put(body));
 

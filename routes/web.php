@@ -73,6 +73,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::put('/profile/grades', [ProfileController::class, 'updateGrades'])->name('profile.grades.update');
+    // A Teacher or Parent deletes their own account (password again).
+    Route::post('/profile/delete', [ProfileController::class, 'destroy'])->middleware('throttle:10,1,erase-account')->name('profile.delete');
 });
 
 // Learner Login — Learner Actor Prompt Steps 1-2. Code entry only (typing
@@ -174,6 +176,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/users/{user}/resend-verification', [AdminController::class, 'resendVerification'])->middleware('throttle:20,1')->name('users.resend-verification');
     // The Admin confirms an email address themselves (reason required, written to the activity log).
     Route::post('/users/{user}/confirm-email', [AdminController::class, 'confirmEmail'])->middleware('throttle:30,1')->name('users.confirm-email');
+    // The Admin deletes a Teacher or Parent account on request (reason required, written to the activity log without a name).
+    Route::post('/users/{user}/delete', [AdminController::class, 'deleteAccount'])->middleware('throttle:30,1,erase-admin')->name('users.delete');
     // Asks the three teammate services, from this server, whether they answer (see App\Services\ServiceCheck).
     Route::post('/service-check', [AdminController::class, 'checkServices'])->name('service-check');
 });
@@ -267,6 +271,8 @@ Route::middleware(['auth', 'parent'])->prefix('parent')->name('parent.')->group(
     Route::get('/children/{learner}/card', [LearnerController::class, 'card'])->whereNumber('learner')->name('children.card');
     // A guardian makes a new PIN for a child who forgot theirs.
     Route::post('/children/{learner}/pin', [LearnerController::class, 'resetPin'])->whereNumber('learner')->middleware('throttle:20,1')->name('children.pin');
+    // A guardian removes a child's profile (password again; with another guardian linked it only unlinks this one).
+    Route::post('/children/{learner}/remove', [LearnerController::class, 'removeChild'])->whereNumber('learner')->middleware('throttle:20,1,erase-child')->name('children.remove');
 
     // Progress — Parent Actor Prompt Step 7.
     Route::get('/progress', [AnalyticsController::class, 'parentIndex'])->name('progress');

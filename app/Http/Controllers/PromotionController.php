@@ -49,7 +49,14 @@ class PromotionController extends Controller
         // next_grade are valid claim targets for each record.
         $matchingClassesByRecord = $pendingRecords->mapWithKeys(
             fn (PromotionRecord $record) => [
-                $record->id => $myCurrentClasses->where('grade_level', $record->next_grade)->values(),
+                $record->id => $myCurrentClasses->where('grade_level', $record->next_grade)->whereIn('grade_level', $teacher->gradesAllowed())->values(),
+            ]
+        );
+
+        // A record whose grade this teacher has a class for but no longer handles: said on the screen instead of an empty list.
+        $notHandled = $pendingRecords->mapWithKeys(
+            fn (PromotionRecord $record) => [
+                $record->id => $myCurrentClasses->where('grade_level', $record->next_grade)->isNotEmpty() && ! in_array($record->next_grade, $teacher->gradesAllowed(), true),
             ]
         );
 
@@ -65,6 +72,7 @@ class PromotionController extends Controller
             'myCurrentClasses' => $myCurrentClasses,
             'releasableLearners' => $releasableLearners,
             'pendingRecords' => $pendingRecords,
+            'notHandled' => $notHandled,
             'matchingClassesByRecord' => $matchingClassesByRecord,
             'actionableCount' => $actionableCount,
         ]);
