@@ -24,6 +24,11 @@ class Notification extends Model
 
     public const TYPE_PIN_LOCKED = 'PIN Locked';
 
+    /** A guardian left a child (told to the guardians who stay), and a child's profile was deleted by the parent (told to the class teacher, without a name). */
+    public const TYPE_GUARDIAN_REMOVED = 'Guardian Removed';
+
+    public const TYPE_LEARNER_REMOVED = 'Learner Removed';
+
     protected $fillable = [
         'recipient_user_id',
         'learner_id',

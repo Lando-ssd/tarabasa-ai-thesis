@@ -108,7 +108,7 @@ class NotificationController extends Controller
 
         $notifications = Notification::where('recipient_user_id', $userId)
             ->when($filter === 'attention', fn ($q) => $q->whereIn('type', [Notification::TYPE_NEEDS_ATTENTION, Notification::TYPE_PIN_LOCKED]))
-            ->when($filter === 'routine', fn ($q) => $q->whereIn('type', [Notification::TYPE_SESSION_SUMMARY, Notification::TYPE_LEVEL_CONFIRMED, Notification::TYPE_GUARDIAN_LINKED, Notification::TYPE_CLASS_JOINED, Notification::TYPE_PIN_CHANGED]))
+            ->when($filter === 'routine', fn ($q) => $q->whereIn('type', [Notification::TYPE_SESSION_SUMMARY, Notification::TYPE_LEVEL_CONFIRMED, Notification::TYPE_GUARDIAN_LINKED, Notification::TYPE_CLASS_JOINED, Notification::TYPE_PIN_CHANGED, Notification::TYPE_GUARDIAN_REMOVED, Notification::TYPE_LEARNER_REMOVED]))
             ->with('learner')
             ->orderByDesc('timestamp')
             ->get();

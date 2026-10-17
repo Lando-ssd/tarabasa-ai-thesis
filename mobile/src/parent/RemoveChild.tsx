@@ -60,7 +60,7 @@ export function RemoveChild({ child, onBack, onDone }: { child: api.ParentChild;
         footer={<Btn label={shared ? 'Remove me' : `Delete ${first}`} tone="danger" onPress={submit} loading={busy} />}
       >
         <View style={{ gap: space[10], paddingVertical: space[8] }}>
-          <TopBar title={`Remove ${first}?`} right={<ChildFace child={child} px={s(52)} />} />
+          <TopBar title={shared ? `Remove yourself from ${first}?` : `Delete ${first}'s profile?`} right={<ChildFace child={child} px={s(52)} />} />
           {shared ? (
             <Panel style={{ gap: space[6] }}>
               <P>{first} has another guardian. This only removes you.</P>

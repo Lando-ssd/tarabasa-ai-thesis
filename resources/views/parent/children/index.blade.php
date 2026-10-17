@@ -28,6 +28,7 @@
 @else
   <div class="grid3">
     @foreach ($learners as $learner)
+      @php $hasOthers = isset($sharedIds[$learner->id]); @endphp
       <div class="card child-card">
         <div class="child-top">
           @include('parent._avatar', ['learner' => $learner, 'class' => 'focus-av'])
@@ -68,7 +69,7 @@
           <a href="{{ route('parent.progress', ['learner_id' => $learner->id]) }}" class="btn ghost small">See progress</a>
           <button type="button" class="btn ghost small" data-qr-open="pin-{{ $learner->id }}">@include('learner._badge-icon', ['icon' => 'key', 'class' => 'ico']) New PIN</button>
         </div>
-        <div class="rm-row"><button type="button" class="rm-link" data-qr-open="rm-{{ $learner->id }}">Remove {{ $learner->first_name }}</button></div>
+        <div class="rm-row"><button type="button" class="rm-link" data-qr-open="rm-{{ $learner->id }}">{{ $hasOthers ? 'Remove me from '.$learner->first_name : 'Delete '.$learner->first_name."'s profile" }}</button></div>
 
         {{-- Forgot the PIN? A guardian makes a new one. The rules (password again, 3 a day, no easy PINs) are enforced by LearnerPinService; this only asks nicely. --}}
         @php
@@ -135,14 +136,11 @@
         </dialog>
 
         {{-- Remove the child. Alone as a guardian: deletes the profile and every record for good. With another guardian: only unlinks this parent. DataErasureService enforces it; this explains it. --}}
-        @php
-          $hasOthers = isset($sharedIds[$learner->id]);
-          $removeFailed = (string) old('remove_form') === (string) $learner->id && $errors->any();
-        @endphp
+        @php $removeFailed = (string) old('remove_form') === (string) $learner->id && $errors->any(); @endphp
         <dialog id="rm-{{ $learner->id }}" class="qr-dlg pin-dlg" aria-labelledby="rm-title-{{ $learner->id }}" @if ($removeFailed) data-open @endif>
           <div class="qr-in pin-in">
             <button type="button" class="qr-x" data-qr-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
-            <h3 id="rm-title-{{ $learner->id }}">Remove {{ $learner->first_name }}?</h3>
+            <h3 id="rm-title-{{ $learner->id }}">{{ $hasOthers ? 'Remove yourself from '.$learner->first_name.'?' : 'Delete '.$learner->first_name."'s profile?" }}</h3>
             @if ($hasOthers)
               <p class="pin-lead">{{ $learner->first_name }} has another guardian. This only removes <b>you</b>. {{ $learner->first_name }}'s profile and reading records stay for them, and you will no longer see {{ $learner->first_name }} here.</p>
             @else

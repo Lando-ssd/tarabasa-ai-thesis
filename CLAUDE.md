@@ -7137,10 +7137,17 @@ plus a web page that explains how). Built so a person does it themselves, and th
   deleted." on the sign in screen. `GET /api/parent/children` now returns `otherGuardians` per child so the screen can say which outcome it is.
 - **Privacy page** (`/privacy#delete`, the URL to give an app store as the "how to request deletion" page) now describes the real steps; its date is 17 October 2026. If
   `PRIVACY_CONTACT_EMAIL` is set it also says people who cannot sign in can write to that address and the administrator deletes it for them.
-- **Honest limits.** Nothing emails the person afterwards, and the other guardian is not told when a co-guardian unlinks (the notification type does not exist yet). Backups held
+- **Everyone affected is told, and the screen never makes a parent read an "if"** (the owner asked to "make sure the ifs", and that it be definitive). The child's link and its
+  heading say exactly what will happen: "Delete Mia's profile" when the parent is the only guardian, "Remove me from Ben" when another guardian is linked (same on the phone). Guardians
+  who stay get a `Guardian Removed` alert ("Carla (Mother) is no longer a guardian of Ben.": first name and relationship only, never to the person who left); the class teacher gets a
+  `Learner Removed` message with NO name ("A learner in Sampaguita was removed. Their parent deleted the profile."; none when the child had no class). Both types are in the Updates
+  filter; the Teacher's routine list titles it "Learner removed". The creator flag (`is_creator`) is not used by any rule, so the creator leaving changes nothing for the guardian who
+  stays. A Teacher blocked by an unclaimed promotion release is freed when the child's parent deletes that child. A generation running when its Teacher is deleted writes nothing and
+  charges nothing. The Admin sees the blocker in the flash (the shell prints `$errors->first()`).
+- **Honest limits.** Nothing emails the person afterwards. Backups held
   by the hosting services are outside the app. The Teacher's `activity_generations` queued job may fail harmlessly if it was running during deletion. Uploaded child photos on
   Render's disk vanish on every sleep anyway, so the file removal mostly matters when a persistent disk is added. Needs a phone build after 0.5.2 (0.5.3) to reach the phone.
-- **Tests:** `tests/Feature/DataErasureTest.php` (19: every rule above, the website, the phone API, the Admin, the screens and the Privacy page).
+- **Tests:** `tests/Feature/DataErasureTest.php` (28: every rule above, each condition, the website, the phone API, the Admin, the screens and the Privacy page).
 
 ## Before pushing this round (checklist for the next session)
 

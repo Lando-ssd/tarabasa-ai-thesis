@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AdminAction;
 use App\Models\DataErasure;
 use App\Models\Learner;
+use App\Models\Notification;
 use App\Models\ParentAccount;
 use App\Models\SchoolClass;
 use App\Models\Teacher;
@@ -69,10 +70,7 @@ class DataErasureService
 
         if ($others->isNotEmpty()) {
             DB::transaction(function () use ($user, $learner, $parent, $others) {
-                // The unlock was paid for the child, not for the parent who happened to press the button.
-                DB::table('repository_unlocks')->where('learner_id', $learner->id)->where('parent_id', $parent->id)->update(['parent_id' => $others->first()]);
-                DB::table('notifications')->where('recipient_user_id', $user->id)->where('learner_id', $learner->id)->delete();
-                $parent->learners()->detach($learner->id);
+                $this->leave($user, $parent, $learner, $others->first());
             });
 
             DataErasure::note('unlinked', 'Parent', 'self');
@@ -250,7 +248,20 @@ class DataErasureService
             $this->photos[] = $learner->avatar_photo_path;
         }
 
+        // The class teacher would otherwise just see a learner vanish. Told without a name: the point of deleting is that the name goes.
+        $class = $learner->schoolClass;
+        $teacherUserId = $class?->teacher?->user_id;
+
         DB::table('learners')->where('id', $id)->delete();
+
+        if ($teacherUserId) {
+            Notification::create([
+                'recipient_user_id' => $teacherUserId,
+                'learner_id' => null,
+                'type' => Notification::TYPE_LEARNER_REMOVED,
+                'message' => "A learner in {$class->name} was removed. Their parent deleted the profile.",
+            ]);
+        }
     }
 
     /** @return int how many children were deleted along with the account */
@@ -299,7 +310,7 @@ class DataErasureService
                 continue;
             }
 
-            DB::table('repository_unlocks')->where('learner_id', $learner->id)->where('parent_id', $parent->id)->update(['parent_id' => $others->first()]);
+            $this->leave($parent->user, $parent, $learner, $others->first());
         }
 
         // What is left that is theirs: ratings they gave, unlocks for children who were deleted, and the links.
@@ -345,6 +356,22 @@ class DataErasureService
         }
 
         $teacher->delete();
+    }
+
+    /**
+     * One guardian steps away from a child who stays. An unlock paid for the child is not lost with the parent who happened to press the
+     * button, this parent keeps no alerts about the child, and the guardians who stay are told who left (first name and relationship only).
+     */
+    private function leave(User $user, ParentAccount $parent, Learner $learner, int $keeperParentId): void
+    {
+        $relationship = $parent->learners()->where('learners.id', $learner->id)->first()?->pivot?->relationship;
+
+        DB::table('repository_unlocks')->where('learner_id', $learner->id)->where('parent_id', $parent->id)->update(['parent_id' => $keeperParentId]);
+        DB::table('notifications')->where('recipient_user_id', $user->id)->where('learner_id', $learner->id)->delete();
+        $parent->learners()->detach($learner->id);
+
+        $who = $user->first_name.($relationship ? " ({$relationship})" : '');
+        Notification::notifyForLearner($learner, Notification::TYPE_GUARDIAN_REMOVED, "{$who} is no longer a guardian of {$learner->first_name}.", includeTeacher: false);
     }
 
     /** "Ana", "Ana and Ben", "Ana, Ben and Cai". */

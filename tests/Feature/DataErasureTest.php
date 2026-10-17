@@ -210,7 +210,7 @@ class DataErasureTest extends TestCase
         $this->assertSame([$otherParent->id], $kid->parents()->pluck('parents.id')->all());
         $this->assertSame(1, ReadingSession::where('learner_id', $kid->id)->count(), 'the reading history stays');
         $this->assertSame(0, Notification::where('recipient_user_id', $user->id)->where('learner_id', $kid->id)->count(), 'the guardian who left keeps no alerts about the child');
-        $this->assertSame(1, Notification::where('recipient_user_id', $other->id)->count(), 'the other guardian keeps theirs');
+        $this->assertSame(2, Notification::where('recipient_user_id', $other->id)->count(), 'the other guardian keeps theirs and is told who left');
         $this->assertSame($otherParent->id, RepositoryUnlock::first()->parent_id, 'an unlock paid for the child moves to the guardian who stays');
         $this->assertSame('unlinked', DataErasure::first()->kind);
     }
@@ -477,6 +477,120 @@ class DataErasureTest extends TestCase
         $this->assertNotNull(User::find($user->id));
     }
 
+    // ------------------------------------------------------------------ the conditions, one by one
+
+    public function test_the_guardians_who_stay_are_told_who_left_by_first_name_and_relationship_only(): void
+    {
+        [$user, $parent] = $this->parent('Carla');
+        [$other, $otherParent] = $this->parent('Rosa');
+        $kid = $this->child($parent);
+        $otherParent->learners()->attach($kid->id, ['relationship' => 'Father', 'is_creator' => false, 'linked_at' => now()]);
+
+        $this->removeChild($user, $kid);
+
+        $told = Notification::where('type', Notification::TYPE_GUARDIAN_REMOVED)->get();
+        $this->assertSame([$other->id], $told->pluck('recipient_user_id')->all(), 'only the guardian who stays is told, not the one who left');
+        $this->assertSame('Carla (Mother) is no longer a guardian of Mia.', $told->first()->message);
+        $this->assertStringNotContainsString($user->last_name, $told->first()->message);
+    }
+
+    public function test_deleting_a_parent_account_also_tells_the_guardian_of_a_shared_child(): void
+    {
+        [$user, $parent] = $this->parent('Carla');
+        [$other, $otherParent] = $this->parent('Rosa');
+        $shared = $this->child($parent, 'Ben');
+        $otherParent->learners()->attach($shared->id, ['relationship' => 'Father', 'is_creator' => false, 'linked_at' => now()]);
+
+        app(DataErasureService::class)->deleteOwnAccount($user, 'Passw0rd!');
+
+        $this->assertSame('Carla (Mother) is no longer a guardian of Ben.', Notification::where('recipient_user_id', $other->id)->where('type', Notification::TYPE_GUARDIAN_REMOVED)->value('message'));
+    }
+
+    public function test_when_the_creator_leaves_the_guardian_who_stays_can_still_remove_the_child_and_it_then_deletes(): void
+    {
+        [$creator, $creatorParent] = $this->parent('Carla');
+        [$second, $secondParent] = $this->parent('Rosa');
+        $kid = $this->child($creatorParent);
+        $secondParent->learners()->attach($kid->id, ['relationship' => 'Father', 'is_creator' => false, 'linked_at' => now()]);
+
+        $this->removeChild($creator, $kid);
+        $this->assertNotNull(Learner::find($kid->id));
+
+        $this->removeChild($second, $kid)->assertSessionHas('status', "Mia's profile and every reading record were deleted.");
+        $this->assertNull(Learner::find($kid->id), 'now nobody looks after the child, so the profile goes');
+    }
+
+    public function test_the_class_teacher_is_told_a_learner_was_removed_without_a_name_and_only_when_the_child_was_in_a_class(): void
+    {
+        [$tUser, $teacher] = $this->teacher();
+        $class = SchoolClass::create(['teacher_id' => $teacher->id, 'name' => 'Sampaguita', 'grade_level' => 'Grade 1', 'section' => 'A', 'school_year' => SchoolClass::currentSchoolYear()]);
+        [$user, $parent] = $this->parent();
+        $inClass = $this->child($parent, 'Mia', $class);
+        $alone = $this->child($parent, 'Ben');
+
+        $this->removeChild($user, $alone);
+        $this->assertSame(0, Notification::where('type', Notification::TYPE_LEARNER_REMOVED)->count(), 'a child with no class has no teacher to tell');
+
+        $this->removeChild($user, $inClass);
+        $note = Notification::where('type', Notification::TYPE_LEARNER_REMOVED)->first();
+        $this->assertSame($tUser->id, $note->recipient_user_id);
+        $this->assertNull($note->learner_id);
+        $this->assertSame('A learner in Sampaguita was removed. Their parent deleted the profile.', $note->message);
+        $this->assertStringNotContainsString('Mia', $note->message);
+
+        $this->app['auth']->forgetGuards();
+        $this->actingAs($tUser)->get(route('teacher.notifications.index'))->assertOk()->assertSee('Learner removed')->assertSee('A learner in Sampaguita was removed');
+    }
+
+    public function test_a_teacher_blocked_by_an_unclaimed_release_is_freed_when_the_childs_parent_deletes_that_child(): void
+    {
+        [$tUser, $teacher, , $kid] = $this->teacherWithClassroom();
+        PromotionRecord::create(['learner_id' => $kid->id, 'released_by_teacher_id' => $teacher->id, 'next_grade' => 'Grade 2', 'status' => 'Pending']);
+        $this->assertNotNull(app(DataErasureService::class)->accountImpact($tUser)['blocked']);
+
+        $parentUser = $kid->parents()->first()->user;
+        $this->removeChild($parentUser, $kid)->assertRedirect();
+
+        $this->assertNull(app(DataErasureService::class)->accountImpact($tUser)['blocked'], 'the released child is gone, so nobody is left stuck');
+    }
+
+    public function test_the_admin_sees_why_a_teacher_cannot_be_deleted_yet(): void
+    {
+        $admin = $this->admin();
+        [$user, $teacher, , $kid] = $this->teacherWithClassroom();
+        PromotionRecord::create(['learner_id' => $kid->id, 'released_by_teacher_id' => $teacher->id, 'next_grade' => 'Grade 2', 'status' => 'Pending']);
+
+        $this->app['auth']->forgetGuards();
+        $this->actingAs($admin)->from(route('admin.accounts'))->followingRedirects()
+            ->post(route('admin.users.delete', $user), ['reason' => 'The person asked us to'])
+            ->assertSee('released 1 learner for promotion');
+        $this->assertNotNull(User::find($user->id));
+    }
+
+    public function test_a_teachers_running_generation_does_not_crash_or_charge_when_the_account_is_deleted(): void
+    {
+        [$user, $teacher] = $this->teacher();
+        $generation = \App\Models\ActivityGeneration::create(['teacher_id' => $teacher->id, 'status' => \App\Models\ActivityGeneration::RUNNING, 'grade_level' => 'Grade 1', 'competency' => 'foundational_reading', 'activity_type' => 'word_reading', 'levels' => ['Easy' => 1]]);
+
+        app(DataErasureService::class)->deleteOwnAccount($user, 'Passw0rd!');
+        (new \App\Jobs\GenerateActivitiesJob($generation->id))->handle(app(\App\Services\ActivityAiClient::class));
+
+        $this->assertSame(0, Activity::count(), 'nothing is written for an account that no longer exists');
+    }
+
+    public function test_a_child_with_both_a_class_and_a_pending_release_leaves_no_row_anywhere(): void
+    {
+        [, $teacher, $class, $kid] = $this->teacherWithClassroom();
+        PromotionRecord::create(['learner_id' => $kid->id, 'released_by_teacher_id' => $teacher->id, 'next_grade' => 'Grade 2', 'status' => 'Pending', 'released_from_class_id' => $class->id]);
+        $parentUser = $kid->parents()->first()->user;
+        $this->fillChild($kid, $parentUser);
+
+        $this->removeChild($parentUser, $kid);
+
+        $this->assertSame(0, $this->everyRowAbout($kid));
+        $this->assertSame(0, PromotionRecord::count());
+    }
+
     // ------------------------------------------------------------------ the screens
 
     public function test_the_screens_offer_the_deletion_with_the_warning(): void
@@ -487,7 +601,7 @@ class DataErasureTest extends TestCase
         $admin = $this->admin();
 
         $this->app['auth']->forgetGuards();
-        $this->actingAs($user)->get(route('parent.children.index'))->assertOk()->assertSee('Remove Mia')->assertSee('cannot be undone');
+        $this->actingAs($user)->get(route('parent.children.index'))->assertOk()->assertSee('Delete Mia')->assertSee('cannot be undone');
         $this->actingAs($user)->get(route('parent.profile.edit'))->assertOk()->assertSee('Delete my account')->assertSee('Mia will be deleted for good');
 
         $this->app['auth']->forgetGuards();
@@ -495,6 +609,20 @@ class DataErasureTest extends TestCase
 
         $this->app['auth']->forgetGuards();
         $this->actingAs($admin)->get(route('admin.accounts'))->assertOk()->assertSee('Delete account');
+    }
+
+    public function test_the_child_card_says_exactly_which_of_the_two_things_it_will_do(): void
+    {
+        [$user, $parent] = $this->parent();
+        [, $otherParent] = $this->parent('Rosa');
+        $alone = $this->child($parent, 'Mia');
+        $shared = $this->child($parent, 'Ben');
+        $otherParent->learners()->attach($shared->id, ['relationship' => 'Father', 'is_creator' => false, 'linked_at' => now()]);
+
+        $this->app['auth']->forgetGuards();
+        $page = $this->actingAs($user)->get(route('parent.children.index'))->assertOk();
+        $page->assertSee('Delete Mia', false)->assertSee('Remove me from Ben', false)->assertSee('Remove yourself from Ben?', false);
+        $page->assertDontSee('Remove me from Mia', false)->assertDontSee('Delete Ben', false);
     }
 
     public function test_the_privacy_page_describes_the_real_way_to_ask(): void

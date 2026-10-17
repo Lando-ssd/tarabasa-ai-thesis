@@ -93,7 +93,12 @@ export function ChildCard({ child, onBack, onProgress, onNewPin, onRemove }: { c
             {/* Forgot the PIN? Only a guardian can make a new one (the child has no email, and a brother could reset a PIN they do not know). */}
             <Btn label="New PIN" icon="key" tone="ghost" onPress={onNewPin} accessibilityHint={`Make a new PIN for ${data.firstName}`} />
             {/* Removing a child deletes their profile when this is the only guardian, so it lives at the very end of the card, away from the everyday buttons. */}
-            <Btn label={`Remove ${data.firstName}`} tone="ghost" onPress={onRemove} accessibilityHint={`Delete ${data.firstName}'s profile, or remove yourself if there is another guardian`} />
+            <Btn
+              label={(child.otherGuardians ?? 0) > 0 ? `Remove me from ${data.firstName}` : `Delete ${data.firstName}'s profile`}
+              tone="ghost"
+              onPress={onRemove}
+              accessibilityHint={(child.otherGuardians ?? 0) > 0 ? `${data.firstName} has another guardian, so this only removes you` : `Deletes ${data.firstName}'s profile and every reading record for good`}
+            />
           </>
         )}
       </View>
