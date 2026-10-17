@@ -90,7 +90,7 @@
   <p>A child cannot sign up alone. A parent creates the child's account and chooses what to enter. The photo is optional.</p>
 
   <h2 id="delete">Keeping and removing information</h2>
-  <p>Information stays while the account is in use. You can delete it yourself at any time, on the website or in the phone app. Nobody has to approve it.</p>
+  <p>Information stays while the account is in use. You can delete it yourself at any time, on the website or in the phone app. Nobody has to approve it. This follows the Data Privacy Act of 2012 (Republic Act 10173), which lets a person ask for their personal data to be removed or destroyed.</p>
   <ul>
     <li><b>A child's profile:</b> a parent opens <b>My children</b> (<b>Children</b> in the phone app), taps <b>Remove</b> on the child and types their password. If the parent is the child's only guardian, the profile and every reading record, badge, word and alert are deleted, and so is the photo if there was one. If another guardian is linked, only the parent who asked is removed and the child stays for the other guardian.</li>
     <li><b>An account:</b> a parent or teacher opens <b>Profile</b> (in the phone app: the picture at the top, or <b>More</b>, then <b>My profile</b>) and chooses <b>Delete my account</b>. A parent's account takes with it the children who have no other guardian. A teacher's account takes the classes and the activities shared to the library. The learners stay with their parents. Activities a teacher wrote stay without the teacher's name, because children's reading history is attached to them.</li>

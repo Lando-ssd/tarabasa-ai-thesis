@@ -7148,6 +7148,14 @@ plus a web page that explains how). Built so a person does it themselves, and th
   by the hosting services are outside the app. The Teacher's `activity_generations` queued job may fail harmlessly if it was running during deletion. Uploaded child photos on
   Render's disk vanish on every sleep anyway, so the file removal mostly matters when a persistent disk is added. Needs a phone build after 0.5.2 (0.5.3) to reach the phone.
 - **Tests:** `tests/Feature/DataErasureTest.php` (28: every rule above, each condition, the website, the phone API, the Admin, the screens and the Privacy page).
+- **Basis (checked by search on 2026-10-17; read the official statute before quoting it in the manuscript):** the Data Privacy Act of 2012 (Republic Act 10173), Section 16(e), gives a
+  data subject the right to suspend, withdraw or order the blocking, removal or destruction of personal data in the controller's filing system (grounds include data no longer necessary
+  for the purpose it was collected for, or unlawfully obtained); the Implementing Rules carry it as Rule VIII, Section 34(e). The National Privacy Commission's own material and
+  Philippine law commentaries agree on this. The law does not require destroying records another lawful basis keeps, which is why the Admin log keeps a reason without a name and why the
+  `data_erasures` line holds no identity. Google Play's "app account deletion" policy (support.google.com/googleplay/android-developer/answer/13327111) requires an app that lets people
+  create an account to offer BOTH an in-app path to delete the account and its data AND a web link where a person can ask for it (for someone who uninstalled the app), and the link is
+  entered in the Data safety form: the in-app screens and `/privacy#delete` are those two. The one decision that is the team's own, not the law's: a co-guardian removing a child only
+  unlinks (so one parent cannot erase what the other is also responsible for).
 
 ## A grade is only for its own grade: activities too, not just learners (2026-10-17, BUILT LOCALLY, NOT PUSHED)
 
@@ -7171,6 +7179,10 @@ teacher alike. The learner side of the rule already existed (`SchoolClass::accep
   same rule, and where a teacher has such a class but no longer handles the grade the screen says "You do not handle Grade 2 ..." instead of an empty list (`note` in the phone API).
 - **Not changed, deliberately:** the Parent's Open Repository still lets a parent unlock an activity of any grade for their child (it ranks and can filter by the child's level, but does
   not forbid); say so if the owner wants it closed too. Learner pickers and reading never reject an activity because of its grade.
+- **Basis:** the curriculum is written grade by grade (the MATATAG curriculum guides in `docs/manuscript/` list competencies and codes per grade, for example the first check's EN2PWS and
+  EN3CAT codes), and the activity generator aligns every bundle to the guide of the grade it is asked for, so an activity is only a match for a class of the grade it was written for.
+  DepEd's own multigrade class (two or more grades under one teacher, DepEd Orders 96 s.1997 and 81 s.2009) is deliberately NOT modelled: a teacher who handles several grades opens one class
+  per grade, and the owner's rule is that a Grade 1 class is for Grade 1, a Grade 2 class for Grade 2, and so on. Re-read the exact DepEd wording on deped.gov.ph before quoting it.
 - **Tests:** `tests/Feature/GradeMatchTest.php` (14: class, class window route, learner, group tag, older mixed class, alert assign, window text and tags, phone API, suggestions, writing,
   claiming, the phone promotions note, the rule itself, the class window flag).
 
