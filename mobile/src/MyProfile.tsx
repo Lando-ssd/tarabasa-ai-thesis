@@ -17,6 +17,8 @@ type Props = {
   withTabBar?: boolean;
   /** Something to show at the very end, such as Log out for a Parent (a Teacher's is on the More menu). */
   extra?: ReactNode;
+  /** Opens the screen that deletes this account (it says what would happen first). */
+  onDelete?: () => void;
 };
 
 /**
@@ -24,7 +26,7 @@ type Props = {
  * Teacher's school and employee ID are shown but not changed here, as on the website: the Admin checked them, so a change goes
  * through the Admin.
  */
-export function MyProfile({ account, onBack, onAccount, withTabBar = true, extra }: Props) {
+export function MyProfile({ account, onBack, onAccount, withTabBar = true, extra, onDelete }: Props) {
   const teacher = account.role === 'teacher';
 
   return (
@@ -40,6 +42,13 @@ export function MyProfile({ account, onBack, onAccount, withTabBar = true, extra
               <H2>School</H2>
               <P style={{ color: colors.ink, fontFamily: fonts.ui }}>{account.teacher?.schoolName}</P>
               <Small>Your school and employee ID were checked by the Admin, so they cannot be changed here. If something is wrong, ask the Admin.</Small>
+            </Panel>
+          ) : null}
+          {onDelete ? (
+            <Panel style={{ gap: space[6], borderColor: '#f0b3b3' }}>
+              <H2>Delete my account</H2>
+              <Small>This is permanent. The next screen tells you exactly what would be deleted before you confirm.</Small>
+              <Btn label="Delete my account" tone="ghost" onPress={onDelete} />
             </Panel>
           ) : null}
           {extra}

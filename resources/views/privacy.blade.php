@@ -41,7 +41,7 @@
 <main class="page" role="main">
   <div class="brand">TaraBasa<span>AI</span></div>
   <h1>Privacy</h1>
-  <p class="updated">Last updated 12 October 2026</p>
+  <p class="updated">Last updated 17 October 2026</p>
 
   <p class="lead">TaraBasa AI is a reading practice website and phone app for Grade 1 to 3 learners. It was built by a student team as a capstone project. This page says what it keeps, why, and who can see it.</p>
 
@@ -89,13 +89,18 @@
   <h2>Children</h2>
   <p>A child cannot sign up alone. A parent creates the child's account and chooses what to enter. The photo is optional.</p>
 
-  <h2>Keeping and removing information</h2>
-  <p>Information stays while the account is in use. A parent can ask for a child's records, or an adult for their own account, to be removed.</p>
+  <h2 id="delete">Keeping and removing information</h2>
+  <p>Information stays while the account is in use. You can delete it yourself at any time, on the website or in the phone app. Nobody has to approve it.</p>
+  <ul>
+    <li><b>A child's profile:</b> a parent opens <b>My children</b> (<b>Children</b> in the phone app), taps <b>Remove</b> on the child and types their password. If the parent is the child's only guardian, the profile and every reading record, badge, word and alert are deleted, and so is the photo if there was one. If another guardian is linked, only the parent who asked is removed and the child stays for the other guardian.</li>
+    <li><b>An account:</b> a parent or teacher opens <b>Profile</b> (in the phone app: the picture at the top, or <b>More</b>, then <b>My profile</b>) and chooses <b>Delete my account</b>. A parent's account takes with it the children who have no other guardian. A teacher's account takes the classes and the activities shared to the library. The learners stay with their parents. Activities a teacher wrote stay without the teacher's name, because children's reading history is attached to them.</li>
+  </ul>
+  <p>We keep one line that a deletion happened (what kind, and when) and nothing that says who it was.</p>
   @php $contact = config('app.privacy_contact'); @endphp
   @if ($contact)
-    <p>To ask, write to <a href="mailto:{{ $contact }}">{{ $contact }}</a>.</p>
+    <p>If you cannot sign in, write to <a href="mailto:{{ $contact }}">{{ $contact }}</a> and the site administrator can delete it for you.</p>
   @else
-    <p>To ask, tell the school administrator or the TaraBasa AI team who gave you access.</p>
+    <p>If you cannot sign in, tell the school administrator or the TaraBasa AI team who gave you access, and the site administrator can delete it for you.</p>
   @endif
 
   <h2>Keeping it safe</h2>

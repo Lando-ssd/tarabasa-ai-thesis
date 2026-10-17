@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Teacher;
 use App\Services\AccountProfileService;
+use App\Services\DataErasureService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -39,6 +40,22 @@ class ProfileApiController extends Controller
         $message = $this->profile->updateGrades($request->user()->teacher, $request->validate(Teacher::gradeRules()));
 
         return response()->json(['message' => $message, 'account' => $this->payload($request->user()->refresh())]);
+    }
+
+    /** What deleting this account would do, in plain sentences, and whether it can be done yet. Shown before the password is asked for. */
+    public function eraseInfo(Request $request, DataErasureService $erasure): JsonResponse
+    {
+        $impact = $erasure->accountImpact($request->user());
+
+        return response()->json(['lines' => $impact['lines'], 'blocked' => $impact['blocked']]);
+    }
+
+    /** Deletes the signed in Teacher's or Parent's own account (password again). Every token goes with it, so the app signs out. */
+    public function destroy(Request $request, DataErasureService $erasure): JsonResponse
+    {
+        $data = $request->validate(['password' => ['required', 'string']], ['password.required' => 'Type your password, so we know it is you.']);
+
+        return response()->json(['message' => $erasure->deleteOwnAccount($request->user(), $data['password'])]);
     }
 
     /** The same account shape sign in gives (AccountApiController), so the app can replace what it holds. */

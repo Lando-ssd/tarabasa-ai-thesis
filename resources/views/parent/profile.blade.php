@@ -98,6 +98,42 @@
   </div>
 </div>
 
+{{-- Delete my account. What it would do is told first; the password is asked for in the window. DataErasureService enforces every rule. --}}
+@php $eraseFailed = (string) old('erase_form') === '1' && $errors->erase->any(); @endphp
+<div class="card erase-card" id="delete" style="margin-top:16px">
+  <p class="card-title">Delete my account</p>
+  <p class="card-sub">This is permanent. Here is exactly what happens:</p>
+  <ul class="erase-list">
+    @foreach ($erase['lines'] as $line)<li>{{ $line }}</li>@endforeach
+  </ul>
+  <button type="button" class="btn ghost danger" id="openErase">Delete my account</button>
+</div>
+
+<dialog id="eraseDlg" class="qr-dlg pin-dlg" aria-labelledby="erase-title" @if ($eraseFailed) data-open @endif>
+  <div class="qr-in pin-in">
+    <button type="button" class="qr-x" data-qr-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+    <h3 id="erase-title">Delete your account?</h3>
+    <p class="pin-lead">You cannot get it back. Type your password to confirm it is you.</p>
+    <form method="POST" action="{{ route('profile.delete') }}" class="erase-form" autocomplete="off" novalidate>
+      @csrf
+      <input type="hidden" name="erase_form" value="1">
+      <label class="pin-pw">Your TaraBasa password
+        <input type="password" name="password" autocomplete="current-password" required class="@if ($eraseFailed && $errors->erase->has('password')) error @endif">
+      </label>
+      <label class="erase-check"><input type="checkbox" name="confirm" value="1" required><span>I understand this cannot be undone.</span></label>
+      @if ($eraseFailed)
+        @foreach (['password', 'confirm', 'account'] as $field)
+          @if ($errors->erase->has($field))<div class="flash error pin-err" role="alert">{{ $errors->erase->first($field) }}</div>@endif
+        @endforeach
+      @endif
+      <div class="qr-actions">
+        <button type="submit" class="btn small danger-fill" data-erase-submit>Delete my account</button>
+        <button type="button" class="btn ghost small" data-qr-close>Cancel</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
 <form method="POST" action="{{ route('logout') }}" class="phone-only" style="margin-top:22px">
   @csrf
   <button type="submit" class="btn ghost">@include('learner._badge-icon', ['icon' => 'sign-out', 'class' => 'ico']) Log out</button>
@@ -106,6 +142,18 @@
 
 @push('scripts')
 <script>
+  // The delete window: opens from its button, closes with Close, Escape or a tap outside; one press sends it once.
+  (function () {
+    var dlg = document.getElementById('eraseDlg');
+    if (!dlg || !dlg.showModal) { return; }
+    document.getElementById('openErase').addEventListener('click', function () { dlg.showModal(); });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-qr-close]')) { dlg.close(); } });
+    if (dlg.hasAttribute('data-open')) { dlg.showModal(); }
+    var form = dlg.querySelector('.erase-form');
+    var submit = form.querySelector('[data-erase-submit]');
+    form.addEventListener('submit', function () { submit.disabled = true; submit.textContent = 'Working...'; });
+  })();
+
   // A real saving state on each form, so a second tap cannot double submit.
   document.querySelectorAll('.profile-grid form').forEach(function (form) {
     form.addEventListener('submit', function () {

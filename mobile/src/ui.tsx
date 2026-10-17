@@ -75,7 +75,7 @@ export function Small({ children, style, numberOfLines }: TextProps) {
 type BtnProps = {
   label: string;
   onPress: () => void;
-  tone?: 'orange' | 'blue' | 'ghost';
+  tone?: 'orange' | 'blue' | 'ghost' | 'danger';
   icon?: string;
   disabled?: boolean;
   loading?: boolean;
@@ -92,7 +92,9 @@ export function Btn({ label, onPress, tone = 'orange', icon, disabled, loading, 
       ? { bg: colors.blue, lip: colors.blueDark, text: colors.white }
       : tone === 'ghost'
         ? { bg: colors.white, lip: colors.line, text: colors.ink }
-        : { bg: colors.orange, lip: colors.orangeDark, text: colors.white };
+        : tone === 'danger'
+          ? { bg: colors.bad, lip: '#7f1c16', text: colors.white }
+          : { bg: colors.orange, lip: colors.orangeDark, text: colors.white };
   const inactive = disabled || loading;
 
   return (

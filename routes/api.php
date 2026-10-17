@@ -49,6 +49,9 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
         Route::put('/profile', [ProfileApiController::class, 'update'])->name('profile.update');
         Route::put('/profile/password', [ProfileApiController::class, 'password'])->middleware('throttle:10,1')->name('profile.password');
         Route::put('/profile/grades', [ProfileApiController::class, 'grades'])->name('profile.grades');
+        // Deleting their own account: what it would do (shown first), then the deletion itself (password again).
+        Route::get('/account/erase-info', [ProfileApiController::class, 'eraseInfo'])->name('account.erase-info');
+        Route::post('/profile/delete', [ProfileApiController::class, 'destroy'])->middleware('throttle:10,1,erase-account')->name('profile.delete');
     });
 });
 
@@ -101,6 +104,8 @@ Route::middleware(['auth:sanctum', 'token.actor:teacher'])->prefix('teacher')->n
 Route::middleware(['auth:sanctum', 'token.actor:parent'])->prefix('parent')->name('api.parent.')->group(function () {
     // A guardian makes a new PIN for a child who forgot theirs (password again, 3 changes a day, no weak PINs: LearnerPinService).
     Route::post('/children/{learner}/pin', [ParentApiController::class, 'resetPin'])->whereNumber('learner')->middleware('throttle:20,1')->name('children.pin');
+    // A guardian removes a child's profile (password again; with another guardian linked it only unlinks this one).
+    Route::post('/children/{learner}/remove', [ParentApiController::class, 'removeChild'])->whereNumber('learner')->middleware('throttle:20,1,erase-child')->name('children.remove');
 
     Route::get('/home', [ParentApiController::class, 'home'])->name('home');
 

@@ -73,6 +73,7 @@
                     <button type="submit" class="btn tiny green">Activate</button>
                   </form>
                 @endif
+                <button type="button" class="btn tiny ghost danger" data-open="dl-{{ $a->id }}" title="Delete this account" aria-label="Delete account of {{ $name }}">Delete</button>
               </td>
             </tr>
           @endforeach
@@ -91,6 +92,9 @@
 </div>
 
 @foreach ($accounts as $a)
+  @push('dialogs')
+    @include('admin._delete-window', ['u' => $a, 'eraseReasons' => $eraseReasons])
+  @endpush
   @if ($a->email_verified_at === null)
     @push('dialogs')
       @include('admin._confirm-email-window', ['u' => $a, 'confirmReasons' => $confirmReasons])

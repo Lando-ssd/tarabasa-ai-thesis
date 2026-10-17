@@ -68,6 +68,7 @@
           <a href="{{ route('parent.progress', ['learner_id' => $learner->id]) }}" class="btn ghost small">See progress</a>
           <button type="button" class="btn ghost small" data-qr-open="pin-{{ $learner->id }}">@include('learner._badge-icon', ['icon' => 'key', 'class' => 'ico']) New PIN</button>
         </div>
+        <div class="rm-row"><button type="button" class="rm-link" data-qr-open="rm-{{ $learner->id }}">Remove {{ $learner->first_name }}</button></div>
 
         {{-- Forgot the PIN? A guardian makes a new one. The rules (password again, 3 a day, no easy PINs) are enforced by LearnerPinService; this only asks nicely. --}}
         @php
@@ -132,6 +133,41 @@
             @endif
           </div>
         </dialog>
+
+        {{-- Remove the child. Alone as a guardian: deletes the profile and every record for good. With another guardian: only unlinks this parent. DataErasureService enforces it; this explains it. --}}
+        @php
+          $hasOthers = isset($sharedIds[$learner->id]);
+          $removeFailed = (string) old('remove_form') === (string) $learner->id && $errors->any();
+        @endphp
+        <dialog id="rm-{{ $learner->id }}" class="qr-dlg pin-dlg" aria-labelledby="rm-title-{{ $learner->id }}" @if ($removeFailed) data-open @endif>
+          <div class="qr-in pin-in">
+            <button type="button" class="qr-x" data-qr-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+            <h3 id="rm-title-{{ $learner->id }}">Remove {{ $learner->first_name }}?</h3>
+            @if ($hasOthers)
+              <p class="pin-lead">{{ $learner->first_name }} has another guardian. This only removes <b>you</b>. {{ $learner->first_name }}'s profile and reading records stay for them, and you will no longer see {{ $learner->first_name }} here.</p>
+            @else
+              <p class="pin-lead">You are {{ $learner->first_name }}'s only guardian, so this <b>deletes {{ $learner->first_name }}'s profile for good</b>: every reading, badge, word, alert and game record, and the sign in. This cannot be undone.</p>
+            @endif
+
+            <form method="POST" action="{{ route('parent.children.remove', $learner) }}" class="erase-form" autocomplete="off" novalidate>
+              @csrf
+              <input type="hidden" name="remove_form" value="{{ $learner->id }}">
+              <label class="pin-pw">Your TaraBasa password <small>so we know it is you</small>
+                <input type="password" name="password" autocomplete="current-password" required class="@if ($removeFailed && $errors->has('password')) error @endif">
+              </label>
+              <label class="erase-check"><input type="checkbox" name="confirm" value="1" required><span>I understand this cannot be undone.</span></label>
+              @if ($removeFailed)
+                @foreach (['password', 'confirm'] as $field)
+                  @if ($errors->has($field))<div class="flash error pin-err" role="alert">{{ $errors->first($field) }}</div>@endif
+                @endforeach
+              @endif
+              <div class="qr-actions">
+                <button type="submit" class="btn small danger-fill" data-erase-submit>{{ $hasOthers ? 'Remove me' : 'Delete '.$learner->first_name }}</button>
+                <button type="button" class="btn ghost small" data-qr-close>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </dialog>
       </div>
     @endforeach
   </div>
@@ -171,6 +207,12 @@
     });
     form.addEventListener('submit', function () { submit.disabled = true; submit.textContent = 'Working...'; });
     sync();
+  });
+
+  // The Remove window: one press sends it once.
+  document.querySelectorAll('.erase-form').forEach(function (form) {
+    var submit = form.querySelector('[data-erase-submit]');
+    form.addEventListener('submit', function () { submit.disabled = true; submit.textContent = 'Working...'; });
   });
 
   // The copy buttons: copy the Learner Code, and say so on the button for a moment.

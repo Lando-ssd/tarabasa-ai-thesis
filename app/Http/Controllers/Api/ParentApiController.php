@@ -8,6 +8,7 @@ use App\Models\Notification;
 use App\Models\OpenRepositoryListing;
 use App\Models\ParentAccount;
 use App\Models\ReadingSession;
+use App\Services\DataErasureService;
 use App\Services\LearnerPinService;
 use App\Services\ParentChildService;
 use App\Services\ParentRepositoryService;
@@ -88,6 +89,8 @@ class ParentApiController extends Controller
                 'dayStreak' => $l->readingDayStreak(),
                 'relationship' => $l->pivot->relationship,
                 'creator' => (bool) $l->pivot->is_creator,
+                // Removing a child who has another guardian only unlinks this parent (the app says so before it asks for the password).
+                'otherGuardians' => max(0, $l->parents()->count() - 1),
             ])->values(),
         ]);
     }
@@ -151,6 +154,17 @@ class ParentApiController extends Controller
         $result = $this->pins->reset($request->user(), $learner, $validated['password'], $validated['mode'], $validated['pin'] ?? null);
 
         return response()->json($result);
+    }
+
+    /**
+     * A guardian removes a child's profile (DataErasureService holds every rule: a linked guardian only, their password again, and with
+     * another guardian linked it only unlinks this one). A refusal is a 422 under `password`.
+     */
+    public function removeChild(Request $request, Learner $learner, DataErasureService $erasure): JsonResponse
+    {
+        $data = $request->validate(['password' => ['required', 'string']], ['password.required' => 'Type your password, so we know it is you.']);
+
+        return response()->json($erasure->removeChild($request->user(), $learner, $data['password']));
     }
 
     // ------------------------------------------------------------------ progress

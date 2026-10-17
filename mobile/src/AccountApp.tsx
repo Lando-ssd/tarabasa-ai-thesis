@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import type { Account, ClassCard, ClassList, ParentChild } from './api';
+import { DeleteAccount } from './DeleteAccount';
 import { MyProfile } from './MyProfile';
 import { AddChild } from './parent/AddChild';
 import { ChildCard, Children, LinkChild } from './parent/Children';
+import { RemoveChild } from './parent/RemoveChild';
 import { ResetPin } from './parent/ResetPin';
 import { ParentActivities } from './parent/ParentActivities';
 import { ParentAlerts } from './parent/ParentAlerts';
@@ -45,15 +47,15 @@ const PARENT_TABS: TabItem<ParentTab>[] = [
   { key: 'alerts', label: 'Alerts', icon: 'bell' },
 ];
 
-type Props = { account: Account; onSignOut: () => void };
+type Props = { account: Account; onSignOut: () => void; onDeleted: (message: string) => void };
 
 /**
  * The signed in app for a Teacher or a Parent: the bottom bar of the approved design, opened from the type of account (there
  * is no role picker to get wrong). The screens behind most tabs are still being built, and they say so. Log out and the
  * account's own details already work.
  */
-export function AccountApp({ account, onSignOut }: Props) {
-  return account.role === 'teacher' ? <TeacherApp account={account} onSignOut={onSignOut} /> : <ParentApp account={account} onSignOut={onSignOut} />;
+export function AccountApp({ account, onSignOut, onDeleted }: Props) {
+  return account.role === 'teacher' ? <TeacherApp account={account} onSignOut={onSignOut} onDeleted={onDeleted} /> : <ParentApp account={account} onSignOut={onSignOut} onDeleted={onDeleted} />;
 }
 
 type ClassesRoute =
@@ -65,9 +67,9 @@ type ClassesRoute =
 
 type ActivitiesRoute = { name: 'list' } | { name: 'activity'; id: number } | { name: 'generate' };
 
-type MoreRoute = 'menu' | 'analytics' | 'promotions' | 'profile';
+type MoreRoute = 'menu' | 'analytics' | 'promotions' | 'profile' | 'delete';
 
-function TeacherApp({ account: initial, onSignOut }: Props) {
+function TeacherApp({ account: initial, onSignOut, onDeleted }: Props) {
   const [account, setAccount] = useState(initial);
   const [tab, setTab] = useState<TeacherTab>('home');
   const [route, setRoute] = useState<ClassesRoute>({ name: 'list' });
@@ -106,7 +108,7 @@ function TeacherApp({ account: initial, onSignOut }: Props) {
       return true;
     }
     if (tab === 'more' && moreRoute !== 'menu') {
-      setMoreRoute('menu');
+      setMoreRoute(moreRoute === 'delete' ? 'profile' : 'menu');
       return true;
     }
     if (tab !== 'home') {
@@ -136,7 +138,8 @@ function TeacherApp({ account: initial, onSignOut }: Props) {
   } else if (tab === 'more') {
     if (moreRoute === 'analytics') screen = <Analytics onBack={() => setMoreRoute('menu')} />;
     else if (moreRoute === 'promotions') screen = <Promotions active={active} onBack={() => setMoreRoute('menu')} />;
-    else if (moreRoute === 'profile') screen = <MyProfile account={account} onBack={() => setMoreRoute('menu')} onAccount={setAccount} />;
+    else if (moreRoute === 'profile') screen = <MyProfile account={account} onBack={() => setMoreRoute('menu')} onAccount={setAccount} onDelete={() => setMoreRoute('delete')} />;
+    else if (moreRoute === 'delete') screen = <DeleteAccount onBack={() => setMoreRoute('profile')} onDeleted={onDeleted} />;
     else screen = <More account={account} claimable={claimable} onOpen={setMoreRoute} onSignOut={onSignOut} />;
   } else if (tab === 'alerts') {
     screen = (
@@ -233,13 +236,15 @@ function TeacherApp({ account: initial, onSignOut }: Props) {
   );
 }
 
-type ChildrenRoute = { name: 'list' } | { name: 'add' } | { name: 'link' } | { name: 'card'; child: ParentChild } | { name: 'pin'; child: ParentChild };
+type ChildrenRoute = { name: 'list' } | { name: 'add' } | { name: 'link' } | { name: 'card'; child: ParentChild } | { name: 'pin'; child: ParentChild } | { name: 'remove'; child: ParentChild };
 
-function ParentApp({ account: initial, onSignOut }: Props) {
+function ParentApp({ account: initial, onSignOut, onDeleted }: Props) {
   const [account, setAccount] = useState(initial);
   const [tab, setTab] = useState<ParentTab>('home');
   const [route, setRoute] = useState<ChildrenRoute>({ name: 'list' });
   const [profile, setProfile] = useState(false);
+  // Deleting the whole account is a step beyond the profile.
+  const [deleting, setDeleting] = useState(false);
   // The child being looked at stays the same when you move between Home, Progress and Activities. Null lets the server pick the first.
   const [childId, setChildId] = useState<number | null>(null);
   // Bumped when children, unlocks or alerts change, so the screens behind fetch again when they come back into view.
@@ -262,11 +267,15 @@ function ParentApp({ account: initial, onSignOut }: Props) {
 
   // The phone's back button: one step back (a form, a card, the profile), then Home, then out of the app.
   const back = useCallback(() => {
+    if (profile && deleting) {
+      setDeleting(false);
+      return true;
+    }
     if (profile) {
       setProfile(false);
       return true;
     }
-    if (tab === 'children' && route.name === 'pin') {
+    if (tab === 'children' && (route.name === 'pin' || route.name === 'remove')) {
       setRoute({ name: 'card', child: route.child });
       return true;
     }
@@ -280,19 +289,22 @@ function ParentApp({ account: initial, onSignOut }: Props) {
     }
     return false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, tab, route]);
+  }, [profile, deleting, tab, route]);
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', back);
     return () => sub.remove();
   }, [back]);
 
   let screen;
-  if (profile) {
+  if (profile && deleting) {
+    screen = <DeleteAccount onBack={() => setDeleting(false)} onDeleted={onDeleted} />;
+  } else if (profile) {
     screen = (
       <MyProfile
         account={account}
         onBack={() => setProfile(false)}
         onAccount={setAccount}
+        onDelete={() => setDeleting(true)}
         extra={<Btn label="Log out" tone="ghost" icon="sign-out" onPress={onSignOut} />}
       />
     );
@@ -334,6 +346,20 @@ function ParentApp({ account: initial, onSignOut }: Props) {
             goTab('progress');
           }}
           onNewPin={() => setRoute({ name: 'pin', child: route.child })}
+          onRemove={() => setRoute({ name: 'remove', child: route.child })}
+        />
+      );
+    } else if (route.name === 'remove') {
+      screen = (
+        <RemoveChild
+          child={route.child}
+          onBack={() => setRoute({ name: 'card', child: route.child })}
+          onDone={(message) => {
+            setFlash(message);
+            setChildId(null);
+            setRefresh((n) => n + 1);
+            setRoute({ name: 'list' });
+          }}
         />
       );
     } else if (route.name === 'pin') {

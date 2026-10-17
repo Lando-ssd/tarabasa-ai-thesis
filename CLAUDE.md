@@ -7105,6 +7105,43 @@ The owner asked what should happen when a learner's PIN is forgotten, for the be
   Render when this branch is merged (the new table is made by the normal `migrate --force` at deploy; nothing existing is rewritten).
 - **Tests.** `tests/Feature/ChildPinResetTest.php` (19: every rule above, the website and the phone API, the locked child recovering at once, the alerts, a stranger and a teacher refused).
 
+## Deleting a child or an account (2026-10-17, BUILT LOCALLY, NOT PUSHED)
+
+The live Privacy page promised "a parent can ask for a child's records, or an adult for their own account, to be removed" but nothing in the app could do it (the old
+note "account deletion is still open" in this file). This is also what an app store asks of an app that lets people create accounts (Google Play: an in-app deletion path
+plus a web page that explains how). Built so a person does it themselves, and the Admin can do it for someone who cannot sign in.
+- **One service, `App\Services\DataErasureService`**, called by the website, the phone API and the Admin. Rules (each enforced on the server, each tested):
+  1. A guardian removes a child (`removeChild`; a stranger or a teacher gets 404 or 403, nothing is deleted). With ANOTHER guardian linked it only UNLINKS this parent
+     (one parent must not destroy the other's access; an unlock paid for the child moves to the guardian who stays; this parent's alerts about the child go). Alone as a
+     guardian it deletes the child for good: every table row about the child (written out table by table, so it does not depend on the database enforcing cascades, including
+     `repository_ratings`, which has a `learner_id`), the child's phone sign ins and the photo file.
+  2. Deleting your own account (`deleteOwnAccount`, Teacher or Parent, never an Admin) needs your password again (5 wrong = 15 minutes locked, same limiter style as the PIN).
+     A Parent's account takes the children who have no other guardian (the ones with another guardian are kept and re-pointed), the ratings they gave and their links. A Teacher's
+     account takes their classes, assignments, generation requests, alert marks and Repository listings (with the unlocks and ratings on them). The learners STAY with their
+     parents, just without a class. The activities a Teacher wrote STAY (children's reading history points at them) but lose the author, `teacher_notes` and `generation_basis`.
+  3. A Teacher who released learners for promotion that nobody has claimed yet CANNOT delete (those children would be stuck between grades); `accountImpact()['blocked']` says so.
+     Promotion history rows the teacher released (already Claimed) are deleted with them: accepted, cosmetic.
+  4. The Admin (`deleteByAdmin`, route `admin.users.delete`, Accounts list, "Delete account" window with a reason list; "Other" needs a note) can delete a Teacher or Parent
+     account, never an Admin. The Activity log keeps the Admin's name and the reason but NOT the person's name (`AdminAction::recordErasure`: "a Parent account"), and earlier log
+     rows about that person are scrubbed (`target_name`, `detail`).
+  5. `data_erasures` (new table, `DataErasure::note`) records that a deletion happened: kind (child, account, unlinked), role, who asked (self or admin), how many children went,
+     when. No name, email, code or id. A test pins the column list so nobody adds one by accident.
+  6. Sessions: the user's Sanctum tokens, `sessions` rows (database sessions) and `password_reset_tokens` are removed; the browser that deleted is logged out and the session
+     invalidated. A failed deletion is rolled back whole and says nothing was deleted.
+- **Screens.** Website: My children has a quiet "Remove {name}" link under each card (not a third button: the card's button row is too narrow) opening a dialog that says
+  which of the two outcomes it is, asks for the password and a tick; Profile (Parent and Teacher) has a "Delete my account" card that lists exactly what would happen (from
+  `accountImpact`, plain sentences) before the window asks for the password; the Teacher card shows the promotion blocker instead of the button when it applies. These forms use
+  the `erase` error bag, because the Profile page also has a "new password" field. Phone app: `RemoveChild.tsx` (from the child's card, last button), `DeleteAccount.tsx`
+  (My profile, Teacher through More and Parent through the picture at the top; fetches `GET /api/auth/account/erase-info` first); a red `Btn tone="danger"`; after an account
+  is deleted `App.tsx leave(message, false)` skips the server logout call (the token is gone, and the call would answer 401 and overwrite the notice) and shows "Your account was
+  deleted." on the sign in screen. `GET /api/parent/children` now returns `otherGuardians` per child so the screen can say which outcome it is.
+- **Privacy page** (`/privacy#delete`, the URL to give an app store as the "how to request deletion" page) now describes the real steps; its date is 17 October 2026. If
+  `PRIVACY_CONTACT_EMAIL` is set it also says people who cannot sign in can write to that address and the administrator deletes it for them.
+- **Honest limits.** Nothing emails the person afterwards, and the other guardian is not told when a co-guardian unlinks (the notification type does not exist yet). Backups held
+  by the hosting services are outside the app. The Teacher's `activity_generations` queued job may fail harmlessly if it was running during deletion. Uploaded child photos on
+  Render's disk vanish on every sleep anyway, so the file removal mostly matters when a persistent disk is added. Needs a phone build after 0.5.2 (0.5.3) to reach the phone.
+- **Tests:** `tests/Feature/DataErasureTest.php` (19: every rule above, the website, the phone API, the Admin, the screens and the Privacy page).
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

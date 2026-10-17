@@ -88,6 +88,19 @@
       <div class="field" style="margin-bottom:0"><label for="employee_id">DepEd employee ID</label><input type="text" id="employee_id" value="{{ $teacher->employee_id }}" readonly></div>
     </div>
 
+    <div class="card erase-card">
+      <p class="card-title">Delete my account</p>
+      <p class="card-sub">This is permanent. Here is exactly what happens:</p>
+      <ul class="erase-list">
+        @foreach ($erase['lines'] as $line)<li>{{ $line }}</li>@endforeach
+      </ul>
+      @if ($erase['blocked'])
+        <div class="locked-note">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<span>{{ $erase['blocked'] }}</span></div>
+      @else
+        <button type="button" class="btn ghost danger" data-open="eraseDlg">Delete my account</button>
+      @endif
+    </div>
+
     <div class="card">
       <p class="card-title">Password</p>
       <p class="card-sub">Change it any time. You will need your current password.</p>
@@ -98,6 +111,33 @@
 @endsection
 
 @push('dialogs')
+  @php $eraseFailed = (string) old('erase_form') === '1' && $errors->erase->any(); @endphp
+  <dialog id="eraseDlg" class="win" aria-label="Delete my account" @if ($eraseFailed) data-autoopen @endif>
+    <div class="win-in narrow">
+      <header class="win-head">
+        <div class="win-titles"><h2>Delete your account?</h2><p class="win-meta">You cannot get it back. Type your password to confirm it is you.</p></div>
+        <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+      </header>
+      <div class="win-body">
+        <form id="erase-form" method="POST" action="{{ route('profile.delete') }}" data-busy="Deleting" autocomplete="off">
+          @csrf
+          <input type="hidden" name="erase_form" value="1">
+          <div class="field"><label for="erase_password">Your TaraBasa password</label><input type="password" id="erase_password" name="password" data-af autocomplete="current-password" class="@if ($eraseFailed && $errors->erase->has('password')) error @endif" required></div>
+          <label class="erase-check"><input type="checkbox" name="confirm" value="1" required><span>I understand this cannot be undone.</span></label>
+          @if ($eraseFailed)
+            @foreach (['password', 'confirm', 'account'] as $field)
+              @if ($errors->erase->has($field))<span class="field-error">{{ $errors->erase->first($field) }}</span>@endif
+            @endforeach
+          @endif
+        </form>
+      </div>
+      <footer class="win-foot">
+        <button type="submit" form="erase-form" class="btn small danger-fill">Delete my account</button>
+        <button type="button" class="btn ghost small" data-close>Cancel</button>
+      </footer>
+    </div>
+  </dialog>
+
   <dialog id="pwdDlg" class="win" aria-label="Change password" @if ($pwErrors) data-autoopen @endif>
     <div class="win-in narrow">
       <header class="win-head">

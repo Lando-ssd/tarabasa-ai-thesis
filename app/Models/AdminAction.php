@@ -23,6 +23,7 @@ class AdminAction extends Model
         'activated' => 'activated',
         'resent' => 'sent the verification email again to',
         'confirmed_email' => 'confirmed the email address of',
+        'deleted' => 'deleted',
     ];
 
     public $timestamps = false;
@@ -46,6 +47,28 @@ class AdminAction extends Model
                 'target_name' => mb_substr(trim($target->first_name.' '.$target->last_name), 0, 120),
                 'target_role' => $target->user_type,
                 'detail' => $detail !== null ? mb_substr($detail, 0, 200) : null,
+                'note' => $note !== null && trim($note) !== '' ? mb_substr(trim($note), 0, 200) : null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Could not write the admin activity log', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * An account deleted on request. The person's name is NOT kept (deleting someone and then keeping their name in a log would defeat
+     * the point), only that an account of that kind was deleted, and the reason the Admin gave.
+     */
+    public static function recordErasure(User $admin, string $role, string $reason, ?string $note): void
+    {
+        try {
+            self::create([
+                'admin_user_id' => $admin->id,
+                'admin_name' => mb_substr(trim($admin->first_name.' '.$admin->last_name), 0, 120),
+                'action' => 'deleted',
+                'target_user_id' => null,
+                'target_name' => "a {$role} account",
+                'target_role' => $role,
+                'detail' => mb_substr($reason, 0, 200),
                 'note' => $note !== null && trim($note) !== '' ? mb_substr(trim($note), 0, 200) : null,
             ]);
         } catch (\Throwable $e) {
