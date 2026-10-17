@@ -7105,7 +7105,7 @@ The owner asked what should happen when a learner's PIN is forgotten, for the be
   Render when this branch is merged (the new table is made by the normal `migrate --force` at deploy; nothing existing is rewritten).
 - **Tests.** `tests/Feature/ChildPinResetTest.php` (19: every rule above, the website and the phone API, the locked child recovering at once, the alerts, a stranger and a teacher refused).
 
-## Deleting a child or an account (2026-10-17, BUILT LOCALLY, NOT PUSHED)
+## Deleting a child or an account (2026-10-17, PUSHED, merged into the live branch as 9f05400 on 2026-10-17)
 
 The live Privacy page promised "a parent can ask for a child's records, or an adult for their own account, to be removed" but nothing in the app could do it (the old
 note "account deletion is still open" in this file). This is also what an app store asks of an app that lets people create accounts (Google Play: an in-app deletion path
@@ -7157,7 +7157,7 @@ plus a web page that explains how). Built so a person does it themselves, and th
   entered in the Data safety form: the in-app screens and `/privacy#delete` are those two. The one decision that is the team's own, not the law's: a co-guardian removing a child only
   unlinks (so one parent cannot erase what the other is also responsible for).
 
-## A grade is only for its own grade: activities too, not just learners (2026-10-17, BUILT LOCALLY, NOT PUSHED)
+## A grade is only for its own grade: activities too, not just learners (2026-10-17, PUSHED, merged into the live branch as 9f05400 on 2026-10-17)
 
 The owner noticed that a teacher could still "add a grade 2" where only Grade 1 belongs, and asked for the constraint, a note and a warning, for a one-grade AND a multi-grade
 teacher alike. The learner side of the rule already existed (`SchoolClass::acceptsGrade`, `ClassLevel::gradeRefusal`). The holes were on the ACTIVITY side and in Promotions:
