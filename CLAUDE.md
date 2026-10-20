@@ -7317,7 +7317,7 @@ inside structured phonics) and asked to apply it to the activity generation, the
 - **Honest limits.** The word list and the sentences were written by the team (a Grade 1 and a Grade 2 teacher should review them); synthesized voices only, no real child; the level split is the team's;
   nothing is learned from outcomes yet (the "Did it work?" card is the way to check, once real children use it).
 
-## Syllable Steps, the game (2026-10-20: the website version is PUSHED and LIVE (merged to the live branch as `bed37ce`); the phone version is built locally and is in APK 0.5.4, not pushed)
+## Syllable Steps, the game (2026-10-20: the website version is LIVE (`bed37ce`) and the phone API part is LIVE too (`65a4b02`); the phone app has it in APK 0.5.4, not yet tried on a real phone)
 
 The owner approved the design preview (https://claude.ai/artifact/RbQMm4Vm3pvcVjXRA3r6wy, version 2) and said "go with your recommendations, build from strong foundation, with the basis, the right logic and ui.ux". Built as a fourth Practice Game
 that plays the syllable method's four steps for one longer word at a time. The five decisions, as built:
@@ -7340,12 +7340,30 @@ that plays the syllable method's four steps for one longer word at a time. The f
   The tile glide uses `requestAnimationFrame` with a timer as a backup, because a page that is not being drawn pauses animation frames.
 - **The phone version** (`mobile/src/SyllableSteps.tsx`: the same rules and screen order; the card in `Games.tsx`; `api.gameSyllables()`; server `GET /api/learner/games/syllables`, `LearnerGamesApiController::syllables`, 404 for a Letters-step child). The phone's Games call is `GET /api/learner/games?syllables=1`:
   only then may the server lead with `syllable-steps`, and it always says `syllableSteps` (false for a Letters-step child). An older build never asks, so it is never told to lead with a game it lacks. The card shows only when `syllableSteps === true`, so a phone build that is newer than the server
-  (the field is missing) simply hides it: this is what happens with APK 0.5.4 until the phone API change is merged to the live branch. Phone differences from the website: Tara's voice is expo-speech (a phone has no autoplay gate, so she speaks from the first step); the glow is a pulsing ring (a still ring under reduce motion);
+  (the field is missing) simply hides it. The phone API part was merged to the live branch on 2026-10-20 night (`65a4b02`), so 0.5.4 shows the card. Phone differences from the website: Tara's voice is expo-speech (a phone has no autoplay gate, so she speaks from the first step); the glow is a pulsing ring (a still ring under reduce motion);
   the tiles glide with a native animation plus a timer backup; the microphone is pinned at the bottom of the screen. Tested in the web preview with sample data and real presses (hub card, all four steps, the out of order hint, three words, the climb to Level 2, up to "All done, Maria! You finished at Level 3. Great climbing!"); step 4 was tested with "I read it!"
   (the preview has no microphone, so tap mode was forced for the test and then reverted). Not tested: a real phone, the real microphone, Tara's real phone voice. Tests: `SyllableStepsGameTest` (22 now, with the phone API). APK: `D:/tools/apk-out/TaraBasa-AI-0.5.4-test14.apk` (see `mobile/HANDOVER.md`).
 - **NOT tested / honest limits.** No real child and no real microphone. The browser's own voice may say a part (bas, ket) a little oddly, and the voices differ by device. Instruction speech is only checked as "the text was passed to the speech call" (this pane's tab does not play audio). A word is read inside its sentence once per word, so a round takes a few minutes: this was the preview's choice (no skipping of steps 1 to 3). The wording and the word list still need a Grade 1 and a Grade 2 teacher.
   The phone app needs the screens and a new build.
 - **Sources corrected on the way:** Ehri (2005) is about how children move from letter sounds to sounding out to reading by sight, NOT about the order of letters, words, sentences and stories (fixed on `/how-it-works`, in `config/syllable_method.php` and in the basis doc); the Seymour line no longer claims it explains why closed syllables come first (that is the team's choice). Still not checked: the IDA claim about closed syllables, Dolch 1936, the National Reading Panel report itself, the Phil-IRI 97/90 bands, the Fisher and Frey year.
+
+## Practice game rules in one config, and the games and word bank on /how-it-works (2026-10-20 night, BUILT LOCALLY, NOT PUSHED)
+
+The owner said "continue whats next". The numbers every Practice Game shares were copied in several places (three web game pages, three phone files, a private constant and a `match` in
+`PracticeGameService`), and the public page "How TaraBasa decides" said nothing about the games or the word bank. Now:
+- **`config/practice_games.php` is the one source:** `rounds` 3, `per_round` 3, `clean_hits` 2, `tries` 2, `heard_share` 0.66, `level_2_from_step` 2, `level_3_from_step` 4. `PracticeGameService`
+  reads `heard_share` (in `checkText`) and the two step lines (in `startLevel`; the old `HEARD_SHARE` constant is gone). The three web game pages (`balloon-pop`, `read-game`, `syllable-steps`)
+  print the config numbers into their script with Blade instead of literals. Values are unchanged, so nothing a child sees changed.
+- **The phone app is TypeScript and cannot read the config**, so `tests/Feature/PracticeGameRulesTest.php` reads `mobile/src/ReadGame.tsx`, `BalloonPop.tsx` and `SyllableSteps.tsx` and fails if their
+  `const MAX_ATTEMPTS / TARGETS (WORDS in Syllable Steps) / CLEAN_HITS / MAX_TRIES` differ from the config (checked by changing one: it fails with a clear message). The phone gets the starting level and
+  the "heard" decision from the server, so those two need no copy.
+- **New section 12 "Practice games and the word bank" on `/how-it-works`** (later sections are now 13 What it does not do, 14 Checking the numbers, 15 The outside services, 16 Sources; the table of
+  contents is updated). It says what the four games are, the round rules, where a game starts, what it offers first, how "heard" is decided, how the Games page picks the recommended game, and the
+  word bank (Struggling, then Improving after the first correct reading, Mastered after `WordBank::MASTERED_AFTER` = 3, at most `WordBank::MAX_NEW_PER_READING` = 4 new words per reading, "not sure" words never
+  added). Every number comes from the config or the constant through `HowItWorksController` (`games` array), and tests change the config and check the page follows. **Honest basis:** the games' word
+  reading follows the MATATAG codes the games already send to the speech checker (RL1PWS-I-5, EN2PWS-I-3, EN3PWS-I-2; only the first two were read in the guides, the third is only the code), the spaced review
+  idea of the word bank is the team's own design and NO study was checked for these numbers, and the page says so. It also says no real child has played the games yet.
+- **Tests:** `PracticeGameRulesTest` (7). Related suites (`HowItWorksTest`, `SyllableStepsGameTest`, `PracticeGamesVoiceTest`, `AdaptivePatternTest`, `MobileApiTest`) pass with it.
 
 ## Before pushing this round (checklist for the next session)
 

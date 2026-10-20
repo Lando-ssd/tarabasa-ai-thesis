@@ -41,9 +41,6 @@ class PracticeGameService
         'letters' => [1 => 4, 2 => 5, 3 => 6],
     ];
 
-    /** The share of what was asked that has to be heard for a row or a sentence to count as read (a little under three in four). */
-    private const HEARD_SHARE = 0.66;
-
     /**
      * The level a game starts a child at, from where they are on the reading path (the step set by the first reading check and
      * later readings, or the parent's description before the check): letters and first words start at level 1, short sentences
@@ -59,9 +56,9 @@ class PracticeGameService
         }
 
         return match (true) {
-            $rung <= 1 => 1,
-            $rung <= 3 => 2,
-            default => 3,
+            $rung >= (int) config('practice_games.level_3_from_step') => 3,
+            $rung >= (int) config('practice_games.level_2_from_step') => 2,
+            default => 1,
         };
     }
 
@@ -306,7 +303,8 @@ class PracticeGameService
         $matched = array_slice(array_pad($matched, count($words), false), 0, count($words));
 
         $right = count(array_filter($matched));
-        $needed = max(1, (int) ceil(self::HEARD_SHARE * max(1, count($words) - $unsure)));
+        // About two thirds of the words asked (config/practice_games.php), not counting the ones the checker was unsure of.
+        $needed = max(1, (int) ceil((float) config('practice_games.heard_share') * max(1, count($words) - $unsure)));
 
         return ['status' => $right >= $needed ? 'heard' : 'again', 'matched' => $matched];
     }
