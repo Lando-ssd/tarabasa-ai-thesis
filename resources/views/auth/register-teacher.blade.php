@@ -65,7 +65,7 @@
 
     <div class="divider-label">Your classes</div>
 
-    @include('teacher._grades-field', ['selected' => [], 'idp' => 'reg'])
+    @include('teacher._grades-field', ['selected' => [], 'idp' => 'reg', 'context' => 'signup'])
 
     <div class="divider-label">School Verification</div>
 

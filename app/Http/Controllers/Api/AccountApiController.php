@@ -176,15 +176,25 @@ class AccountApiController extends Controller
         ];
 
         if ($user->user_type === 'Teacher') {
-            $teacher = $user->teacher;
-            $base['teacher'] = [
-                'status' => $teacher?->status,
-                'schoolName' => $teacher?->school_name,
-                'grades' => $teacher?->grades_handled ?? [],
-                'freeCredits' => (int) ($teacher?->free_generation_credits_remaining ?? 0),
-            ];
+            $base['teacher'] = self::teacherPayload($user->teacher);
         }
 
         return $base;
+    }
+
+    /**
+     * The Teacher part of the account the phone holds: status, school, the grades they may open classes for, any request for more grades
+     * that is waiting for the Admin, and the Admin's latest answer. One place, so sign in, /me and the profile screens cannot disagree.
+     */
+    public static function teacherPayload(?\App\Models\Teacher $teacher): array
+    {
+        return [
+            'status' => $teacher?->status,
+            'schoolName' => $teacher?->school_name,
+            'grades' => $teacher ? $teacher->gradesAllowed() : [],
+            'gradesPending' => $teacher?->gradeRequestPayload(),
+            'gradesDecision' => $teacher?->latestGradeDecision(),
+            'freeCredits' => (int) ($teacher?->free_generation_credits_remaining ?? 0),
+        ];
     }
 }

@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::put('/profile/grades', [ProfileController::class, 'updateGrades'])->name('profile.grades.update');
+    Route::delete('/profile/grades/request', [ProfileController::class, 'cancelGradeRequest'])->name('profile.grades.cancel');
     // A Teacher or Parent deletes their own account (password again).
     Route::post('/profile/delete', [ProfileController::class, 'destroy'])->middleware('throttle:10,1,erase-account')->name('profile.delete');
 });
@@ -172,6 +173,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/teachers/{teacher}/activate', [AdminController::class, 'activateTeacher'])->name('teachers.activate');
     Route::post('/teachers/{teacher}/reject', [AdminController::class, 'rejectTeacher'])->name('teachers.reject');
     Route::post('/teachers/{teacher}/reopen', [AdminController::class, 'reopenTeacher'])->name('teachers.reopen');
+    // An approved teacher asked to handle another grade: the Admin confirms it with the school, or declines with a reason.
+    Route::post('/teachers/{teacher}/grades/approve', [AdminController::class, 'approveGrades'])->middleware('throttle:60,1,admin-grades')->name('teachers.grades.approve');
+    Route::post('/teachers/{teacher}/grades/decline', [AdminController::class, 'declineGrades'])->middleware('throttle:60,1,admin-grades')->name('teachers.grades.decline');
     Route::post('/users/{user}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
     Route::post('/users/{user}/resend-verification', [AdminController::class, 'resendVerification'])->middleware('throttle:20,1')->name('users.resend-verification');
     // The Admin confirms an email address themselves (reason required, written to the activity log).
@@ -192,6 +196,8 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     Route::post('/classes', [ClassController::class, 'store'])->middleware('teacher.active')->name('classes.store');
     Route::put('/classes/{class}', [ClassController::class, 'update'])->middleware('teacher.active')->name('classes.update');
     Route::post('/classes/{class}/join-learner', [ClassController::class, 'joinLearner'])->middleware('teacher.active')->name('classes.join-learner');
+    // Asked as a code is typed: can it be added to this class? (yes or no, with the reason; nothing is changed)
+    Route::post('/classes/{class}/check-learner', [ClassController::class, 'checkLearner'])->middleware(['teacher.active', 'throttle:120,1,check-learner'])->name('classes.check-learner');
     // Assign an Approved activity to a whole class, from the class window.
     Route::post('/classes/{class}/assign-activity', [ClassController::class, 'assignActivity'])->middleware('teacher.active')->name('classes.assign-activity');
     Route::post('/classes/{class}/learners/{learner}/move', [ClassController::class, 'moveLearner'])->middleware('teacher.active')->name('classes.move-learner');

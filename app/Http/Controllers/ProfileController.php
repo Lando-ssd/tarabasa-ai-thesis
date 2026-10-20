@@ -68,9 +68,19 @@ class ProfileController extends Controller
     {
         abort_unless($request->user()->user_type === 'Teacher', 403);
 
-        $validated = $request->validate(\App\Models\Teacher::gradeRules());
+        $validated = $request->validate($this->profile->gradesRules(), [
+            'grades_request_note.max' => 'Keep that note under 300 characters.',
+        ]);
 
         return back()->with('status', $this->profile->updateGrades($request->user()->teacher, $validated));
+    }
+
+    /** A Teacher takes back their own open request for more grades. */
+    public function cancelGradeRequest(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->user_type === 'Teacher', 403);
+
+        return back()->with('status', $this->profile->cancelGradeRequest($request->user()->teacher));
     }
 
     /**

@@ -65,16 +65,62 @@
   </div>
 
   <div class="stack" style="display:flex;flex-direction:column;gap:16px">
-    <div class="card">
+    @php
+        $current = $teacher->gradesAllowed();
+        $pending = $teacher->gradesPending();
+        $decision = $teacher->latestGradeDecision();
+    @endphp
+    <div class="card" id="grades-card">
       <p class="card-title">Your classes</p>
-      <p class="card-sub">The grades you handle. Creating a class offers only these. Classes you already have are not changed.</p>
-      <form method="POST" action="{{ route('profile.grades.update') }}" data-busy="Saving">
+      <p class="card-sub">The grades you handle. Creating a class offers only these, and every class holds one grade only. Classes you already have are not changed.</p>
+
+      <p style="margin:0 0 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="note" style="margin-right:2px">Handled now:</span>
+        @foreach ($current as $g)<span class="pill ok">{{ $g }}</span>@endforeach
+      </p>
+
+      @if ($pending !== [])
+        <div class="help">@include('learner._badge-icon', ['icon' => 'info', 'class' => 'ico'])<div><b>Waiting for the Admin.</b> You asked to handle {{ \Illuminate\Support\Arr::join($pending, ', ', ' and ') }}. The Admin checks it with your school first. Until it is approved you can open classes for {{ \Illuminate\Support\Arr::join($current, ', ', ' and ') }} only.
+          @if ($teacher->grades_request_note)<br><span class="note">Your note: {{ $teacher->grades_request_note }}</span>@endif
+          <form method="POST" action="{{ route('profile.grades.cancel') }}" data-busy="Cancelling" style="margin-top:8px">@csrf @method('DELETE')<button type="submit" class="btn small ghost">Cancel this request</button></form>
+        </div></div>
+      @elseif ($decision)
+        <div class="help {{ $decision['approved'] ? 'good' : '' }}">@include('learner._badge-icon', ['icon' => $decision['approved'] ? 'check-circle' : 'info', 'class' => 'ico'])<div>{{ $decision['message'] }}</div></div>
+      @endif
+
+      <form method="POST" action="{{ route('profile.grades.update') }}" data-busy="Saving" id="grades-form" data-current='@json($current)'>
         @csrf
         @method('PUT')
         <input type="hidden" name="form" value="profile">
-        @include('teacher._grades-field', ['selected' => $teacher->gradesAllowed(), 'idp' => 'prof'])
-        <button type="submit" class="btn small">Save grades</button>
+        @include('teacher._grades-field', ['selected' => $pending !== [] ? $pending : $current, 'idp' => 'prof'])
+
+        <div class="field" id="grade-note-box" hidden>
+          <label for="grades_request_note">Who at your school can confirm this?</label>
+          <textarea name="grades_request_note" id="grades_request_note" rows="2" maxlength="300" placeholder="For example: Mrs. Cruz, the school head, gave me Grade 2 this school year." class="@error('grades_request_note') error @enderror">{{ old('grades_request_note', $teacher->grades_request_note) }}</textarea>
+          <span class="fhint">Adding a grade is checked by the Admin with your school, because the school head assigns who teaches which grade. Taking a grade away takes effect at once.</span>
+          @error('grades_request_note') <span class="field-error">{{ $message }}</span> @enderror
+        </div>
+
+        <details class="note" style="margin:0 0 12px">
+          <summary style="cursor:pointer">Why one grade per class, and why the Admin checks</summary>
+          <p style="margin:8px 0 0">The curriculum TaraBasa follows is written grade by grade (the MATATAG curriculum, DepEd Order 10, s. 2024), so a class, its activities and its reading levels are for one grade only. Which grade a teacher teaches is decided by the school, through the school head's class program, so a new grade is confirmed with the school before you can open a class for it.</p>
+        </details>
+        <button type="submit" class="btn small" id="grades-submit" data-pending="{{ $pending !== [] ? '1' : '0' }}">{{ $pending !== [] ? 'Send a different request' : 'Save grades' }}</button>
       </form>
+      <script>
+        (function () {
+          var form = document.getElementById('grades-form'), box = document.getElementById('grade-note-box'), submit = document.getElementById('grades-submit');
+          if (!form || !box || !submit) return;
+          var current = JSON.parse(form.getAttribute('data-current') || '[]');
+          function sync() {
+            var added = Array.prototype.some.call(form.querySelectorAll('input[name="grades_handled[]"]'), function (c) { return c.checked && current.indexOf(c.value) === -1; });
+            box.hidden = !added;
+            // Adding a grade is a request to the Admin; taking one away saves at once.
+            submit.textContent = added ? (submit.getAttribute('data-pending') === '1' ? 'Send a different request' : 'Ask the Admin') : (submit.getAttribute('data-pending') === '1' ? 'Save grades (cancels your request)' : 'Save grades');
+          }
+          form.addEventListener('change', sync);
+          sync();
+        })();
+      </script>
     </div>
 
     <div class="card">

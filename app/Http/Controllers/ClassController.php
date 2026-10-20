@@ -235,6 +235,24 @@ class ClassController extends Controller
             ->with('status', "{$learner->first_name} {$learner->last_name} added to \"{$class->name}\". Here is what the parent shared.");
     }
 
+    /**
+     * Asked as a code is typed in the Add learner window: can this code be added to this class? The answer is only yes or no with the
+     * reason in words, never the child's name when it is yes (TeacherClassService::check). Nothing is changed.
+     */
+    public function checkLearner(Request $request, SchoolClass $class): JsonResponse
+    {
+        $teacher = $request->user()->teacher;
+
+        abort_if($class->teacher_id !== $teacher->id, 403);
+        abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
+
+        $validated = $request->validate(['learner_code' => ['required', 'string', 'max:30']]);
+
+        $class->loadMissing('learners');
+
+        return response()->json($this->classes->check($teacher, $class, $validated['learner_code']));
+    }
+
     /** A refused code: back to the form with the message, or a JSON answer for the scanner. */
     private function joinFailure(Request $request, string $message): RedirectResponse|JsonResponse
     {

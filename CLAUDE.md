@@ -7186,6 +7186,60 @@ teacher alike. The learner side of the rule already existed (`SchoolClass::accep
 - **Tests:** `tests/Feature/GradeMatchTest.php` (14: class, class window route, learner, group tag, older mixed class, alert assign, window text and tags, phone API, suggestions, writing,
   claiming, the phone promotions note, the rule itself, the class window flag).
 
+## Add learner checks the code first, and a teacher cannot give themselves a grade (2026-10-19, BUILT LOCALLY, NOT PUSHED)
+
+The owner showed the live Add learner window: a one-grade (Grade 1) teacher typed a Grade 2 child's code, got the refusal only AFTER pressing Add, and the
+Add button looked pressable. They asked for (1) the Add button to be off, with a note, whenever the code is not a child of the class's grade (only Cancel
+usable), and (2) a right logic for a teacher the school/head has given Grade 2 or several grades, with a curriculum/guide basis.
+- **Code check before Add** (`TeacherClassService::check()`, the dry run of `join()`; both call one private `resolve()` so they cannot disagree).
+  Website: `POST teacher/classes/{class}/check-learner` (`teacher.classes.check-learner`); phone: `POST /api/teacher/classes/{class}/learners/check`. The
+  window script (`public/js/teacher-app.js`, "Add learner, typed") asks as soon as the last 5 characters are typed (300 ms pause), shows the answer under the
+  box (grey: keep typing, blue: checking, green: can be added, red: the reason) and keeps "Add to class" `disabled` until the answer is yes; Enter is blocked
+  the same way; "Check again" appears if the check itself could not reach the server. The phone `AddByCode` does the same (`api.checkLearnerCode`,
+  `Notice` got a `good` tone). The server asks again when Add is pressed, so a skipped check changes nothing. The answer is yes or no with the reason in
+  words and NEVER names the child when it is yes. Reasons: `grade`, `level`, `enrolled`, `unknown`, `format`, `ambiguous`, `limit`.
+- **Anti-enumeration:** every refusal that names a child (wrong grade, too high a level, already in a class) now counts toward a new limiter
+  `join-refused|teacher:{id}` (20 per hour, shared by check and join), next to the old wrong-code limiter (10 per 15 min) and a per-route throttle
+  (`check-learner`, 120 a minute). Before this, wrong-grade refusals were free to repeat and they print the child's first name, so a teacher could walk the
+  roughly ten thousand last-5 codes. A real teacher meets one of these now and then, never twenty.
+- **Grades are confirmed by the Admin** (`App\Services\GradeChangeService`, `AccountProfileService::updateGrades`). Taking a grade away or keeping the same
+  ones applies at once (it only narrows what the teacher can do). ADDING a grade as an approved (Active) teacher is a REQUEST: the grades they may open
+  classes for (`teachers.grades_handled`) do not change until the Admin approves. The request needs a note saying who at the school can confirm it (at least
+  8 characters, at most 300) and is stored in `teachers.grades_requested` / `grades_requested_at` / `grades_request_note` (migration `2026_10_19_000100`).
+  A teacher still waiting for approval (or rejected) saves at once, because the Admin checks the grades together with the account at approval (the waiting
+  card now says "Grades they say they handle" and "confirm them with the school too"). A teacher made before grades were asked (null) already handles all
+  three, so there is nothing to request. The teacher can cancel the request (`DELETE /profile/grades/request`, phone `POST /api/auth/profile/grades/cancel`),
+  or replace it with a different one. Existing classes are never touched.
+- **Admin side:** Approvals has a third list, "Grade requests" (`?tab=grades`): who, school, employee ID, handles now, asks to add, date, the teacher's note;
+  Approve (confirm window) and Decline (reason list, "Other" needs a note). Approve/decline are in `AdminController::approveGrades/declineGrades`, run in a
+  transaction with a row lock, only for an Active teacher with an open request (a second click, or a request cancelled meanwhile, changes nothing and says
+  so), write the Activity log (`approved_grades` / `declined_grades` with the Admin's name and the reason) and tell the teacher with a notification
+  (`Grades Approved` / `Grades Declined`, shown in the teacher's Alerts under the routine messages, and as a 30-day notice on the Profile card and in the phone
+  Grades panel through `Teacher::latestGradeDecision()`). The menu count on Approvals is waiting teachers PLUS grade requests; the Overview "Needs you" list
+  has a "N grade requests waiting" line. `AccountApiController::teacherPayload()` is the one place the phone's teacher object is built (`grades` is now
+  `gradesAllowed()`, so a legacy teacher shows all three; new `gradesPending`, `gradesDecision`).
+- **Profile screens:** website "Your classes" card shows the grades handled now, the waiting request with Cancel, the Admin's latest answer, the note box (only
+  while a grade not yet handled is ticked), a "Why one grade per class, and why the Admin checks" disclosure, and the button says "Ask the Admin" when adding.
+  Phone `MyProfile` Grades panel does the same.
+- **Basis (honest about what was checked).** Checked by web search on 2026-10-19, NOT read from the official texts, so re-read the exact wording on
+  deped.gov.ph before putting any of it in the manuscript: the MATATAG curriculum is DepEd Order No. 10, s. 2024 and is written grade by grade (Key Stage 1 is
+  Kindergarten to Grade 3; the curriculum guides in `docs/manuscript/` list competencies and codes per grade, which is why an activity, a class and a reading level
+  belong to one grade); in a DepEd school the school head assigns teaching loads and the class program (RA 9155 gives the school head the duty to implement the
+  curriculum; DepEd Memorandum 291 s. 2008 on school heads assigning teaching loads and DepEd Order 5 s. 2024 on teachers' workload were found in secondary
+  sources only; class programs: DepEd Order 31 s. 2012 / DO 20 s. 2014, same caveat); a regional memorandum that Grades 1 to 3 are self-contained classes and a 2024
+  division memo that a designation order comes from the school head with the teacher's concurrence were also seen only in secondary copies; DepEd Order 50 s. 1994
+  is the older rule on teaching assignments. Plain reading: which grade a teacher teaches is the school's decision, so TaraBasa asks the Admin to confirm it
+  with the school (the same way the Admin checks the employee ID and school) instead of trusting a tick box. The one decision that is the team's own: a DepEd
+  "multigrade class" (two or more grades under one teacher, DO 96 s. 1997 / DO 81 s. 2009) is still NOT modelled, a multi-grade teacher opens one class per grade.
+- **Tested.** `tests/Feature/LearnerCodeCheckTest.php` (9) and `GradeRequestTest.php` (16); `ClassGradeAndMovesTest` updated (adding Grade 2 now goes through
+  the Admin). Full suite 586 passing. In a browser against the local server: Grade 2 child's code in a Grade 1 class gives the red note and a greyed Add (Enter
+  blocked); a Grade 1 child's code gives the green note and a working Add; the Profile request; the Admin Overview line, Grade requests list, Decline and Approve
+  windows and an approval that emptied the queue. Phone `tsc --noEmit` clean, and in the phone web preview against the local server: the Add
+  panel showed the same red note and a disabled Add for the Grade 2 child, and the Grades panel in My profile showed the Admin's answer. NOT tested: a real phone, a real teacher and a real school head, and the notification wording by a native speaker.
+- **Honest limits.** The Admin has no way to verify with the school inside the app (it is a human step; the note and the cards only tell them whom to call). A
+  teacher already handling a grade whose approval was wrong cannot be corrected by the Admin from the app (no "remove a grade" for the Admin; the teacher can take
+  their own grade away). The limits (20 refusals an hour, a note of 8+ characters) are the team's own numbers.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

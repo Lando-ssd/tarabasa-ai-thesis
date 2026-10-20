@@ -831,3 +831,85 @@
     window.addEventListener('pagehide', stop);
   });
 })();
+
+/* =====================================================
+   Add learner, typed: the "Add to class" button stays off until the code can really be added to this class.
+   As the last 5 characters are typed the page asks the server (the same rules the Add button would apply: one grade
+   per class, the class's reading level, a learner is in one class only) and says the answer in words. Only Cancel
+   works while the answer is no. The server asks again when Add is pressed, so this is a convenience, not the rule.
+   It never learns the child's name when the answer is yes.
+   ===================================================== */
+(function () {
+  var forms = document.querySelectorAll('form[data-check-url]');
+  if (!forms.length) { return; }
+
+  function tailOf(v) { return String(v || '').replace(/\s+/g, '').replace(/^TB[0-9]{0,2}-?/i, '').toUpperCase(); }
+
+  forms.forEach(function (form) {
+    var input = form.querySelector('input[name="learner_code"]');
+    var note = form.querySelector('[data-check-note]');
+    var noteText = note && note.querySelector('[data-check-text]');
+    var again = form.querySelector('[data-check-again]');
+    var btn = document.querySelector('button[data-add-btn][form="' + form.id + '"]');
+    var serverError = form.querySelector('[data-server-error]');
+    if (!input || !note || !noteText || !btn) { return; }
+
+    var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+    var timer = null, seq = 0, okFor = null;
+
+    function show(kind, text, retry) {
+      note.className = 'codecheck ' + kind;
+      noteText.textContent = text;
+      if (again) { again.hidden = !retry; }
+      if (serverError) { serverError.hidden = true; }
+    }
+    function lock(on) {
+      btn.disabled = on;
+      if (on) { btn.setAttribute('title', 'Add turns on when the code can be added to this class'); } else { btn.removeAttribute('title'); }
+    }
+
+    function evaluate() {
+      var tail = tailOf(input.value), mine = ++seq;
+      clearTimeout(timer);
+      okFor = null;
+      lock(true);
+
+      if (tail.length === 0) { show('', 'Type the last 5 characters of the Learner Code. Add turns on when the code can be added to this class.', false); return; }
+      if (tail.length < 5) { show('', 'Keep typing: ' + (5 - tail.length) + ' more character' + (5 - tail.length === 1 ? '' : 's') + '.', false); return; }
+      if (tail.length > 5 || !/^[A-Z0-9]{5}$/.test(tail)) { show('bad', 'Type only the last 5 characters of the code, like 48293.', false); return; }
+
+      show('wait', 'Checking this code...', false);
+      timer = setTimeout(function () {
+        var body = new FormData();
+        body.append('learner_code', input.value); body.append('_token', csrf);
+        fetch(form.getAttribute('data-check-url'), { method: 'POST', body: body, credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(function (r) {
+            if (r.status === 429) { return { ok: false, message: 'Too many checks in a short time. Wait a minute, then type the code again.' }; }
+            return r.json().catch(function () { return { ok: false, message: 'Something went wrong while checking the code. Press Check again.', retry: true }; });
+          })
+          .then(function (j) {
+            if (mine !== seq) { return; } // the code changed while the answer was on its way
+            if (j && j.ok) { okFor = tail; lock(false); show('ok', j.message, false); } else { lock(true); show('bad', (j && j.message) || 'This code cannot be added to this class.', !!(j && j.retry)); }
+          })
+          .catch(function () {
+            if (mine !== seq) { return; }
+            lock(true); show('bad', 'Could not reach the server to check this code. Check your internet, then press Check again.', true);
+          });
+      }, 300);
+    }
+
+    input.addEventListener('input', evaluate);
+    if (again) { again.addEventListener('click', evaluate); }
+
+    // A form can still be sent by pressing Enter: only a code that was checked and accepted goes through.
+    form.addEventListener('submit', function (e) {
+      if (okFor === null || okFor !== tailOf(input.value)) {
+        e.preventDefault(); e.stopPropagation();
+        evaluate();
+        input.focus();
+      }
+    });
+
+    evaluate();
+  });
+})();

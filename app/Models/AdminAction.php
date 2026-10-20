@@ -24,6 +24,8 @@ class AdminAction extends Model
         'resent' => 'sent the verification email again to',
         'confirmed_email' => 'confirmed the email address of',
         'deleted' => 'deleted',
+        'approved_grades' => 'approved the extra grades of',
+        'declined_grades' => 'declined the extra grades of',
     ];
 
     public $timestamps = false;
