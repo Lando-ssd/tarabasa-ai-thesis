@@ -288,7 +288,7 @@
     <li>DepEd Order No. 10, s. 2024: the MATATAG Curriculum, written grade by grade, with the competency codes used in the checks, activities and patterns.</li>
     <li>DepEd Memorandum No. 173, s. 2019: Hamon, Bawat Bata Bumabasa (every learner a reader at their grade level), and its six elements of reading.</li>
     <li>National Reading Panel (2000): Teaching Children to Read, on repeated oral reading and fluency.</li>
-    <li>Ehri (2005): phases of learning to read words, behind the order of letters, words, sentences and stories.</li>
+    <li>Ehri (2005): the phases children go through in learning to read words, from knowing letter sounds, to sounding a word out, to reading it by sight. It is behind the idea that letter knowledge and sounding out come before fluent reading. It does not set the order of letters, words, sentences and stories, which is the team's own use of the curriculum.</li>
     <li>Pearson and Gallagher (1983): gradual release of responsibility, behind the teaching notes shown to teachers.</li>
     <li>Republic Act No. 10173, the Data Privacy Act of 2012, behind the privacy and deletion rules.</li>
   </ul>

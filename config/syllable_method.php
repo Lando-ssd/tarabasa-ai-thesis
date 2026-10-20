@@ -158,7 +158,7 @@ return [
         ['text' => 'National Reading Panel (2000) and Ehri and others (2001): systematic phonics instruction helps early readers. The size of the effect is disputed, so the app does not quote a number.', 'read' => false],
         ['text' => 'Liberman and others (1974): young children find it easier to split a spoken word into syllables than into single sounds, which is why the method splits into syllables first.', 'read' => false],
         ['text' => 'Therrien (2004): repeated reading improves fluency and comprehension, the reason for repeating each part in the drill.', 'read' => false],
-        ['text' => 'Seymour, Aro and Erskine (2003): English takes longer to learn to read than more regular writing systems, which is why English words start with closed syllables.', 'read' => false],
+        ['text' => 'Seymour, Aro and Erskine (2003): English takes longer to learn to read than more regular writing systems, because its syllables are more complex and its spelling less regular. That is the reason the method keeps its first words short and simple. Starting with closed syllables is the team\'s own choice: no study found proves it.', 'read' => false],
         ['text' => 'The Filipino syllabic method (the Marungko approach) is described in secondary sources only.', 'read' => false],
     ],
 
