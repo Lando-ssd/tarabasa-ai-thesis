@@ -417,6 +417,16 @@
               <p><b>Watch for:</b> {{ $pf['teach']['watch'] }}</p>
               <p class="basis">Basis: {{ $pf['teach']['basis'] }}</p>
             </details>
+            @if ($pf['syllables'])
+              @php $sy = $pf['syllables']; @endphp
+              <details class="teachhow" @if ($sy['suggested']) open @endif><summary>Syllable routine for longer words @if ($sy['suggested']) (suggested: {{ $l->first_name }} reads longer words in pieces)@endif</summary>
+                <p><b>Word level for this step:</b> {{ $sy['name'] }} ({{ $sy['pattern'] }}). {{ $sy['note'] }}</p>
+                <ol>@foreach ($sy['routine'] as $st)<li><b>{{ $st['name'] }}.</b> {{ $st['text'] }}@if ($st['scored']) This is the only step the app scores.@endif</li>@endforeach</ol>
+                <p><b>Words for this level:</b> {{ implode(', ', $sy['words']) }}.</p>
+                <p><b>Curriculum:</b> {{ $sy['codes']['segment']['code'] }} ({{ $sy['codes']['segment']['text'] }}) and {{ $sy['codes']['blend']['code'] }} ({{ $sy['codes']['blend']['text'] }})</p>
+                <p class="basis">Basis: {{ $sy['basis'] }}</p>
+              </details>
+            @endif
           </div>
           <div class="block"><span class="eyebrow">Grade history</span>
             @if (! empty($hist['chain']))

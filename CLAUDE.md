@@ -7273,6 +7273,51 @@ The owner said not to depend on the teammate (no `levels` option on the generato
 - **Honest limits:** the comparison needs real use before it can say anything (until then every class shows "Too early"); it cannot separate the text's own difficulty from
   the effect of writing it for the class; the basis sources on the page were checked by search, not read from the official texts (see the 2026-10-19 section).
 
+## The syllable method (segment and blend) built into the rule-based AI (2026-10-20, BUILT LOCALLY, NOT PUSHED)
+
+The owner attached their working sheet `TaraBasa_Syllable_Blending_Method.xlsx` (pamamaraang pantig: syllable segmenting and blending, taught through repeated drill,
+inside structured phonics) and asked to apply it to the activity generation, the games and the AI "pattern", with curriculum citations, while they wait for the teammate
+(BldZeuz) and do their own research. As always: **there is no trained model and no dataset**, so this is more written, explainable rules.
+- **One config, `config/syllable_method.php`, read through `App\Support\SyllableMethod`.** Four steps in the sheet's order: hear and echo (repeat each part, the sheet's repeat
+  count is 4), split it (tap or clap per syllable), join it (blend), read it in a sentence. **Only the last step is scored** (a piece like pic, nic, bas, ket is not a word and
+  Vosk is unreliable on isolated non-words). 27 words in 3 levels (the sheet's 12 plus 15 more, see the check below) (level 1 CVC + CVC, 2 CVC + CVCe, 3 CVC + VC), each with its split and a short sentence; the
+  level follows the child's step on the reading path (rungs 1 and 2 -> 1, 3 and 4 -> 2, 5 and 6 -> 3; a child on Letters only claps the parts of spoken words, no letters needed).
+  **The sheet's two corrections are rules, and `SyllableMethodTest` fails if a word breaks them:** "kami" is CV + CV, not CVCVC (the CVCVC words are lemon, melon, cabin, rapid); and
+  English starts with CLOSED syllables, no open syllables in the bank (ba-by changes in English, Filipino ka and mi never do). The Filipino examples (ka-mi, ki-ta) are reference
+  only (the checker is English only; Grade 1 curriculum reading is in the mother tongue).
+- **Curriculum basis (wording read in the Grade 1 Reading and Literacy guide in `docs/manuscript/`):** RL1PA-I-2 "Segment a two-three syllable word into its syllabic parts" (phonological
+  awareness, listening and speaking) and RL1PWS-I-5 "Sound out words accurately"; the same guide asks for explicit and systematic instruction and the Gradual Release of Responsibility
+  (Pearson and Gallagher 1983; Fisher and Frey 2008), which is the order of the four steps. Other sources (NRP 2000 and Ehri et al. 2001 systematic phonics, Liberman et al. 1974 syllables
+  are easier to split than single sounds, Therrien 2004 repeated reading, Seymour, Aro and Erskine 2003 English is slower to learn, Bus and van IJzendoorn 1999) were FOUND BY SEARCH, not read
+  in full: the config marks each `read => false`, and the public page says so. No study was found that proves closed syllables must come first (common practice in Orton-Gillingham based
+  programmes), so it is the team's choice. Public children's speech corpora (CMU Kids, MyST, OGI Kids) are English and none is Filipino: they could help the speech recognizer (the
+  teammate's service), not these rules, and none is used.
+- **Where it is applied.**
+  1. **Mistake pattern `syllables` ("Longer words in pieces", code RL1PWS-I-5, text also names RL1PA-I-2)** in `ErrorPatterns`: a substitution where the child said only a PART of a longer word
+     (sun for sunset; one of the bank's syllables, or the start or end of a longer word, at least 3 letters and 2 shorter), or where the word was read in two pieces the recognizer wrote as two
+     words that do not join exactly (basket heard as "bass" + "kit", `ErrorPatterns::markPieces`). Endings still win (jumping as jump is `endings`). Everything downstream already reads
+     `CATEGORIES` (alerts, Analytics, parent "Practise at home", suggestions, the child's "Practice long words" label in `LearnerAuthService`).
+  2. **Activity writer note** (`GenerationBasis`): for word lists (`word_reading`, `phonics_reading`) at a class step that has a word level, or for ANY type when at least 2 children show the
+     pattern, the note adds "use two-syllable words that split cleanly (CVC + CVC), such as sunset (sun-set) and hotdog (hot-dog). Avoid open syllables like baby." and the teacher sees a
+     "Syllable method (RL1PA-I-2, RL1PWS-I-5)" line before pressing Generate. The note limit went 420 -> 560 and the note is now built from WHOLE sentences (a sentence that does not fit is left out,
+     never cut mid-word). NOT measured: how well the live generator follows the note.
+  3. **Teacher's learner page** (website and phone): a collapsed "Syllable routine for longer words" (open and marked "suggested" when the child's main pattern is this one) with the four steps for
+     a real word, the words, the codes and the basis (`LearnerProfile['syllables']`); `config/teaching_path.php` gained a clap-the-parts move for Letters and a join-two-words move for the next two steps.
+  4. **Games** (`PracticeGameService`): for a child whose main pattern is `syllables`, Balloon Pop and Word Train favour the method's two-syllable words (easier levels only at lower game levels) and
+     Sentence Stars favours the method's sentences; every other child's games are exactly as before.
+  5. **Public `/how-it-works` section 11** (and the sources, honest about which were read), with every number read from the config; the "nine kinds" text now counts the patterns.
+- **A fact found while checking the recognizer (this shapes the rule):** `SpeechNormalizer` already ACCEPTS a compound heard as two words (sunset as "sun set", hotdog as "hot dog", `accepted = split`), so
+  it counts as right and is NOT a mistake. A recognizer cannot tell a child who pauses between parts from a word it simply splits, so "in pieces" is only reported when the pieces do not join into the word,
+  and only as a hint for the teacher.
+- **PROPOSED, NOT BUILT (needs a design preview first): a "Syllable Steps" game** (Tara says the parts, the child taps once per part, slides the parts together, then reads the word in a sentence; only that
+  last reading is scored with the normal word or sentence check, nothing is saved, free play). It would be a fourth game and a new screen.
+- **Tests:** `SyllableMethodTest` (23: the bank obeys the sheet and the two corrections, drill text, routine, levels, writer note, the pattern, pieces, games, generation basis, learner profile, class window),
+  `HowItWorksTest` (+1), `ClassLevelTest` (the teaching-note code check now also allows the two syllable codes). Full suite passes. Phone: `LearnerScreen.tsx` shows the routine (optional field, an older
+  server is fine); **needs a 0.5.4 build to reach the phone** (the outcomes card from "Did it work?" is also waiting for it).
+- **Checked against the REAL speech checker (live Reading-api, two synthesized voices, David and Zira), 2026-10-20:** the 25 first-draft words were each said alone and inside their sentence (50 items per voice). David heard 48 of 50 (mitten and muffin alone were missed); Zira heard 43 of 50 (kitten, basket, mitten, muffin, puppet and bedtime alone, and "We eat a pancake.", were missed). Changes made from it: mitten and muffin were DROPPED (missed by both voices); kitten, basket, puppet and bedtime are flagged `alone => false` (still heard inside their sentences, so they stay in the routine and the sentences, but the single-word games leave them out); the pancake sentence became "Mom makes a pancake."; four replacement words (pigpen, cobweb, tennis, sudden) and their sentences were then heard by BOTH voices, so the bank is 27 words. How a "read in pieces" take came back: "sun. set." was heard as "sunday" + "said" and "bass. ket." as "base" or "face" + "cat" (so on real recognizer output the pattern fires rarely and imprecisely, a real limit); "kit. ten." came back as "kyiv" or "kit" + "ten" and was marked `syllables`; a compound the recognizer split (hotdog, pigpen, napkin, kitten as "hot" + "hotdog" and so on) was accepted as correct, as designed. The live activity writer was called directly (no teacher credit) once with and once without the syllable note for the same request (Grade 1, Foundational Reading, Word Reading): with the note the Medium and Hard lists were two-syllable closed-syllable words (basket napkin rabbit sunset hotdog; catfish backpack hilltop; sandbox popcorn cobweb) while without it they were single-syllable, blend and non-word lists (frog slip plum flag trot gran smet swin); the Easy list stayed single-syllable (the writer's own Easy band), one list repeated its words and one wrote "hot-dog" with a hyphen. One run each, so it is an anecdote and not a measurement.
+- **Honest limits.** The word list and the sentences were written by the team (a Grade 1 and a Grade 2 teacher should review them); synthesized voices only, no real child; the level split is the team's;
+  nothing is learned from outcomes yet (the "Did it work?" card is the way to check, once real children use it).
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

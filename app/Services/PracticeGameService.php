@@ -8,6 +8,7 @@ use App\Models\Learner;
 use App\Support\ErrorPatterns;
 use App\Support\NotSure;
 use App\Support\ReadingLevel;
+use App\Support\SyllableMethod;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 
@@ -79,16 +80,28 @@ class PracticeGameService
 
         $levels = [];
         foreach ([1, 2, 3] as $level) {
+            $favoured = array_values(array_filter(
+                self::WORD_LEVEL_LISTS[$level],
+                fn ($word) => ErrorPatterns::practisesPattern($word, $pattern)
+            ));
+
+            // A child who reads longer words in pieces is offered the syllable method's two-syllable words (closed syllables first),
+            // whatever the level's word length: the level only says how many words and how fast, and this is the word shape to practise.
+            // Words the speech checker did not hear reliably on their own (`alone` false) are left out: a game checks one word at a time.
+            if ($pattern === 'syllables') {
+                $favoured = array_values(array_unique(array_merge(
+                    $favoured,
+                    array_column(array_filter(SyllableMethod::words(), fn (array $w) => $w['level'] <= $level && ($w['alone'] ?? true)), 'word')
+                )));
+            }
+
             $levels[$level] = [
                 'struggling' => $strugglingWords
                     ->filter(fn ($word) => $this->wordLengthMatchesLevel(strlen($word), $level))
                     ->values()
                     ->all(),
                 'fallback' => self::WORD_LEVEL_LISTS[$level],
-                'favoured' => array_values(array_filter(
-                    self::WORD_LEVEL_LISTS[$level],
-                    fn ($word) => ErrorPatterns::practisesPattern($word, $pattern)
-                )),
+                'favoured' => $favoured,
             ];
         }
 
@@ -141,6 +154,9 @@ class PracticeGameService
         $practice = app(WordBank::class)->practiceWords($learner)->map(fn ($w) => strtolower((string) $w))->all();
         $pattern = ErrorPatterns::mainPattern(ErrorPatterns::forLearner($learner));
 
+        // The method's words in a sentence (step 4 of the syllable method), offered first to a child who reads longer words in pieces.
+        $syllableSentences = $pattern === 'syllables' ? SyllableMethod::sentencesByLength() : [];
+
         $levels = [];
         foreach ([1, 2, 3] as $level) {
             $all = array_values(config('practice_sentences.levels.'.$level, []));
@@ -157,6 +173,12 @@ class PracticeGameService
                 })),
                 'fallback' => $all,
             ];
+
+            if ($syllableSentences !== []) {
+                // At the front, so the pattern is practised first; they stay out of the level's fixed list for every other child.
+                $levels[$level]['preferred'] = array_values(array_unique(array_merge($syllableSentences[$level], $levels[$level]['preferred'])));
+                $levels[$level]['fallback'] = array_values(array_unique(array_merge($levels[$level]['fallback'], $syllableSentences[$level])));
+            }
         }
 
         return $levels;

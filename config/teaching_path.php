@@ -23,7 +23,7 @@
  */
 return [
 
-    'basis' => 'DepEd Phil-IRI (DO 14, s. 2018); DepEd Memorandum 173, s. 2019 (Bawat Bata Bumabasa); MATATAG Reading and Literacy and English guides; National Reading Panel (2000); Ehri (2005); Pearson and Gallagher (1983).',
+    'basis' => 'DepEd Phil-IRI (DO 14, s. 2018); DepEd Memorandum 173, s. 2019 (Bawat Bata Bumabasa); MATATAG Reading and Literacy and English guides (including RL1PA-I-2 and RL1PWS-I-5 for the syllable routine); National Reading Panel (2000); Ehri (2005); Pearson and Gallagher (1983).',
 
     // The DepEd documents this app's reading levels and alerts stand on, in one place, so a screen, a test and the
     // thesis all quote the same thing. Found by search on 2026-10-10; the DepEd pages themselves could not be opened from
@@ -47,6 +47,7 @@ return [
                 'Teach a few letters at a time, starting with the ones that make the most words (s, a, t, p, i, n).',
                 'Say the name and the sound together, point to the letter, and let the child copy you.',
                 'Mix quick review of old letters with one or two new ones each day.',
+                'Clap the parts of spoken words, such as a name or "sun-set". It needs no letters, because RL1PA-I-2 (segment a two-three syllable word into its syllabic parts) is about listening and speaking.',
             ],
             'watch' => 'Look-alike letters (b and d, p and q) and letters whose name does not start with their sound.',
         ],
@@ -57,6 +58,7 @@ return [
                 'Read the first word together, saying each sound slowly, then blend the sounds into the word.',
                 'Let the child do the next word alone, and help only if they stop.',
                 'Use short word lists of three letters (cat, sun, pig) before words with blends or longer endings.',
+                'When short words are easy, join two of them into one (sun and set make sunset). Say each part four times, clap the parts, slide them together, then read the word in a sentence (RL1PA-I-2, RL1PWS-I-5). See the syllable routine below.',
             ],
             'watch' => 'Guessing from the first letter. If the child guesses, tap each letter and blend again.',
         ],
@@ -67,6 +69,7 @@ return [
                 'Read the sentence once together, then once alone, so the second read is easier and smoother.',
                 'Teach common words that cannot be sounded out (the, was, said) as whole words.',
                 'Ask the child to point to each word while they read, to keep their place.',
+                'Practise two-part words with the syllable routine (hear and repeat, split, join, read in a sentence) so longer words in a sentence are not read in pieces.',
             ],
             'watch' => 'Reading word by word with no flow. Rereading the same sentence builds smoothness.',
         ],

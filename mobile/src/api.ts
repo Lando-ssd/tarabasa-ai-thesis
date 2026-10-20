@@ -467,6 +467,17 @@ export type LearnerPage = {
     bestFit: { step: string; skill: string; code: string; words: string; level: string; advice: string };
     teach: { element: string; focus: string; moves: string[]; ready: string; watch: string; basis: string };
     pattern: { says: string; tip: string; code: string; codeText: string; early: boolean; examples: string[]; readings: number } | null;
+    // The syllable routine for the child's step (null for a child still on the Letters step). Optional so an older server is fine.
+    syllables?: {
+      level: number;
+      name: string;
+      pattern: string;
+      note: string;
+      routine: { step: number; name: string; text: string; scored: boolean }[];
+      words: string[];
+      suggested: boolean;
+      codes: { segment: { code: string; text: string }; blend: { code: string; text: string } };
+    } | null;
     progress: { rung: number; step: string; rungLabel: string; nextRungLabel: string | null; have: number; need: number; atTop: boolean } | null;
   };
 };

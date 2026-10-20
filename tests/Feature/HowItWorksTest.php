@@ -75,6 +75,39 @@ class HowItWorksTest extends TestCase
         }
     }
 
+    public function test_the_syllable_method_section_follows_its_config_and_is_honest_about_its_sources(): void
+    {
+        config(['syllable_method.repeat' => 7]);
+
+        $html = $this->get('/how-it-works')->assertOk()->getContent();
+
+        $this->assertStringContainsString('id="syllables"', $html);
+        $this->assertStringContainsString('href="#syllables"', $html);
+        $this->assertStringContainsString('<span class="num">7</span> times in the drill', $html);
+
+        foreach (config('syllable_method.codes') as $c) {
+            $this->assertStringContainsString($c['code'], $html);
+        }
+        foreach (config('syllable_method.levels') as $level) {
+            $this->assertStringContainsString($level['pattern'], $html);
+        }
+        foreach (config('syllable_method.steps') as $step) {
+            $this->assertStringContainsString($step['name'], $html);
+        }
+        foreach (config('syllable_method.corrections') as $correction) {
+            $this->assertStringContainsString(e($correction), $html);
+        }
+
+        // Only the last step is scored, and the page says why.
+        $this->assertStringContainsString('Only the last step is scored', $html);
+        // The sources say which were read and which were only found by search, and no dataset is claimed.
+        $this->assertStringContainsString('wording read in full by the team', $html);
+        $this->assertStringContainsString('found by search, not read in full', $html);
+        $this->assertStringContainsString('No recording dataset is used by the app', $html);
+        // The pattern it adds is counted in the list of kinds.
+        $this->assertStringContainsString('one of '.count(ErrorPatterns::CATEGORIES).' kinds', $html);
+    }
+
     public function test_the_copy_follows_the_app_rules_no_emoji_and_no_dashes(): void
     {
         $html = $this->get('/how-it-works')->getContent();

@@ -8,6 +8,7 @@ use App\Support\ClassLevel;
 use App\Support\ErrorPatterns;
 use App\Support\GenerationBasis;
 use App\Support\ReadingLevel;
+use App\Support\SyllableMethod;
 use Illuminate\View\View;
 
 /**
@@ -38,6 +39,19 @@ class HowItWorksController extends Controller
 
         $patterns = collect(ErrorPatterns::CATEGORIES)->map(fn (array $c) => ['label' => $c['label'], 'teacher' => $c['teacher'], 'code' => $c['code']])->values();
 
+        $syllableConfig = config('syllable_method');
+        $syllableLevels = collect($syllableConfig['levels'])->map(function (array $def, int $level) {
+            $words = SyllableMethod::words($level);
+
+            return [
+                'level' => $level,
+                'pattern' => $def['pattern'],
+                'name' => $def['name'],
+                'steps' => collect($def['rungs'])->map(fn (int $r) => ReadingLevel::RUNG_LABELS[$r] ?? "Step {$r}")->implode(' and '),
+                'examples' => collect($words)->take(4)->map(fn (array $w) => $w['word'].' ('.SyllableMethod::segmented($w['parts']).')')->implode(', '),
+            ];
+        })->values();
+
         return view('how-it-works', [
             'progression' => $progression,
             'minWords' => $minWords,
@@ -63,6 +77,18 @@ class HowItWorksController extends Controller
             'outcomePaired' => ClassActivityOutcomes::MIN_PAIRED,
             'outcomeSame' => ClassActivityOutcomes::SAME_WITHIN,
             'tiers' => ReadingLevel::TIER_RUNGS,
+            'syllable' => [
+                'filipinoName' => $syllableConfig['filipino_name'],
+                'steps' => $syllableConfig['steps'],
+                'repeat' => $syllableConfig['repeat'],
+                'levels' => $syllableLevels,
+                'corrections' => $syllableConfig['corrections'],
+                'codes' => $syllableConfig['codes'],
+                'filipino' => collect($syllableConfig['filipino_reference'])->map(fn (array $w) => SyllableMethod::segmented($w['parts']))->implode(', '),
+                'wordCount' => count($syllableConfig['words']),
+                'sources' => $syllableConfig['sources'],
+                'data' => $syllableConfig['data'],
+            ],
         ]);
     }
 }

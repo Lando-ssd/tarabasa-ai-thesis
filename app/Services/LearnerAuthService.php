@@ -160,6 +160,7 @@ class LearnerAuthService
         'beginning' => 'Practice first sounds',
         'ending_sound' => 'Practice last sounds',
         'blends' => 'Practice letter blends',
+        'syllables' => 'Practice long words',
         'look_alike' => 'Practice looking closely at letters',
         'skipped' => 'Practice reading every word',
         'other' => 'Practice sounding words out',

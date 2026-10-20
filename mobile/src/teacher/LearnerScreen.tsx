@@ -115,6 +115,27 @@ export function LearnerScreen({ classId, id, onBack, onMoved }: Props) {
           </Section>
         ) : null}
 
+        {p.syllables ? (
+          <Section title={p.syllables.suggested ? `Syllable routine (suggested for ${first})` : 'Syllable routine for longer words'}>
+            <P>
+              {p.syllables.name} ({p.syllables.pattern}). {p.syllables.note}
+            </P>
+            {p.syllables.routine.map((step) => (
+              <View key={step.step} style={st.bullet}>
+                <View style={st.dot} />
+                <P style={{ flex: 1 }}>
+                  {step.name}. {step.text}
+                  {step.scored ? ' This is the only step the app scores.' : ''}
+                </P>
+              </View>
+            ))}
+            <Line label="Words for this level" value={p.syllables.words.join(', ')} />
+            <Small>
+              {p.syllables.codes.segment.code}: {p.syllables.codes.segment.text} {p.syllables.codes.blend.code}: {p.syllables.codes.blend.text}
+            </Small>
+          </Section>
+        ) : null}
+
         {data.canMove && (data.moveTargets ?? []).length > 0 ? <Move classId={classId} learner={l} targets={data.moveTargets ?? []} onMoved={onMoved} /> : null}
       </View>
     </Screen>
