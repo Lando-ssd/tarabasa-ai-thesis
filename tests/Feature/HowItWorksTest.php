@@ -1,0 +1,100 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Services\ClassActivityOutcomes;
+use App\Services\TeacherAlerts;
+use App\Support\ClassLevel;
+use App\Support\ErrorPatterns;
+use App\Support\GenerationBasis;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/**
+ * The public "How TaraBasa decides" page. Its job is to be TRUE: every number on it is read from the constant or the
+ * config file the rule runs on, so these tests change a setting and look for the page to follow it. A page that
+ * quoted a number the app no longer uses would mislead the adviser and the panel.
+ */
+class HowItWorksTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_it_is_public_and_says_plainly_it_is_not_a_trained_model(): void
+    {
+        $html = $this->get('/how-it-works')->assertOk()->getContent();
+
+        $this->assertStringContainsString('How TaraBasa decides', $html);
+        $this->assertStringContainsString('written rules, not a trained model', $html);
+        $this->assertStringContainsString('It does not learn by itself', $html);
+
+        // No sign in is needed and nothing private is on it: no name, email or code of anyone.
+        $this->assertStringNotContainsString('@example.com', $html);
+    }
+
+    public function test_the_numbers_come_from_the_rules_themselves(): void
+    {
+        $html = $this->get('/how-it-works')->assertOk()->getContent();
+
+        // Moving up or down (config/progression.php).
+        $p = config('progression');
+        $this->assertStringContainsString('at least <span class="num">'.$p['up_readings'].'</span> readings of <span class="num">'.$p['up_accuracy'].' percent or more</span>', $html);
+        $this->assertStringContainsString('<span class="num">'.$p['down_readings'].'</span> readings in a row under <span class="num">'.$p['down_accuracy'].' percent</span>', $html);
+
+        // Alerts, patterns, class level, writing for a class and the "did it work?" check.
+        $this->assertStringContainsString('under <span class="num">'.TeacherAlerts::SUPPORT_BELOW.' percent</span>', $html);
+        $this->assertStringContainsString('<span class="num">'.TeacherAlerts::QUIET_DAYS.' days</span>', $html);
+        $this->assertStringContainsString('at least <span class="num">'.ErrorPatterns::MIN_READINGS.'</span> readings and <span class="num">'.ErrorPatterns::MIN_MISSES.'</span> missed words', $html);
+        $this->assertStringContainsString('at least <span class="num">'.ClassLevel::MIN_LEARNERS.'</span> have a level', $html);
+        $this->assertStringContainsString('at least <span class="num">'.GenerationBasis::MIN_SHARED.'</span> children show it', $html);
+        $this->assertStringContainsString('at least <span class="num">'.ClassActivityOutcomes::MIN_PAIRED.'</span> children read both kinds', $html);
+
+        // Every word limit in the table is the live one.
+        foreach (config('activity_fit.limits') as $limits) {
+            $this->assertStringContainsString("<td>{$limits[0]} words</td><td>{$limits[1]} words</td>", $html);
+        }
+        $this->assertStringContainsString('confidence under <span class="num">'.config('reading.unsure_confidence').'</span>', $html);
+    }
+
+    public function test_changing_a_setting_changes_the_page(): void
+    {
+        config(['progression.up_readings' => 7, 'reading.unsure_confidence' => 0.33]);
+
+        $html = $this->get('/how-it-works')->assertOk()->getContent();
+
+        $this->assertStringContainsString('at least <span class="num">7</span> readings', $html);
+        $this->assertStringContainsString('confidence under <span class="num">0.33</span>', $html);
+    }
+
+    public function test_every_mistake_pattern_is_listed_with_its_code(): void
+    {
+        $html = $this->get('/how-it-works')->getContent();
+
+        foreach (ErrorPatterns::CATEGORIES as $c) {
+            $this->assertStringContainsString($c['label'], $html);
+            $this->assertStringContainsString($c['code'], $html);
+        }
+    }
+
+    public function test_the_copy_follows_the_app_rules_no_emoji_and_no_dashes(): void
+    {
+        $html = $this->get('/how-it-works')->getContent();
+        $text = strip_tags(preg_replace('/<(style|script)\b.*?<\/\1>/is', '', $html));
+
+        $this->assertStringNotContainsString("\u{2014}", $text, 'no em dash in the copy');
+        $this->assertStringNotContainsString("\u{2013}", $text, 'no en dash in the copy');
+        $this->assertSame(0, preg_match('/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u', $text), 'no emoji in the copy');
+    }
+
+    public function test_it_is_linked_from_the_home_page_and_the_teacher_alerts(): void
+    {
+        $this->get('/')->assertOk()->assertSee('How TaraBasa decides')->assertSee(route('how-it-works'));
+    }
+
+    public function test_the_privacy_page_tells_the_truth_about_the_class_summary_sent_to_the_activity_writer(): void
+    {
+        $html = $this->get('/privacy')->assertOk()->getContent();
+
+        $this->assertStringContainsString('"For a class"', html_entity_decode($html));
+        $this->assertStringContainsString("never receives a name, a learner code or any one child's details", html_entity_decode($html));
+    }
+}

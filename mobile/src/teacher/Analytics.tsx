@@ -130,6 +130,20 @@ export function Analytics({ onBack }: { onBack: () => void }) {
                 ))}
               </View>
             ) : null}
+            {(o.outcomes ?? []).length > 0 ? (
+              <View style={{ gap: space[8] }}>
+                <H2>Did the class activities help?</H2>
+                <Small>Activities you wrote with "For a class", against your general ones, for the same children. A signal to watch, not proof.</Small>
+                {(o.outcomes ?? []).map((c) => (
+                  <ListRow
+                    key={c.classId}
+                    title={c.className}
+                    sub={`${c.headline} ${c.detail}`}
+                    right={<TonePill text={c.verdict === 'higher' ? 'Higher' : c.verdict === 'lower' ? 'Lower' : c.verdict === 'similar' ? 'Same' : 'Too early'} tone={(c.verdict === 'higher' ? 'green' : c.verdict === 'lower' ? 'amber' : c.verdict === 'similar' ? 'blue' : 'grey') as Tone} />}
+                  />
+                ))}
+              </View>
+            ) : null}
           </>
         )}
       </View>

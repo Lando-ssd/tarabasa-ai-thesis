@@ -128,7 +128,7 @@ class GenerateActivitiesJob implements ShouldQueue
                 'topic' => $generation->topic,
                 'teacher_notes' => $generation->teacher_notes,
                 'generation_basis' => ($generation->basis['enough'] ?? false)
-                    ? ['className' => $generation->basis['className'], 'lines' => $generation->basis['lines']]
+                    ? ['className' => $generation->basis['className'], 'classId' => $generation->class_id, 'lines' => $generation->basis['lines']]
                     : null,
             ], $wanted);
 

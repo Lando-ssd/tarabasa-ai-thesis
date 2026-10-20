@@ -1191,7 +1191,7 @@
       <div class="finale-end-line">
         <strong>Every child deserves to love reading.</strong>
         <small>AI powered, teacher verified reading support for Grade 1 to 3 Filipino learners.</small>
-        <small><a class="finale-privacy" href="{{ route('privacy') }}">Privacy</a></small>
+        <small><a class="finale-privacy" href="{{ route('privacy') }}">Privacy</a> &nbsp;&middot;&nbsp; <a class="finale-privacy" href="{{ route('how-it-works') }}">How TaraBasa decides</a></small>
       </div>
       <a class="finale-top-btn" id="backToTopBtn" href="#pageTop">Back to top</a>
     </div>

@@ -25,7 +25,7 @@ class TeacherInsights
     // (each with its word by word record) and loading every one makes the page slower every month.
     public const PERIODS = ['week' => 'This week', 'month' => 'This month', 'all' => 'Last 6 months'];
 
-    public function __construct(private TeacherAlerts $alerts)
+    public function __construct(private TeacherAlerts $alerts, private ClassActivityOutcomes $outcomes)
     {
     }
 
@@ -112,6 +112,8 @@ class TeacherInsights
         return [
             'learners' => $learners,
             'classes' => $classes,
+            // "Did it work?": the activities written for a class against the teacher's general ones (ClassActivityOutcomes).
+            'outcomes' => $this->outcomes->forClasses($teacher, $classes),
             'readings' => $sessions->count(),
             'bySource' => collect(['Teacher', 'Parent'])->mapWithKeys(fn ($src) => [$src => $sessions->where('initiated_by', $src)->count()]),
             'avg' => $avg === null ? null : (int) round($avg),

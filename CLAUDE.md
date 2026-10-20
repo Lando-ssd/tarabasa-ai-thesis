@@ -7239,6 +7239,39 @@ usable), and (2) a right logic for a teacher the school/head has given Grade 2 o
 - **Honest limits.** The Admin has no way to verify with the school inside the app (it is a human step; the note and the cards only tell them whom to call). A
   teacher already handling a grade whose approval was wrong cannot be corrected by the Admin from the app (no "remove a grade" for the Admin; the teacher can take
   their own grade away). The limits (20 refusals an hour, a note of 8+ characters) are the team's own numbers.
+- **Shipped and checked live (2026-10-20).** Merged into the live branch as `5fa2915` and deployed; on the live site the owner confirmed the red note and the grey Add for a
+  Grade 2 child in a Grade 1 class, and a grade change that waited for the Admin and took effect after approval. Gmail was reconnected the same day (the app is "In production" on
+  Google, a fresh `GMAIL_SEND_REFRESH_TOKEN` was set, a real verification email arrived) and the Admin password was set from Render's `ADMIN_PASSWORD` (tested). Still open:
+  `PRIVACY_CONTACT_EMAIL` (waiting for the team's `tarabasa.privacy@gmail.com`). Phone build 0.5.3 (versionCode 13, SHA-256 `5b76bbc9...1b43`) carries all of this; see `mobile/HANDOVER.md`.
+
+## "Did it work?" and "How TaraBasa decides" (2026-10-20, BUILT LOCALLY, NOT PUSHED)
+
+The owner said not to depend on the teammate (no `levels` option on the generator, no Reading-api key) and to keep improving our own rule based "AI expert"
+(mistake patterns, generation basis, suggestions), "the AI training". Said plainly, as before: **there is no trained model** and no dataset to train one on, so
+"training" means checking and tuning our own rules against real readings. Two pieces were built (the owner picked A and B):
+- **A. "Did the class activities help?"** (`App\Services\ClassActivityOutcomes`). For each class that has activities written for it ("For a class" on Generate), it
+  compares the class's learners' practice readings of those activities against the same teacher's general activities (no class basis). It compares each child with
+  THEMSELVES (average on class activities minus average on general ones, for children who read both) and gives a number only when at least `MIN_PAIRED` (3) children read
+  both kinds; a difference under `SAME_WITHIN` (3 points) is "about the same". Before that it says how much is missing ("Too early", with counts). Only practice readings
+  count (never the first check, never free tries), only this teacher's activities, readings of the class's learners as they are now. The caveat is said on the screen: a text
+  can be easier or more interesting and the order matters, so it is a signal and not proof. It needed one small change: the generation job now also saves `classId` in
+  `activities.generation_basis` (older activities are matched by `className`, a fallback pinned by a test). Shown on the website Teacher Analytics overview (a card under
+  "Assigned activities", only for classes that have activities written for them) and returned by `GET /api/teacher/analytics` as `outcomes` (counts and averages only,
+  never a per child list; the phone `Analytics.tsx` shows it, optional field so an older server is fine). **The 0.5.3 APK does NOT have the phone card** (needs 0.5.4).
+- **B. The public page `/how-it-works`** (`HowItWorksController`, `resources/views/how-it-works.blade.php`, linked from the landing footer and the Teacher Alerts page). It
+  lists every rule the app uses about a child, a class or an activity (first check, moving a step, level names, scoring and Not sure, mistake patterns, alerts, "can this
+  child read it", what a child is offered, writing for a class and this very check, class and grade rules, what it does not do, how the numbers will be checked with real
+  data, the outside services, sources) and says on its first screen that none of it is a trained model. **Every number is read from the constant or config the rule runs on**
+  (`config/progression.php`, `config/activity_fit.php`, `config/reading.php`, `TeacherAlerts`, `ErrorPatterns`, `ClassLevel`, `GenerationBasis`,
+  `ClassActivityOutcomes`), and `HowItWorksTest` changes a setting and checks the page follows, so it cannot quietly drift. If a rule changes or a new rule is added, update
+  the page in the same commit (same discipline as the Privacy page). Copy rule held: no emoji and no dashes (a test checks).
+- **A correction made on the way:** the Privacy page said the AI activity writer "receives no child information", which stopped being true when "For a class" began sending a
+  class summary (reading step, kinds of mistake, words several children missed, topics). The note contains no name, learner code or one child's details (checked in
+  `GenerationBasis`), and the Privacy page (now dated 20 October 2026) says exactly that.
+- **Tests:** `ClassActivityOutcomesTest` (8), `HowItWorksTest` (7); full suite 601 passing. Checked in a browser: the page at 1100 and 375 wide (no sideways overflow), the
+  Analytics card with seeded readings (green "Higher", right size; the seed was removed afterwards).
+- **Honest limits:** the comparison needs real use before it can say anything (until then every class shows "Too early"); it cannot separate the text's own difficulty from
+  the effect of writing it for the class; the basis sources on the page were checked by search, not read from the official texts (see the 2026-10-19 section).
 
 ## Before pushing this round (checklist for the next session)
 

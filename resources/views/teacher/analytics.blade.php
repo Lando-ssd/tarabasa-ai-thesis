@@ -149,6 +149,30 @@
         </table>
       @endif
     </div>
+
+    {{-- "Did it work?": activities written for a class against the general ones, same children (ClassActivityOutcomes). Only classes with activities written for them. --}}
+    @if ($o['outcomes']->isNotEmpty())
+      <div class="card" style="margin-top:14px">
+        <p class="card-title">Did the class activities help?</p>
+        <p class="card-sub">Activities you wrote with "For a class", against your general activities, for the same children. A signal to watch, not proof.</p>
+        @foreach ($o['outcomes'] as $oc)
+          <div class="oc-row">
+            <div class="oc-top"><b>{{ $oc['className'] }}</b>
+              @if ($oc['state'] === 'enough')
+                <span class="pill {{ ['higher' => 'ok', 'similar' => 'blue', 'lower' => 'amber'][$oc['verdict']] }}">{{ ['higher' => 'Higher', 'similar' => 'About the same', 'lower' => 'Lower'][$oc['verdict']] }}</span>
+              @else
+                <span class="pill">Too early</span>
+              @endif
+            </div>
+            <p class="oc-head">{{ $oc['headline'] }}</p>
+            <p class="note">{{ $oc['detail'] }}</p>
+            @if ($oc['state'] !== 'not_read_yet')
+              <p class="note oc-nums">Written for the class: {{ $oc['for']['avg'] !== null ? $oc['for']['avg'].'%' : 'no readings' }} over {{ $oc['for']['readings'] }} {{ $oc['for']['readings'] === 1 ? 'reading' : 'readings' }}. General: {{ $oc['general']['avg'] !== null ? $oc['general']['avg'].'%' : 'no readings' }} over {{ $oc['general']['readings'] }} {{ $oc['general']['readings'] === 1 ? 'reading' : 'readings' }}.</p>
+            @endif
+          </div>
+        @endforeach
+      </div>
+    @endif
   @endif
 
 @elseif ($mode === 'learner')

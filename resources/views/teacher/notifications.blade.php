@@ -148,4 +148,6 @@
     </div>
   </details>
 @endif
+
+<p class="note" style="margin-top:18px">Wondering why an alert appeared? <a href="{{ route('how-it-works') }}#alerts">Read the rules behind it</a>, with every number and its source.</p>
 @endsection

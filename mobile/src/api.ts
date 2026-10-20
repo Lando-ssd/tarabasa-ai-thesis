@@ -653,6 +653,22 @@ export type AnalyticsOverview = {
   missedWords: Record<string, number>;
   patterns: { key: string; label: string; misses: number; learners: number }[];
   assignments: { title: string; for: string; total: number; done: number; average: number | null }[];
+  /** "Did the class activities help?": activities written for a class against general ones, for the same children (one entry per class that has any). Optional: an older server does not send it. */
+  outcomes?: ClassOutcome[];
+};
+
+export type ClassOutcome = {
+  classId: number;
+  className: string;
+  written: number;
+  for: { readings: number; learners: number; avg: number | null };
+  general: { readings: number; learners: number; avg: number | null };
+  paired: number;
+  difference: number | null;
+  verdict: 'higher' | 'similar' | 'lower' | null;
+  state: 'not_read_yet' | 'early' | 'enough';
+  headline: string;
+  detail: string;
 };
 
 export type PromotionsData = {
