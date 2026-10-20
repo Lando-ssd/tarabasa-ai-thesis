@@ -8,6 +8,7 @@ use App\Models\Learner;
 use App\Support\ErrorPatterns;
 use App\Support\NotSure;
 use App\Support\ReadingLevel;
+use App\Support\SyllableMethod;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 
@@ -79,16 +80,28 @@ class PracticeGameService
 
         $levels = [];
         foreach ([1, 2, 3] as $level) {
+            $favoured = array_values(array_filter(
+                self::WORD_LEVEL_LISTS[$level],
+                fn ($word) => ErrorPatterns::practisesPattern($word, $pattern)
+            ));
+
+            // A child who reads longer words in pieces is offered the syllable method's two-syllable words (closed syllables first),
+            // whatever the level's word length: the level only says how many words and how fast, and this is the word shape to practise.
+            // Words the speech checker did not hear reliably on their own (`alone` false) are left out: a game checks one word at a time.
+            if ($pattern === 'syllables') {
+                $favoured = array_values(array_unique(array_merge(
+                    $favoured,
+                    array_column(array_filter(SyllableMethod::words(), fn (array $w) => $w['level'] <= $level && ($w['alone'] ?? true)), 'word')
+                )));
+            }
+
             $levels[$level] = [
                 'struggling' => $strugglingWords
                     ->filter(fn ($word) => $this->wordLengthMatchesLevel(strlen($word), $level))
                     ->values()
                     ->all(),
                 'fallback' => self::WORD_LEVEL_LISTS[$level],
-                'favoured' => array_values(array_filter(
-                    self::WORD_LEVEL_LISTS[$level],
-                    fn ($word) => ErrorPatterns::practisesPattern($word, $pattern)
-                )),
+                'favoured' => $favoured,
             ];
         }
 
@@ -141,6 +154,9 @@ class PracticeGameService
         $practice = app(WordBank::class)->practiceWords($learner)->map(fn ($w) => strtolower((string) $w))->all();
         $pattern = ErrorPatterns::mainPattern(ErrorPatterns::forLearner($learner));
 
+        // The method's words in a sentence (step 4 of the syllable method), offered first to a child who reads longer words in pieces.
+        $syllableSentences = $pattern === 'syllables' ? SyllableMethod::sentencesByLength() : [];
+
         $levels = [];
         foreach ([1, 2, 3] as $level) {
             $all = array_values(config('practice_sentences.levels.'.$level, []));
@@ -157,6 +173,60 @@ class PracticeGameService
                 })),
                 'fallback' => $all,
             ];
+
+            if ($syllableSentences !== []) {
+                // At the front, so the pattern is practised first; they stay out of the level's fixed list for every other child.
+                $levels[$level]['preferred'] = array_values(array_unique(array_merge($syllableSentences[$level], $levels[$level]['preferred'])));
+                $levels[$level]['fallback'] = array_values(array_unique(array_merge($levels[$level]['fallback'], $syllableSentences[$level])));
+            }
+        }
+
+        return $levels;
+    }
+
+    /**
+     * The level Syllable Steps starts a child at, or null when the game is not for them. The three levels are the syllable method's own
+     * word levels (config/syllable_method.php): CVC + CVC, then CVC + CVCe, then CVC + VC, and the level follows the child's step on the
+     * reading path. A child still on the Letters step has no word level (they have not met words yet), so the game is not offered to
+     * them: the teacher's notes suggest clapping the parts of spoken words with them instead, which needs no letters. A child with no
+     * known step is not offered it either, since the games sit behind the first reading check, which sets one.
+     */
+    public function syllableStartLevel(Learner $learner): ?int
+    {
+        return SyllableMethod::levelForRung(ReadingLevel::rung($learner));
+    }
+
+    /**
+     * What Syllable Steps offers at each of the three levels, as words with their parts and the sentence the child reads at the end:
+     *   own     words the child has missed (from their real readings) that are in the method's list, so the game works on them first;
+     *   level   the level's own words;
+     *   review  the easier levels' words, for a round that has used up the level's own (level 2 has only five words).
+     * A word is only ever read inside its sentence: the parts are not words, so they are never scored (see config/syllable_method.php).
+     * That is why a word the speech checker missed on its own (`alone` false) is fine here, unlike in Balloon Pop.
+     *
+     * @return array<int, array{own: list<array>, level: list<array>, review: list<array>}>
+     */
+    public function syllableLevels(Learner $learner): array
+    {
+        $missed = app(WordBank::class)->practiceWords($learner)->map(fn ($w) => strtolower((string) $w))->all();
+        $entry = fn (array $w) => ['word' => $w['word'], 'parts' => $w['parts'], 'sentence' => $w['sentence']];
+
+        $levels = [];
+        foreach ([1, 2, 3] as $level) {
+            $own = [];
+            foreach ($missed as $word) {
+                $found = SyllableMethod::find($word);
+                if ($found !== null && $found['level'] <= $level) {
+                    $own[$found['word']] = $entry($found);
+                }
+            }
+
+            $levels[$level] = [
+                'own' => array_values($own),
+                'level' => array_map($entry, SyllableMethod::words($level)),
+                'review' => array_map($entry, array_filter(SyllableMethod::words(), fn (array $w) => $w['level'] < $level)),
+            ];
+            $levels[$level]['review'] = array_values($levels[$level]['review']);
         }
 
         return $levels;

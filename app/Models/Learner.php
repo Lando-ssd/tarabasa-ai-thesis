@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ErrorPatterns;
 use App\Support\ReadingLevel;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
@@ -387,18 +388,23 @@ class Learner extends Model implements AuthenticatableContract
     }
 
     /**
-     * Practice Games: which of the three read-aloud games leads the Games hub for this child. Every game is a reading game, so
+     * Practice Games: which of the read-aloud games leads the Games hub for this child. Every game is a reading game, so
      * the choice comes from where the child is on the reading path and from the words they have been missing:
      *  - still on the letters step: Word Train (a row of letters)
+     *  - reads longer words in pieces (their main kind of mistake, from ErrorPatterns): Syllable Steps, which cuts a longer word
+     *    into its parts and joins them back (the syllable method, config/syllable_method.php)
      *  - has words they keep missing: Balloon Pop (it drills those very words)
      *  - on the first-words step: Word Train (a row of words)
      *  - otherwise: Sentence Stars (reading whole sentences)
      * Never a gate: every game stays playable. Returns null only when the app does not know the child's step yet, so the caller
      * can show a neutral state rather than a made up one. `reason` says why, for the hub's one line tip.
      *
+     * `$withSyllableSteps` is false for the phone app's API until the phone has that game: a build that does not know it must never
+     * be told to lead with it.
+     *
      * @return null|array{game: string, reason: string}
      */
-    public function recommendedGameFocus(): ?array
+    public function recommendedGameFocus(bool $withSyllableSteps = true): ?array
     {
         $rung = ReadingLevel::rung($this);
 
@@ -408,6 +414,10 @@ class Learner extends Model implements AuthenticatableContract
 
         if ($rung === 0) {
             return ['game' => 'word-train', 'reason' => 'letters'];
+        }
+
+        if ($withSyllableSteps && ErrorPatterns::mainPattern(ErrorPatterns::forLearner($this)) === 'syllables') {
+            return ['game' => 'syllable-steps', 'reason' => 'long-words'];
         }
 
         $hasStrugglingWords = PersonalWordBank::where('learner_id', $this->id)

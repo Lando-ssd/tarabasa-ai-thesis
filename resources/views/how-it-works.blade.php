@@ -73,6 +73,7 @@
       <li><a href="#offered">What a child is offered</a></li>
       <li><a href="#writing">Writing activities for a class</a></li>
       <li><a href="#classes">Class and grade rules</a></li>
+      <li><a href="#syllables">The syllable method</a></li>
       <li><a href="#never">What it does not do</a></li>
       <li><a href="#checking">Checking the numbers</a></li>
       <li><a href="#services">The outside services</a></li>
@@ -145,7 +146,7 @@
     <span class="k">What it decides</span>
     <p>Whether a child's mistakes show one kind of difficulty, so the suggestion can practise it.</p>
     <span class="k">The rule</span>
-    <p>Each missed word is sorted into one of nine kinds by comparing it with the word the child said. A pattern is reported only after at least <span class="num">{{ $patternMinReadings }}</span> readings and <span class="num">{{ $patternMinMisses }}</span> missed words, and only when it covers at least <span class="num">25 percent</span> of the misses. It is called "early" until <span class="num">{{ $patternSettled }}</span> readings. Each pattern comes with one thing to try and the curriculum code it practises.</p>
+    <p>Each missed word is sorted into one of {{ $patterns->count() }} kinds by comparing it with the word the child said. A pattern is reported only after at least <span class="num">{{ $patternMinReadings }}</span> readings and <span class="num">{{ $patternMinMisses }}</span> missed words, and only when it covers at least <span class="num">25 percent</span> of the misses. It is called "early" until <span class="num">{{ $patternSettled }}</span> readings. Each pattern comes with one thing to try and the curriculum code it practises.</p>
     <div class="tablewrap"><table>
       <thead><tr><th>Kind</th><th>What it looks like</th><th>Code</th></tr></thead>
       <tbody>@foreach ($patterns as $p)<tr><td><b>{{ $p['label'] }}</b></td><td>The child {{ $p['teacher'] }}.</td><td>{{ $p['code'] }}</td></tr>@endforeach</tbody>
@@ -224,7 +225,48 @@
     <p>The curriculum is written grade by grade (MATATAG, DepEd Order No. 10, s. 2024). In a DepEd school the school head assigns who teaches which grade. A DepEd multigrade class (two or more grades under one teacher) is not modelled: a teacher who handles several grades opens one class for each.</p>
   </div>
 
-  <h2 id="never">11. What it does not do</h2>
+  <h2 id="syllables">11. The syllable method</h2>
+  <p class="sub">Splitting a longer word into its parts and joining it again.</p>
+  <div class="rule">
+    <span class="k">What it decides</span>
+    <p>How longer words are practised, in what order, and how the app tells that a child reads a longer word in pieces.</p>
+    <span class="k">The rule</span>
+    <p>The syllable method (in Filipino, <i>{{ $syllable['filipinoName'] }}</i>, the syllabic method) is syllable segmenting and blending, taught through repeated drill, inside structured (systematic) phonics. It has four steps, in this order:</p>
+    <ol>
+      @foreach ($syllable['steps'] as $step)
+        <li><b>{{ $step['name'] }}.</b> {{ $step['learner'] }} <i>({{ $step['standard'] }})</i></li>
+      @endforeach
+    </ol>
+    <p>Each part is said <span class="num">{{ $syllable['repeat'] }}</span> times in the drill. Only the last step is scored. The parts of a word are often not words themselves (pic, nic, bas, ket), and a speech recognizer is unreliable on a single piece that is not a word, so a part is never scored: the first three steps are listening, tapping and joining, and the recognizer hears the whole word read aloud in a sentence.</p>
+    <p>The word level rises with the child's step on the reading path (Beginning, Developing, Proficient). A child on the Letters step has not met words yet, so the game is not offered to them, and the teacher's notes suggest only clapping the parts of spoken words, which needs no letters.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Level</th><th>Word shape</th><th>For the steps</th><th>Examples</th></tr></thead>
+      <tbody>@foreach ($syllable['levels'] as $l)<tr><td>{{ $l['level'] }}</td><td>{{ $l['pattern'] }}: {{ $l['name'] }}</td><td>{{ $l['steps'] }}</td><td>{{ $l['examples'] }}</td></tr>@endforeach</tbody>
+    </table></div>
+    <p>Two rules came from correcting the first draft of the method:</p>
+    <ul>@foreach ($syllable['corrections'] as $c)<li>{{ $c }}</li>@endforeach</ul>
+    <p>The method is used in five places. The activity writer is asked for two-syllable words that split cleanly when a teacher writes a word list for a class, or when several children in the class read longer words in pieces (section 9). The teacher's learner page has a syllable routine for the child's step. The mistake pattern <b>Longer words in pieces</b> (section 5) is reported when a child reads only a part of a longer word, or reads it as two words the recognizer writes separately (basket heard as "bass" and "kit"). The other Practice Games offer the method's words and sentences first to a child whose main pattern it is. And the game <b>Syllable Steps</b> plays the four steps.</p>
+    <span class="k">The game, Syllable Steps</span>
+    <p>Syllable Steps is a Practice Game for children from the Words step up. For each longer word the child taps a part and hears Tara say it (<span class="num">{{ $syllable['repeat'] }}</span> times for each part), taps once for each part, taps the parts in order so that they glide together, and then reads the word inside a sentence. Only that sentence goes to the speech checker. As in every other game the answer is only "heard" or "again", never "wrong", and nothing the child says is kept. Three words make a round, two or more read right the first time climb a level (the word levels in the table above), and there are up to three rounds. It is free play: it never changes points, streak or level. It leads the Games page for a child whose main kind of mistake is reading longer words in pieces.</p>
+    <p>It was designed for children of this age in three ways:</p>
+    <ul>
+      <li><b>Joining is by tapping, not sliding.</b> In one small study of 90 children aged 2 to 8, among the 7 to 8 year olds 83 percent could tap, 40 percent could swipe and 30 percent could drag and drop. The sample is small, so it is a reason to prefer one finger taps, not proof.</li>
+      <li><b>Every instruction comes three ways.</b> Tara says it, one short line of text shows it, and the next thing to tap glows. A speaker button says it again. The same study advises against relying on written prompts for children 8 and under.</li>
+      <li><b>The taps are not the learning by themselves.</b> Research on children's apps finds that children learn best when they are thinking, not only tapping. The child splits the word, joins it and reads it; only the reading is scored.</li>
+    </ul>
+    <span class="k">Where it comes from</span>
+    <p>The MATATAG Grade 1 Reading and Literacy guide: {{ $syllable['codes']['segment']['code'] }}, "{{ $syllable['codes']['segment']['text'] }}", and {{ $syllable['codes']['blend']['code'] }}, "{{ $syllable['codes']['blend']['text'] }}" The same guide asks for explicit and systematic instruction and for the Gradual Release of Responsibility (the teacher says it, then it is said together, then the child alone), which is the order of the four steps. The Filipino examples ({{ $syllable['filipino'] }}) are reference only: the speech checker is English only, and Grade 1 reading in the curriculum is in the mother tongue.</p>
+    <span class="k">Honest limits</span>
+    <ul>
+      <li>The word list ({{ $syllable['wordCount'] }} words) and the sentences were written by the team and checked with synthesized voices only. A Grade 1 and a Grade 2 teacher should review them.</li>
+      <li>Closed syllables first is common practice in structured literacy programmes. No study was found that proves the order has to be this way, so it is the team's choice.</li>
+      <li>A recognizer cannot tell a child who pauses between parts from a child it simply hears as two words, so reading in pieces is only reported when the pieces do not join into the word, and it is a hint for the teacher, not a score.</li>
+      <li>Syllable Steps has been played in a browser and with synthesized voices, not by a real child yet. The browser's own voice may say a part such as bas or ket a little oddly. It is on the website first; the phone app does not have it yet.</li>
+      <li>{{ $syllable['data'] }}</li>
+    </ul>
+  </div>
+
+  <h2 id="never">12. What it does not do</h2>
   <ul>
     <li>It does not decide for a teacher or a parent. Alerts and suggestions come with their reasons, and a person acts.</li>
     <li>It does not hide an activity from a child, and it does not show a child a score on the first reading check.</li>
@@ -232,7 +274,7 @@
     <li>It does not learn by itself. No number on this page changes unless a person changes it.</li>
   </ul>
 
-  <h2 id="checking">12. Checking the numbers</h2>
+  <h2 id="checking">13. Checking the numbers</h2>
   <p>Nobody has tested the app with real children yet, and a model cannot honestly be trained without that data. Once real children use it, these are the first things the team will check, and each number lives in one settings file, so a change after the evidence needs no new code:</p>
   <ol>
     <li>Whether children read activities written for their class better than general ones (the "Did it work?" card in section 9).</li>
@@ -241,7 +283,7 @@
     <li>Whether the word limits for each step match how long children really take to read.</li>
   </ol>
 
-  <h2 id="services">13. The outside services</h2>
+  <h2 id="services">14. The outside services</h2>
   <ul>
     <li><b>Reading scoring service:</b> Vosk, an open speech recognition engine, run by the team. It turns a recording into words and returns the word by word result. Section 4 describes what TaraBasa does with it.</li>
     <li><b>Activity writer:</b> a service the team runs that asks an AI language model to write the texts. It receives a grade, a skill, a topic and a short note. When a teacher picks a class, the note holds a summary of the class (section 9), and never a name, a learner code or any one child's details.</li>
@@ -249,15 +291,19 @@
   </ul>
   <p>The <a href="{{ route('privacy') }}">Privacy page</a> says what each one receives.</p>
 
-  <h2 id="sources">14. Sources</h2>
+  <h2 id="sources">15. Sources</h2>
   <ul>
     <li>DepEd Order No. 14, s. 2018: Philippine Informal Reading Inventory (Phil-IRI), the reading level names and accuracy bands.</li>
     <li>DepEd Order No. 10, s. 2024: the MATATAG Curriculum, written grade by grade, with the competency codes used in the checks, activities and patterns.</li>
     <li>DepEd Memorandum No. 173, s. 2019: Hamon, Bawat Bata Bumabasa (every learner a reader at their grade level), and its six elements of reading.</li>
     <li>National Reading Panel (2000): Teaching Children to Read, on repeated oral reading and fluency.</li>
-    <li>Ehri (2005): phases of learning to read words, behind the order of letters, words, sentences and stories.</li>
+    <li>Ehri (2005): the phases children go through in learning to read words, from knowing letter sounds, to sounding a word out, to reading it by sight. It is behind the idea that letter knowledge and sounding out come before fluent reading. It does not set the order of letters, words, sentences and stories, which is the team's own use of the curriculum.</li>
     <li>Pearson and Gallagher (1983): gradual release of responsibility, behind the teaching notes shown to teachers.</li>
     <li>Republic Act No. 10173, the Data Privacy Act of 2012, behind the privacy and deletion rules.</li>
+  </ul>
+  <h3>For the syllable method (section 11)</h3>
+  <ul>
+    @foreach ($syllable['sources'] as $src)<li>{{ $src['text'] }} <i>({{ $src['read'] ? 'wording read in full by the team' : 'found by search, not read in full: check the original before quoting' }})</i></li>@endforeach
   </ul>
 
   <a class="btn" href="{{ url('/') }}">Back to the home page</a>

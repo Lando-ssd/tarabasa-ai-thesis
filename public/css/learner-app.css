@@ -1309,3 +1309,11 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
   box-shadow:0 6px 0 var(--dlip), 0 16px 20px -12px rgba(0,0,0,.3), inset 0 -7px 10px rgba(0,0,0,.08);
 }
 .gm-ribbon.new{ background:linear-gradient(180deg,#34c3a4,#1f9e83); box-shadow:0 3px 0 #0f6b58, inset 0 2px 0 rgba(255,255,255,.4); color:#fff; }
+
+/* ---- Syllable Steps' card on the Games page: the same raised card, in a lilac family ---- */
+.gm-lilac{ --top:#f3ecff; --bot:#d9c9f7; --rim:#e8def9; --lip:#a98cdc; --glow:rgba(100,60,170,.42); --inner:rgba(120,80,190,.2); --well:#cdb9f0; --wtext:#42237b; --wshadow:rgba(90,50,160,.4); }
+.gm-lilac .gm-icon{
+  background-image:radial-gradient(circle at 28% 22%, rgba(255,255,255,.8), rgba(255,255,255,0) 46%), linear-gradient(180deg,#c9f0e6,#6fcfb0);
+  background-color:transparent; --dlip:#36927a; color:#fff;
+  box-shadow:0 6px 0 var(--dlip), 0 16px 20px -12px rgba(0,0,0,.3), inset 0 -7px 10px rgba(0,0,0,.08);
+}

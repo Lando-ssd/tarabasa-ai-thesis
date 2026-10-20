@@ -6,6 +6,7 @@ use App\Models\GamePlay;
 use App\Services\PracticeGameService;
 use App\Services\ReadingAiClient;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -17,9 +18,10 @@ use Illuminate\View\View;
  * building. The one thing a finished session reports to the server is a `game_plays` row (see finish()), which exists only
  * so the ten Games badges can be earned.
  *
- * Every game is a reading game: the child reads something out loud and the same speech checker that scores readings listens.
+ * Every game ends with the child reading something out loud, and the same speech checker that scores readings listens.
  * Balloon Pop is one word, Word Train a row of words (or letters, for a child still on the letters step), Sentence Stars a
- * sentence. They were three different things before (Word Builder spelled with taps, Letter Match matched cards); the team
+ * sentence, and Syllable Steps a longer word taught in parts and then read inside a sentence (website only for now). The first
+ * three were three different things before (Word Builder spelled with taps, Letter Match matched cards); the team
  * decided Practice Games should only ever be reading.
  *
  * The rules (the three levels of each game, what a game offers, whether something read aloud was heard, how a finished game is
@@ -33,12 +35,14 @@ use Illuminate\View\View;
  */
 class GameController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, PracticeGameService $games): View
     {
         $learner = $request->user('learner');
 
         return view('learner.games.index', [
             'recommendedGame' => $learner->recommendedGameFocus(),
+            // Syllable Steps has no word level for a child still on the Letters step, so its card is not shown to them.
+            'showSyllableSteps' => $games->syllableStartLevel($learner) !== null,
         ]);
     }
 
@@ -75,6 +79,29 @@ class GameController extends Controller
         return view('learner.games.sentence-stars', [
             'levels' => $games->sentenceLevels($learner),
             'startLevel' => $games->startLevel($learner),
+        ]);
+    }
+
+    /**
+     * Syllable Steps: the syllable method (config/syllable_method.php) as a game. A longer word is heard in its parts, tapped once for
+     * each part, joined by tapping the parts in order, and then read inside a sentence: only that last step uses the microphone and
+     * only the sentence is checked, because the parts are not words (see SyllableMethod). Free play like the other games.
+     *
+     * Not offered to a child still on the Letters step (no word level yet): they are sent back to the Games page, never shown an error.
+     */
+    public function syllableSteps(Request $request, PracticeGameService $games): View|RedirectResponse
+    {
+        $learner = $request->user('learner');
+        $startLevel = $games->syllableStartLevel($learner);
+
+        if ($startLevel === null) {
+            return redirect()->route('learner.games.index');
+        }
+
+        return view('learner.games.syllable-steps', [
+            'levels' => $games->syllableLevels($learner),
+            'startLevel' => $startLevel,
+            'repeat' => (int) config('syllable_method.repeat', 4),
         ]);
     }
 

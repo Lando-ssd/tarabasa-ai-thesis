@@ -239,7 +239,9 @@ class ClassLevelTest extends TestCase
 
     public function test_the_teaching_notes_name_codes_that_exist_in_the_reading_check(): void
     {
-        $known = collect(config('diagnostic.ladder'))->flatMap(fn ($r) => array_keys($r['codes']))->unique()->all();
+        // The codes the first check uses, and the two the syllable method cites (RL1PA-I-2 and RL1PWS-I-5, read in the Grade 1 guide).
+        $known = collect(config('diagnostic.ladder'))->flatMap(fn ($r) => array_keys($r['codes']))
+            ->merge(collect(config('syllable_method.codes'))->pluck('code'))->unique()->all();
         preg_match_all('/\b(?:RL|EN)\d[A-Z]{2,4}-[IVX]+-\d+\b/', json_encode(config('teaching_path.rungs')), $found);
 
         $this->assertNotEmpty($found[0]);

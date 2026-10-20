@@ -68,7 +68,7 @@ class PracticeGamesVoiceTest extends TestCase
             ->assertSee('Balloon Pop')->assertSee('A balloon shows a word. Say the word out loud to pop it!')
             ->assertSee('Word Train')->assertSee('Read the words on the train cars out loud')
             ->assertSee('Sentence Stars')->assertSee('Read a sentence out loud to catch a star.')
-            ->assertSee('Every game is reading out loud')
+            ->assertSee('Every game ends with you reading out loud')
             ->assertSee('what you read in a game is not graded')
             ->assertSee(route('learner.games.balloon-pop'), false)
             ->assertSee(route('learner.games.word-train'), false)

@@ -130,6 +130,7 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         Route::get('/games/balloon-pop', [GameController::class, 'balloonPop'])->name('games.balloon-pop');
         Route::get('/games/word-train', [GameController::class, 'wordTrain'])->name('games.word-train');
         Route::get('/games/sentence-stars', [GameController::class, 'sentenceStars'])->name('games.sentence-stars');
+        Route::get('/games/syllable-steps', [GameController::class, 'syllableSteps'])->name('games.syllable-steps');
         // The two games they replaced (spelling and card matching were not reading): an old link or bookmark lands on the Games page.
         Route::redirect('/games/word-builder', '/learner/games');
         Route::redirect('/games/letter-match', '/learner/games');

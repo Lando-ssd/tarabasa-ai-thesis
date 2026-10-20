@@ -31,7 +31,10 @@ class GenerationBasis
     public const MIN_SHARED = 2;
 
     /** The most the note may take of the generator's 1000 character notes field, leaving room for the Teacher's own words. */
-    private const NOTE_LIMIT = 420;
+    private const NOTE_LIMIT = 560;
+
+    /** The activity types that are lists of words, where the syllable method's two-syllable words fit. */
+    private const SYLLABLE_TYPES = ['word_reading', 'phonics_reading'];
 
     /**
      * @return array{
@@ -64,6 +67,16 @@ class GenerationBasis
         $withReadings = $profiles->filter(fn ($p) => $p['readings'] > 0)->count();
         $base['withReadings'] = $withReadings;
 
+        // Mistake kinds that several different children repeat: how many children have each as their main pattern.
+        $kinds = [];
+        foreach ($profiles as $profile) {
+            $key = ErrorPatterns::mainPattern($profile);
+            if ($key !== null) {
+                $kinds[$key] = ($kinds[$key] ?? 0) + 1;
+            }
+        }
+        arsort($kinds);
+
         $lines[] = $withReadings === 0
             ? "{$total} ".Str::plural('learner', $total).' in the class, none with a practice reading yet.'
             : "{$total} ".Str::plural('learner', $total).' in the class, '.$withReadings.' with practice readings so far.';
@@ -87,17 +100,21 @@ class GenerationBasis
             if ($suit !== null) {
                 $lines[] = $suit;
             }
-        }
 
-        // Mistake kinds that several different children repeat.
-        $kinds = [];
-        foreach ($profiles as $profile) {
-            $key = ErrorPatterns::mainPattern($profile);
-            if ($key !== null) {
-                $kinds[$key] = ($kinds[$key] ?? 0) + 1;
+            // The syllable method (config/syllable_method.php): for word lists at a step that has a word level, or when several
+            // children read longer words in pieces, the writer is asked for two-syllable words that split cleanly.
+            $sharesSyllables = ($kinds['syllables'] ?? 0) >= self::MIN_SHARED;
+            $syllableNote = SyllableMethod::writerNote($median);
+            if ($syllableNote !== null && ($sharesSyllables || in_array($activityType, self::SYLLABLE_TYPES, true))) {
+                $level = SyllableMethod::levelForRung($median);
+                $shape = config("syllable_method.levels.{$level}.pattern");
+                $first = SyllableMethod::words($level)[0];
+                $lines[] = "Syllable method (RL1PA-I-2, RL1PWS-I-5): word lists use two-syllable words that split cleanly ({$shape}), for example {$first['word']} ({$first['parts'][0]}-{$first['parts'][1]}). The learner hears and repeats each part, splits the word, joins it, then reads it in a sentence.";
+                $note[] = $syllableNote;
             }
         }
-        arsort($kinds);
+
+        // Mistake kinds that several different children repeat (counted above, with the step).
         foreach (array_slice(array_filter($kinds, fn ($n) => $n >= self::MIN_SHARED), 0, 2, true) as $key => $count) {
             $category = ErrorPatterns::CATEGORIES[$key];
             $lines[] = "{$count} learners {$category['teacher']}.";
@@ -139,9 +156,29 @@ class GenerationBasis
         // Only the step, the mistakes, the words and the topics are worth sending. A class where none of them was found
         // would send nothing the generator does not already know, so the request goes out as a plain one.
         $base['enough'] = $note !== [];
-        $base['note'] = $note === [] ? null : Str::limit('From this class\'s real readings: '.implode(' ', $note), self::NOTE_LIMIT, '');
+        $base['note'] = $note === [] ? null : self::fitNote('From this class\'s real readings:', $note);
 
         return $base;
+    }
+
+    /**
+     * The note for the generator: the lead-in, then as many of the sentences as fit in NOTE_LIMIT, in the order of importance. A
+     * sentence that does not fit is left out whole (a later, shorter one may still fit), never cut off in the middle of a word.
+     *
+     * @param  list<string>  $sentences
+     */
+    private static function fitNote(string $lead, array $sentences): string
+    {
+        $out = $lead;
+
+        foreach ($sentences as $sentence) {
+            if (strlen($out) + 1 + strlen($sentence) <= self::NOTE_LIMIT) {
+                $out .= ' '.$sentence;
+            }
+        }
+
+        // Even the first sentence did not fit: send it trimmed rather than send nothing.
+        return $out === $lead ? Str::limit($lead.' '.$sentences[0], self::NOTE_LIMIT, '') : $out;
     }
 
     /**

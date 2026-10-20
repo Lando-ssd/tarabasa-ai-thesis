@@ -58,6 +58,7 @@ class LearnerProfile
 
         $readiness = ReadingLevel::readiness($learner);
         $band = $checkDone ? ReadingLevel::band($learner) : null;
+        $profile = ErrorPatterns::forLearner($learner);
 
         $startsAt = null;
         $startRung = null;
@@ -94,7 +95,8 @@ class LearnerProfile
             'mismatch' => $mismatch,
             'bestFit' => self::bestFit($learner, $readiness),
             'teach' => self::teach($learner, $readiness),
-            'pattern' => self::pattern($learner),
+            'pattern' => self::pattern($learner, $profile),
+            'syllables' => self::syllables($readiness, ErrorPatterns::mainPattern($profile) === 'syllables'),
             'progress' => $checkDone || $learner->reading_rung !== null ? app(ReadingProgression::class)->progress($learner) : null,
         ];
     }
@@ -106,9 +108,8 @@ class LearnerProfile
      *
      * @return null|array{says:string, tip:string, code:string, codeText:string, early:bool, examples:list<string>, readings:int}
      */
-    private static function pattern(Learner $learner): ?array
+    private static function pattern(Learner $learner, array $profile): ?array
     {
-        $profile = ErrorPatterns::forLearner($learner);
         $main = ErrorPatterns::mainPattern($profile);
 
         if ($main === null) {
@@ -125,6 +126,41 @@ class LearnerProfile
             'early' => $profile['early'],
             'examples' => $profile['top'][0]['examples'] ?? [],
             'readings' => $profile['readings'],
+        ];
+    }
+
+    /**
+     * The syllable routine for the child's step (config/syllable_method.php): the word level that suits the step, the four steps
+     * with one real word, and the words to use. Null for a child on the Letters step, who has not met words yet and only claps the
+     * parts of spoken words (a teaching move on that step). `suggested` is true when the child's readings show they read longer
+     * words in pieces, which is the pattern this routine is for.
+     *
+     * @param  null|array{rung:int, source:string, sourceText:string}  $readiness
+     * @return null|array{level:int, name:string, pattern:string, note:string, word:string, parts:string, routine:list<array{step:int,name:string,text:string,scored:bool}>, words:list<string>, suggested:bool, codes:array, basis:string}
+     */
+    private static function syllables(?array $readiness, bool $suggested): ?array
+    {
+        $level = SyllableMethod::levelForRung($readiness['rung'] ?? null);
+        if ($level === null) {
+            return null;
+        }
+
+        $def = config("syllable_method.levels.{$level}");
+        $words = SyllableMethod::words($level);
+        $first = collect($words)->firstWhere('starter', true) ?? $words[0];
+
+        return [
+            'level' => $level,
+            'name' => $def['name'],
+            'pattern' => $def['pattern'],
+            'note' => $def['note'],
+            'word' => $first['word'],
+            'parts' => SyllableMethod::segmented($first['parts']),
+            'routine' => SyllableMethod::routine($first),
+            'words' => array_map(fn (array $w) => $w['word'].' ('.SyllableMethod::segmented($w['parts']).')', array_slice($words, 0, 8)),
+            'suggested' => $suggested,
+            'codes' => config('syllable_method.codes'),
+            'basis' => 'MATATAG Grade 1 Reading and Literacy guide: explicit and systematic instruction, and the Gradual Release of Responsibility (the teacher says it, then together, then the child alone). Closed syllables come first in English because open syllables change (ba-by, ba-nana); that order is the team\'s choice, as no study was found that proves it. A child on the Words step or higher can play these four steps as the game Syllable Steps on the Games page (website).',
         ];
     }
 

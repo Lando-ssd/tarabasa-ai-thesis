@@ -51,6 +51,13 @@ class ErrorPatterns
             'tip' => 'Point to the last letters of each word while reading, and read a few words with the same ending together.',
             'code' => 'EN2PWS-II-2', 'codeText' => 'Read words accurately and automatically according to word patterns (initial, final, medial).',
         ],
+        'syllables' => [
+            'label' => 'Longer words in pieces',
+            'teacher' => 'reads a longer word in pieces, or only part of it (sunset read as sun, set)',
+            'parent' => 'reads longer words in pieces',
+            'tip' => 'Clap the parts of the word, say each part a few times, then slide them together: sun, set, sunset. Then read the word in a sentence.',
+            'code' => 'RL1PWS-I-5', 'codeText' => 'Sound out words accurately. (The splitting step is RL1PA-I-2: segment a two-three syllable word into its syllabic parts.)',
+        ],
         'vowels' => [
             'label' => 'Vowel sounds',
             'teacher' => 'mixes up the vowel in the middle of a word (hat read as hit)',
@@ -127,6 +134,11 @@ class ErrorPatterns
             return 'other';
         }
 
+        // The child read a longer word in two pieces that the recognizer wrote as two words (marked by markPieces).
+        if (! empty($entry['in_pieces'])) {
+            return 'syllables';
+        }
+
         // Read backwards (was as saw) or a look-alike letter swapped (bad as dad).
         if (strrev($reference) === $spoken || self::onlyLookAlikeDiffers($reference, $spoken)) {
             return 'look_alike';
@@ -135,6 +147,11 @@ class ErrorPatterns
         // The ending: the child's word is the text's word with an ending taken off, or one put on.
         if (self::endingDiffers($reference, $spoken)) {
             return 'endings';
+        }
+
+        // Only a PART of a longer word was read (sun for sunset, kit for kitten): the syllable method's pattern, not an ending.
+        if (SyllableMethod::isPartOf($reference, $spoken)) {
+            return 'syllables';
         }
 
         // Same consonants, different vowel (hat and hit).
@@ -180,7 +197,7 @@ class ErrorPatterns
         $misses = 0;
 
         foreach ($recent as $session) {
-            foreach ((array) ($session->word_feedback ?? []) as $entry) {
+            foreach (self::markPieces((array) ($session->word_feedback ?? [])) as $entry) {
                 $kind = self::classify((array) $entry);
                 if ($kind === null) {
                     continue;
@@ -230,6 +247,41 @@ class ErrorPatterns
     }
 
     /**
+     * Marks the entries where a longer word was read in two pieces. Reading-api lines the words up one against one, so a word
+     * said in two parts comes back as a substitution (the first part) with an extra word next to it (the second part). When the
+     * two joined are the word, or within two letters of it, the entry is marked `in_pieces` so classify() can call it by name.
+     * (A pair that joins exactly is already accepted as right by SpeechNormalizer and never reaches here as a mistake.)
+     *
+     * @param  array<int, mixed>  $entries
+     * @return array<int, mixed>
+     */
+    public static function markPieces(array $entries): array
+    {
+        $entries = array_values($entries);
+
+        foreach ($entries as $i => $entry) {
+            $entry = (array) $entry;
+            if (($entry['status'] ?? null) !== 'substitution' || ! empty($entry['unsure'])) {
+                continue;
+            }
+
+            foreach ([$i - 1, $i + 1] as $j) {
+                $next = (array) ($entries[$j] ?? []);
+                if (($next['status'] ?? null) !== 'insertion' || empty($next['spoken'])) {
+                    continue;
+                }
+                if (SyllableMethod::readInPieces((string) ($entry['reference'] ?? ''), (string) ($entry['spoken'] ?? ''), (string) $next['spoken'])) {
+                    $entry['in_pieces'] = true;
+                    $entries[$i] = $entry;
+                    break;
+                }
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
      * One child's profile over their last eight scored practice readings, the same way every screen
      * works it out (the first-check readings are left out: a placement item is not ongoing practice).
      */
@@ -272,6 +324,7 @@ class ErrorPatterns
             'small_words' => count(array_filter($words, fn ($w) => in_array($w, config('reading_words.high_frequency', []), true))) / count($words),
             'endings' => count(array_filter($words, fn ($w) => preg_match('/(s|ed|ing|es|ly)$/', $w) === 1 && strlen($w) > 3)) / count($words),
             'blends' => count(array_filter($words, fn ($w) => self::hasBlend($w))) / count($words),
+            'syllables' => count(array_filter($words, fn ($w) => SyllableMethod::looksMultiSyllable($w))) / count($words),
             default => 0.0,
         };
 
@@ -305,7 +358,7 @@ class ErrorPatterns
 
     /**
      * Whether one word shows the spelling feature a pattern is about (a blend, an ending, a small
-     * everyday word). The other patterns (a middle sound, a first sound) have no spelling feature to
+     * everyday word, a word of more than one syllable). The other patterns (a middle sound, a first sound) have no spelling feature to
      * look for, so no word is singled out for them: the child's own missed words carry those.
      */
     public static function practisesPattern(string $word, ?string $pattern): bool
@@ -314,6 +367,7 @@ class ErrorPatterns
             'blends' => self::hasBlend($word),
             'endings' => preg_match('/(s|ed|ing|es)$/', $word) === 1 && strlen($word) > 3,
             'small_words' => in_array($word, config('reading_words.high_frequency', []), true),
+            'syllables' => SyllableMethod::looksMultiSyllable($word),
             default => false,
         };
     }

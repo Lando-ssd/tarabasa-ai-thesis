@@ -101,7 +101,7 @@ class GenerationBasisTest extends TestCase
         // The note for the generator comes from the same facts and leaves room for the teacher's own words.
         $this->assertStringContainsString('Short sentences step', $basis['note']);
         $this->assertStringContainsString('dogs, cats', $basis['note']);
-        $this->assertLessThanOrEqual(420, strlen($basis['note']));
+        $this->assertLessThanOrEqual(560, strlen($basis['note']));
     }
 
     public function test_one_childs_habit_is_not_called_the_classs(): void
