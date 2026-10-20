@@ -659,3 +659,8 @@ table.rep{ width:100%; border-collapse:collapse; font-size:13.5px; } table.rep t
 .codecheck.ok{ color:#137a63; background:var(--green-bg); border-color:#bfe6da; font-weight:600; }
 .codecheck.bad{ color:#9c2c2c; background:#fdeeee; border-color:#f3c7c7; }
 .codecheck [data-check-again]{ margin-left:auto; }
+
+/* Analytics: "Did the class activities help?" rows. */
+.oc-row{ padding:12px 0 4px; border-top:2px solid var(--line); } .oc-row:first-of-type{ border-top:0; padding-top:4px; }
+.oc-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+.oc-head{ margin:0 0 4px; font-weight:600; } .oc-row .note{ margin:0 0 6px; }

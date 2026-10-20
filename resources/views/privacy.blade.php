@@ -41,7 +41,7 @@
 <main class="page" role="main">
   <div class="brand">TaraBasa<span>AI</span></div>
   <h1>Privacy</h1>
-  <p class="updated">Last updated 17 October 2026</p>
+  <p class="updated">Last updated 20 October 2026</p>
 
   <p class="lead">TaraBasa AI is a reading practice website and phone app for Grade 1 to 3 learners. It was built by a student team as a capstone project. This page says what it keeps, why, and who can see it.</p>
 
@@ -79,7 +79,7 @@
   <ul>
     <li><b>Reading scoring service:</b> receives the recording and the words of the activity, and returns the scores.</li>
     <li><b>Activity recommendation service:</b> receives scores and a number for the child, not the child's name.</li>
-    <li><b>AI activity writer:</b> receives only what a teacher types (grade, skill, topic and notes). It receives no child information.</li>
+    <li><b>AI activity writer:</b> receives what a teacher types (grade, skill, topic and notes). When a teacher picks "For a class", it also receives a short summary of that class made from its readings: the reading step most children are on, the kinds of mistake several of them make, words several of them missed, and topics their parents said they like. It never receives a name, a learner code or any one child's details.</li>
     <li><b>Gmail:</b> sends account emails from the TaraBasa AI mailbox.</li>
     <li><b>Google sign in:</b> optional, for adults. We receive the name and email address of the Google account.</li>
     <li><b>Google Fonts:</b> shows our text in the right typeface. Google can see a visitor's internet address when a page loads.</li>

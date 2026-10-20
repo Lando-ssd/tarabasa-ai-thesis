@@ -114,6 +114,7 @@ class TeacherMoreApiController extends Controller
             'checked' => $o['checked'],
             'missedWords' => $o['missedWords'],
             'patterns' => $o['patterns'],
+            'outcomes' => $o['outcomes']->values(),
             'assignments' => $o['assignments']->map(fn (array $r) => ['title' => $r['activity']->title, 'for' => $r['for'], 'total' => $r['total'], 'done' => $r['done'], 'average' => $r['avg']])->values(),
         ]);
     }

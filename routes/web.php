@@ -29,6 +29,8 @@ Route::get('/', function () {
 
 // The privacy page: public, plain words, and the address Google asks for to publish the Gmail sender.
 Route::view('/privacy', 'privacy')->name('privacy');
+// How TaraBasa decides: every rule the app uses about a child, a class or an activity, with its numbers and sources (public).
+Route::get('/how-it-works', [\App\Http\Controllers\HowItWorksController::class, 'show'])->name('how-it-works');
 
 Route::get('/register/teacher', [AuthController::class, 'showTeacherRegister'])->name('register.teacher');
 Route::post('/register/teacher', [AuthController::class, 'storeTeacher'])->name('register.teacher.submit');

@@ -180,6 +180,8 @@ class GenerationBasisTest extends TestCase
         $activity = Activity::latest('id')->first();
         $this->assertSame('Use animals.', $activity->teacher_notes);
         $this->assertSame('Sampaguita', $activity->generation_basis['className']);
+        // The class id is kept too, so "Did it work?" can tell two classes with the same name apart.
+        $this->assertSame($class->id, $activity->generation_basis['classId']);
         $this->assertNotEmpty($activity->generation_basis['lines']);
 
         $this->get(route('teacher.activities.window', $activity))
