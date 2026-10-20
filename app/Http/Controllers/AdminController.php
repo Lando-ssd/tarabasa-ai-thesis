@@ -7,6 +7,7 @@ use App\Models\AdminAction;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Services\DataErasureService;
+use App\Services\GradeChangeService;
 use App\Services\ServiceCheck;
 use App\Support\AdminHealth;
 use App\Support\EmailAddress;
@@ -68,6 +69,16 @@ class AdminController extends Controller
             ];
         }
 
+        $gradeRequests = GradeChangeService::pendingCount();
+
+        if ($gradeRequests > 0) {
+            $needs[] = [
+                'tone' => 'blue', 'icon' => 'users-three', 'href' => route('admin.approvals', ['tab' => 'grades']),
+                'title' => $gradeRequests.' grade '.($gradeRequests === 1 ? 'request' : 'requests').' waiting',
+                'text' => 'An approved teacher asked to handle another grade. Check with the school, then approve or decline.',
+            ];
+        }
+
         if ($mail && $mail['state'] === 'problem') {
             $needs[] = [
                 'tone' => 'red', 'icon' => 'envelope-simple', 'href' => route('admin.health'),
@@ -109,20 +120,51 @@ class AdminController extends Controller
         ]);
     }
 
-    /** Approvals: teachers waiting for the school check, and the ones already rejected (who can be reopened). */
+    /**
+     * Approvals: teachers waiting for the school check, the ones already rejected (who can be reopened), and approved teachers who asked
+     * to handle another grade (the Admin confirms it with the school, as at sign up).
+     */
     public function approvals(Request $request): View
     {
-        $tab = $request->query('tab') === 'rejected' ? 'rejected' : 'waiting';
-        $status = $tab === 'rejected' ? 'Rejected' : 'Pending';
+        $tab = in_array($request->query('tab'), ['rejected', 'grades'], true) ? $request->query('tab') : 'waiting';
+
+        $teachers = match ($tab) {
+            'grades' => GradeChangeService::pending(),
+            'rejected' => Teacher::with('user')->where('status', 'Rejected')->orderBy('id')->limit(100)->get(),
+            default => Teacher::with('user')->where('status', 'Pending')->orderBy('id')->limit(100)->get(),
+        };
 
         return view('admin.approvals', [
             'tab' => $tab,
-            'teachers' => Teacher::with('user')->where('status', $status)->orderBy('id')->limit(100)->get(),
+            'teachers' => $teachers,
             'waitingCount' => Teacher::where('status', 'Pending')->count(),
             'rejectedCount' => Teacher::where('status', 'Rejected')->count(),
+            'gradeCount' => GradeChangeService::pendingCount(),
             'reasons' => self::REJECT_REASONS,
+            'gradeReasons' => GradeChangeService::DECLINE_REASONS,
             'confirmReasons' => self::CONFIRM_REASONS,
         ]);
+    }
+
+    /** Confirm the grades an approved teacher asked to add: from now on they can open classes for them. */
+    public function approveGrades(Request $request, Teacher $teacher, GradeChangeService $grades): RedirectResponse
+    {
+        return redirect()->route('admin.approvals', ['tab' => 'grades'])->with('status', $grades->approve($request->user(), $teacher));
+    }
+
+    /** Decline it, with a reason the teacher is told. Their grades stay as they were. */
+    public function declineGrades(Request $request, Teacher $teacher, GradeChangeService $grades): RedirectResponse
+    {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'in:'.implode(',', GradeChangeService::DECLINE_REASONS)],
+            'note' => [($request->input('reason') === 'Other' ? 'required' : 'nullable'), 'string', 'max:140'],
+        ], [
+            'reason.required' => 'Pick a reason. The teacher will see it.',
+            'reason.in' => 'Pick one of the listed reasons.',
+            'note.required' => 'Add a short note when the reason is "Other".',
+        ]);
+
+        return redirect()->route('admin.approvals', ['tab' => 'grades'])->with('status', $grades->decline($request->user(), $teacher, $data['reason'], $data['note'] ?? null));
     }
 
     /** Accounts: every teacher and parent, one search, one filter, a page at a time. */

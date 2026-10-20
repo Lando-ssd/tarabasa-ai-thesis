@@ -156,6 +156,21 @@ class TeacherApiController extends Controller
         return response()->json(['ok' => true, 'learner' => TeacherRoster::learner($result['learner'], $tags)], 201);
     }
 
+    /**
+     * Can this code be added to this class? Asked as the code is typed, so the Add button stays off with the reason in words until it can.
+     * Never the child's name when the answer is yes; nothing is changed.
+     */
+    public function checkLearner(Request $request, SchoolClass $class): JsonResponse
+    {
+        $this->mine($request, $class, writing: true);
+
+        $validated = $request->validate(['learner_code' => ['required', 'string', 'max:30']]);
+
+        $class->loadMissing('learners');
+
+        return response()->json($this->classes->check($request->user()->teacher, $class, $validated['learner_code']));
+    }
+
     /** One learner's page: what the parent shared, where the child reads now, and what suits them (the website's learner window). */
     public function showLearner(Request $request, SchoolClass $class, Learner $learner): JsonResponse
     {

@@ -5,7 +5,7 @@
   only: a teacher who handles Grade 1 and Grade 2 opens a Grade 1 class and a Grade 2 class, never one mixed
   class. The server enforces it, this form only makes it easy.
 
-  Variables: $selected (array of "Grade N"), optional $idp (id prefix, default "gr").
+  Variables: $selected (array of "Grade N"), optional $idp (id prefix, default "gr"), optional $context ("signup" or "profile", default "profile": only changes the sentence under the boxes).
 --}}
 @php
     $idp = $idp ?? 'gr';
@@ -34,7 +34,7 @@
       </label>
     @endforeach
   </div>
-  <p class="gr-hint">Class creation will offer only these grades, and each class holds one grade only: a Grade 1 class is only for Grade 1 learners, Grade 2 for Grade 2, Grade 3 for Grade 3. You can change the grades later in Profile.</p>
+  <p class="gr-hint">Class creation will offer only these grades, and each class holds one grade only: a Grade 1 class is only for Grade 1 learners, Grade 2 for Grade 2, Grade 3 for Grade 3. @if (($context ?? 'profile') === 'signup')The Admin checks these grades with your school when approving your account. Adding a grade later is checked the same way.@else Taking a grade away applies at once. Adding a grade is checked by the Admin with your school.@endif</p>
   @error('grades_handled') <span class="field-error">{{ $message }}</span> @enderror
   @error('grades_mode') <span class="field-error">{{ $message }}</span> @enderror
 </div>

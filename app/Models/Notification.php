@@ -29,6 +29,11 @@ class Notification extends Model
 
     public const TYPE_LEARNER_REMOVED = 'Learner Removed';
 
+    /** The Admin's answer to a teacher who asked to handle another grade (told to that teacher only). */
+    public const TYPE_GRADES_APPROVED = 'Grades Approved';
+
+    public const TYPE_GRADES_DECLINED = 'Grades Declined';
+
     protected $fillable = [
         'recipient_user_id',
         'learner_id',

@@ -652,3 +652,10 @@ table.rep{ width:100%; border-collapse:collapse; font-size:13.5px; } table.rep t
 .erase-check input{ flex:none; width:22px; height:22px; margin-top:1px; accent-color:var(--danger); }
 .erase-check:has(input:checked){ border-color:#f0b3b3; background:var(--danger-bg); }
 .erase-check:focus-within{ outline:3px solid var(--orange); outline-offset:2px; }
+
+/* Add learner: what the code check says, under the box (the Add button stays off until it says yes). */
+.codecheck{ margin:10px 0 0; padding:10px 13px; border-radius:12px; border:1.5px solid var(--line); background:#f3f7fb; color:var(--muted); font-size:14px; line-height:1.45; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.codecheck.wait{ color:#0f5fae; background:#eef6ff; border-color:#cfe3f8; }
+.codecheck.ok{ color:#137a63; background:var(--green-bg); border-color:#bfe6da; font-weight:600; }
+.codecheck.bad{ color:#9c2c2c; background:#fdeeee; border-color:#f3c7c7; }
+.codecheck [data-check-again]{ margin-left:auto; }

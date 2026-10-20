@@ -49,6 +49,7 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
         Route::put('/profile', [ProfileApiController::class, 'update'])->name('profile.update');
         Route::put('/profile/password', [ProfileApiController::class, 'password'])->middleware('throttle:10,1')->name('profile.password');
         Route::put('/profile/grades', [ProfileApiController::class, 'grades'])->name('profile.grades');
+        Route::post('/profile/grades/cancel', [ProfileApiController::class, 'cancelGrades'])->name('profile.grades.cancel');
         // Deleting their own account: what it would do (shown first), then the deletion itself (password again).
         Route::get('/account/erase-info', [ProfileApiController::class, 'eraseInfo'])->name('account.erase-info');
         Route::post('/profile/delete', [ProfileApiController::class, 'destroy'])->middleware('throttle:10,1,erase-account')->name('profile.delete');
@@ -95,6 +96,7 @@ Route::middleware(['auth:sanctum', 'token.actor:teacher'])->prefix('teacher')->n
         Route::post('/classes', [TeacherApiController::class, 'storeClass'])->name('classes.store');
         Route::put('/classes/{class}', [TeacherApiController::class, 'updateClass'])->whereNumber('class')->name('classes.update');
         Route::post('/classes/{class}/learners', [TeacherApiController::class, 'joinLearner'])->whereNumber('class')->middleware('throttle:60,1')->name('classes.learners.join');
+        Route::post('/classes/{class}/learners/check', [TeacherApiController::class, 'checkLearner'])->whereNumber('class')->middleware('throttle:120,1,check-learner')->name('classes.learners.check');
         Route::post('/classes/{class}/learners/{learner}/move', [TeacherApiController::class, 'moveLearner'])->whereNumber(['class', 'learner'])->name('classes.learners.move');
     });
 });

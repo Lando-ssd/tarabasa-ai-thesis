@@ -275,7 +275,7 @@
 
           <div class="or"><span>or type the code</span></div>
 
-          <form id="add-form-{{ $c->id }}" method="POST" action="{{ route('teacher.classes.join-learner', $c) }}" data-busy="Adding">
+          <form id="add-form-{{ $c->id }}" method="POST" action="{{ route('teacher.classes.join-learner', $c) }}" data-busy="Adding" data-check-url="{{ route('teacher.classes.check-learner', $c) }}">
             @csrf
             <input type="hidden" name="form" value="class"><input type="hidden" name="target_class_id" value="{{ $c->id }}"><input type="hidden" name="view" value="add">
             <p class="note" style="margin:0 0 14px">Ask the parent for the Learner Code, like TB26-48293. Type only the last 5 characters (48293). Pasting the whole code works too. A learner can only be in one class at a time.</p>
@@ -285,12 +285,14 @@
             <div class="field">
               <label for="code-{{ $c->id }}">Learner Code</label>
               <div class="codebox"><span class="pre">TB..-</span><input type="text" id="code-{{ $c->id }}" name="learner_code" data-af placeholder="48293" maxlength="10" autocomplete="off" spellcheck="false" value="{{ $isTarget && old('view') === 'add' ? old('learner_code') : '' }}"></div>
-              @if ($isTarget && old('view') === 'add') @error('learner_code')<span class="field-error">{{ $message }}</span>@enderror @endif
+              {{-- What the server says about this code, as it is typed. The Add button stays off until it says yes; only Cancel works. --}}
+              <div class="codecheck" id="check-note-{{ $c->id }}" data-check-note role="status" aria-live="polite"><span data-check-text>Type the last 5 characters of the Learner Code. Add turns on when the code can be added to this class.</span><button type="button" class="btn ghost small" data-check-again hidden>Check again</button></div>
+              @if ($isTarget && old('view') === 'add') @error('learner_code')<span class="field-error" data-server-error>{{ $message }}</span>@enderror @endif
             </div>
           </form>
         </div>
         <footer class="win-foot">
-          <button type="submit" form="add-form-{{ $c->id }}" class="btn small">Add to class</button>
+          <button type="submit" form="add-form-{{ $c->id }}" class="btn small" data-add-btn aria-describedby="check-note-{{ $c->id }}" disabled>Add to class</button>
           <button type="button" class="btn ghost small" data-goto="learners">Cancel</button>
         </footer>
       </section>

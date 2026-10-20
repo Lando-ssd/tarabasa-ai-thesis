@@ -199,14 +199,15 @@ export function Busy({ text, style }: { text?: string; style?: StyleProp<ViewSty
   );
 }
 
-export function Notice({ text, tone = 'error' }: { text: string; tone?: 'error' | 'info' }) {
+export function Notice({ text, tone = 'error' }: { text: string; tone?: 'error' | 'info' | 'good' }) {
   const bad = tone === 'error';
+  const good = tone === 'good';
   return (
     <View
       accessibilityRole="alert"
-      style={[st.notice, { backgroundColor: bad ? colors.badSoft : colors.sky, borderColor: bad ? '#f3c9c9' : colors.sky2 }]}
+      style={[st.notice, { backgroundColor: bad ? colors.badSoft : good ? colors.mint : colors.sky, borderColor: bad ? '#f3c9c9' : good ? '#bfe6da' : colors.sky2 }]}
     >
-      <Icon name={bad ? 'warning-circle' : 'info'} size={s(22)} color={bad ? colors.bad : colors.blueDark} />
+      <Icon name={bad ? 'warning-circle' : good ? 'check-circle' : 'info'} size={s(22)} color={bad ? colors.bad : good ? colors.ok : colors.blueDark} />
       <Text maxFontSizeMultiplier={FONT_CAP} style={[st.noticeText, { color: bad ? colors.bad : colors.ink }]}>
         {text}
       </Text>

@@ -229,9 +229,16 @@ class ClassGradeAndMovesTest extends TestCase
         $this->assertStringContainsString('You no longer handle Grade 2', session('errors')->first('learner_code'));
         $this->assertNull($kid->fresh()->class_id);
 
-        // Going the other way (one grade to several) just adds options: classes stay one grade each.
-        $this->put(route('profile.grades.update'), ['grades_mode' => 'multi', 'grades_handled' => ['Grade 1', 'Grade 2']])
-            ->assertSessionHas('status', fn ($m) => str_contains($m, 'Each class still holds one grade only') && ! str_contains($m, 'cannot take new learners'));
+        // Going the other way (one grade to several) is a request the Admin confirms with the school: nothing changes for the teacher until then.
+        $this->put(route('profile.grades.update'), ['grades_mode' => 'multi', 'grades_handled' => ['Grade 1', 'Grade 2'], 'grades_request_note' => 'Mrs. Cruz, the school head, gave me Grade 2.'])
+            ->assertSessionHas('status', fn ($m) => str_contains($m, 'Sent to the Admin'));
+        $this->from('/x')->post(route('teacher.classes.join-learner', $g2), ['learner_code' => $kid->learner_code])->assertSessionHasErrors('learner_code');
+        $this->assertNull($kid->fresh()->class_id);
+
+        // Once the Admin approves, the old Grade 2 class takes learners again. Classes stay one grade each.
+        $admin = User::create(['first_name' => 'Ada', 'last_name' => 'Admin', 'email' => 'ada-cg@example.com', 'password' => 'a-private-and-long-one-9', 'user_type' => 'Admin']);
+        app(\App\Services\GradeChangeService::class)->approve($admin, $t->fresh());
+        $this->actingAs(User::find($user->id));
         $this->post(route('teacher.classes.join-learner', $g2), ['learner_code' => $kid->learner_code])->assertRedirect();
         $this->assertSame($g2->id, $kid->fresh()->class_id);
     }

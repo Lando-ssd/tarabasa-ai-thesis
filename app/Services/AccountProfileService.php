@@ -65,19 +65,54 @@ class AccountProfileService
         $user->update(['password' => Hash::make($validated['password'])]);
     }
 
+    /** The rules for the "which grades do you handle" form: the grades, and (needed only when adding one) how the school can confirm it. */
+    public function gradesRules(): array
+    {
+        return Teacher::gradeRules() + ['grades_request_note' => ['nullable', 'string', 'max:300']];
+    }
+
+    /** The shortest note that can tell the Admin who at the school can confirm a grade (a name and a role). */
+    public const GRADE_NOTE_MIN = 8;
+
     /**
      * Which grades a Teacher handles (one grade, or several, with a separate class for each). Class creation offers only these. Existing
      * classes are never touched by a change here, and a class is still only for its own grade.
      *
-     * @param  array<string, mixed>  $validated  already checked with Teacher::gradeRules()
-     * @return string the message to show, with a warning for a class of a grade no longer handled
+     * Who decides depends on the direction. TAKING a grade away, or keeping the same ones, only ever narrows what the teacher can do, so
+     * it applies at once. ADDING a grade gives the teacher a new set of classes and learners, which the school (the school head assigns who
+     * teaches which grade) has to have agreed to, so an approved teacher's request waits for the Admin (GradeChangeService) and the grades
+     * they may open classes for do not change until it is approved. A teacher who is not approved yet is checked as a whole at approval,
+     * grades included, so for them it applies at once.
+     *
+     * @param  array<string, mixed>  $validated  already checked with gradesRules()
+     * @return string the message to show
+     *
+     * @throws ValidationException when a grade is being added and no note says how the school can confirm it
      */
     public function updateGrades(Teacher $teacher, array $validated): string
     {
         $grades = Teacher::gradesFromValidated($validated);
-        $teacher->update(['grades_handled' => $grades]);
+        $current = $teacher->gradesAllowed();
+        $added = array_values(array_diff($grades, $current));
 
-        $message = 'Grades updated. New classes will offer: '.implode(', ', $grades).'. Each class still holds one grade only.';
+        if ($teacher->status === 'Active' && $added !== []) {
+            $note = trim((string) ($validated['grades_request_note'] ?? ''));
+
+            if (mb_strlen($note) < self::GRADE_NOTE_MIN) {
+                throw ValidationException::withMessages(['grades_request_note' => 'Tell the Admin who at your school can confirm it, for example "Mrs. Cruz, the school head, gave me Grade 2 this year".']);
+            }
+
+            $teacher->update(['grades_requested' => $grades, 'grades_requested_at' => now(), 'grades_request_note' => mb_substr($note, 0, 300)]);
+
+            return 'Sent to the Admin: you asked to add '.implode(' and ', $added).'. The Admin checks it with your school before you can open a class for it. Until then you can open classes for '.implode(', ', $current).' only.';
+        }
+
+        // Narrowing, or the same grades: nothing new to confirm. Any request that was open is replaced by this choice.
+        $teacher->update(['grades_handled' => $grades, 'grades_requested' => null, 'grades_requested_at' => null, 'grades_request_note' => null]);
+
+        $message = $teacher->status === 'Active'
+            ? 'Grades updated. New classes will offer: '.implode(', ', $grades).'. Each class still holds one grade only.'
+            : 'Grades saved: '.implode(', ', $grades).'. The Admin checks them with your school when approving your account.';
 
         // Classes of a grade the teacher no longer handles stay as they are, but cannot take new learners.
         $left = SchoolClass::where('teacher_id', $teacher->id)
@@ -91,5 +126,17 @@ class AccountProfileService
         }
 
         return $message;
+    }
+
+    /** The teacher takes back their own open request for more grades. Their grades stay exactly as they were. */
+    public function cancelGradeRequest(Teacher $teacher): string
+    {
+        if ($teacher->gradesPending() === []) {
+            return 'There was no request waiting.';
+        }
+
+        $teacher->update(['grades_requested' => null, 'grades_requested_at' => null, 'grades_request_note' => null]);
+
+        return 'Request cancelled. You still handle '.implode(', ', $teacher->gradesAllowed()).'.';
     }
 }

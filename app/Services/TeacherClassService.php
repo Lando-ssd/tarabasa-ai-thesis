@@ -105,51 +105,17 @@ class TeacherClassService
      * child's name. A learner already in a class cannot be joined elsewhere, and the class's grade and general reading level
      * must fit (ClassLevel::joinRefusal). The child's guardians are told, so a child is never added without them knowing.
      *
-     * @return array{ok: true, learner: Learner}|array{ok: false, message: string}
+     * @return array{ok: true, learner: Learner}|array{ok: false, message: string, reason: string}
      */
     public function join(User $user, Teacher $teacher, SchoolClass $class, string $typed): array
     {
-        $joinKey = 'join-learner|teacher:'.$teacher->id;
+        $found = $this->resolve($teacher, $class, $typed);
 
-        if (RateLimiter::tooManyAttempts($joinKey, 10)) {
-            $minutes = (int) ceil(RateLimiter::availableIn($joinKey) / 60);
-
-            return ['ok' => false, 'message' => "Too many codes that did not match. Please wait {$minutes} ".($minutes === 1 ? 'minute' : 'minutes').' and try again.'];
+        if (! $found['ok']) {
+            return $found;
         }
 
-        $typed = trim($typed);
-        $tail = strtoupper(preg_replace('/^TB[0-9]{0,2}-?/i', '', preg_replace('/\s+/', '', $typed)));
-
-        if (! LearnerCode::looksLikeCode($typed) && ! preg_match('/^[A-Z0-9]{5}$/', $tail)) {
-            return ['ok' => false, 'message' => 'Type the last 5 characters of the Learner Code, like 48293.'];
-        }
-
-        $matches = LearnerCode::matching(LearnerCode::looksLikeCode($typed) ? $typed : $tail);
-
-        if ($matches->count() > 1) {
-            return ['ok' => false, 'message' => 'More than one learner ends in those characters. Type the whole code, like TB26-48293.'];
-        }
-
-        $learner = $matches->first();
-
-        if (! $learner) {
-            RateLimiter::hit($joinKey, 900);
-
-            return ['ok' => false, 'message' => 'No learner found with that code. Check it and try again.'];
-        }
-
-        if ($learner->class_id !== null) {
-            RateLimiter::hit($joinKey, 900);
-
-            return ['ok' => false, 'message' => 'This learner is already enrolled in a class.'];
-        }
-
-        // A class holds one grade, and is taught at one general level: a learner of another grade, or one who already
-        // reads well above the class, cannot be added (typed or scanned, the same answer).
-        if ($refusal = ClassLevel::joinRefusal($teacher, $class->loadMissing('learners'), $learner)) {
-            return ['ok' => false, 'message' => $refusal];
-        }
-
+        $learner = $found['learner'];
         $learner->update(['class_id' => $class->id]);
 
         Notification::notifyForLearner(
@@ -158,6 +124,83 @@ class TeacherClassService
             "{$learner->first_name} was added to the class \"{$class->name}\" by {$user->first_name} {$user->last_name}".($teacher->school_name ? " ({$teacher->school_name})" : '').'.',
             includeTeacher: false
         );
+
+        return ['ok' => true, 'learner' => $learner];
+    }
+
+    /**
+     * The same answer join() would give, without adding anyone: the window and the phone app ask this as the code is typed, so
+     * the Add button stays off (with the reason in words) until the code can really be added. It never says who the learner is when
+     * the answer is yes, and every refusal counts toward a limit, so it cannot be used to look children up by guessing codes.
+     * join() asks again itself, so nothing depends on this having been called.
+     *
+     * @return array{ok:bool, message:string, reason?:string}
+     */
+    public function check(Teacher $teacher, SchoolClass $class, string $typed): array
+    {
+        $found = $this->resolve($teacher, $class, $typed);
+
+        if (! $found['ok']) {
+            return ['ok' => false, 'message' => $found['message'], 'reason' => $found['reason']];
+        }
+
+        return ['ok' => true, 'message' => "This code can be added to {$class->name}. Press Add to class."];
+    }
+
+    /**
+     * Everything that decides whether a typed or scanned code can be added to this class. The shared body of join() and check().
+     *
+     * @return array{ok:true, learner:Learner}|array{ok:false, message:string, reason:string}
+     */
+    private function resolve(Teacher $teacher, SchoolClass $class, string $typed): array
+    {
+        $joinKey = 'join-learner|teacher:'.$teacher->id;
+        // Refusals that name a child (wrong grade, too high a level, already in a class) count too, so a teacher cannot walk through
+        // codes and read children's first names out of the refusals. A real teacher meets one of these now and then, never twenty.
+        $refusedKey = 'join-refused|teacher:'.$teacher->id;
+
+        foreach ([[$joinKey, 10, 'that did not match'], [$refusedKey, 20, 'that could not be added']] as [$key, $max, $what]) {
+            if (RateLimiter::tooManyAttempts($key, $max)) {
+                $minutes = (int) ceil(RateLimiter::availableIn($key) / 60);
+
+                return ['ok' => false, 'reason' => 'limit', 'message' => "Too many codes {$what}. Please wait {$minutes} ".($minutes === 1 ? 'minute' : 'minutes').' and try again.'];
+            }
+        }
+
+        $typed = trim($typed);
+        $tail = strtoupper(preg_replace('/^TB[0-9]{0,2}-?/i', '', preg_replace('/\s+/', '', $typed)));
+
+        if (! LearnerCode::looksLikeCode($typed) && ! preg_match('/^[A-Z0-9]{5}$/', $tail)) {
+            return ['ok' => false, 'reason' => 'format', 'message' => 'Type the last 5 characters of the Learner Code, like 48293.'];
+        }
+
+        $matches = LearnerCode::matching(LearnerCode::looksLikeCode($typed) ? $typed : $tail);
+
+        if ($matches->count() > 1) {
+            return ['ok' => false, 'reason' => 'ambiguous', 'message' => 'More than one learner ends in those characters. Type the whole code, like TB26-48293.'];
+        }
+
+        $learner = $matches->first();
+
+        if (! $learner) {
+            RateLimiter::hit($joinKey, 900);
+
+            return ['ok' => false, 'reason' => 'unknown', 'message' => 'No learner found with that code. Check it and try again.'];
+        }
+
+        if ($learner->class_id !== null) {
+            RateLimiter::hit($joinKey, 900);
+
+            return ['ok' => false, 'reason' => 'enrolled', 'message' => 'This learner is already enrolled in a class.'];
+        }
+
+        // A class holds one grade, and is taught at one general level: a learner of another grade, or one who already
+        // reads well above the class, cannot be added (typed or scanned, the same answer).
+        if ($refusal = ClassLevel::joinRefusal($teacher, $class, $learner)) {
+            RateLimiter::hit($refusedKey, 3600);
+
+            return ['ok' => false, 'reason' => $class->acceptsGrade($learner->grade_level) ? 'level' : 'grade', 'message' => $refusal];
+        }
 
         return ['ok' => true, 'learner' => $learner];
     }

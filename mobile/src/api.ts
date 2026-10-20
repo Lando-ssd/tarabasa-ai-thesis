@@ -324,7 +324,17 @@ export type Account = {
   email: string;
   contactNumber: string | null;
   /** Only for a Teacher. status is Pending until the Admin approves the school details. */
-  teacher?: { status: 'Pending' | 'Active' | 'Rejected' | string | null; schoolName: string | null; grades: string[]; freeCredits: number };
+  teacher?: {
+    status: 'Pending' | 'Active' | 'Rejected' | string | null;
+    schoolName: string | null;
+    /** The grades they may open classes for (the Admin has confirmed them). */
+    grades: string[];
+    /** Asked for more grades and waiting for the Admin: the grades asked for, the part that is new, and the note about who at the school can confirm. */
+    gradesPending?: { grades: string[]; added: string[]; note: string | null; requestedAt: string | null } | null;
+    /** The Admin's latest answer about grades (kept 30 days), so it can be shown after the fact. */
+    gradesDecision?: { approved: boolean; message: string; at: string | null } | null;
+    freeCredits: number;
+  };
 };
 
 export type AccountLogin = { token: string; account: Account };
@@ -490,6 +500,21 @@ export async function joinLearner(classId: number, code: string): Promise<JoinRe
     if (e instanceof ApiError && e.status === 422 && typeof (e.body as { message?: unknown } | null)?.message === 'string') {
       return { ok: false, message: e.message };
     }
+    throw e;
+  }
+}
+
+export type CodeCheck = { ok: boolean; message: string; reason?: string };
+
+/**
+ * Asked as the last 5 characters are typed: can this code be added to this class? The server answers yes or no with the reason in words
+ * (one grade per class, the class's reading level, already in a class...) and never names the child when it is yes. Nothing is changed.
+ */
+export async function checkLearnerCode(classId: number, code: string): Promise<CodeCheck> {
+  try {
+    return await request<CodeCheck>(`/api/teacher/classes/${classId}/learners/check`, json({ learner_code: code }));
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 429) return { ok: false, message: 'Too many checks in a short time. Wait a minute, then type the code again.', reason: 'limit' };
     throw e;
   }
 }
@@ -906,7 +931,9 @@ export const eraseInfo = () => request<{ lines: string[]; blocked: string | null
 /** Deletes the signed in Teacher's or Parent's own account (password again). Every sign in goes with it. */
 export const deleteAccount = (password: string) => request<{ message: string }>('/api/auth/profile/delete', json({ password }));
 
-export const updateGrades = (body: { grades_mode: 'single' | 'multi'; grades_handled: string[] }) => request<{ message: string; account: Account }>('/api/auth/profile/grades', put(body));
+export const updateGrades = (body: { grades_mode: 'single' | 'multi'; grades_handled: string[]; grades_request_note?: string }) => request<{ message: string; account: Account }>('/api/auth/profile/grades', put(body));
+/** A Teacher takes back their own open request for more grades. */
+export const cancelGradeRequest = () => request<{ message: string; account: Account }>('/api/auth/profile/grades/cancel', json({}));
 
 /** Why a sign in was refused (invalid_credentials, too_many_attempts, email_not_confirmed, admin_web_only...) and, for an unconfirmed email, which address. */
 export function accountRefusal(e: unknown): { reason: string | null; email: string | null } {

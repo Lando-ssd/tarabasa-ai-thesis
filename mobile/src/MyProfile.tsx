@@ -119,10 +119,17 @@ function Details({ account, onAccount }: { account: api.Account; onAccount: (a: 
 
 function Grades({ account, onAccount }: { account: api.Account; onAccount: (a: api.Account) => void }) {
   const current = account.teacher?.grades ?? [];
-  const [mode, setMode] = useState<'single' | 'multi'>(current.length > 1 ? 'multi' : 'single');
-  const [grades, setGrades] = useState<string[]>(current);
+  const pending = account.teacher?.gradesPending ?? null;
+  const decision = account.teacher?.gradesDecision ?? null;
+  const start = pending?.grades ?? current;
+  const [mode, setMode] = useState<'single' | 'multi'>(start.length > 1 ? 'multi' : 'single');
+  const [grades, setGrades] = useState<string[]>(start);
+  const [note, setNote] = useState(pending?.note ?? '');
   const [local, setLocal] = useState<string | null>(null);
   const sv = useSaver();
+
+  // Adding a grade is checked by the Admin with the school, so the note is asked for only then. Taking one away applies at once.
+  const adding = grades.some((g) => !current.includes(g));
 
   const toggle = (g: string) => {
     setLocal(null);
@@ -137,12 +144,26 @@ function Grades({ account, onAccount }: { account: api.Account; onAccount: (a: a
   const save = () => {
     if (mode === 'single' && grades.length !== 1) return setLocal('Pick the one grade you handle.');
     if (mode === 'multi' && grades.length < 2) return setLocal('Tick at least two grades, or choose One grade.');
-    sv.run(() => api.updateGrades({ grades_mode: mode, grades_handled: grades }), (r) => onAccount(r.account));
+    sv.run(() => api.updateGrades({ grades_mode: mode, grades_handled: grades, grades_request_note: adding ? note.trim() : undefined }), (r) => onAccount(r.account));
   };
+
+  const cancel = () => sv.run(() => api.cancelGradeRequest(), (r) => onAccount(r.account));
 
   return (
     <Panel style={{ gap: space[10] }}>
       <H2>Grades you handle</H2>
+      <Small>Handled now: {current.join(', ') || 'none yet'}</Small>
+
+      {pending ? (
+        <>
+          <Notice tone="info" text={`Waiting for the Admin. You asked to handle ${pending.grades.join(' and ')}. The Admin checks it with your school first. Until it is approved you can open classes for ${current.join(', ')} only.`} />
+          {pending.note ? <Small>Your note: {pending.note}</Small> : null}
+          <Btn label="Cancel this request" tone="ghost" compact onPress={cancel} loading={sv.busy} />
+        </>
+      ) : decision ? (
+        <Notice tone={decision.approved ? 'good' : 'info'} text={decision.message} />
+      ) : null}
+
       <Segmented
         options={[
           { key: 'single', label: 'One grade' },
@@ -153,9 +174,25 @@ function Grades({ account, onAccount }: { account: api.Account; onAccount: (a: a
       />
       <Chips label="Grades you handle" options={GRADES} picked={grades} onToggle={toggle} />
       {local || sv.errors.grades_handled ? <Small style={{ color: colors.bad }}>{local ?? sv.errors.grades_handled}</Small> : <Small>Every class holds one grade only. With more than one grade you make a separate class for each.</Small>}
+
+      {adding ? (
+        <Field
+          label="Who at your school can confirm this?"
+          value={note}
+          onChangeText={setNote}
+          lines={3}
+          maxLength={300}
+          placeholder="For example: Mrs. Cruz, the school head, gave me Grade 2 this school year."
+          error={sv.errors.grades_request_note}
+          hint="Adding a grade is checked by the Admin with your school, because the school head assigns who teaches which grade."
+        />
+      ) : (
+        <Small>Taking a grade away applies at once. Adding a grade is checked by the Admin with your school.</Small>
+      )}
+
       {sv.message ? <Notice tone="info" text={sv.message} /> : null}
       {sv.problem ? <Notice text={sv.problem} /> : null}
-      <Btn label="Save grades" onPress={save} loading={sv.busy} />
+      <Btn label={adding ? (pending ? 'Send a different request' : 'Ask the Admin') : 'Save grades'} onPress={save} loading={sv.busy} />
     </Panel>
   );
 }
