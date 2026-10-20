@@ -280,13 +280,13 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - **File:** `D:/tools/apk-out/TaraBasa-AI-0.5.4-test14.apk` (42.2 MiB, arm64 only, versionCode 14, SHA-256 `5a3e2bffb2ac1dedf6e536d495f7c564e81edaf7cb5529e5ffc2ad5f22232f38`, signed with the debug key,
   fine for tests, built in 9.5 minutes from `D:\tb`). It is 0.5.3 plus the fourth Practice Game, **Syllable Steps** (`src/SyllableSteps.tsx`, the card in `Games.tsx`): the syllable method as a game, with the same rules and
   screen order as the website (four steps: tap each part and hear Tara say it four times, clap once for each part, tap the parts in order so the tiles glide together, then read a sentence with the word in it; only the sentence
-  uses the microphone). Tara says every instruction out loud and the next thing to tap glows; a speaker button says it again. Source: branch `mobile-app`, commit `b381aad`.
+  uses the microphone). Tara says every instruction out loud and the next thing to tap glows; a speaker button says it again. Source: branch `mobile-app`, commit `b381aad` (pushed, and merged into the live branch).
   The tester pack is `D:/tools/apk-out/TaraBasa-0.5.4-tester-pack.zip` (25.4 MB: the APK, its checksum, START-HERE and the two checklists; the Learner checklist's step 10 has the Syllable Steps steps). **Send this one.**
 - **Checked inside the file:** versionCode 14 / versionName 0.5.4, arm64 only, zip readable (1570 entries), the bundle holds the live address and the new strings ("Syllable Steps", `api/learner/games/syllables`,
   `syllables=1`, "Hear Tara say it again"). The only "localhost" in the bundle is inside a library string, not an address the app calls.
-- **IMPORTANT, the game only shows once the server has it.** The card appears only when the server's Games answer says `syllableSteps: true`. The live server does NOT have the phone API part yet (commits after `bed37ce` are local on
-  `mobile-app`): until `mobile-app` is merged into the live branch, 0.5.4 behaves exactly like 0.5.3 (the card is hidden), which is deliberate so the build cannot break. After the merge, a child on a word step or higher sees the card.
-  A child still on the Letters step never sees it. (The website version is already live since `bed37ce`.)
+- **The server part is LIVE (2026-10-20 night, merge `65a4b02`; checked: `GET /api/learner/games/syllables` and `GET /api/learner/games?syllables=1` answer 401, not 404, when not signed in).** The card appears only when the
+  server's Games answer says `syllableSteps: true`, so a child on a word step or higher sees it with 0.5.4; a child still on the Letters step never does. An older build (0.5.3 and before) does not ask with `?syllables=1`, so it is never
+  told to lead with a game it does not have. The website version has been live since `bed37ce`.
 - **Tested:** in the browser preview with sample data and real presses (the hub card, all four steps, the out of order hint, three words, the climb to Level 2, three rounds to "All done"); step 4 was played with "I read it!"
   because the preview has no microphone. `tsc --noEmit` clean. Server tests: `SyllableStepsGameTest` (22).
 - **Not proven:** a real phone, the real microphone in step 4, Tara's real phone voice saying parts such as "bas" and "ket", the glow ring and tile glide on a real screen, a small phone (360 by 640).
