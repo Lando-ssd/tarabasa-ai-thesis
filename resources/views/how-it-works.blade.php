@@ -261,7 +261,7 @@
       <li>The word list ({{ $syllable['wordCount'] }} words) and the sentences were written by the team and checked with synthesized voices only. A Grade 1 and a Grade 2 teacher should review them.</li>
       <li>Closed syllables first is common practice in structured literacy programmes. No study was found that proves the order has to be this way, so it is the team's choice.</li>
       <li>A recognizer cannot tell a child who pauses between parts from a child it simply hears as two words, so reading in pieces is only reported when the pieces do not join into the word, and it is a hint for the teacher, not a score.</li>
-      <li>Syllable Steps has been played in a browser and with synthesized voices, not by a real child yet. The browser's own voice may say a part such as bas or ket a little oddly. It is on the website first; the phone app does not have it yet.</li>
+      <li>Syllable Steps has been played in a browser and with synthesized voices, not by a real child yet. The browser's own voice may say a part such as bas or ket a little oddly. It reached the website first. The phone app has it from the test version 0.5.4, which has not been tried on a real phone yet.</li>
       <li>{{ $syllable['data'] }}</li>
     </ul>
   </div>

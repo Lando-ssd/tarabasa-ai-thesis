@@ -17,18 +17,41 @@ use Illuminate\Http\Request;
  */
 class LearnerGamesApiController extends Controller
 {
-    /** What the Games screen needs: which game leads (and why) and the level a game starts at. */
+    /**
+     * What the Games screen needs: which game leads (and why), the level a game starts at, and whether Syllable Steps is offered.
+     *
+     * A phone build that has Syllable Steps asks for it with `?syllables=1`. An older build never does, so it is never told to lead with
+     * a game it does not have (and the extra field is ignored by it).
+     */
     public function index(Request $request, PracticeGameService $games): JsonResponse
     {
         $learner = $request->user();
-        // Without Syllable Steps: the phone app does not have that game yet (it is on the website first), so it is never told to lead with it.
-        $pick = $learner->recommendedGameFocus(false);
+        $pick = $learner->recommendedGameFocus($request->boolean('syllables'));
 
         return response()->json([
-            // 'balloon-pop', 'word-train' or 'sentence-stars' when the child's own reading says one would help most. Never a gate.
+            // 'balloon-pop', 'word-train', 'sentence-stars' (or 'syllable-steps' for a build that asked for it) when the child's own reading says one would help most. Never a gate.
             'recommended' => $pick['game'] ?? null,
             'reason' => $pick['reason'] ?? null,
             'startLevel' => $games->startLevel($learner),
+            // False for a child still on the Letters step: they have no word level yet, so the card is not shown.
+            'syllableSteps' => $games->syllableStartLevel($learner) !== null,
+        ]);
+    }
+
+    /**
+     * Syllable Steps: the method's words at each level, with their parts and the sentence read at the end (see
+     * PracticeGameService::syllableLevels). Not for a child still on the Letters step, who has no word level (404, never shown a card).
+     */
+    public function syllables(Request $request, PracticeGameService $games): JsonResponse
+    {
+        $learner = $request->user();
+        $startLevel = $games->syllableStartLevel($learner);
+        abort_if($startLevel === null, 404);
+
+        return response()->json([
+            'startLevel' => $startLevel,
+            'repeat' => (int) config('syllable_method.repeat', 4),
+            'levels' => $games->syllableLevels($learner),
         ]);
     }
 
