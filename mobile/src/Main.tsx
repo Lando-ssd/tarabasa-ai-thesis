@@ -10,6 +10,7 @@ import { ReadList } from './ReadList';
 import { Reread } from './Reread';
 import { Results } from './Results';
 import { SentenceStars } from './SentenceStars';
+import { SyllableSteps } from './SyllableSteps';
 import { WordTrain } from './WordTrain';
 import { useSession } from './session';
 import { Shelf } from './Shelf';
@@ -112,6 +113,8 @@ export function Main() {
       screen = <WordTrain onExit={back} />;
     } else if (gamesRoute.name === 'play' && gamesRoute.game === 'sentence-stars') {
       screen = <SentenceStars onExit={back} />;
+    } else if (gamesRoute.name === 'play' && gamesRoute.game === 'syllable-steps') {
+      screen = <SyllableSteps onExit={back} />;
     } else if (gamesRoute.name === 'play') {
       screen = <BalloonPop onExit={back} />;
     } else {

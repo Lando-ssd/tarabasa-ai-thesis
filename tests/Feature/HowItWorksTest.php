@@ -129,7 +129,7 @@ class HowItWorksTest extends TestCase
         $this->assertStringContainsString('Hirsh-Pasek and others (2015)', $html);
         // Honest about how far it has been tried, and where it is.
         $this->assertStringContainsString('not by a real child yet', $html);
-        $this->assertStringContainsString('the phone app does not have it yet', $html);
+        $this->assertStringContainsString('has not been tried on a real phone yet', $html);
         // The Ehri source says what it is about and what it is not.
         $this->assertStringContainsString('It does not set the order of letters, words, sentences and stories', $html);
     }

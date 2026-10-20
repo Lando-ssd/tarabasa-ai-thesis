@@ -149,10 +149,12 @@ export type RereadOutcome =
 export type GamesInfo = {
   /** A game the child's own reading says would help most, or null. Never a gate: every game is always playable. */
   recommended: GameName | null;
-  /** Why: 'letters', 'own-words', 'first-words' or 'sentences'. */
-  reason: 'letters' | 'own-words' | 'first-words' | 'sentences' | null;
+  /** Why: 'letters', 'own-words', 'first-words', 'sentences' or 'long-words'. */
+  reason: 'letters' | 'own-words' | 'first-words' | 'sentences' | 'long-words' | null;
   /** The level a game starts at, 1 to 3, from the child's step on the reading path. */
   startLevel: number;
+  /** False for a child still on the Letters step (no word level yet): the Syllable Steps card is not shown to them. Missing on an older server. */
+  syllableSteps?: boolean;
 };
 
 /** The words a game can use at each level (the child's own missed words first, then ones that practise their kind of mistake, then the level's list). */
@@ -177,8 +179,18 @@ export type SentenceLevels = {
   levels: Record<string, { preferred: string[]; fallback: string[] }>;
 };
 
-/** Every game is a read-aloud game. */
-export type GameName = 'balloon-pop' | 'word-train' | 'sentence-stars';
+/** Syllable Steps: a longer word with its parts and the sentence read at the end. */
+export type SyllableWord = { word: string; parts: string[]; sentence: string };
+/** `own` are words the child has missed, `level` the level's own words, `review` easier levels' words for when the level's run out. */
+export type SyllableLevels = {
+  startLevel: number;
+  /** How many times each part is said in the drill. */
+  repeat: number;
+  levels: Record<string, { own: SyllableWord[]; level: SyllableWord[]; review: SyllableWord[] }>;
+};
+
+/** Every game ends with the child reading something out loud. */
+export type GameName = 'balloon-pop' | 'word-train' | 'sentence-stars' | 'syllable-steps';
 
 /** What a finished game tells the server, so the Games badges can be earned. */
 export type GameFinishBody = { level_reached: number; top_level_cleared: boolean; had_perfect_round: boolean; rounds: number };
@@ -1014,7 +1026,12 @@ export function rereadBook(id: number, uri: string) {
 }
 
 export function games() {
-  return request<GamesInfo>('/api/learner/games');
+  // `syllables=1` says this build has Syllable Steps, so the server may point the child to it.
+  return request<GamesInfo>('/api/learner/games?syllables=1');
+}
+
+export function gameSyllables() {
+  return request<SyllableLevels>('/api/learner/games/syllables');
 }
 
 export function gameWords() {

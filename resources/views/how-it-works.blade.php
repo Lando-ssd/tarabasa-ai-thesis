@@ -121,7 +121,7 @@
     <span class="k">The rule</span>
     <p>Teachers and parents see the Department of Education's Phil-IRI words. For one reading of a passage: <span class="num">Independent</span> is 97 percent or more, <span class="num">Instructional</span> is 90 to 96 percent, and <span class="num">Frustration</span> is under 90 percent. A <span class="num">Non-reader</span> is a child whose first check did not get past letters. A child never sees these words: a child sees four friendly steps, Letter Explorer, Word Builder, Sentence Reader and Story Reader.</p>
     <span class="k">Where it comes from</span>
-    <p>DepEd Order No. 14, s. 2018 (Phil-IRI). The app's own moving up and down rule (section 2) is separate from these bands, and the two are shown side by side, never claimed to be the same thing.</p>
+    <p>DepEd Order No. 14, s. 2018 (Phil-IRI). The three bands were confirmed on DepEd schools' own reports that cite the order; the order itself was not opened. One source says the 2018 manual is written for Grades 3 to 6, so using the bands for a single passage read by a Grade 1 or Grade 2 child is the team's own extension. The app's own moving up and down rule (section 2) is separate from these bands, and the two are shown side by side, never claimed to be the same thing.</p>
   </div>
 
   <h2 id="scoring">4. How a reading is scored</h2>
@@ -261,7 +261,7 @@
       <li>The word list ({{ $syllable['wordCount'] }} words) and the sentences were written by the team and checked with synthesized voices only. A Grade 1 and a Grade 2 teacher should review them.</li>
       <li>Closed syllables first is common practice in structured literacy programmes. No study was found that proves the order has to be this way, so it is the team's choice.</li>
       <li>A recognizer cannot tell a child who pauses between parts from a child it simply hears as two words, so reading in pieces is only reported when the pieces do not join into the word, and it is a hint for the teacher, not a score.</li>
-      <li>Syllable Steps has been played in a browser and with synthesized voices, not by a real child yet. The browser's own voice may say a part such as bas or ket a little oddly. It is on the website first; the phone app does not have it yet.</li>
+      <li>Syllable Steps has been played in a browser and with synthesized voices, not by a real child yet. The browser's own voice may say a part such as bas or ket a little oddly. It reached the website first. The phone app has it from the test version 0.5.4, which has not been tried on a real phone yet.</li>
       <li>{{ $syllable['data'] }}</li>
     </ul>
   </div>
@@ -296,7 +296,7 @@
     <li>DepEd Order No. 14, s. 2018: Philippine Informal Reading Inventory (Phil-IRI), the reading level names and accuracy bands.</li>
     <li>DepEd Order No. 10, s. 2024: the MATATAG Curriculum, written grade by grade, with the competency codes used in the checks, activities and patterns.</li>
     <li>DepEd Memorandum No. 173, s. 2019: Hamon, Bawat Bata Bumabasa (every learner a reader at their grade level), and its six elements of reading.</li>
-    <li>National Reading Panel (2000): Teaching Children to Read, on repeated oral reading and fluency.</li>
+    <li>National Reading Panel (2000): Teaching Children to Read (NICHD). Its findings pages say that systematic phonics instruction helps children from kindergarten to Grade 6, and that guided repeated oral reading improves word recognition, fluency and comprehension. The full report was not read.</li>
     <li>Ehri (2005): the phases children go through in learning to read words, from knowing letter sounds, to sounding a word out, to reading it by sight. It is behind the idea that letter knowledge and sounding out come before fluent reading. It does not set the order of letters, words, sentences and stories, which is the team's own use of the curriculum.</li>
     <li>Pearson and Gallagher (1983): gradual release of responsibility, behind the teaching notes shown to teachers.</li>
     <li>Republic Act No. 10173, the Data Privacy Act of 2012, behind the privacy and deletion rules.</li>

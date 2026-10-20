@@ -9,7 +9,7 @@ export type GameKey = api.GameName;
 
 type Card = { key: GameKey; title: string; text: string; chips: string[]; icon: string; bg: string; fg: string; isNew?: boolean };
 
-// The same three games and the same words as the website's Games page. Every game is a read-aloud game.
+// The same four games and the same words as the website's Games page. Every game ends with the child reading out loud.
 const CARDS: Card[] = [
   {
     key: 'balloon-pop',
@@ -40,6 +40,16 @@ const CARDS: Card[] = [
     fg: colors.ok,
     isNew: true,
   },
+  {
+    key: 'syllable-steps',
+    title: 'Syllable Steps',
+    text: 'Clap the parts of a longer word, tap them together, then read it in a sentence.',
+    chips: ['Listen', 'Clap and read aloud', '3 levels'],
+    icon: 'stairs',
+    bg: colors.purpleSoft,
+    fg: colors.purple,
+    isNew: true,
+  },
 ];
 
 const TIPS: Record<string, string> = {
@@ -47,6 +57,7 @@ const TIPS: Record<string, string> = {
   'own-words': 'You have some words that are still tricky. Balloon Pop uses your own tricky words!',
   'first-words': 'You are reading your first words. Word Train is a great place to practise them!',
   sentences: 'You are reading sentences. Try Sentence Stars!',
+  'long-words': 'Longer words are easier in parts. Syllable Steps cuts them up, then puts them back together!',
 };
 
 /**
@@ -97,7 +108,8 @@ export function Games({ onPlay }: { onPlay: (game: GameKey) => void }) {
       ) : null}
 
       <View style={{ gap: space[14], marginTop: space[14] }}>
-        {CARDS.map((card) => (
+        {/* Syllable Steps has no word level for a child still on the Letters step, so its card is not shown to them (or on an older server). */}
+        {CARDS.filter((card) => card.key !== 'syllable-steps' || info?.syllableSteps === true).map((card) => (
           <View key={card.key} style={[styles.card, { backgroundColor: card.bg }]}>
             <View style={styles.head}>
               <View style={styles.iconTile}>
@@ -134,7 +146,7 @@ export function Games({ onPlay }: { onPlay: (game: GameKey) => void }) {
         ))}
       </View>
 
-      <Small style={{ marginTop: space[14] }}>Every game is reading out loud. What you read comes first from the words you missed in your readings, then from the list for your reading step.</Small>
+      <Small style={{ marginTop: space[14] }}>Every game ends with you reading out loud. What you read comes first from the words you missed in your readings, then from the list for your reading step.</Small>
       <Small style={{ marginTop: space[6] }}>Games are practice. They never change your points, your streak or your level, and what you read in a game is not graded.</Small>
     </Screen>
   );

@@ -14,6 +14,7 @@ import type {
   LearnerPayload,
   ReadingOutcome,
   SentenceLevels,
+  SyllableLevels,
   TrainLevels,
   WordLevels,
   WordResult,
@@ -127,7 +128,7 @@ const books: Book[] = [
   { id: 14, title: 'The Big Rain', wordCount: 38, timesRead: 2, lastRead: '2026-10-08T08:00:00Z' },
 ];
 
-const gamesInfo: GamesInfo = { recommended: 'word-train', reason: 'first-words', startLevel: 1 };
+const gamesInfo: GamesInfo = { recommended: 'word-train', reason: 'first-words', startLevel: 1, syllableSteps: true };
 
 const pool = (struggling: string[], fallback: string[]) => ({ struggling, favoured: [], fallback });
 const wordLevels: WordLevels = {
@@ -147,6 +148,29 @@ const sentenceLevels: SentenceLevels = {
     '3': {
       preferred: [],
       fallback: ['The farmer feeds the chickens and the pigs.', 'We plant seeds in the garden and water them every day.', 'The rain stopped, and a bright rainbow came out.'],
+    },
+  },
+};
+
+const sw = (word: string, parts: string[], sentence: string) => ({ word, parts, sentence });
+const syllableLevels: SyllableLevels = {
+  startLevel: 1,
+  repeat: 4,
+  levels: {
+    '1': {
+      own: [],
+      level: [sw('sunset', ['sun', 'set'], 'We watch the sunset.'), sw('hotdog', ['hot', 'dog'], 'Dad cooks a hotdog.'), sw('basket', ['bas', 'ket'], 'The basket is big.'), sw('picnic', ['pic', 'nic'], 'We eat at a picnic.')],
+      review: [],
+    },
+    '2': {
+      own: [],
+      level: [sw('cupcake', ['cup', 'cake'], 'I like a cupcake.'), sw('pancake', ['pan', 'cake'], 'Mom makes a pancake.'), sw('bedtime', ['bed', 'time'], 'It is bedtime now.')],
+      review: [sw('sunset', ['sun', 'set'], 'We watch the sunset.')],
+    },
+    '3': {
+      own: [],
+      level: [sw('lemon', ['lem', 'on'], 'The lemon is sour.'), sw('cabin', ['cab', 'in'], 'We sleep in a cabin.'), sw('robin', ['rob', 'in'], 'A robin sat on the fence.')],
+      review: [sw('cupcake', ['cup', 'cake'], 'I like a cupcake.')],
     },
   },
 };
@@ -204,6 +228,7 @@ async function answer(path: string, init?: RequestInit): Promise<Response> {
   if (path === '/api/learner/games/words') return json(wordLevels);
   if (path === '/api/learner/games/train') return json(trainLevels);
   if (path === '/api/learner/games/sentences') return json(sentenceLevels);
+  if (path === '/api/learner/games/syllables') return json(syllableLevels);
   if (/^\/api\/learner\/games\/[a-z-]+\/finish$/.test(path) && method === 'POST') return json({ newBadges: [] });
   if (path === '/api/learner/games/check-word') return json({ status: 'heard' });
   if (path === '/api/learner/games/check-text') {

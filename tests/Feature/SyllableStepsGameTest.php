@@ -286,7 +286,7 @@ class SyllableStepsGameTest extends TestCase
 
     // ------------------------------------------------------------- the recommendation
 
-    public function test_a_child_who_reads_longer_words_in_pieces_is_pointed_to_it_on_the_website_only(): void
+    public function test_a_child_who_reads_longer_words_in_pieces_is_pointed_to_it(): void
     {
         $kid = $this->child(3);
         $this->piecesMistakes($kid);
@@ -294,11 +294,64 @@ class SyllableStepsGameTest extends TestCase
         $this->assertSame(['game' => 'syllable-steps', 'reason' => 'long-words'], $kid->recommendedGameFocus());
         $this->get(route('learner.games.index'))->assertOk()
             ->assertSee('Longer words are easier in parts. Syllable Steps cuts them up, then puts them back together!');
+    }
 
-        // The phone app does not have the game yet (website first), so it is never told to lead with it.
+    // ------------------------------------------------------------- the phone app's API
+
+    public function test_a_phone_build_that_does_not_ask_for_it_is_never_told_to_lead_with_the_game(): void
+    {
+        $kid = $this->child(3);
+        $this->piecesMistakes($kid);
+        $token = $kid->createToken('phone')->plainTextToken;
+
+        // An older build (0.5.3 and before) has no Syllable Steps: it does not ask, so the game never leads for it.
+        $old = $this->withToken($token)->getJson('/api/learner/games')->assertOk();
+        $this->assertNotSame('syllable-steps', $old->json('recommended'));
         $this->assertNotSame('syllable-steps', $kid->recommendedGameFocus(false)['game']);
-        $api = $this->withToken($kid->createToken('phone')->plainTextToken)->getJson('/api/learner/games')->assertOk();
-        $this->assertNotSame('syllable-steps', $api->json('recommended'));
+        // The extra field is there but an older build ignores it.
+        $this->assertTrue($old->json('syllableSteps'));
+
+        // A build that has the game asks with ?syllables=1 and is pointed to it, with the reason.
+        $new = $this->withToken($token)->getJson('/api/learner/games?syllables=1')->assertOk();
+        $this->assertSame('syllable-steps', $new->json('recommended'));
+        $this->assertSame('long-words', $new->json('reason'));
+    }
+
+    public function test_the_phone_gets_the_levels_the_drill_count_and_the_start_level(): void
+    {
+        $kid = $this->child(3);
+        PersonalWordBank::create(['learner_id' => $kid->id, 'word' => 'pancake', 'mastery_status' => 'Struggling']);
+
+        $res = $this->withToken($kid->createToken('phone')->plainTextToken)->getJson('/api/learner/games/syllables')->assertOk();
+
+        $this->assertSame(2, $res->json('startLevel'));
+        $this->assertSame((int) config('syllable_method.repeat'), $res->json('repeat'));
+        $this->assertSame(['1', '2', '3'], array_map('strval', array_keys($res->json('levels'))));
+        // The same data the website page gets: parts that join into the word, a sentence with the word in it, the child's own word first.
+        $this->assertSame('pancake', $res->json('levels.2.own.0.word'));
+        $this->assertSame(['pan', 'cake'], $res->json('levels.2.own.0.parts'));
+        $this->assertSame('Mom makes a pancake.', $res->json('levels.2.own.0.sentence'));
+        $this->assertNotEmpty($res->json('levels.3.review'));
+    }
+
+    public function test_a_child_on_letters_is_not_offered_it_on_the_phone_either(): void
+    {
+        $kid = $this->child(0, ['mastery_level' => 'Beginning']);
+        $token = $kid->createToken('phone')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/learner/games?syllables=1')->assertOk()->assertJson(['syllableSteps' => false]);
+        $this->withToken($token)->getJson('/api/learner/games/syllables')->assertNotFound();
+    }
+
+    public function test_a_phone_game_report_for_it_is_recorded_like_the_other_games(): void
+    {
+        $kid = $this->child(3);
+
+        $this->withToken($kid->createToken('phone')->plainTextToken)
+            ->postJson('/api/learner/games/syllable-steps/finish', ['level_reached' => 2, 'top_level_cleared' => false, 'had_perfect_round' => false, 'rounds' => 2])
+            ->assertOk()->assertJsonStructure(['newBadges']);
+
+        $this->assertSame(1, GamePlay::where('learner_id', $kid->id)->where('game', 'syllable-steps')->count());
     }
 
     public function test_a_child_with_no_such_pattern_is_pointed_where_they_were_before(): void
