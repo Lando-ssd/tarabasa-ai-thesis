@@ -263,6 +263,19 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
   answers 401 when not signed in), together with the move and school year routes, so every 0.5.2 feature works against the live server.
 - **Not proven:** a real phone, the Android keyboard with the password and PIN fields, the big PIN digits on a small screen.
 
+## Version 0.5.3 (2026-10-20): delete a child or account, the code check before Add, and grade requests
+- **File:** `D:/tools/apk-out/TaraBasa-AI-0.5.3-test13.apk` (42.2 MiB, arm64 only, versionCode 13, SHA-256 `5b76bbc9b76c6d9a105282a6e83cfd24fbc4c052e509f40a2872411fe1101b43`,
+  signed with the debug key, fine for tests). It is 0.5.2 plus: Parent "Remove" a child and "Delete my account" (Teacher and Parent), the Teacher's Add with a code that
+  checks the code as it is typed (red note and a grey button for a child of another grade, green when it can be added), and the Teacher's Grades panel (asking the Admin for
+  another grade, with a note, a waiting box with Cancel, and the Admin's answer). Source: branch `mobile-app`, commit `7eb0a86` (on top of `a200660`).
+  The tester pack is `D:/tools/apk-out/TaraBasa-0.5.3-tester-pack.zip` (the APK, its checksum, START-HERE, and the two checklists, updated for the new steps). **Send this one.**
+- **Checked inside the file:** versionCode 13 / versionName 0.5.3, zip intact, the bundle holds the live address and the new screens' strings, no localhost.
+- **Server side:** all the routes it calls are live on Render since the merge of 2026-10-20 (`5fa2915`): `POST /api/teacher/classes/{id}/learners/check`, the grade request routes,
+  and the delete routes. Checked: the check route answers 401 (not 404) when not signed in.
+- **Build note:** the first run of the build script stopped on a harmless line (Gradle prints "NODE_ENV environment variable is required" to stderr and PowerShell 5.1 with
+  `$ErrorActionPreference='Stop'` treats that as a failure). Gradle itself carried on and wrote the APK. Next time use `Continue` and check `$LASTEXITCODE`.
+- **Not proven:** a real phone, the Android keyboard with the grade note box, the camera.
+
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
    on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,

@@ -7239,6 +7239,10 @@ usable), and (2) a right logic for a teacher the school/head has given Grade 2 o
 - **Honest limits.** The Admin has no way to verify with the school inside the app (it is a human step; the note and the cards only tell them whom to call). A
   teacher already handling a grade whose approval was wrong cannot be corrected by the Admin from the app (no "remove a grade" for the Admin; the teacher can take
   their own grade away). The limits (20 refusals an hour, a note of 8+ characters) are the team's own numbers.
+- **Shipped and checked live (2026-10-20).** Merged into the live branch as `5fa2915` and deployed; on the live site the owner confirmed the red note and the grey Add for a
+  Grade 2 child in a Grade 1 class, and a grade change that waited for the Admin and took effect after approval. Gmail was reconnected the same day (the app is "In production" on
+  Google, a fresh `GMAIL_SEND_REFRESH_TOKEN` was set, a real verification email arrived) and the Admin password was set from Render's `ADMIN_PASSWORD` (tested). Still open:
+  `PRIVACY_CONTACT_EMAIL` (waiting for the team's `tarabasa.privacy@gmail.com`). Phone build 0.5.3 (versionCode 13, SHA-256 `5b76bbc9...1b43`) carries all of this; see `mobile/HANDOVER.md`.
 
 ## Before pushing this round (checklist for the next session)
 
