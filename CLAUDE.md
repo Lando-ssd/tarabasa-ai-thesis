@@ -7347,7 +7347,7 @@ that plays the syllable method's four steps for one longer word at a time. The f
   The phone app needs the screens and a new build.
 - **Sources corrected on the way:** Ehri (2005) is about how children move from letter sounds to sounding out to reading by sight, NOT about the order of letters, words, sentences and stories (fixed on `/how-it-works`, in `config/syllable_method.php` and in the basis doc); the Seymour line no longer claims it explains why closed syllables come first (that is the team's choice). Still not checked: the IDA claim about closed syllables, Dolch 1936, the National Reading Panel report itself, the Phil-IRI 97/90 bands, the Fisher and Frey year.
 
-## Practice game rules in one config, and the games and word bank on /how-it-works (2026-10-20 night, BUILT LOCALLY, NOT PUSHED)
+## Practice game rules in one config, and the games and word bank on /how-it-works (2026-10-20 night, PUSHED to mobile-app as `5a972b1` and MERGED INTO THE LIVE BRANCH as `7aa1aa2`; live /how-it-works shows section 12, 656 tests passed on the merged code)
 
 The owner said "continue whats next". The numbers every Practice Game shares were copied in several places (three web game pages, three phone files, a private constant and a `match` in
 `PracticeGameService`), and the public page "How TaraBasa decides" said nothing about the games or the word bank. Now:
