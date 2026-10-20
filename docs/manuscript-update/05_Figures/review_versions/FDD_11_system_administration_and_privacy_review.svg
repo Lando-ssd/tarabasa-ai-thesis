@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="756" viewBox="0 0 760 756" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="756" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Module 11: System Administration and Privacy</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">NEW in version 2. The Admin screens (approvals, accounts, system health, activity log, grade requests, deletion) are a module of</text>
+<text x="24" y="65" font-size="12" fill="#5B6675">their own.</text>
+<polyline points="380.0,190.0 380.0,236.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,311.0 238.0,311.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,351.0 238.0,351.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,391.0 238.0,391.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,431.0 238.0,431.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,471.0 238.0,471.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,511.0 238.0,511.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,551.0 238.0,551.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,591.0 238.0,591.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,631.0 238.0,631.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,671.0 238.0,671.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,274.0 222.0,671.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="380.0,114.0 380.0,152.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<rect x="40" y="74" width="680" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="97.8" font-size="11" text-anchor="middle" fill="#1F2937">TaraBasa AI: AI-Powered Adaptive Reading Intervention System with Gamified Learning for Grade 1-3 Learners</text>
+<rect x="230.0" y="152" width="300" height="38" rx="7" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="175.6" font-size="13" font-weight="bold" text-anchor="middle" fill="#1F2937">System Administration and Privacy</text>
+<rect x="216.0" y="236" width="328" height="38" rx="7" fill="#F3F5F8" stroke="#B8C0CC" stroke-width="1.5"/><text x="380.0" y="259.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Admin</text>
+<rect x="238.0" y="296" width="306" height="30" rx="6" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="391.0" y="314.9" font-size="11" text-anchor="middle" fill="#1F2937">View overview and waiting items (new)</text>
+<rect x="238.0" y="336" width="306" height="30" rx="6" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="391.0" y="354.9" font-size="11" text-anchor="middle" fill="#1F2937">Approve or reject teacher (with reason) (updated)</text>
+<rect x="238.0" y="376" width="306" height="30" rx="6" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="391.0" y="394.9" font-size="11" text-anchor="middle" fill="#1F2937">Reopen rejected teacher (new)</text>
+<rect x="238.0" y="416" width="306" height="30" rx="6" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="391.0" y="434.9" font-size="11" text-anchor="middle" fill="#1F2937">Approve or decline grade request (new)</text>
+<rect x="238.0" y="456" width="306" height="30" rx="6" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="391.0" y="474.9" font-size="11" text-anchor="middle" fill="#1F2937">Confirm email by hand (new)</text>
+<rect x="238.0" y="496" width="306" height="30" rx="6" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="391.0" y="514.9" font-size="11" text-anchor="middle" fill="#1F2937">Deactivate or reactivate account (updated)</text>
+<rect x="238.0" y="536" width="306" height="30" rx="6" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="391.0" y="554.9" font-size="11" text-anchor="middle" fill="#1F2937">Delete account (new)</text>
+<rect x="238.0" y="576" width="306" height="30" rx="6" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="391.0" y="594.9" font-size="11" text-anchor="middle" fill="#1F2937">View system health and check services (new)</text>
+<rect x="238.0" y="616" width="306" height="30" rx="6" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="391.0" y="634.9" font-size="11" text-anchor="middle" fill="#1F2937">Reconnect email sending (new)</text>
+<rect x="238.0" y="656" width="306" height="30" rx="6" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="391.0" y="674.9" font-size="11" text-anchor="middle" fill="#1F2937">View activity log (new)</text>
+<text x="24" y="740" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="729" width="16" height="12" rx="3" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.4"/>
+<text x="102" y="739" font-size="11" fill="#1F2937">NEW</text>
+<rect x="149.0" y="729" width="16" height="12" rx="3" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.4"/>
+<text x="171.0" y="739" font-size="11" fill="#1F2937">UPDATED</text>
+<rect x="245.0" y="729" width="16" height="12" rx="3" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.4"/>
+<text x="267.0" y="739" font-size="11" fill="#1F2937">UNCHANGED</text>
+</svg>

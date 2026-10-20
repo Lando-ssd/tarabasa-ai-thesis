@@ -7365,6 +7365,31 @@ The owner said "continue whats next". The numbers every Practice Game shares wer
   idea of the word bank is the team's own design and NO study was checked for these numbers, and the page says so. It also says no real child has played the games yet.
 - **Tests:** `PracticeGameRulesTest` (7). Related suites (`HowItWorksTest`, `SyllableStepsGameTest`, `PracticeGamesVoiceTest`, `AdaptivePatternTest`, `MobileApiTest`) pass with it.
 
+## Manuscript update pack (2026-10-20, COMMITTED LOCALLY on mobile-app, NOT pushed)
+
+The owner asked for a review of the manuscript (version 29 PDF, 188 pages) with the updated tech stack, new system flow charts, a NEW FDD for the panel,
+new literature kept separate, and everything split so the teammate who writes the manuscript can work from it, keeping the manuscript's font, size and spacing.
+Lives in `docs/manuscript-update/` (5 Word files, `05_Figures/` as PNG + SVG + editable `.drawio`, and `tools/` with the Python scripts that generate it all).
+- **Files.** `00_README_START_HERE` (work order, formatting rules, decisions, limits), `01_Review_and_Change_Register` (64 findings R01 to R64 with page, action, type, priority, block;
+  Annex 1 old to new Figure and Table numbers; Annex 2 page number errors in the typed Contents, List of Tables and List of Figures: 30 of 36, 23 of 26 and 41 of 43 are wrong),
+  `02_Insert_Ready_Text` (Parts A to D, blocks A1 to C20, each with a grey "Place at / Replaces / Basis" box that must not be pasted), `03_FDD_and_Use_Case_Panel_Review`
+  (the new FDD with every function marked new, updated or unchanged, 12 questions for the panel, v29 to v2 mapping, the wrong workflow figures), `04_New_References_and_Basis`
+  (13 new references N1 to N13 with status VERIFIED / LISTED / RECALLED, citation fixes, feature to source table, what was not found).
+- **Formatting copied from the manuscript's Word styles:** Letter, margins L 1.5 in and R, T, B 1 in, Times New Roman 11 pt justified, 1.5 spacing, 0.5 in first line indent,
+  H1 14 bold centered, H2 12 bold centered, H3 11 bold left, table caption above (label then TITLE IN CAPS), figure caption below (label plain, title bold and underlined),
+  tables full width thin black borders, figures at most 6.0 in wide. Working pages (README, register, panel, references) are Calibri and are not manuscript text.
+- **New figures** (all from one description, so they cannot disagree): system flow, architecture and tech stack, network model and topology, learner/teacher/parent/admin
+  workflows (14 figures), adaptive rule chain, ERD v2 (23 tables: 14 of the 16 in v29 plus 9 new; Curriculum Guide and Badge are not tables), an 11-module FDD (112 functions: 39 new,
+  33 updated, 40 unchanged; v29 has 9 modules and 80), 6 use case diagrams drawn from the same function list. Editable at app.diagrams.net.
+- **Things the pack says that matter for the defense:** SMS and Google Speech-to-Text are not in the system (it uses Vosk through a reading service and sends emails only); the stack
+  is Laravel 13 + React Native with Expo + TiDB Cloud on Render, not Kotlin + XAMPP + Bootstrap + Cloud SQL; "AI" means a speech recognition service plus written rules and a formula service,
+  nothing was trained, and the numbers in Table 7 are the team's own settings.
+- **Checked:** the five files were opened in Word itself and exported to PDF (78, 12, 3, 19 and 4 pages; no blank pages; no meta box split across pages).
+- **NOT done / needs the team:** study school (Cebu City vs Suba Elementary, Liloan), respondent counts for the Validation Board, results of the user acceptance test and the phone model for C19,
+  whether to keep the old UI figures, programmers for modules 10 and 11, privacy contact email (also `PRIVACY_CONTACT_EMAIL` on Render); references marked RECALLED or LISTED must be read
+  before the defense; DepEd order numbers came from search results (deped.gov.ph returned 403), re-read the originals; the Word source in Downloads is from July 2026, older than the PDF.
+- **Regenerate:** `docs/manuscript-update/tools/src` (`build_all.py` for figures, `build_docs.py` for the Word files). The scripts use Windows Arial fonts and python-docx and Pillow.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

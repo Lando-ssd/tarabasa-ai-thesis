@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="644.0" viewBox="0 0 760 644.0" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="644.0" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Teacher workflow (4 of 4): monitoring</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">New. Everything here is worked out by rules from the children&#x27;s real readings (no trained model).</text>
+<rect x="14" y="132" width="238.66666666666666" height="438.0" rx="8" fill="#E4F4F1" fill-opacity="0.55" stroke="#79BDB5" stroke-width="1.2"/>
+<rect x="260.66666666666663" y="132" width="238.66666666666666" height="438.0" rx="8" fill="#FFF3D6" fill-opacity="0.55" stroke="#E0B04A" stroke-width="1.2"/>
+<rect x="507.33333333333326" y="132" width="238.66666666666666" height="438.0" rx="8" fill="#EEE9FA" fill-opacity="0.55" stroke="#A894DA" stroke-width="1.2"/>
+<polyline points="380.0,106.0 380.0,120.0 133.3,120.0 133.3,144.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,144.0 129.3,136.0 137.3,136.0" fill="#44546A"/>
+<polyline points="133.3,178.0 133.3,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,202.0 129.3,194.0 137.3,194.0" fill="#44546A"/>
+<polyline points="133.3,242.0 133.3,266.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,266.0 129.3,258.0 137.3,258.0" fill="#44546A"/>
+<polyline points="133.3,312.0 133.3,336.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,336.0 129.3,328.0 137.3,328.0" fill="#44546A"/>
+<polyline points="133.3,382.0 133.3,406.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,406.0 129.3,398.0 137.3,398.0" fill="#44546A"/>
+<polyline points="133.3,452.0 133.3,476.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,476.0 129.3,468.0 137.3,468.0" fill="#44546A"/>
+<polyline points="380.0,106.0 380.0,144.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,144.0 376.0,136.0 384.0,136.0" fill="#44546A"/>
+<polyline points="380.0,178.0 380.0,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,202.0 376.0,194.0 384.0,194.0" fill="#44546A"/>
+<polyline points="380.0,242.0 380.0,266.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,266.0 376.0,258.0 384.0,258.0" fill="#44546A"/>
+<polyline points="380.0,342.0 380.0,366.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,366.0 376.0,358.0 384.0,358.0" fill="#44546A"/>
+<polyline points="380.0,412.0 380.0,436.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,436.0 376.0,428.0 384.0,428.0" fill="#44546A"/>
+<polyline points="380.0,482.0 380.0,506.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,506.0 376.0,498.0 384.0,498.0" fill="#44546A"/>
+<polyline points="380.0,106.0 380.0,120.0 626.7,120.0 626.7,144.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,144.0 622.7,136.0 630.7,136.0" fill="#44546A"/>
+<polyline points="626.7,178.0 626.7,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,202.0 622.7,194.0 630.7,194.0" fill="#44546A"/>
+<polyline points="626.7,242.0 626.7,266.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,266.0 622.7,258.0 630.7,258.0" fill="#44546A"/>
+<polyline points="626.7,312.0 626.7,336.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,336.0 622.7,328.0 630.7,328.0" fill="#44546A"/>
+<polyline points="626.7,382.0 626.7,406.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,406.0 622.7,398.0 630.7,398.0" fill="#44546A"/>
+<polyline points="133.3,516.0 133.3,582.0 380.0,582.0 380.0,596.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,596.0 376.0,588.0 384.0,588.0" fill="#44546A"/>
+<polyline points="380.0,546.0 380.0,596.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,596.0 376.0,588.0 384.0,588.0" fill="#44546A"/>
+<polyline points="626.7,452.0 626.7,582.0 380.0,582.0 380.0,596.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,596.0 376.0,588.0 384.0,588.0" fill="#44546A"/>
+<rect x="310.0" y="76" width="140" height="30" rx="15.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="380.0" y="95.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Teacher dashboard</text>
+<rect x="23.999999999999986" y="144" width="218.66666666666666" height="34" rx="7" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.5"/><text x="133.3" y="165.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Analytics</text>
+<rect x="23.999999999999986" y="202" width="218.66666666666666" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="133.3" y="226.2" font-size="12" text-anchor="middle" fill="#1F2937">Open Analytics</text>
+<rect x="23.999999999999986" y="266" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="133.3" y="285.7" font-size="12" text-anchor="middle" fill="#1F2937">See class numbers: readings this</text><text x="133.3" y="300.7" font-size="12" text-anchor="middle" fill="#1F2937">week, levels, words missed most</text>
+<rect x="23.999999999999986" y="336.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="133.3" y="355.7" font-size="12" text-anchor="middle" fill="#1F2937">See each assigned activity and what</text><text x="133.3" y="370.7" font-size="12" text-anchor="middle" fill="#1F2937">it produced</text>
+<rect x="23.999999999999986" y="406.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="133.3" y="425.7" font-size="12" text-anchor="middle" fill="#1F2937">See &#x27;Did it work?&#x27;: class activities</text><text x="133.3" y="440.7" font-size="12" text-anchor="middle" fill="#1F2937">against general ones</text>
+<rect x="23.999999999999986" y="476.0" width="218.66666666666666" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="133.3" y="500.2" font-size="12" text-anchor="middle" fill="#1F2937">Download the class report (CSV)</text>
+<rect x="270.66666666666663" y="144" width="218.66666666666666" height="34" rx="7" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="380.0" y="165.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Alerts</text>
+<rect x="270.66666666666663" y="202" width="218.66666666666666" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="226.2" font-size="12" text-anchor="middle" fill="#1F2937">Open Alerts</text>
+<rect x="270.66666666666663" y="266" width="218.66666666666666" height="76.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="285.7" font-size="12" text-anchor="middle" fill="#1F2937">System makes alerts from real</text><text x="380.0" y="300.7" font-size="12" text-anchor="middle" fill="#1F2937">readings: needs support, ready to</text><text x="380.0" y="315.7" font-size="12" text-anchor="middle" fill="#1F2937">move up, starting to read, gone quiet,</text><text x="380.0" y="330.7" font-size="12" text-anchor="middle" fill="#1F2937">moved up</text>
+<rect x="270.66666666666663" y="366.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="385.7" font-size="12" text-anchor="middle" fill="#1F2937">Read the evidence and the</text><text x="380.0" y="400.7" font-size="12" text-anchor="middle" fill="#1F2937">suggested activity</text>
+<rect x="270.66666666666663" y="436.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="455.7" font-size="12" text-anchor="middle" fill="#1F2937">Act: give the suggested activity in one</text><text x="380.0" y="470.7" font-size="12" text-anchor="middle" fill="#1F2937">tap, or Mark handled</text>
+<rect x="270.66666666666663" y="506.0" width="218.66666666666666" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="530.2" font-size="12" text-anchor="middle" fill="#1F2937">A new reading opens the alert again</text>
+<rect x="517.3333333333333" y="144" width="218.66666666666666" height="34" rx="7" fill="#EEE9FA" stroke="#A894DA" stroke-width="1.5"/><text x="626.7" y="165.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Learner profile</text>
+<rect x="517.3333333333333" y="202" width="218.66666666666666" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="626.7" y="226.2" font-size="12" text-anchor="middle" fill="#1F2937">Open a learner in a class</text>
+<rect x="517.3333333333333" y="266" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="626.7" y="285.7" font-size="12" text-anchor="middle" fill="#1F2937">See what the parent shared:</text><text x="626.7" y="300.7" font-size="12" text-anchor="middle" fill="#1F2937">language, interests, answers</text>
+<rect x="517.3333333333333" y="336.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="626.7" y="355.7" font-size="12" text-anchor="middle" fill="#1F2937">See where the child reads now:</text><text x="626.7" y="370.7" font-size="12" text-anchor="middle" fill="#1F2937">Phil-IRI level and step</text>
+<rect x="517.3333333333333" y="406.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="626.7" y="425.7" font-size="12" text-anchor="middle" fill="#1F2937">See what suits the child: teaching</text><text x="626.7" y="440.7" font-size="12" text-anchor="middle" fill="#1F2937">moves and main mistake pattern</text>
+<rect x="300.0" y="596.0" width="160" height="30" rx="15.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="380.0" y="615.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Back to dashboard</text>
+</svg>

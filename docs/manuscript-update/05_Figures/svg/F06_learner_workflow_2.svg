@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="1443" viewBox="0 0 760 1443" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="1443" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Learner workflow (2 of 3): read an activity and get scored</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">Replaces Figures 3.1 and 3.2. A reading step moves slowly: one strong or weak reading does not change it.</text>
+<rect x="14" y="76" width="308.0851063829787" height="1315.0" rx="8" fill="#EEE9FA" fill-opacity="0.55" stroke="#A894DA" stroke-width="1.2"/>
+<rect x="14" y="76" width="308.0851063829787" height="30" rx="8" fill="#A894DA" fill-opacity="0.55"/>
+<text x="168.04255319148936" y="95.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Learner</text>
+<rect x="330.0851063829787" y="76" width="415.9148936170213" height="1315.0" rx="8" fill="#FFF0DC" fill-opacity="0.55" stroke="#E8A04F" stroke-width="1.2"/>
+<rect x="330.0851063829787" y="76" width="415.9148936170213" height="30" rx="8" fill="#E8A04F" fill-opacity="0.55"/>
+<text x="538.0425531914893" y="95.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">TaraBasa system and AI services</text>
+<polyline points="168.0,165.0 168.0,203.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="168.0,203.0 164.0,195.0 172.0,195.0" fill="#44546A"/>
+<polyline points="311.1,231.0 341.1,231.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="341.1,231.0 333.1,235.0 333.1,227.0" fill="#44546A"/>
+<polyline points="538.0,259.0 538.0,271.0 168.0,271.0 168.0,283.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="168.0,283.0 164.0,275.0 172.0,275.0" fill="#44546A"/>
+<polyline points="168.0,339.0 168.0,363.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="168.0,363.0 164.0,355.0 172.0,355.0" fill="#44546A"/>
+<polyline points="311.1,391.0 341.1,391.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="341.1,391.0 333.1,395.0 333.1,387.0" fill="#44546A"/>
+<polyline points="538.0,419.0 538.0,431.0 168.0,431.0 168.0,443.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="168.0,443.0 164.0,435.0 172.0,435.0" fill="#44546A"/>
+<polyline points="311.1,471.0 418.0,471.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="418.0,471.0 410.0,475.0 410.0,467.0" fill="#44546A"/>
+<polyline points="538.0,499.0 538.0,523.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="538.0,523.0 534.0,515.0 542.0,515.0" fill="#44546A"/>
+<rect x="542.5" y="502.0" width="23.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="554.0" y="514.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">No</text>
+<polyline points="341.1,551.0 168.0,551.0 168.0,499.0" fill="none" stroke="#44546A" stroke-width="1.6" stroke-dasharray="6 4"/>
+<polygon points="168.0,499.0 172.0,507.0 164.0,507.0" fill="#44546A"/>
+<polyline points="658.0,471.0 741.0,471.0 741.0,631.0 735.0,631.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="735.0,631.0 743.0,627.0 743.0,635.0" fill="#44546A"/>
+<rect x="705.5" y="450.0" width="27.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="719.0" y="462.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">Yes</text>
+<polyline points="538.0,659.0 538.0,683.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="538.0,683.0 534.0,675.0 542.0,675.0" fill="#44546A"/>
+<polyline points="538.0,739.0 538.0,763.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="538.0,763.0 534.0,755.0 542.0,755.0" fill="#44546A"/>
+<polyline points="418.0,791.0 311.1,791.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="311.1,791.0 319.1,787.0 319.1,795.0" fill="#44546A"/>
+<rect x="351.1" y="782.0" width="27.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="364.6" y="794.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">Yes</text>
+<polyline points="538.0,819.0 538.0,843.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="538.0,843.0 534.0,835.0 542.0,835.0" fill="#44546A"/>
+<rect x="542.5" y="822.0" width="23.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="554.0" y="834.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">No</text>
+<polyline points="168.0,819.0 168.0,871.0 341.1,871.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="341.1,871.0 333.1,875.0 333.1,867.0" fill="#44546A"/>
+<polyline points="538.0,899.0 538.0,920.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="538.0,920.0 534.0,912.0 542.0,912.0" fill="#44546A"/>
+<polyline points="538.0,982.0 538.0,1003.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="538.0,1003.0 534.0,995.0 542.0,995.0" fill="#44546A"/>
+<rect x="540.5" y="985.0" width="27.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="554.0" y="997.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">Yes</text>
+<polyline points="683.0,951.0 741.0,951.0 741.0,1111.0 735.0,1111.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="735.0,1111.0 743.0,1107.0 743.0,1115.0" fill="#44546A"/>
+<rect x="707.5" y="930.0" width="23.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="719.0" y="942.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">No</text>
+<polyline points="538.0,1059.0 538.0,1083.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="538.0,1083.0 534.0,1075.0 542.0,1075.0" fill="#44546A"/>
+<polyline points="538.0,1139.0 538.0,1163.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="538.0,1163.0 534.0,1155.0 542.0,1155.0" fill="#44546A"/>
+<polyline points="341.1,1191.0 168.0,1191.0 168.0,1243.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="168.0,1243.0 164.0,1235.0 172.0,1235.0" fill="#44546A"/>
+<polyline points="168.0,1299.0 168.0,1337.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="168.0,1337.0 164.0,1329.0 172.0,1329.0" fill="#44546A"/>
+<rect x="118.04255319148936" y="137.0" width="100" height="28" rx="14.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="168.0" y="155.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Dashboard</text>
+<rect x="25.0" y="203.0" width="286.0851063829787" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="168.0" y="235.2" font-size="12" text-anchor="middle" fill="#1F2937">Tap Read to see the activities</text>
+<rect x="341.08510638297867" y="203.0" width="393.9148936170213" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="538.0" y="227.7" font-size="12" text-anchor="middle" fill="#1F2937">Gather assigned, unlocked and recommended activities; &#x27;Picked just</text><text x="538.0" y="242.7" font-size="12" text-anchor="middle" fill="#1F2937">for you&#x27; goes first</text>
+<rect x="25.0" y="283.0" width="286.0851063829787" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="168.0" y="315.2" font-size="12" text-anchor="middle" fill="#1F2937">Choose an activity</text>
+<rect x="25.0" y="363.0" width="286.0851063829787" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="168.0" y="395.2" font-size="12" text-anchor="middle" fill="#1F2937">Listen to Tara read it, then practise (2 free tries)</text>
+<rect x="341.08510638297867" y="363.0" width="393.9148936170213" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="538.0" y="395.2" font-size="12" text-anchor="middle" fill="#1F2937">Score each try for feedback only; nothing is saved</text>
+<polygon points="41.0,443.0 311.0851063829787,443.0 295.0851063829787,499.0 25.0,499.0" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.6"/><text x="168.0" y="475.2" font-size="12" text-anchor="middle" fill="#1F2937">Read for real and record</text>
+<polygon points="538.0425531914893,443.0 658.0425531914893,471.0 538.0425531914893,499.0 418.04255319148933,471.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.6"/><text x="538.0" y="475.2" font-size="12" text-anchor="middle" fill="#1F2937">Audio clear enough?</text>
+<rect x="341.08510638297867" y="523.0" width="393.9148936170213" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="538.0" y="555.2" font-size="12" text-anchor="middle" fill="#1F2937">Try again (up to 3 times), then ask the Teacher or Parent</text>
+<rect x="341.08510638297867" y="603.0" width="393.9148936170213" height="56" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="538.0" y="635.2" font-size="12" text-anchor="middle" fill="#1F2937">Reading service (Vosk): words, speed, voice</text>
+<rect x="341.08510638297867" y="683.0" width="393.9148936170213" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="538.0" y="715.2" font-size="12" text-anchor="middle" fill="#1F2937">Accept same sound words; leave faint words &#x27;not sure&#x27;</text>
+<polygon points="538.0425531914893,763.0 658.0425531914893,791.0 538.0425531914893,819.0 418.04255319148933,791.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.6"/><text x="538.0" y="795.2" font-size="12" text-anchor="middle" fill="#1F2937">Story with questions?</text>
+<rect x="25.0" y="763.0" width="286.0851063829787" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="168.0" y="795.2" font-size="12" text-anchor="middle" fill="#1F2937">Answer the comprehension questions</text>
+<rect x="341.08510638297867" y="843.0" width="393.9148936170213" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="538.0" y="875.2" font-size="12" text-anchor="middle" fill="#1F2937">Mark any answers; save the reading; add to word bank; give points</text>
+<polygon points="538.0425531914893,920.0 683.0425531914893,951.0 538.0425531914893,982.0 393.04255319148933,951.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.6"/><text x="538.0" y="947.7" font-size="12" text-anchor="middle" fill="#1F2937">3 strong readings or 2 weak in a</text><text x="538.0" y="962.7" font-size="12" text-anchor="middle" fill="#1F2937">row?</text>
+<rect x="341.08510638297867" y="1003.0" width="393.9148936170213" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="538.0" y="1035.2" font-size="12" text-anchor="middle" fill="#1F2937">Move one reading step up or down</text>
+<rect x="341.08510638297867" y="1083.0" width="393.9148936170213" height="56" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="538.0" y="1115.2" font-size="12" text-anchor="middle" fill="#1F2937">Adaptive recommender updates the profile and picks what is next</text>
+<rect x="341.08510638297867" y="1163.0" width="393.9148936170213" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="538.0" y="1195.2" font-size="12" text-anchor="middle" fill="#1F2937">Award badges; make alerts for the Teacher and Parent</text>
+<rect x="25.0" y="1243.0" width="286.0851063829787" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="168.0" y="1267.7" font-size="12" text-anchor="middle" fill="#1F2937">See the result: words read, points, badges, word</text><text x="168.0" y="1282.7" font-size="12" text-anchor="middle" fill="#1F2937">review</text>
+<rect x="103.04255319148936" y="1337.0" width="130" height="28" rx="14.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="168.0" y="1355.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Back to dashboard</text>
+<text x="24" y="1429" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="1418" width="16" height="12" rx="3" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.4"/>
+<text x="102" y="1428" font-size="11" fill="#1F2937">Step</text>
+<rect x="146.0" y="1418" width="16" height="12" rx="3" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.4"/>
+<text x="168.0" y="1428" font-size="11" fill="#1F2937">Outside service</text>
+<rect x="267.0" y="1418" width="16" height="12" rx="3" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.4"/>
+<text x="289.0" y="1428" font-size="11" fill="#1F2937">Read aloud</text>
+<rect x="366.0" y="1418" width="16" height="12" rx="3" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.4"/>
+<text x="388.0" y="1428" font-size="11" fill="#1F2937">Decision</text>
+</svg>

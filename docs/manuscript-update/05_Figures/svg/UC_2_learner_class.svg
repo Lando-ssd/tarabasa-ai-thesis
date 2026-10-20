@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="946" viewBox="0 0 760 946" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="946" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Use case diagram 2: Learner and Class Management</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">Use cases are the same functions as the FDD, one list for both.</text>
+<rect x="190" y="76" width="380" height="800" rx="8" fill="#F3F5F8" fill-opacity="0.55" stroke="#B8C0CC" stroke-width="1.2"/>
+<rect x="190" y="76" width="380" height="26" rx="8" fill="#B8C0CC" fill-opacity="0.55"/>
+<text x="380.0" y="93.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">TaraBasa AI</text>
+<polyline points="86.0,463.0 230.0,532.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,463.0 230.0,572.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,463.0 230.0,612.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,463.0 230.0,652.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,463.0 230.0,692.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,463.0 230.0,732.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,463.0 230.0,772.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,463.0 230.0,812.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,463.0 230.0,852.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,132.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,172.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,212.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,252.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,292.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,332.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,372.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,412.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,452.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,463.0 530.0,492.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+
+<ellipse cx="380.0" cy="132.0" rx="150.0" ry="16.0" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="135.8" font-size="11" text-anchor="middle" fill="#1F2937">View learners</text>
+<ellipse cx="380.0" cy="172.0" rx="150.0" ry="16.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="380.0" y="175.8" font-size="11" text-anchor="middle" fill="#1F2937">Add learner and generate learner code</text>
+<ellipse cx="380.0" cy="212.0" rx="150.0" ry="16.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="380.0" y="215.8" font-size="11" text-anchor="middle" fill="#1F2937">Set reading stage and answer 3 questions</text>
+<ellipse cx="380.0" cy="252.0" rx="150.0" ry="16.0" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="255.8" font-size="11" text-anchor="middle" fill="#1F2937">Set learning style</text>
+<ellipse cx="380.0" cy="292.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="295.9" font-size="11" text-anchor="middle" fill="#1F2937">Set home language, supports and interests</text>
+<ellipse cx="380.0" cy="332.0" rx="150.0" ry="16.0" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="335.9" font-size="11" text-anchor="middle" fill="#1F2937">Set learner PIN</text>
+<ellipse cx="380.0" cy="372.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="375.9" font-size="11" text-anchor="middle" fill="#1F2937">Reset forgotten PIN</text>
+<ellipse cx="380.0" cy="412.0" rx="150.0" ry="16.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="380.0" y="415.9" font-size="11" text-anchor="middle" fill="#1F2937">Link existing learner (code and PIN)</text>
+<ellipse cx="380.0" cy="452.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="455.9" font-size="11" text-anchor="middle" fill="#1F2937">Print learner card with QR</text>
+<ellipse cx="380.0" cy="492.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="495.9" font-size="11" text-anchor="middle" fill="#1F2937">Remove learner profile</text>
+<ellipse cx="380.0" cy="532.0" rx="150.0" ry="16.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="380.0" y="535.9" font-size="11" text-anchor="middle" fill="#1F2937">View classes by school year</text>
+<ellipse cx="380.0" cy="572.0" rx="150.0" ry="16.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="380.0" y="575.9" font-size="11" text-anchor="middle" fill="#1F2937">Create class (one grade only)</text>
+<ellipse cx="380.0" cy="612.0" rx="150.0" ry="16.0" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="615.9" font-size="11" text-anchor="middle" fill="#1F2937">Edit class</text>
+<ellipse cx="380.0" cy="652.0" rx="150.0" ry="16.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="380.0" y="655.9" font-size="11" text-anchor="middle" fill="#1F2937">Add learner by code or QR scan</text>
+<ellipse cx="380.0" cy="692.0" rx="150.0" ry="16.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="380.0" y="695.9" font-size="11" text-anchor="middle" fill="#1F2937">View roster and reading groups</text>
+<ellipse cx="380.0" cy="732.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="735.9" font-size="11" text-anchor="middle" fill="#1F2937">View learner profile</text>
+<ellipse cx="380.0" cy="772.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="775.9" font-size="11" text-anchor="middle" fill="#1F2937">Move learner to another class</text>
+<ellipse cx="380.0" cy="812.0" rx="150.0" ry="16.0" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="815.9" font-size="11" text-anchor="middle" fill="#1F2937">View class history</text>
+<ellipse cx="380.0" cy="852.0" rx="150.0" ry="16.0" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="855.9" font-size="11" text-anchor="middle" fill="#1F2937">Manage learner promotion</text>
+<circle cx="70.0" cy="445.0" r="8" fill="#FFFFFF" stroke="#44546A" stroke-width="1.6"/><polyline points="70.0,453.0 70.0,477.0 " fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="56.0,463.0 84.0,463.0" fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="58.0,495.0 70.0,477.0 82.0,495.0" fill="none" stroke="#44546A" stroke-width="1.6"/><text x="70.0" y="509.7" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Teacher</text>
+<circle cx="690.0" cy="445.0" r="8" fill="#FFFFFF" stroke="#44546A" stroke-width="1.6"/><polyline points="690.0,453.0 690.0,477.0 " fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="676.0,463.0 704.0,463.0" fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="678.0,495.0 690.0,477.0 702.0,495.0" fill="none" stroke="#44546A" stroke-width="1.6"/><text x="690.0" y="509.7" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Parent</text>
+<text x="24" y="930" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="919" width="16" height="12" rx="3" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.4"/>
+<text x="102" y="929" font-size="11" fill="#1F2937">NEW</text>
+<rect x="149.0" y="919" width="16" height="12" rx="3" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.4"/>
+<text x="171.0" y="929" font-size="11" fill="#1F2937">UPDATED</text>
+<rect x="245.0" y="919" width="16" height="12" rx="3" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.4"/>
+<text x="267.0" y="929" font-size="11" fill="#1F2937">UNCHANGED</text>
+</svg>

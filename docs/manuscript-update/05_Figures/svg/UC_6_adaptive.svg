@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="586" viewBox="0 0 760 586" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="586" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Use case diagram 6: Adaptive Reading Support</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">Use cases are the same functions as the FDD, one list for both.</text>
+<rect x="190" y="76" width="380" height="440" rx="8" fill="#F3F5F8" fill-opacity="0.55" stroke="#B8C0CC" stroke-width="1.2"/>
+<rect x="190" y="76" width="380" height="26" rx="8" fill="#B8C0CC" fill-opacity="0.55"/>
+<text x="380.0" y="93.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">TaraBasa AI</text>
+<polyline points="86.0,283.0 230.0,132.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,283.0 230.0,172.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,283.0 230.0,212.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,283.0 230.0,252.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,283.0 230.0,292.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,283.0 230.0,332.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,283.0 230.0,372.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,283.0 230.0,412.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,283.0 230.0,452.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="86.0,283.0 230.0,492.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,169.7 530.0,292.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,169.7 530.0,372.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,169.7 530.0,452.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,169.7 530.0,492.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,283.0 530.0,372.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,396.3 530.0,132.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,396.3 530.0,172.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,396.3 530.0,292.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,396.3 530.0,332.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+<polyline points="674.0,396.3 530.0,412.0" fill="none" stroke="#5B6675" stroke-width="1.0"/>
+
+<ellipse cx="380.0" cy="132.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="135.8" font-size="11" text-anchor="middle" fill="#1F2937">Place learner on the reading ladder</text>
+<ellipse cx="380.0" cy="172.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="175.8" font-size="11" text-anchor="middle" fill="#1F2937">Score oral reading (Vosk service)</text>
+<ellipse cx="380.0" cy="212.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="215.8" font-size="11" text-anchor="middle" fill="#1F2937">Accept same sound words</text>
+<ellipse cx="380.0" cy="252.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="255.8" font-size="11" text-anchor="middle" fill="#1F2937">Mark faint words &#x27;not sure&#x27;</text>
+<ellipse cx="380.0" cy="292.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="295.9" font-size="11" text-anchor="middle" fill="#1F2937">Move reading step gradually</text>
+<ellipse cx="380.0" cy="332.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="335.9" font-size="11" text-anchor="middle" fill="#1F2937">Update profile, recommend next (service)</text>
+<ellipse cx="380.0" cy="372.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="375.9" font-size="11" text-anchor="middle" fill="#1F2937">Find mistake patterns</text>
+<ellipse cx="380.0" cy="412.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="415.9" font-size="11" text-anchor="middle" fill="#1F2937">Keep personal word bank</text>
+<ellipse cx="380.0" cy="452.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="455.9" font-size="11" text-anchor="middle" fill="#1F2937">Check &#x27;can they read it?&#x27;</text>
+<ellipse cx="380.0" cy="492.0" rx="150.0" ry="16.0" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="380.0" y="495.9" font-size="11" text-anchor="middle" fill="#1F2937">Suggest activities for a group</text>
+<circle cx="70.0" cy="265.0" r="8" fill="#FFFFFF" stroke="#44546A" stroke-width="1.6"/><polyline points="70.0,273.0 70.0,297.0 " fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="56.0,283.0 84.0,283.0" fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="58.0,315.0 70.0,297.0 82.0,315.0" fill="none" stroke="#44546A" stroke-width="1.6"/><text x="70.0" y="329.7" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">System</text>
+<circle cx="690.0" cy="151.66666666666666" r="8" fill="#FFFFFF" stroke="#44546A" stroke-width="1.6"/><polyline points="690.0,159.66666666666666 690.0,183.66666666666666 " fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="676.0,169.66666666666666 704.0,169.66666666666666" fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="678.0,201.66666666666666 690.0,183.66666666666666 702.0,201.66666666666666" fill="none" stroke="#44546A" stroke-width="1.6"/><text x="690.0" y="216.4" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Teacher</text>
+<circle cx="690.0" cy="265.0" r="8" fill="#FFFFFF" stroke="#44546A" stroke-width="1.6"/><polyline points="690.0,273.0 690.0,297.0 " fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="676.0,283.0 704.0,283.0" fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="678.0,315.0 690.0,297.0 702.0,315.0" fill="none" stroke="#44546A" stroke-width="1.6"/><text x="690.0" y="329.7" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Parent</text>
+<circle cx="690.0" cy="378.3333333333333" r="8" fill="#FFFFFF" stroke="#44546A" stroke-width="1.6"/><polyline points="690.0,386.3333333333333 690.0,410.3333333333333 " fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="676.0,396.3333333333333 704.0,396.3333333333333" fill="none" stroke="#44546A" stroke-width="1.6"/><polyline points="678.0,428.3333333333333 690.0,410.3333333333333 702.0,428.3333333333333" fill="none" stroke="#44546A" stroke-width="1.6"/><text x="690.0" y="443.0" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Learner</text>
+<text x="24" y="570" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="559" width="16" height="12" rx="3" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.4"/>
+<text x="102" y="569" font-size="11" fill="#1F2937">NEW</text>
+<rect x="149.0" y="559" width="16" height="12" rx="3" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.4"/>
+<text x="171.0" y="569" font-size="11" fill="#1F2937">UPDATED</text>
+<rect x="245.0" y="559" width="16" height="12" rx="3" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.4"/>
+<text x="267.0" y="569" font-size="11" fill="#1F2937">UNCHANGED</text>
+</svg>
