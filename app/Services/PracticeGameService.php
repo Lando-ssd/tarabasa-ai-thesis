@@ -184,6 +184,54 @@ class PracticeGameService
         return $levels;
     }
 
+    /**
+     * The level Syllable Steps starts a child at, or null when the game is not for them. The three levels are the syllable method's own
+     * word levels (config/syllable_method.php): CVC + CVC, then CVC + CVCe, then CVC + VC, and the level follows the child's step on the
+     * reading path. A child still on the Letters step has no word level (they have not met words yet), so the game is not offered to
+     * them: the teacher's notes suggest clapping the parts of spoken words with them instead, which needs no letters. A child with no
+     * known step is not offered it either, since the games sit behind the first reading check, which sets one.
+     */
+    public function syllableStartLevel(Learner $learner): ?int
+    {
+        return SyllableMethod::levelForRung(ReadingLevel::rung($learner));
+    }
+
+    /**
+     * What Syllable Steps offers at each of the three levels, as words with their parts and the sentence the child reads at the end:
+     *   own     words the child has missed (from their real readings) that are in the method's list, so the game works on them first;
+     *   level   the level's own words;
+     *   review  the easier levels' words, for a round that has used up the level's own (level 2 has only five words).
+     * A word is only ever read inside its sentence: the parts are not words, so they are never scored (see config/syllable_method.php).
+     * That is why a word the speech checker missed on its own (`alone` false) is fine here, unlike in Balloon Pop.
+     *
+     * @return array<int, array{own: list<array>, level: list<array>, review: list<array>}>
+     */
+    public function syllableLevels(Learner $learner): array
+    {
+        $missed = app(WordBank::class)->practiceWords($learner)->map(fn ($w) => strtolower((string) $w))->all();
+        $entry = fn (array $w) => ['word' => $w['word'], 'parts' => $w['parts'], 'sentence' => $w['sentence']];
+
+        $levels = [];
+        foreach ([1, 2, 3] as $level) {
+            $own = [];
+            foreach ($missed as $word) {
+                $found = SyllableMethod::find($word);
+                if ($found !== null && $found['level'] <= $level) {
+                    $own[$found['word']] = $entry($found);
+                }
+            }
+
+            $levels[$level] = [
+                'own' => array_values($own),
+                'level' => array_map($entry, SyllableMethod::words($level)),
+                'review' => array_map($entry, array_filter(SyllableMethod::words(), fn (array $w) => $w['level'] < $level)),
+            ];
+            $levels[$level]['review'] = array_values($levels[$level]['review']);
+        }
+
+        return $levels;
+    }
+
     /** The lowercase words of a sentence, with its punctuation taken off: what the speech checker is asked to listen for. */
     public static function wordsOf(string $text): array
     {

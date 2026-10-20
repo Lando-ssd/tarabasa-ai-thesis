@@ -66,7 +66,7 @@ return [
         3 => [
             'key' => 'blend', 'name' => 'Join it',
             'standard' => 'syllable blending',
-            'learner' => 'Slides the parts together into the whole word.',
+            'learner' => 'Joins the parts together into the whole word.',
             'scored' => false,
         ],
         4 => [
@@ -159,6 +159,8 @@ return [
         ['text' => 'Liberman and others (1974): young children find it easier to split a spoken word into syllables than into single sounds, which is why the method splits into syllables first.', 'read' => false],
         ['text' => 'Therrien (2004): repeated reading improves fluency and comprehension, the reason for repeating each part in the drill.', 'read' => false],
         ['text' => 'Seymour, Aro and Erskine (2003): English takes longer to learn to read than more regular writing systems, because its syllables are more complex and its spelling less regular. That is the reason the method keeps its first words short and simple. Starting with closed syllables is the team\'s own choice: no study found proves it.', 'read' => false],
+        ['text' => 'Hirsh-Pasek and others (2015), Psychological Science in the Public Interest 16(1): children learn best from apps that are active (minds on), engaged, meaningful and social. It is why Syllable Steps does not count the drill taps as learning by themselves.', 'read' => false],
+        ['text' => 'A small study of 90 children aged 2 to 8 (PubMed Central article PMC7303424): among the 7 to 8 year olds 83 percent could tap, 40 percent swipe and 30 percent drag and drop, and written prompts were advised against for children 8 and under. The sample is small, so it is a reason to prefer one finger taps and spoken instructions in Syllable Steps, not proof.', 'read' => false],
         ['text' => 'The Filipino syllabic method (the Marungko approach) is described in secondary sources only.', 'read' => false],
     ],
 

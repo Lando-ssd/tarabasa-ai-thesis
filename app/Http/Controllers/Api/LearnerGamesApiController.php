@@ -21,7 +21,8 @@ class LearnerGamesApiController extends Controller
     public function index(Request $request, PracticeGameService $games): JsonResponse
     {
         $learner = $request->user();
-        $pick = $learner->recommendedGameFocus();
+        // Without Syllable Steps: the phone app does not have that game yet (it is on the website first), so it is never told to lead with it.
+        $pick = $learner->recommendedGameFocus(false);
 
         return response()->json([
             // 'balloon-pop', 'word-train' or 'sentence-stars' when the child's own reading says one would help most. Never a gate.

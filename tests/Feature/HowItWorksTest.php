@@ -108,6 +108,32 @@ class HowItWorksTest extends TestCase
         $this->assertStringContainsString('one of '.count(ErrorPatterns::CATEGORIES).' kinds', $html);
     }
 
+    public function test_the_page_describes_the_syllable_steps_game_with_its_basis_and_its_limits(): void
+    {
+        config(['syllable_method.repeat' => 6]);
+
+        $html = $this->get('/how-it-works')->assertOk()->getContent();
+
+        $this->assertStringContainsString('The game, Syllable Steps', $html);
+        // The drill count in the game is the method's own number.
+        $this->assertStringContainsString('(<span class="num">6</span> times for each part)', $html);
+        // What the game scores, and what it never does.
+        $this->assertStringContainsString('Only that sentence goes to the speech checker', $html);
+        $this->assertStringContainsString('never "wrong"', $html);
+        $this->assertStringContainsString('never changes points, streak or level', $html);
+        // The design choices for children, with the evidence said to be small and the sources marked as found by search.
+        $this->assertStringContainsString('Joining is by tapping, not sliding', $html);
+        $this->assertStringContainsString('Every instruction comes three ways', $html);
+        $this->assertStringContainsString('The sample is small', $html);
+        $this->assertStringContainsString('PMC7303424', $html);
+        $this->assertStringContainsString('Hirsh-Pasek and others (2015)', $html);
+        // Honest about how far it has been tried, and where it is.
+        $this->assertStringContainsString('not by a real child yet', $html);
+        $this->assertStringContainsString('the phone app does not have it yet', $html);
+        // The Ehri source says what it is about and what it is not.
+        $this->assertStringContainsString('It does not set the order of letters, words, sentences and stories', $html);
+    }
+
     public function test_the_copy_follows_the_app_rules_no_emoji_and_no_dashes(): void
     {
         $html = $this->get('/how-it-works')->getContent();

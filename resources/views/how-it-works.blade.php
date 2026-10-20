@@ -238,14 +238,22 @@
       @endforeach
     </ol>
     <p>Each part is said <span class="num">{{ $syllable['repeat'] }}</span> times in the drill. Only the last step is scored. The parts of a word are often not words themselves (pic, nic, bas, ket), and a speech recognizer is unreliable on a single piece that is not a word, so a part is never scored: the first three steps are listening, tapping and joining, and the recognizer hears the whole word read aloud in a sentence.</p>
-    <p>The word level rises with the child's step on the reading path (Beginning, Developing, Proficient). A child on the Letters step has not met words yet, so they only clap the parts of spoken words, which needs no letters.</p>
+    <p>The word level rises with the child's step on the reading path (Beginning, Developing, Proficient). A child on the Letters step has not met words yet, so the game is not offered to them, and the teacher's notes suggest only clapping the parts of spoken words, which needs no letters.</p>
     <div class="tablewrap"><table>
       <thead><tr><th>Level</th><th>Word shape</th><th>For the steps</th><th>Examples</th></tr></thead>
       <tbody>@foreach ($syllable['levels'] as $l)<tr><td>{{ $l['level'] }}</td><td>{{ $l['pattern'] }}: {{ $l['name'] }}</td><td>{{ $l['steps'] }}</td><td>{{ $l['examples'] }}</td></tr>@endforeach</tbody>
     </table></div>
     <p>Two rules came from correcting the first draft of the method:</p>
     <ul>@foreach ($syllable['corrections'] as $c)<li>{{ $c }}</li>@endforeach</ul>
-    <p>The method is used in four places. The activity writer is asked for two-syllable words that split cleanly when a teacher writes a word list for a class, or when several children in the class read longer words in pieces (section 9). The teacher's learner page has a syllable routine for the child's step. The mistake pattern <b>Longer words in pieces</b> (section 5) is reported when a child reads only a part of a longer word, or reads it as two words the recognizer writes separately (basket heard as "bass" and "kit"). And the games offer the method's words and sentences first to a child whose main pattern it is.</p>
+    <p>The method is used in five places. The activity writer is asked for two-syllable words that split cleanly when a teacher writes a word list for a class, or when several children in the class read longer words in pieces (section 9). The teacher's learner page has a syllable routine for the child's step. The mistake pattern <b>Longer words in pieces</b> (section 5) is reported when a child reads only a part of a longer word, or reads it as two words the recognizer writes separately (basket heard as "bass" and "kit"). The other Practice Games offer the method's words and sentences first to a child whose main pattern it is. And the game <b>Syllable Steps</b> plays the four steps.</p>
+    <span class="k">The game, Syllable Steps</span>
+    <p>Syllable Steps is a Practice Game for children from the Words step up. For each longer word the child taps a part and hears Tara say it (<span class="num">{{ $syllable['repeat'] }}</span> times for each part), taps once for each part, taps the parts in order so that they glide together, and then reads the word inside a sentence. Only that sentence goes to the speech checker. As in every other game the answer is only "heard" or "again", never "wrong", and nothing the child says is kept. Three words make a round, two or more read right the first time climb a level (the word levels in the table above), and there are up to three rounds. It is free play: it never changes points, streak or level. It leads the Games page for a child whose main kind of mistake is reading longer words in pieces.</p>
+    <p>It was designed for children of this age in three ways:</p>
+    <ul>
+      <li><b>Joining is by tapping, not sliding.</b> In one small study of 90 children aged 2 to 8, among the 7 to 8 year olds 83 percent could tap, 40 percent could swipe and 30 percent could drag and drop. The sample is small, so it is a reason to prefer one finger taps, not proof.</li>
+      <li><b>Every instruction comes three ways.</b> Tara says it, one short line of text shows it, and the next thing to tap glows. A speaker button says it again. The same study advises against relying on written prompts for children 8 and under.</li>
+      <li><b>The taps are not the learning by themselves.</b> Research on children's apps finds that children learn best when they are thinking, not only tapping. The child splits the word, joins it and reads it; only the reading is scored.</li>
+    </ul>
     <span class="k">Where it comes from</span>
     <p>The MATATAG Grade 1 Reading and Literacy guide: {{ $syllable['codes']['segment']['code'] }}, "{{ $syllable['codes']['segment']['text'] }}", and {{ $syllable['codes']['blend']['code'] }}, "{{ $syllable['codes']['blend']['text'] }}" The same guide asks for explicit and systematic instruction and for the Gradual Release of Responsibility (the teacher says it, then it is said together, then the child alone), which is the order of the four steps. The Filipino examples ({{ $syllable['filipino'] }}) are reference only: the speech checker is English only, and Grade 1 reading in the curriculum is in the mother tongue.</p>
     <span class="k">Honest limits</span>
@@ -253,6 +261,7 @@
       <li>The word list ({{ $syllable['wordCount'] }} words) and the sentences were written by the team and checked with synthesized voices only. A Grade 1 and a Grade 2 teacher should review them.</li>
       <li>Closed syllables first is common practice in structured literacy programmes. No study was found that proves the order has to be this way, so it is the team's choice.</li>
       <li>A recognizer cannot tell a child who pauses between parts from a child it simply hears as two words, so reading in pieces is only reported when the pieces do not join into the word, and it is a hint for the teacher, not a score.</li>
+      <li>Syllable Steps has been played in a browser and with synthesized voices, not by a real child yet. The browser's own voice may say a part such as bas or ket a little oddly. It is on the website first; the phone app does not have it yet.</li>
       <li>{{ $syllable['data'] }}</li>
     </ul>
   </div>

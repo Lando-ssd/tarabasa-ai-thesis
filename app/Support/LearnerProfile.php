@@ -160,7 +160,7 @@ class LearnerProfile
             'words' => array_map(fn (array $w) => $w['word'].' ('.SyllableMethod::segmented($w['parts']).')', array_slice($words, 0, 8)),
             'suggested' => $suggested,
             'codes' => config('syllable_method.codes'),
-            'basis' => 'MATATAG Grade 1 Reading and Literacy guide: explicit and systematic instruction, and the Gradual Release of Responsibility (the teacher says it, then together, then the child alone). Closed syllables come first in English because open syllables change (ba-by, ba-nana).',
+            'basis' => 'MATATAG Grade 1 Reading and Literacy guide: explicit and systematic instruction, and the Gradual Release of Responsibility (the teacher says it, then together, then the child alone). Closed syllables come first in English because open syllables change (ba-by, ba-nana); that order is the team\'s choice, as no study was found that proves it. A child on the Words step or higher can play these four steps as the game Syllable Steps on the Games page (website).',
         ];
     }
 
