@@ -115,10 +115,10 @@
 <script>
   (function () {
     var G = window.READ_GAME;
-    var MAX_ATTEMPTS = 3;       // rounds in one sitting
-    var TARGETS = 3;            // things to read in a round
-    var CLEAN_HITS = 2;         // first-try reads (of 3) that make a round clean and move up a level
-    var MAX_TRIES = 2;          // tries for one thing: read it, then once more, then move on
+    var MAX_ATTEMPTS = {{ (int) config('practice_games.rounds') }};       // rounds in one sitting (config/practice_games.php)
+    var TARGETS = {{ (int) config('practice_games.per_round') }};            // things to read in a round
+    var CLEAN_HITS = {{ (int) config('practice_games.clean_hits') }};         // first-try reads that make a round clean and move up a level
+    var MAX_TRIES = {{ (int) config('practice_games.tries') }};          // tries for one thing: read it, then once more, then move on
 
     var level = G.startLevel;
     var attempt = 0;

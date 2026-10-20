@@ -215,10 +215,10 @@
   (function () {
     var LEVELS = @json($levels);
     var REPEAT = {{ (int) $repeat }};
-    var MAX_ATTEMPTS = 3;       // rounds in one sitting
-    var WORDS = 3;              // words in a round
-    var CLEAN_HITS = 2;         // words read right the first time (step 4) that make a round clean and move up a level
-    var MAX_TRIES = 2;          // tries for the sentence: read it, then once more, then move on
+    var MAX_ATTEMPTS = {{ (int) config('practice_games.rounds') }};       // rounds in one sitting (config/practice_games.php)
+    var WORDS = {{ (int) config('practice_games.per_round') }};              // words in a round
+    var CLEAN_HITS = {{ (int) config('practice_games.clean_hits') }};         // words read right the first time (step 4) that make a round clean and move up a level
+    var MAX_TRIES = {{ (int) config('practice_games.tries') }};          // tries for the sentence: read it, then once more, then move on
 
     var STEP_NAMES = ['Listen', 'Split', 'Join', 'Read'];
     var TITLES = { 1: 'Say it with Tara', 2: 'Clap the parts', 3: 'Join the parts', 4: 'Read it in a sentence' };

@@ -120,11 +120,11 @@
 
 <script>
   const LEVELS = @json($levels);
-  const MAX_ATTEMPTS = 3;          // rounds in one sitting
-  const TARGETS_PER_ROUND = 3;     // marked balloons to pop in a round
+  const MAX_ATTEMPTS = {{ (int) config('practice_games.rounds') }};          // rounds in one sitting (config/practice_games.php)
+  const TARGETS_PER_ROUND = {{ (int) config('practice_games.per_round') }};     // marked balloons to pop in a round
   const BALLOONS = 5;
-  const CLEAN_HITS = 2;            // first-try pops (of 3) that make a round clean and move up a level
-  const MAX_TRIES = 2;             // tries for one word: say it, then once more, then move on
+  const CLEAN_HITS = {{ (int) config('practice_games.clean_hits') }};            // first-try pops that make a round clean and move up a level
+  const MAX_TRIES = {{ (int) config('practice_games.tries') }};             // tries for one word: say it, then once more, then move on
 
   let currentLevel = {{ (int) $startLevel }};
   let attemptCount = 0;

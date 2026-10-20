@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ClassActivityOutcomes;
 use App\Services\TeacherAlerts;
+use App\Services\WordBank;
 use App\Support\ClassLevel;
 use App\Support\ErrorPatterns;
 use App\Support\GenerationBasis;
@@ -18,7 +19,7 @@ use Illuminate\View\View;
  *
  * The numbers are read from the same constants and config files the rules run on (config/progression.php,
  * config/activity_fit.php, config/reading.php, TeacherAlerts, ErrorPatterns, ClassLevel, GenerationBasis,
- * ClassActivityOutcomes), so this page cannot say one thing while the app does another. A test pins that.
+ * ClassActivityOutcomes, config/practice_games.php, WordBank), so this page cannot say one thing while the app does another. A test pins that.
  *
  * It says plainly that none of this is a trained model: the project has no dataset of children's readings to train
  * one on, so the "expert" is a set of written rules that a teacher can read, argue with and change in one place.
@@ -52,6 +53,13 @@ class HowItWorksController extends Controller
             ];
         })->values();
 
+        // The Practice Games' shared round numbers (config/practice_games.php) and the word bank's own constants.
+        $gameConfig = config('practice_games');
+        $stepName = fn (int $rung) => strtolower(ReadingLevel::RUNG_LABELS[$rung] ?? "step {$rung}");
+        $levelTwo = (int) $gameConfig['level_2_from_step'];
+        $levelThree = (int) $gameConfig['level_3_from_step'];
+        $stepsText = fn (int $from, int $to) => collect(range($from, $to))->map($stepName)->implode(', ');
+
         return view('how-it-works', [
             'progression' => $progression,
             'minWords' => $minWords,
@@ -77,6 +85,19 @@ class HowItWorksController extends Controller
             'outcomePaired' => ClassActivityOutcomes::MIN_PAIRED,
             'outcomeSame' => ClassActivityOutcomes::SAME_WITHIN,
             'tiers' => ReadingLevel::TIER_RUNGS,
+            'games' => [
+                'rounds' => (int) $gameConfig['rounds'],
+                'perRound' => (int) $gameConfig['per_round'],
+                'cleanHits' => (int) $gameConfig['clean_hits'],
+                'tries' => (int) $gameConfig['tries'],
+                'heardPercent' => (int) round($gameConfig['heard_share'] * 100),
+                'levelTwoFromStep' => $levelTwo,
+                'levelOneSteps' => $stepsText(0, $levelTwo - 1),
+                'levelTwoSteps' => $stepName($levelTwo),
+                'levelThreeSteps' => $stepName($levelThree),
+                'masteredAfter' => WordBank::MASTERED_AFTER,
+                'maxNewWords' => WordBank::MAX_NEW_PER_READING,
+            ],
             'syllable' => [
                 'filipinoName' => $syllableConfig['filipino_name'],
                 'steps' => $syllableConfig['steps'],

@@ -74,6 +74,7 @@
       <li><a href="#writing">Writing activities for a class</a></li>
       <li><a href="#classes">Class and grade rules</a></li>
       <li><a href="#syllables">The syllable method</a></li>
+      <li><a href="#games">Practice games and the word bank</a></li>
       <li><a href="#never">What it does not do</a></li>
       <li><a href="#checking">Checking the numbers</a></li>
       <li><a href="#services">The outside services</a></li>
@@ -266,7 +267,30 @@
     </ul>
   </div>
 
-  <h2 id="never">12. What it does not do</h2>
+  <h2 id="games">12. Practice games and the word bank</h2>
+  <p class="sub">Free reading play, and the list of words a child keeps missing.</p>
+  <div class="rule">
+    <span class="k">What it decides</span>
+    <p>Which Practice Game leads the Games page, what level a game starts at, what words or sentences a game offers first, when a spoken answer counts as read, and how a word enters and leaves the child's word bank.</p>
+    <span class="k">The rule</span>
+    <p>There are four Practice Games: Balloon Pop (read one word to pop its balloon), Word Train (read a whole row to make the train roll; a child still on the Letters step gets rows of letters), Sentence Stars (read a sentence to catch a star) and Syllable Steps (section 11). All four end with the child reading out loud. They are free play: they never change points, streak or level, and nothing the child says is kept.</p>
+    <p>A round has <span class="num">{{ $games['perRound'] }}</span> things to read. Each one gets up to <span class="num">{{ $games['tries'] }}</span> tries: read it, then once more, then the game moves on. "Tara is not sure" is shown instead of "wrong". If <span class="num">{{ $games['cleanHits'] }}</span> or more were read right the first time, the child climbs one level. A sitting is up to <span class="num">{{ $games['rounds'] }}</span> rounds, or a single round for a child who starts on the top level (level 3).</p>
+    <p>The level a game starts at follows the child's step on the reading path (section 2): level 1 for the first {{ $games['levelTwoFromStep'] }} steps ({{ $games['levelOneSteps'] }}), level 2 from {{ $games['levelTwoSteps'] }}, and level 3 from {{ $games['levelThreeSteps'] }}. Syllable Steps uses the syllable method's own word levels instead.</p>
+    <p>A row or a sentence counts as read when at least <span class="num">{{ $games['heardPercent'] }} percent</span> of its words are heard, not counting words the speech checker was unsure of (the Not sure line in section 4). The game is told only whether each word was heard (and so "heard" or "try again" for the whole), never what the child said instead.</p>
+    <p>What a game offers comes in this order: first the words the child has been missing in their own readings (the word bank, below), then words or sentences that practise the child's main kind of mistake (section 5), then the level's own list. The Games page marks one game as recommended: Word Train for a child on the Letters step, Syllable Steps when the main kind of mistake is reading longer words in pieces, Balloon Pop when the word bank has words the child still misses, Word Train for the first words step, and otherwise Sentence Stars. Every game stays playable whichever is recommended.</p>
+    <span class="k">The word bank</span>
+    <p>After each scored reading, every word the child missed goes into their word bank once, as <b>Struggling</b> (a word already in the bank goes back to Struggling and its count starts again). A word in the bank that the child now reads correctly moves to <b>Improving</b> after the first correct reading and to <b>Mastered</b> after <span class="num">{{ $games['masteredAfter'] }}</span> correct readings, so a word is practised soon after a miss and then less and less (spaced review). One reading adds at most <span class="num">{{ $games['maxNewWords'] }}</span> new words, so one hard passage cannot flood the bank. A word the checker was only "not sure" about is never added, and a word that is not in the bank is not added just for being right.</p>
+    <span class="k">Where it comes from</span>
+    <p>Reading single words, rows and sentences aloud is word reading and sounding out words in the MATATAG curriculum: when a game asks the speech checker, it sends the code of the child's own grade (RL1PWS-I-5 "Sound out words accurately" for Grade 1, EN2PWS-I-3 for Grade 2, EN3PWS-I-2 for Grade 3). The word bank's "come back to a missed word soon, then less and less often" is the team's own design of spaced review; no study was checked for these exact numbers. The numbers in this section (three things to a round, two tries, two to climb, the "heard" share) were chosen with synthesized voices, not with children. They are in <code>config/practice_games.php</code> and <code>app/Services/WordBank.php</code>.</p>
+    <span class="k">Honest limits</span>
+    <ul>
+      <li>No real child has played the games yet. The rounds, tries and the "heard" share are the first numbers to check once children do (section 14).</li>
+      <li>A row of single short words is the hardest thing for a speech recognizer, so a row read right can be turned away. The second try and the kind line "Good try! On we go." soften that.</li>
+      <li>The phone app has its own copy of the round numbers; a test fails if they ever differ from <code>config/practice_games.php</code>.</li>
+    </ul>
+  </div>
+
+  <h2 id="never">13. What it does not do</h2>
   <ul>
     <li>It does not decide for a teacher or a parent. Alerts and suggestions come with their reasons, and a person acts.</li>
     <li>It does not hide an activity from a child, and it does not show a child a score on the first reading check.</li>
@@ -274,16 +298,16 @@
     <li>It does not learn by itself. No number on this page changes unless a person changes it.</li>
   </ul>
 
-  <h2 id="checking">13. Checking the numbers</h2>
+  <h2 id="checking">14. Checking the numbers</h2>
   <p>Nobody has tested the app with real children yet, and a model cannot honestly be trained without that data. Once real children use it, these are the first things the team will check, and each number lives in one settings file, so a change after the evidence needs no new code:</p>
   <ol>
     <li>Whether children read activities written for their class better than general ones (the "Did it work?" card in section 9).</li>
-    <li>Whether the Not sure line and the "heard" share used in the games fit children's voices (this needs recordings of real children and their parents' consent).</li>
+    <li>Whether the Not sure line and the "heard" share used in the games (section 12) fit children's voices (this needs recordings of real children and their parents' consent).</li>
     <li>Whether moving up after 3 strong readings and down after 2 weak ones moves children too slowly or too fast, by counting how many readings each move takes.</li>
     <li>Whether the word limits for each step match how long children really take to read.</li>
   </ol>
 
-  <h2 id="services">14. The outside services</h2>
+  <h2 id="services">15. The outside services</h2>
   <ul>
     <li><b>Reading scoring service:</b> Vosk, an open speech recognition engine, run by the team. It turns a recording into words and returns the word by word result. Section 4 describes what TaraBasa does with it.</li>
     <li><b>Activity writer:</b> a service the team runs that asks an AI language model to write the texts. It receives a grade, a skill, a topic and a short note. When a teacher picks a class, the note holds a summary of the class (section 9), and never a name, a learner code or any one child's details.</li>
@@ -291,7 +315,7 @@
   </ul>
   <p>The <a href="{{ route('privacy') }}">Privacy page</a> says what each one receives.</p>
 
-  <h2 id="sources">15. Sources</h2>
+  <h2 id="sources">16. Sources</h2>
   <ul>
     <li>DepEd Order No. 14, s. 2018: Philippine Informal Reading Inventory (Phil-IRI), the reading level names and accuracy bands.</li>
     <li>DepEd Order No. 10, s. 2024: the MATATAG Curriculum, written grade by grade, with the competency codes used in the checks, activities and patterns.</li>
