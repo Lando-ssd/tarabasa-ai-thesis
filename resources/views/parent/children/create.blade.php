@@ -4,10 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Add your child | TaraBasa AI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="{{ asset('css/fonts.css') }}?v={{ substr(md5_file(public_path('css/fonts.css')), 0, 10) }}">
 <link href="{{ asset('vendor/cropper-1.6.2.min.css') }}" rel="stylesheet">
 <link rel="stylesheet" href="{{ asset('css/parent-focus.css') }}?v={{ substr(md5_file(public_path('css/parent-focus.css')), 0, 12) }}">
 </head>
@@ -190,6 +187,17 @@
         <input type="tel" inputmode="numeric" maxlength="4" class="pin-hidden-input" id="pinConfirmInput">
         <input type="hidden" name="pin_confirmation" id="pin_confirmation">
         <div class="field-error" id="pinMismatchError" style="text-align:center; display:none;">PINs don't match. Try again.</div>
+
+        {{-- The parent's consent for the child's information (what exactly is in resources/views/legal/consent.blade.php). Required: nothing is
+             kept without it. The photo has its own box, shown only when a photo was chosen. --}}
+        <div class="consent-block">
+          <p class="consent-title">Before we save</p>
+          <p>You are giving us information about <span class="child-name-ref">your child</span>: their name, grade, how they read, and their reading results. Their voice is sent to be scored and <b>is not saved</b>. You and any other guardian, and the teacher of a class they join, can see their progress.</p>
+          <x-consent-check name="parent_consent" id="parent_consent">I am this child's parent or legal guardian, and I agree to TaraBasa AI keeping and using my child's information as described in the <a href="{{ route('consent') }}" target="_blank" rel="noopener">Parent and Guardian Consent</a> notice and the <a href="{{ route('privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.</x-consent-check>
+          <div id="photoConsentRow" hidden>
+            <x-consent-check name="photo_consent" id="photo_consent" :required="false">I also agree to TaraBasa AI keeping my child's photo. I have the right to share it.</x-consent-check>
+          </div>
+        </div>
       </div>
 
       <div class="nav-row" id="navRow">
@@ -428,6 +436,8 @@
     prevBtn.style.visibility = n === 1 ? 'hidden' : 'visible';
     // On a phone the first step has no Back button at all, so Next can use the whole row (the stylesheet decides; elsewhere Back only hides).
     document.getElementById('navRow').classList.toggle('is-first', n === 1);
+    // The photo consent box only matters when a photo was chosen (the parent consent box is always there).
+    document.getElementById('photoConsentRow').hidden = !(n === 5 && avatarMode === 'photo' && photoReady);
     if (n === 4) renderPlacementQuestions();
 
     nextBtn.classList.toggle('step-hidden', n === totalSteps);
@@ -467,6 +477,8 @@
       const confirm = document.getElementById('pin_confirmation').value;
       if (pin.length < 4){ showInlineError('Please enter a 4-digit PIN.'); return false; }
       if (confirm.length < 4 || confirm !== pin){ showInlineError("PINs don't match. Try again."); return false; }
+      if (!document.getElementById('parent_consent').checked){ showInlineError("Please tick the box to confirm you are this child's parent or guardian and you agree."); return false; }
+      if (avatarMode === 'photo' && photoReady && !document.getElementById('photo_consent').checked){ showInlineError('Please tick the photo box, or go back and choose a character instead.'); return false; }
     }
     return true;
   }

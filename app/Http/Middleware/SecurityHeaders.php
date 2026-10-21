@@ -22,6 +22,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *  - no-store for a page shown to someone who is signed in: on a school or family device shared by
  *    several children, pressing Back after Log out must not bring up the last person's page.
  *
+ * Fonts may only come from this site (font-src): the typefaces are served from /fonts, so no visitor's address is sent to an outside font
+ * service, and a page that tries to load one again shows plain text instead of silently leaking.
+ *
  * A full content security policy is not set: the screens use inline scripts and styles throughout,
  * and a policy loose enough to allow them adds little. Only the parts that cost nothing are set.
  */
@@ -44,7 +47,7 @@ class SecurityHeaders
         // the two login pages. Everywhere else it stays off.
         $camera = $request->is('teacher/classes', 'teacher/classes/*', 'learner/login', 'login') ? '(self)' : '()';
         $response->headers->set('Permissions-Policy', "microphone=(self), camera={$camera}, geolocation=(), payment=(), usb=(), interest-cohort=()");
-        $response->headers->set('Content-Security-Policy', "base-uri 'self'; object-src 'none'; frame-ancestors 'self'");
+        $response->headers->set('Content-Security-Policy', "base-uri 'self'; object-src 'none'; frame-ancestors 'self'; font-src 'self' data:");
 
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=15552000');

@@ -33,13 +33,13 @@ class EmailConfirmationTest extends TestCase
     {
         return $o + [
             'first_name' => 'Pinky', 'last_name' => 'Reyes', 'email' => 'pinky@example.com', 'password' => 'Passw0rd!', 'password_confirmation' => 'Passw0rd!',
-            'school_name' => 'Rizal ES', 'employee_id' => 'EMP-1', 'grades_mode' => 'single', 'grades_handled' => ['Grade 2'],
+            'school_name' => 'Rizal ES', 'employee_id' => 'EMP-1', 'grades_mode' => 'single', 'grades_handled' => ['Grade 2'], 'accepts_terms' => '1',
         ];
     }
 
     private function parentForm(array $o = []): array
     {
-        return $o + ['first_name' => 'Pat', 'last_name' => 'Cruz', 'email' => 'pat@example.com', 'password' => 'Passw0rd!', 'password_confirmation' => 'Passw0rd!'];
+        return $o + ['first_name' => 'Pat', 'last_name' => 'Cruz', 'email' => 'pat@example.com', 'password' => 'Passw0rd!', 'password_confirmation' => 'Passw0rd!', 'accepts_terms' => '1'];
     }
 
     private function unconfirmed(string $type = 'Teacher', string $email = 'pinky@example.com'): User

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="982" viewBox="0 0 760 982" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="982" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Teacher workflow (1 of 4): account, approval and grades</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">Replaces Figures 4.1. A Pending teacher can sign in and look, but only an Active teacher touches real students.</text>
+<rect x="14" y="76" width="321.77777777777777" height="854.0" rx="8" fill="#E4F4F1" fill-opacity="0.55" stroke="#79BDB5" stroke-width="1.2"/>
+<rect x="14" y="76" width="321.77777777777777" height="30" rx="8" fill="#79BDB5" fill-opacity="0.55"/>
+<text x="174.88888888888889" y="95.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Teacher</text>
+<rect x="343.77777777777777" y="76" width="402.22222222222223" height="854.0" rx="8" fill="#FFF0DC" fill-opacity="0.55" stroke="#E8A04F" stroke-width="1.2"/>
+<rect x="343.77777777777777" y="76" width="402.22222222222223" height="30" rx="8" fill="#E8A04F" fill-opacity="0.55"/>
+<text x="544.8888888888889" y="95.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">TaraBasa system and Admin</text>
+<polyline points="174.9,165.0 174.9,206.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,206.0 170.9,198.0 178.9,198.0" fill="#44546A"/>
+<polyline points="324.8,234.0 354.8,234.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,234.0 346.8,238.0 346.8,230.0" fill="#44546A"/>
+<polyline points="544.9,262.0 544.9,275.0 174.9,275.0 174.9,288.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,288.0 170.9,280.0 178.9,280.0" fill="#44546A"/>
+<polyline points="324.8,316.0 354.8,316.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,316.0 346.8,320.0 346.8,312.0" fill="#44546A"/>
+<polyline points="544.9,344.0 544.9,357.0 174.9,357.0 174.9,370.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,370.0 170.9,362.0 178.9,362.0" fill="#44546A"/>
+<polyline points="324.8,398.0 544.9,398.0 544.9,452.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="544.9,452.0 540.9,444.0 548.9,444.0" fill="#44546A"/>
+<polyline points="424.9,480.0 324.8,480.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="324.8,480.0 332.8,476.0 332.8,484.0" fill="#44546A"/>
+<rect x="363.3" y="471.0" width="23.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="374.8" y="483.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">No</text>
+<polyline points="25.0,480.0 19.0,480.0 19.0,398.0 25.0,398.0" fill="none" stroke="#44546A" stroke-width="1.6" stroke-dasharray="6 4"/>
+<polygon points="25.0,398.0 17.0,402.0 17.0,394.0" fill="#44546A"/>
+<rect x="26.0" y="459.0" width="54.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="53.0" y="471.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">try again</text>
+<polyline points="544.9,508.0 544.9,534.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="544.9,534.0 540.9,526.0 548.9,526.0" fill="#44546A"/>
+<rect x="547.4" y="511.0" width="27.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="560.9" y="523.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">Yes</text>
+<polyline points="424.9,562.0 324.8,562.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="324.8,562.0 332.8,558.0 332.8,566.0" fill="#44546A"/>
+<rect x="363.3" y="553.0" width="23.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="374.8" y="565.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">No</text>
+<polyline points="544.9,590.0 544.9,616.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="544.9,616.0 540.9,608.0 548.9,608.0" fill="#44546A"/>
+<rect x="547.4" y="593.0" width="27.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="560.9" y="605.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">Yes</text>
+<polyline points="354.8,644.0 224.9,644.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="224.9,644.0 232.9,640.0 232.9,648.0" fill="#44546A"/>
+<polyline points="174.9,590.0 174.9,630.0" fill="none" stroke="#44546A" stroke-width="1.6" stroke-dasharray="6 4"/>
+<polygon points="174.9,630.0 170.9,622.0 178.9,622.0" fill="#44546A"/>
+<polyline points="174.9,658.0 174.9,780.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,780.0 170.9,772.0 178.9,772.0" fill="#44546A"/>
+<polyline points="324.8,808.0 354.8,808.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,808.0 346.8,812.0 346.8,804.0" fill="#44546A"/>
+<polyline points="544.9,836.0 544.9,876.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="544.9,876.0 540.9,868.0 548.9,868.0" fill="#44546A"/>
+<rect x="139.88888888888889" y="139.0" width="70" height="26" rx="13.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="174.9" y="156.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Start</text>
+<rect x="25.0" y="206.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="238.2" font-size="12" text-anchor="middle" fill="#1F2937">Sign up: name, school, employee ID, grades, email</text>
+<rect x="354.7777777777778" y="206.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="230.7" font-size="12" text-anchor="middle" fill="#1F2937">Check the form and the email domain; create account (Pending);</text><text x="544.9" y="245.7" font-size="12" text-anchor="middle" fill="#1F2937">send confirmation link</text>
+<rect x="25.0" y="288.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="320.2" font-size="12" text-anchor="middle" fill="#1F2937">Open the confirmation link in the email</text>
+<rect x="354.7777777777778" y="288.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="320.2" font-size="12" text-anchor="middle" fill="#1F2937">Mark the email confirmed (a wrong or old link offers a new one)</text>
+<rect x="25.0" y="370.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="402.2" font-size="12" text-anchor="middle" fill="#1F2937">Sign in with email and password</text>
+<polygon points="544.8888888888889,452.0 664.8888888888889,480.0 544.8888888888889,508.0 424.8888888888889,480.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.6"/><text x="544.9" y="484.2" font-size="12" text-anchor="middle" fill="#1F2937">Sign in allowed?</text>
+<rect x="25.0" y="452.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="476.7" font-size="12" text-anchor="middle" fill="#1F2937">See the reason: wrong password, email not</text><text x="174.9" y="491.7" font-size="12" text-anchor="middle" fill="#1F2937">confirmed, rejected (with the reason) or deactivated</text>
+<polygon points="544.8888888888889,534.0 664.8888888888889,562.0 544.8888888888889,590.0 424.8888888888889,562.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.6"/><text x="544.9" y="566.2" font-size="12" text-anchor="middle" fill="#1F2937">Approved by the Admin?</text>
+<rect x="25.0" y="534.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="566.2" font-size="12" text-anchor="middle" fill="#1F2937">Pending: view only, 2 free AI drafts</text>
+<rect x="354.7777777777778" y="616.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="648.2" font-size="12" text-anchor="middle" fill="#1F2937">Active: classes, activities, assigning, sharing</text>
+<rect x="124.88888888888889" y="630.0" width="100" height="28" rx="14.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="174.9" y="648.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Dashboard</text>
+<rect x="25.0" y="780.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="804.7" font-size="12" text-anchor="middle" fill="#1F2937">Later: ask to add a grade; say who at school can</text><text x="174.9" y="819.7" font-size="12" text-anchor="middle" fill="#1F2937">confirm it</text>
+<rect x="354.7777777777778" y="780.0" width="380.22222222222223" height="56" rx="7" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="544.9" y="812.2" font-size="12" text-anchor="middle" fill="#1F2937">Admin approves or declines; the teacher is told</text>
+<rect x="449.8888888888889" y="876.0" width="190" height="28" rx="14.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="544.9" y="894.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Classes open for that grade</text>
+<text x="24" y="968" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="957" width="16" height="12" rx="3" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.4"/>
+<text x="102" y="967" font-size="11" fill="#1F2937">Step</text>
+<rect x="146.0" y="957" width="16" height="12" rx="3" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.4"/>
+<text x="168.0" y="967" font-size="11" fill="#1F2937">Admin step or decision</text>
+<rect x="300.0" y="957" width="16" height="12" rx="3" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.4"/>
+<text x="322.0" y="967" font-size="11" fill="#1F2937">Outside service</text>
+</svg>

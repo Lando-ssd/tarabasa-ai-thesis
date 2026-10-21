@@ -14,6 +14,21 @@ The two MATATAG curriculum guide PDFs are DepEd's official curriculum
 reference — relevant to the AI content-matching / curriculum guide
 features (later modules), not needed for Sprint 3 (Account Management).
 
+## manuscript-update/ — CURRENT, work pack for the manuscript writer (20 Oct 2026)
+
+Review of manuscript version 29 against the system as built, with every new or
+replacement text, figure, FDD, use case, reference and a panel review sheet.
+Start at `manuscript-update/00_README_START_HERE.docx`. It is NOT application
+code and does not override the code: the code is the source of truth for what
+the system does; the pack is what the manuscript should say about it. The
+adaptive support is rule based (no trained model); keep that wording.
+
+## legal/ — CURRENT, the honest legal and privacy record (21 Oct 2026)
+
+`LEGAL-RISK-REGISTER.md` (what was fixed, what only the team can do, what needs a lawyer) and `DATA-INVENTORY.md` (every datum, every outside
+service, cookies, a draft of the Google Play Data safety answers). Not application code and not legal advice. The public pages themselves are
+Blade views in `resources/views/legal` and `privacy.blade.php`, with their settings in `config/legal.php`.
+
 ## actor-prompts/ — CURRENT, per-role detailed behavior specs
 
 These describe exactly how each actor (Teacher/Parent/Admin/Learner)

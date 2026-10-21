@@ -59,11 +59,11 @@ class SecurityHardeningTest extends TestCase
         $kid = $this->child();
         $this->actingAs($stranger);
 
-        $this->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'relationship' => 'Guardian'])
+        $this->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'relationship' => 'Guardian', 'guardian_confirm' => '1'])
             ->assertSessionHasErrors('pin');
 
-        $wrongPin = $this->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => '0000', 'relationship' => 'Guardian']);
-        $noSuchCode = $this->post(route('parent.children.link.submit'), ['learner_code' => 'TB26-00000', 'pin' => '0000', 'relationship' => 'Guardian']);
+        $wrongPin = $this->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => '0000', 'relationship' => 'Guardian', 'guardian_confirm' => '1']);
+        $noSuchCode = $this->post(route('parent.children.link.submit'), ['learner_code' => 'TB26-00000', 'pin' => '0000', 'relationship' => 'Guardian', 'guardian_confirm' => '1']);
         $wrongPin->assertSessionHasErrors('learner_code');
         $noSuchCode->assertSessionHasErrors('learner_code');
         $this->assertSame(session('errors')->first('learner_code'), $wrongPin->baseResponse->getSession()->get('errors')->first('learner_code'));
@@ -83,11 +83,11 @@ class SecurityHardeningTest extends TestCase
         $this->actingAs($stranger);
 
         foreach (range(1, 5) as $i) {
-            $this->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => sprintf('%04d', $i), 'relationship' => 'Guardian']);
+            $this->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => sprintf('%04d', $i), 'relationship' => 'Guardian', 'guardian_confirm' => '1']);
         }
 
         // The sixth try has the right PIN and is still refused: guessing is what is being stopped.
-        $this->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => '4321', 'relationship' => 'Guardian'])
+        $this->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => '4321', 'relationship' => 'Guardian', 'guardian_confirm' => '1'])
             ->assertSessionHasErrors('learner_code');
         $this->assertStringContainsString('Too many tries', session('errors')->first('learner_code'));
         $this->assertSame(0, $profile->learners()->count());
@@ -98,12 +98,12 @@ class SecurityHardeningTest extends TestCase
         $kid = $this->child();
         foreach (range(1, 5) as $i) {
             [$u] = $this->parent("guesser{$i}@example.com");
-            $this->actingAs($u)->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => sprintf('%04d', $i), 'relationship' => 'Guardian']);
+            $this->actingAs($u)->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => sprintf('%04d', $i), 'relationship' => 'Guardian', 'guardian_confirm' => '1']);
         }
 
         // A brand new account, with the right PIN, is still refused while the code is being attacked.
         [$late, $profile] = $this->parent('late@example.com');
-        $this->actingAs($late)->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => '4321', 'relationship' => 'Guardian'])
+        $this->actingAs($late)->post(route('parent.children.link.submit'), ['learner_code' => $kid->learner_code, 'pin' => '4321', 'relationship' => 'Guardian', 'guardian_confirm' => '1'])
             ->assertSessionHasErrors('learner_code');
         $this->assertSame(0, $profile->learners()->count());
     }
@@ -115,7 +115,7 @@ class SecurityHardeningTest extends TestCase
         $kid = $this->child();
         $firstProfile->learners()->attach($kid->id, ['relationship' => 'Mother', 'is_creator' => true]);
 
-        $this->actingAs($second)->post(route('parent.children.link.submit'), ['learner_code' => strtolower($kid->learner_code), 'pin' => '4321', 'relationship' => 'Father'])
+        $this->actingAs($second)->post(route('parent.children.link.submit'), ['learner_code' => strtolower($kid->learner_code), 'pin' => '4321', 'relationship' => 'Father', 'guardian_confirm' => '1'])
             ->assertRedirect(route('parent.children.index'));
 
         $this->assertSame(1, $secondProfile->learners()->count());

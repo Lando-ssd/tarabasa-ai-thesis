@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="880" viewBox="0 0 760 880" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="880" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">TaraBasa AI: system architecture and technology stack</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">Replaces the Technology Stack Diagram (Table 23) as a picture. No SMS gateway and no Google Speech-to-Text.</text>
+<rect x="14" y="74" width="732" height="104" rx="8" fill="#EEE9FA" fill-opacity="0.55" stroke="#A894DA" stroke-width="1.2"/>
+<rect x="14" y="74" width="732" height="26" rx="8" fill="#A894DA" fill-opacity="0.55"/>
+<text x="26" y="91.32" font-size="12" font-weight="bold" text-anchor="start" fill="#1F2937">1. People and their devices</text>
+<rect x="14" y="198" width="732" height="112" rx="8" fill="#E8F1FB" fill-opacity="0.55" stroke="#7FA8D6" stroke-width="1.2"/>
+<rect x="14" y="198" width="732" height="26" rx="8" fill="#7FA8D6" fill-opacity="0.55"/>
+<text x="734" y="215.32" font-size="12" font-weight="bold" text-anchor="end" fill="#1F2937">2. What people open</text>
+<rect x="14" y="332" width="732" height="112" rx="8" fill="#E4F4F1" fill-opacity="0.55" stroke="#79BDB5" stroke-width="1.2"/>
+<rect x="14" y="332" width="732" height="26" rx="8" fill="#79BDB5" fill-opacity="0.55"/>
+<text x="734" y="349.32" font-size="12" font-weight="bold" text-anchor="end" fill="#1F2937">3. Application server (Render, Singapore, Docker image, PHP 8.4)</text>
+<rect x="14" y="476" width="360" height="124" rx="8" fill="#F3F5F8" fill-opacity="0.55" stroke="#B8C0CC" stroke-width="1.2"/>
+<rect x="14" y="476" width="360" height="26" rx="8" fill="#B8C0CC" fill-opacity="0.55"/>
+<text x="26" y="493.32" font-size="12" font-weight="bold" text-anchor="start" fill="#1F2937">4. Data</text>
+<rect x="388" y="476" width="358" height="368" rx="8" fill="#FFF0DC" fill-opacity="0.55" stroke="#E8A04F" stroke-width="1.2"/>
+<rect x="388" y="476" width="358" height="26" rx="8" fill="#E8A04F" fill-opacity="0.55"/>
+<text x="734" y="493.32" font-size="12" font-weight="bold" text-anchor="end" fill="#1F2937">5. Outside services (HTTPS)</text>
+<polyline points="110.0,168.0 110.0,201.0 200.0,201.0 200.0,234.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="200.0,234.0 196.0,226.0 204.0,226.0" fill="#44546A"/>
+<polyline points="290.0,168.0 290.0,201.0 200.0,201.0 200.0,234.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="200.0,234.0 196.0,226.0 204.0,226.0" fill="#44546A"/>
+<polyline points="470.0,168.0 470.0,201.0 200.0,201.0 200.0,234.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="200.0,234.0 196.0,226.0 204.0,226.0" fill="#44546A"/>
+<polyline points="650.0,168.0 650.0,201.0 560.0,201.0 560.0,234.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="560.0,234.0 556.0,226.0 564.0,226.0" fill="#44546A"/>
+<polyline points="268.0,300.0 268.0,334.0 292.0,334.0 292.0,368.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="292.0,368.0 288.0,360.0 296.0,360.0" fill="#44546A"/>
+<polygon points="268.0,300.0 272.0,308.0 264.0,308.0" fill="#44546A"/>
+<polyline points="458.0,300.0 458.0,334.0 112.0,334.0 112.0,368.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="112.0,368.0 108.0,360.0 116.0,360.0" fill="#44546A"/>
+<polygon points="458.0,300.0 462.0,308.0 454.0,308.0" fill="#44546A"/>
+<polyline points="446.8,434.0 446.8,458.0 116.0,458.0 116.0,514.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="116.0,514.0 112.0,506.0 120.0,506.0" fill="#44546A"/>
+<polygon points="446.8,434.0 450.8,442.0 442.8,442.0" fill="#44546A"/>
+<polyline points="651.0,434.0 651.0,458.0 517.5,458.0 517.5,514.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="517.5,514.0 513.5,506.0 521.5,506.0" fill="#44546A"/>
+<polygon points="651.0,434.0 655.0,442.0 647.0,442.0" fill="#44546A"/>
+<rect x="26" y="112" width="168" height="56" rx="7" fill="#EEE9FA" stroke="#A894DA" stroke-width="1.5"/><text x="110.0" y="130.1" font-size="11" text-anchor="middle" fill="#1F2937">Learner</text><text x="110.0" y="143.8" font-size="11" text-anchor="middle" fill="#1F2937">Android phone or tablet, or a</text><text x="110.0" y="157.6" font-size="11" text-anchor="middle" fill="#1F2937">browser</text>
+<rect x="206" y="112" width="168" height="56" rx="7" fill="#EEE9FA" stroke="#A894DA" stroke-width="1.5"/><text x="290.0" y="130.1" font-size="11" text-anchor="middle" fill="#1F2937">Teacher</text><text x="290.0" y="143.8" font-size="11" text-anchor="middle" fill="#1F2937">Android phone, or a laptop</text><text x="290.0" y="157.6" font-size="11" text-anchor="middle" fill="#1F2937">browser</text>
+<rect x="386" y="112" width="168" height="56" rx="7" fill="#EEE9FA" stroke="#A894DA" stroke-width="1.5"/><text x="470.0" y="137.0" font-size="11" text-anchor="middle" fill="#1F2937">Parent</text><text x="470.0" y="150.7" font-size="11" text-anchor="middle" fill="#1F2937">Android phone, or a browser</text>
+<rect x="566" y="112" width="168" height="56" rx="7" fill="#EEE9FA" stroke="#A894DA" stroke-width="1.5"/><text x="650.0" y="137.0" font-size="11" text-anchor="middle" fill="#1F2937">Admin</text><text x="650.0" y="150.7" font-size="11" text-anchor="middle" fill="#1F2937">Laptop browser (website only)</text>
+<rect x="30" y="234" width="340" height="66" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="200.0" y="257.1" font-size="11" text-anchor="middle" fill="#1F2937">Phone app (version 0.5.4)</text><text x="200.0" y="270.9" font-size="11" text-anchor="middle" fill="#1F2937">React Native with Expo SDK 57, React 19, TypeScript</text><text x="200.0" y="284.6" font-size="11" text-anchor="middle" fill="#1F2937">Android 7 or newer; scans QR cards; records audio</text>
+<rect x="390" y="234" width="340" height="66" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="560.0" y="257.1" font-size="11" text-anchor="middle" fill="#1F2937">Website</text><text x="560.0" y="270.9" font-size="11" text-anchor="middle" fill="#1F2937">Laravel Blade pages with plain JavaScript</text><text x="560.0" y="284.6" font-size="11" text-anchor="middle" fill="#1F2937">Chrome, Edge or Firefox; all four roles</text>
+<rect x="28" y="368" width="168" height="66" rx="7" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.5"/><text x="112.0" y="391.1" font-size="11" text-anchor="middle" fill="#1F2937">Laravel 13</text><text x="112.0" y="404.9" font-size="11" text-anchor="middle" fill="#1F2937">web pages and forms</text><text x="112.0" y="418.6" font-size="11" text-anchor="middle" fill="#1F2937">session sign in</text>
+<rect x="208" y="368" width="168" height="66" rx="7" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.5"/><text x="292.0" y="391.1" font-size="11" text-anchor="middle" fill="#1F2937">JSON API for the phone</text><text x="292.0" y="404.9" font-size="11" text-anchor="middle" fill="#1F2937">Sanctum tokens</text><text x="292.0" y="418.6" font-size="11" text-anchor="middle" fill="#1F2937">token fence by role</text>
+<rect x="388" y="368" width="168" height="66" rx="7" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.5"/><text x="472.0" y="391.1" font-size="11" text-anchor="middle" fill="#1F2937">Rule engine (services)</text><text x="472.0" y="404.9" font-size="11" text-anchor="middle" fill="#1F2937">progression, patterns,</text><text x="472.0" y="418.6" font-size="11" text-anchor="middle" fill="#1F2937">fit, alerts, word bank</text>
+<rect x="568" y="368" width="166" height="66" rx="7" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.5"/><text x="651.0" y="391.1" font-size="11" text-anchor="middle" fill="#1F2937">Background worker</text><text x="651.0" y="404.9" font-size="11" text-anchor="middle" fill="#1F2937">queue in the database</text><text x="651.0" y="418.6" font-size="11" text-anchor="middle" fill="#1F2937">writes AI drafts</text>
+<path d="M36,522 a80.0,8 0 0 1 160,0 v60 a80.0,8 0 0 1 -160,0 z" fill="#F3F5F8" stroke="#44546A" stroke-width="1.6"/><path d="M36,522 a80.0,8 0 0 0 160,0" fill="none" stroke="#44546A" stroke-width="1.4"/><text x="116.0" y="542.1" font-size="11" text-anchor="middle" fill="#1F2937">TiDB Cloud Starter</text><text x="116.0" y="555.9" font-size="11" text-anchor="middle" fill="#1F2937">MySQL compatible</text><text x="116.0" y="569.6" font-size="11" text-anchor="middle" fill="#1F2937">AWS Singapore</text>
+<path d="M212,522 a75.0,8 0 0 1 150,0 v60 a75.0,8 0 0 1 -150,0 z" fill="#F3F5F8" stroke="#44546A" stroke-width="1.6"/><path d="M212,522 a75.0,8 0 0 0 150,0" fill="none" stroke="#44546A" stroke-width="1.4"/><text x="287.0" y="542.1" font-size="11" text-anchor="middle" fill="#1F2937">SQLite</text><text x="287.0" y="555.9" font-size="11" text-anchor="middle" fill="#1F2937">only on a developer&#x27;s</text><text x="287.0" y="569.6" font-size="11" text-anchor="middle" fill="#1F2937">computer</text>
+<rect x="402" y="514" width="330" height="64" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="567.0" y="536.1" font-size="11" text-anchor="middle" fill="#1F2937">Reading service (Vosk)</text><text x="567.0" y="549.9" font-size="11" text-anchor="middle" fill="#1F2937">Reading-api v3, FastAPI on Render</text><text x="567.0" y="563.6" font-size="11" text-anchor="middle" fill="#1F2937">scores a recording</text>
+<rect x="402" y="590" width="330" height="64" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="567.0" y="612.1" font-size="11" text-anchor="middle" fill="#1F2937">Activity writer</text><text x="567.0" y="625.9" font-size="11" text-anchor="middle" fill="#1F2937">Gemini through a FastAPI service</text><text x="567.0" y="639.6" font-size="11" text-anchor="middle" fill="#1F2937">writes draft activities</text>
+<rect x="402" y="666" width="330" height="64" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="567.0" y="688.1" font-size="11" text-anchor="middle" fill="#1F2937">Adaptive recommender</text><text x="567.0" y="701.9" font-size="11" text-anchor="middle" fill="#1F2937">formulas only, FastAPI on Render</text><text x="567.0" y="715.6" font-size="11" text-anchor="middle" fill="#1F2937">updates the profile, suggests next</text>
+<rect x="402" y="742" width="330" height="64" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="567.0" y="771.0" font-size="11" text-anchor="middle" fill="#1F2937">Gmail API (OAuth)</text><text x="567.0" y="784.7" font-size="11" text-anchor="middle" fill="#1F2937">sends confirmation and reset emails</text>
+<rect x="20" y="616" width="354" height="106" rx="7" fill="#F3F5F8" stroke="#B8C0CC" stroke-width="1.5"/><text x="197.0" y="659.1" font-size="11" text-anchor="middle" fill="#1F2937">Safety: HTTPS, security headers, rate limits, role checks on every</text><text x="197.0" y="672.9" font-size="11" text-anchor="middle" fill="#1F2937">route, PINs and passwords hashed, nothing sensitive in the address,</text><text x="197.0" y="686.6" font-size="11" text-anchor="middle" fill="#1F2937">no card numbers stored.</text>
+<rect x="20" y="736" width="354" height="108" rx="7" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="197.0" y="780.1" font-size="11" text-anchor="middle" fill="#1F2937">Free hosting limits: the server and the three AI services sleep when</text><text x="197.0" y="793.9" font-size="11" text-anchor="middle" fill="#1F2937">idle (about a minute to wake). The page wakes them from the</text><text x="197.0" y="807.6" font-size="11" text-anchor="middle" fill="#1F2937">browser; the server waits for them.</text>
+<text x="24" y="868" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="857" width="16" height="12" rx="3" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.4"/>
+<text x="102" y="867" font-size="11" fill="#1F2937">Outside service</text>
+<rect x="201.0" y="857" width="16" height="12" rx="3" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.4"/>
+<text x="223.0" y="867" font-size="11" fill="#1F2937">Our server</text>
+<rect x="299.0" y="857" width="16" height="12" rx="3" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.4"/>
+<text x="321.0" y="867" font-size="11" fill="#1F2937">What people open</text>
+<rect x="430.0" y="857" width="16" height="12" rx="3" fill="#F3F5F8" stroke="#B8C0CC" stroke-width="1.4"/>
+<text x="452.0" y="867" font-size="11" fill="#1F2937">Data and notes</text>
+</svg>

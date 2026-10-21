@@ -1,0 +1,157 @@
+"""Data for the register (01), the references (04) and the numbering map. Plain lists so they are easy to audit."""
+
+# ------------------------------------------------------------------------------------------- references
+# status: VERIFIED = the record was opened or confirmed in this review (journal page, publisher, OpenAlex, repository)
+#         LISTED   = found in a search listing: authors, journal and year agree, details not read in full
+#         RECALLED = from the team's notes or memory: confirm every detail (DOI, pages, title) before printing
+NEW_REFS = [
+    ("N1", "Goldfeld, S., Beatson, R., Watts, A., Snow, P., Gold, L., Le, H., Edwards, S., Connell, J., Stark, H., Shingles, B., Barnett, T., Quach, J., & Eadie, P. (2022). Tier 2 oral language and early reading interventions for preschool to grade 2 children: A restricted systematic review. Australian Journal of Learning Difficulties, 27(1), 65–113. https://doi.org/10.1080/19404158.2021.2011754",
+     "LISTED", "Chapter 1, page 1 (already cited, missing from the list)", "Authors, journal, volume, pages and DOI come from the Deakin repository record and a co-author profile. The abstract was not read: open it and confirm the sentence 'structured early reading interventions improve oral language and early reading outcomes'."),
+    ("N2", "Hernandez, G., & Decena, A. (2024). Parental involvement in the implementation of reading programs and reading achievement of elementary school learners in the Division of Quezon: Basis for policy formulation. Psychology and Education: A Multidisciplinary Journal, 20(8).",
+     "VERIFIED", "Chapter 1, pages 1 to 2 (already cited, missing from the list)", "Opened the Philippine E-Journals page (ejournals.ph, article 27800). Page range and DOI are not shown there: add them from the journal's own page."),
+    ("N3", "Kaliisa, R., Misiejuk, K., López-Pernas, S., Khalil, M., & Saqr, M. (2024). Have learning analytics dashboards lived up to the hype? A systematic review of impact on students' achievement, motivation, participation and attitude. In Proceedings of the 14th Learning Analytics and Knowledge Conference (LAK '24) (pp. 295–304). Association for Computing Machinery. https://doi.org/10.1145/3636555.3636884",
+     "VERIFIED", "Chapter 2, pages 18 to 19 (already cited, missing from the list)", "Authors, title, pages, venue and DOI confirmed from the OpenAlex record. The 38 studies in the manuscript's sentence match the arXiv abstract."),
+    ("N4", "Povey, D., Ghoshal, A., Boulianne, G., Burget, L., Glembek, O., Goel, N., Hannemann, M., Motlicek, P., Qian, Y., Schwarz, P., Silovsky, J., Stemmer, G., & Vesely, K. (2011). The Kaldi speech recognition toolkit. In IEEE 2011 Workshop on Automatic Speech Recognition and Understanding. IEEE Signal Processing Society.",
+     "RECALLED", "B3, first paragraph (Vosk is built on Kaldi)", "A search listing confirmed the paper (ASRU 2011, Apache 2.0 toolkit). The full author list is from memory: check it on the IEEE or EPFL record."),
+    ("N5", "Potamianos, A., & Narayanan, S. (2003). Robust recognition of children's speech. IEEE Transactions on Speech and Audio Processing, 11(6), 603–616. https://doi.org/10.1109/TSA.2003.818026",
+     "RECALLED", "B3, first paragraph (children's speech is harder to recognize)", "Found by search earlier in this project. Read the abstract and confirm the DOI before keeping the sentence."),
+    ("N6", "Hasbrouck, J., & Tindal, G. (2017). An update to compiled ORF norms (Technical Report No. 1702). Behavioral Research and Teaching, University of Oregon.",
+     "LISTED", "B3, second paragraph (oral reading fluency norms)", "Found by search. The reading service does NOT use these norms (its own comment says its single target range is not right for every learner). Keep the sentence that says so."),
+    ("N7", "Gemini Team, Google. (2023). Gemini: A family of highly capable multimodal models. arXiv. https://arxiv.org/abs/2312.11805",
+     "LISTED", "B3, third paragraph (the activity writer)", "Found by search (arXiv 2312.11805). Confirm which Gemini model the activity service calls (it is read from a setting, for example gemini-2.5-flash-lite) and say 'a Gemini model' if the exact one is not fixed."),
+    ("N8", "Yadav, S., Chakraborty, P., Kaul, A., Pooja, Gupta, P., & Garg, S. (2020). Ability of children to perform touchscreen gestures and follow prompting techniques when using mobile apps. Clinical and Experimental Pediatrics, 63(6), 232–236. https://doi.org/10.3345/cep.2019.00997",
+     "LISTED", "B3, fourth paragraph (tap is the gesture young children manage best)", "90 children aged 2 to 8. Read the results table and check the sentence 'most children aged 7 to 8 could tap, but fewer could swipe and fewer still could drag and drop'. The author list has an unusual one-name author (Pooja): copy it exactly from the journal page."),
+    ("N9", "Hirsh-Pasek, K., Zosh, J. M., Golinkoff, R. M., Gray, J. H., Robb, M. B., & Kaufman, J. (2015). Putting education in \"educational\" apps: Lessons from the science of learning. Psychological Science in the Public Interest, 16(1), 3–34. https://doi.org/10.1177/1529100615569721",
+     "LISTED", "B3, fourth paragraph (active, engaged, meaningful learning)", "Found by search."),
+    ("N10", "Liberman, I. Y., Shankweiler, D., Fischer, F. W., & Carter, B. (1974). Explicit syllable and phoneme segmentation in the young child. Journal of Experimental Child Psychology, 18(2), 201–212. https://doi.org/10.1016/0022-0965(74)90101-5",
+     "RECALLED", "B3, fifth paragraph (syllables are easier to separate than sounds)", "Found by search earlier; DOI from memory. Confirm."),
+    ("N11", "Therrien, W. J. (2004). Fluency and comprehension gains as a result of repeated reading: A meta-analysis. Remedial and Special Education, 25(4), 252–261. https://doi.org/10.1177/07419325040250040801",
+     "RECALLED", "B3, fifth paragraph (repeated reading improves fluency)", "Found by search earlier; DOI from memory. Confirm."),
+    ("N12", "Department of Education. (2018). Policy guidelines on the administration of the revised Philippine Informal Reading Inventory (Phil-IRI) (DepEd Order No. 14, s. 2018).",
+     "RECALLED", "C9 (Phil-IRI levels are based on oral reading accuracy: Independent 97 percent or more, Instructional 90 to 96, Frustration below 90)", "The order number and the accuracy bands are in the project notes from a search on 10 October 2026. The DepEd site refused the build machine, so the exact title was not read. Open deped.gov.ph, copy the exact title, and confirm the bands."),
+    ("N13", "Republic Act No. 10173. (2012). An act protecting individual personal information in information and communications systems in the government and the private sector, creating for this purpose a National Privacy Commission, and for other purposes [Data Privacy Act of 2012].",
+     "RECALLED", "C20 (the right to have personal data removed or destroyed, Section 16(e))", "Read the Act on the National Privacy Commission site and copy the title and the section wording before quoting."),
+]
+
+OPTIONAL_REFS = [
+    ("O1", "National Institute of Child Health and Human Development. (2000). Report of the National Reading Panel: Teaching children to read: An evidence-based assessment of the scientific research literature on reading and its implications for reading instruction (NIH Publication No. 00-4769). U.S. Government Printing Office.", "RECALLED", "Support for explicit, systematic instruction and for repeated oral reading."),
+    ("O2", "Ehri, L. C., Nunes, S. R., Stahl, S. A., & Willows, D. M. (2001). Systematic phonics instruction helps students learn to read: Evidence from the National Reading Panel's meta-analysis. Review of Educational Research, 71(3), 393–447. https://doi.org/10.3102/00346543071003393", "RECALLED", "Support for the phonics-first first reading check and the games."),
+    ("O3", "Pearson, P. D., & Gallagher, M. C. (1983). The instruction of reading comprehension. Contemporary Educational Psychology, 8(3), 317–344. https://doi.org/10.1016/0361-476X(83)90019-X", "RECALLED", "The gradual release of responsibility behind the four steps of the syllable method (the Grade 1 guide cites it)."),
+    ("O4", "Fisher, D., & Frey, N. (2008). Better learning through structured teaching: A framework for the gradual release of responsibility. ASCD.", "RECALLED", "Same."),
+]
+
+# corrections to references already in version 29
+REF_FIXES = [
+    ("Ersando et al. (2025), Chapter 1, page 4", "The list has Po et al. (2025) (Ersando is the second author). The next sentence already says Po et al. (2025).", "Change the in-text citation to Po et al. (2025), or add a separate Ersando reference if that was a different paper."),
+    ("Department of Education (2024), cited three ways", "The list has two entries dated 2024 with no letter, but Chapter 2 cites 2024a and 2024b and Chapter 1 cites 2024 with no letter.", "In the list, label the MATATAG curriculum 2024a and the Phil-IRI manual 2024b; in Chapter 1 write (Department of Education, 2024b) for Phil-IRI."),
+    ("Philippine Statistics Authority, 2024 and 2025", "Chapter 1 (page 1) and Chapter 2 (page 15) say 2025; Chapter 1 (page 3) says 2024; the list says 2024 (preliminary results).", "Use 2024 everywhere, or add the 2025 publication to the list if one was meant."),
+    ("Wang et al. (2024), Chapter 2, page 18, twice", "Three different 2024 papers have a first author called Wang: Wang, S. et al. (AI in education review), Wang, X. et al. (adaptive learning meta-analysis), and Wang, Z. et al. (gamification review). 'Wang et al. (2024)' could mean any.", "APA 7: name enough authors to tell them apart. The AI in education review becomes 'Wang, Wang, et al. (2024)'; the adaptive learning sentence becomes 'Wang, Huang, et al. (2024)'. The gamification paper is already 'Wang, Harun, & Yuan (2024)'."),
+    ("Ryan & Deci (2020)", "No DOI.", "Add https://doi.org/10.1016/j.cedpsych.2020.101860 (confirm on the publisher page)."),
+    ("Guthrie & Wigfield (2000)", "Listed after Vygotsky under 'Books', so the list is not alphabetical.", "Move it into alphabetical order (after Gligorea, before Jomuad), or keep the groups and sort each group."),
+    ("The whole list", "Version 29 groups the references by type (Journal Articles, Books, ...). APA 7 expects one alphabetical list.", "Ask the adviser. If one list is wanted, merge the groups and sort A to Z; the hanging indent stays 0.5 inch."),
+    ("UNESCO (2025), Global Education Monitoring Report 2025: Leadership in education", "Cited four times for statements about foundational literacy and technology (pages 1, 3, 14, 20). The report's theme is school leadership.", "Open the report and check that each sentence is supported, or cite a source that is about foundational learning (for example the UNESCO foundational learning page already listed as UNESCO, n.d.)."),
+    ("Second Congressional Commission on Education", "Cited both in full and as 'EDCOM II' without defining the short form.", "At first use write (Second Congressional Commission on Education [EDCOM II], 2024); after that (EDCOM II, 2024)."),
+]
+
+# ------------------------------------------------------------------------------------------- numbering map
+FIG_MAP = [
+    ("Figure 1", "Figure 1", "Flow of the Study (unchanged)"),
+    ("Figure 2", "Figure 2", "Agile Methodology (unchanged)"),
+    ("(new)", "Figure 3.1", "System Flow Chart"),
+    ("Figure 3.1, 3.2", "Figure 3.2 to 3.4", "Program Workflow (Learners): 3 figures"),
+    ("Figure 4.1, 4.2", "Figure 4.1 to 4.4", "Program Workflow (Teacher): 4 figures"),
+    ("Figure 5.1, 5.2", "Figure 5.1, 5.2", "Program Workflow (Parents): 2 figures"),
+    ("Figure 6.1", "Figure 6.1", "Program Workflow (Administrator)"),
+    ("Figure 7.1 to 7.6", "Figure 7.1 to 7.12", "Functional Decomposition Diagram: overview plus 11 modules"),
+    ("Figure 8.1 to 8.4", "Figure 8.1 to 8.6", "Use Case Diagram: 6 figures"),
+    ("(new)", "Figure 9", "Adaptive Reading Support Rule Chain"),
+    ("Figure 9 to 36", "Figure 10 to 37", "User Interface Design (each number goes up by 1; remove Figures 32, 33 and 36 if the team chooses to drop the screens that were not built, then renumber)"),
+    ("Figure 37 to 40", "Figure 38 to 41", "Storyboards (each number goes up by 1)"),
+    ("Figure 41", "Figure 42", "Entity Relationship Diagram (new picture)"),
+    ("Figure 42", "Figure 43", "Network Model (new picture)"),
+    ("Figure 43", "Figure 44", "Network Topology (new picture)"),
+    ("(new)", "Figure 45", "System Architecture and Technology Stack"),
+]
+TABLE_MAP = [
+    ("Tables 1 to 6", "Tables 1 to 6", "Comparative Matrix, Summary, Sprint plan, BMC, Validation Board, Gantt (text edits only)"),
+    ("(new)", "Table 7", "Rules and Settings of the Adaptive Reading Support"),
+    ("Tables 7 to 22 (16 tables)", "Tables 8 to 21 (14 tables)", "Data dictionary of the tables that exist: User, Teacher, Parent, Learner, Parent_Learner, Class, Promotion_Record, Activity, Open_Repository_Listing, Repository_Unlock, Reading_Session, Personal_Word_Bank, Learner_Badge, Notification. 'Curriculum Guide' (old 14) and 'Badge' (old 20) are deleted: they are not tables."),
+    ("(new)", "Tables 22 to 30", "Nine new data dictionary tables: Activity_Assignment, Activity_Generation, Repository_Rating, Game_Play, Teacher_Alert_Action, Learner_Pin_Change, Admin_Action, Service_Failure, Data_Erasure"),
+    ("Table 23", "Table 31", "Technology Stack"),
+    ("Table 24", "Table 32", "Software Specifications"),
+    ("Table 25", "Table 33", "Hardware Specifications"),
+    ("Tables 26.1 to 26.5", "Table 34.1 and following", "List of Modules (11 modules)"),
+]
+
+# ------------------------------------------------------------------------------------------- change register
+# (id, where, finding, action, type, priority, insert)
+REGISTER = [
+    # ---- front matter and format
+    ("R01", "Cover page", "'A Capstone Proposal' although this is the final manuscript; date line says July 2026.", "Write 'A Capstone Project' and the real month of submission.", "FIX", "LOW", "A1"),
+    ("R02", "Team Composition, pages 177 to 180", "College dates read '2026 - Present' for three members and '2023 - Present' for one, so a degree in progress since 2026 is unlikely. Names differ from the cover (John Kenneth L. Rojas on the cover, John Kenneth Rojas here). Contact numbers and birth dates of students are printed.", "Ask each member to check dates and the form of the name; decide with the adviser whether the contact numbers stay.", "CHECK", "LOW", "-"),
+    ("R03", "Table of Contents, pages iii to iv", "The contents is a typed table, not a generated one. {toc_bad} of {toc_n} entries show the wrong page (off by 1 to 26: Storyboard says 95 and is 99; Database Design says 103 and is 128; References says 134 and is 140; Appendices says 115 and is 145).", "Do this last, after every insert. Best: build the contents from the Heading 1 to 3 styles so the numbers follow the text. Annex 2 lists the errors as of version 29.", "FIX", "MEDIUM", "-"),
+    ("R04", "List of Tables, page v", "{lot_bad} of {lot_n} entries show the wrong page. Table 19 reads 'Personal World Bank'. The list numbers 'Table 1' but the captions say 'Table 1.1 to 1.3' (the same for 3, 5, 6, 26).", "Renumber with the map in Annex 1, then fix pages last. Correct the spelling.", "FIX", "MEDIUM", "-"),
+    ("R05", "List of Figures, pages vi to vii", "{lof_bad} of {lof_n} entries show the wrong page (Figure 41 says 103 and is 129).", "Renumber with the map in Annex 1, then fix pages last.", "FIX", "MEDIUM", "-"),
+    ("R06", "Chapter headings", "'CHAPTER 1' (page 1) but 'CHAPTER II' and 'CHAPTER III'; the contents says 'CHAPTER I'.", "Use CHAPTER I, II, III.", "FIX", "LOW", "-"),
+    ("R07", "Contents, Appendices F to I", "'APPENDIX F = Consultation Logs' and G, H, I use '=' where A to E use a dash.", "Use the same dash for all.", "FIX", "LOW", "-"),
+    ("R08", "Chapter 3, many places", "Tenses are mixed: 'will be developed', 'the pilot program will involve' next to 'was developed'.", "Where the work is done, use the past tense; keep 'will' only for work not yet done (for example the final defense).", "FIX", "LOW", "C1"),
+    ("R09", "Chapters 1 and 2, narrative citations", "Narrative citations use '&' (for example 'Duke & Cartwright (2021) argued'). APA 7 uses 'and' in running text and '&' inside brackets.", "Replace '&' by 'and' in running text only.", "FIX", "LOW", "-"),
+    # ---- chapter 1
+    ("R10", "Chapter 1, page 1 (Goldfeld et al., 2022)", "Cited but not in the reference list.", "Add reference N1 (04).", "FIX", "HIGH", "04"),
+    ("R11", "Chapter 1, pages 1 to 2 (Hernandez & Decena, 2024)", "Cited but not in the reference list.", "Add reference N2 (04).", "FIX", "HIGH", "04"),
+    ("R12", "Chapter 1, page 4 (Ersando et al., 2025)", "The list has Po et al. (2025); Ersando is the second author.", "Change to Po et al. (2025) or add the right reference.", "FIX", "MEDIUM", "04"),
+    ("R13", "Chapter 1, pages 1, 3 and Chapter 2 page 15", "Philippine Statistics Authority is cited as 2025 in two places and 2024 in one; the list says 2024.", "Use 2024 everywhere (or add a 2025 entry).", "FIX", "MEDIUM", "04"),
+    ("R14", "Chapters 1 and 2", "Department of Education (2024) has no a or b in the list; Chapter 2 cites 2024a and 2024b.", "Label the two entries 2024a and 2024b and fix Chapter 1.", "FIX", "MEDIUM", "04"),
+    ("R15", "Chapter 1, page 5 (Objectives)", "'Specifically, this study aims to: 1. To gather ...' repeats 'to'.", "Delete the second 'To' in each item.", "FIX", "LOW", "-"),
+    ("R16", "Chapter 1, pages 5 to 6 (Scope and Limitations)", "Says the mobile app is for teachers and parents and the website for teachers and administrators; says parents receive 'automated notifications'. In the system the phone app serves learners, teachers and parents, the website serves all four, the Admin uses the website only, there is no SMS, and the support is rule-based.", "Replace with A2.", "UPDATED", "HIGH", "A2"),
+    ("R17", "Chapter 1, page 6", "Typing damage: 'Likewise, the stux dy does not evaluate'.", "Corrected in A2.", "FIX", "LOW", "A2"),
+    ("R18", "Chapter 1, page 5; Chapter 3, pages 56 to 57", "The study site is 'a selected public elementary school in Cebu City' in Chapter 1 and 'Suba Elementary School in Liloan, Cebu' in the Validation Board and the Development Phase. Liloan is not in Cebu City.", "Choose one wording and use it everywhere, including Appendix A.", "DECISION", "HIGH", "C5"),
+    ("R19", "Chapter 1, page 7 (Flow of the Study)", "The sentence under the heading is left over from another study: 'identifying hand gestures and interpreting their meanings by matching them to the corresponding universal words'.", "Replace with A3.", "FIX", "HIGH", "A3"),
+    ("R20", "Chapter 1, page 9", "'evaluating pronunciation, reading accuracy, and fluency' and 'an adaptive learning algorithm': the system measures word accuracy, speed and a voice score, and the adaptive part is rules plus a formula service.", "Replace with A3.", "UPDATED", "MEDIUM", "A3"),
+    ("R21", "Chapter 1, pages 9 to 10 (Definition of Terms)", "Terms used throughout but never defined: Phil-IRI, MATATAG, Open Repository, Learner Code, Reading Step, Personal Word Bank, Mistake Pattern, Reading Group, First Reading Check, Rule-Based Support.", "Add A4 in alphabetical order.", "NEW", "MEDIUM", "A4"),
+    ("R22", "Chapter 1, page 10", "'Parent Notification System' says the system informs parents automatically; 'System Administrator' says the administrator manages reading materials and reports; 'Learners' does not say how they sign in.", "Replace with A4b.", "UPDATED", "MEDIUM", "A4b"),
+    ("R23", "Chapter 1, pages 1, 3 and Chapter 2, pages 14 and 20 (UNESCO, 2025)", "The Global Education Monitoring Report 2025 is about leadership in education, but it is cited for foundational literacy and technology.", "Open the report and check each sentence, or cite a better source.", "CHECK", "MEDIUM", "04"),
+    # ---- chapter 2
+    ("R30", "Chapter 2, Related Literature, page 19", "No literature supports the technology choices: the speech engine, the speed score, the AI writer, tap-only controls, the syllable method.", "Add B3 (five paragraphs) and the references it needs.", "NEW", "MEDIUM", "B3"),
+    ("R31", "Chapter 2, Tables 1.1 to 1.3 and Table 2, pages 23 to 28", "The comparison claims SMS notifications, 'AI pronunciation coaching', an 'AI Reading Intervention Planner', 'AI Intervention Identification'. These are not features of the system.", "Make the replacements in B2 and the text in B1.", "UPDATED", "HIGH", "B1, B2"),
+    ("R32", "Chapter 2, page 26", "'TaraBasa AI is the only system among those reviewed that provides parent monitoring with SMS notifications'.", "Replace with B1.", "UPDATED", "HIGH", "B1"),
+    ("R33", "Chapter 2, page 28", "'AI pronunciation coaching ... teacher and parent dashboards with SMS notifications'.", "Replace with B2.", "UPDATED", "HIGH", "B2"),
+    ("R34", "Chapter 2, page 18 (Wang et al., 2024)", "Cited twice as 'Wang et al. (2024)' but three different 2024 papers start with Wang.", "Name enough authors (see 04, corrections).", "FIX", "MEDIUM", "04"),
+    ("R35", "Chapter 2, pages 18 to 19 (Kaliisa et al., 2024)", "Cited but not in the reference list.", "Add reference N3 (04).", "FIX", "HIGH", "04"),
+    ("R36", "Chapter 2, Table 1.1", "The column header 'Monetization Scheme' breaks across two lines ('Monetizatio / n Scheme').", "Widen the column or shrink the text.", "FIX", "LOW", "-"),
+    # ---- chapter 3
+    ("R40", "Chapter 3, pages 29 to 30", "Components are listed with 'SMS notifications' and 'SMS notification functionality'.", "Replace the two phrases (C1).", "UPDATED", "MEDIUM", "C1"),
+    ("R42", "Chapter 3, Tables 3.5 to 3.8", "The 9th sprint is 'Progress Alerts and SMS Communication' and six cells mention SMS.", "Replace the column with C2.", "UPDATED", "HIGH", "C2"),
+    ("R44", "Chapter 3, Business Model Canvas, Tables 4 and 4.1", "Google Cloud Speech-to-Text, Semaphore SMS, 'SMS parent notifications that require no smartphone or internet', Android Studio, React.js, Firebase and Advertisement. None matches the system; advertising to children also conflicts with the live Privacy page.", "Replace cell by cell (C3).", "UPDATED", "HIGH", "C3"),
+    ("R45", "Chapter 3, page 42", "'the DepEd \"No Read, No Move\" policy' has no citation.", "Cite the DepEd issuance or remove the phrase (C3 removes it).", "CHECK", "MEDIUM", "C3"),
+    ("R46", "Chapter 3, Program Workflow, Figures 3.1 to 6.1, pages 43 to 53", "Learner: moves a reading level up or down after one reading (the system moves a step only after 3 strong or 2 weak readings); 'Login (PIN)' only; no first reading check detail, no comprehension quiz, no practice stage. Teacher: a Pending teacher is blocked at sign in (the system lets a Pending teacher in with limited access) and the Teacher browses the Open Repository (only Parents do). Parent: has a 'Practice Reading' branch (a Parent cannot start a reading; the child signs in with the PIN). Admin: has a profile to edit (there is none).", "Replace all seven figures and the four paragraphs with C4 (ten new figures).", "UPDATED", "HIGH", "C4"),
+    ("R47", "Chapter 3, page 53 (Administrator)", "Says the Admin role is 'intentionally limited to account verification and status management'; the storyboard and screens in version 29 show much more (AI configuration, announcements, reports) and the real Admin has Approvals, Accounts, System health and an Activity log.", "Replace with C4 and C10.", "UPDATED", "HIGH", "C4"),
+    ("R49", "Chapter 3, Validation Board, pages 54 to 57", "Percentages (90.9, 84.7, 36.4, 63.6) have no number of respondents.", "Add n for each group from Appendices D and E (C5).", "CHECK", "HIGH", "C5"),
+    ("R50", "Chapter 3, Gantt, Tables 6.1 to 6.4", "Rows 4.1.6, 4.3.6, 4.4.3, 4.5.6 mention SMS; row 4.2.3 says pronunciation feedback; the coloured bars may not show the real status.", "Rename the rows (C6) and recolour.", "UPDATED", "MEDIUM", "C6"),
+    ("R51", "Chapter 3, Functional Decomposition Diagram, Figures 7.1 to 7.6", "Nine modules. It misses the adaptive rules and the Admin work, and several functions have changed (see 03).", "Replace with the eleven-module FDD (C7). The panel review sheet is 03.", "UPDATED", "HIGH", "C7"),
+    ("R52", "Chapter 3, page 61", "'Figure 7.1 Figure 7.1 presents' is typed twice.", "Corrected in C7.", "FIX", "LOW", "C7"),
+    ("R53", "Chapter 3, FDD against List of Modules", "The FDD puts Learner Reading Assessment fifth and Open Repository seventh; the List of Modules numbers them the other way round (Open Repository 5, Reading Assessment 6, Gamified 7).", "Version 2 uses the List of Modules order in both.", "FIX", "MEDIUM", "C7"),
+    ("R54", "Chapter 3, Use Case Diagram, Figures 8.1 to 8.4", "Same lists as the old FDD; same gaps.", "Replace with the six diagrams (C8).", "UPDATED", "MEDIUM", "C8"),
+    ("R55", "Chapter 3, Analysis Design Phase", "The rule-based adaptive support, which is the main idea of the system, is not described anywhere. Without it the word 'adaptive' has no explanation.", "Add C9 (a new section, Figure 9 and Table 7).", "NEW", "HIGH", "C9"),
+    ("R56", "Chapter 3, User Interface Design, Figures 9 to 36", "The pictures are the first prototype. Many no longer match the screens.", "Decide: keep them as the initial design and add real screenshots, or replace them (C10).", "DECISION", "MEDIUM", "C10"),
+    ("R57", "Chapter 3, page 72 (Figure 10, Welcome Screen)", "The description is a copy of the Splash Screen description.", "Write a description of the Welcome Screen.", "FIX", "LOW", "C10"),
+    ("R58", "Chapter 3, page 98 (Figure 36, User Detail Screen)", "The description is a copy of the Reading Assessment description (Figure 17).", "Remove the screen (it was not built) or write the right text.", "FIX", "LOW", "C10"),
+    ("R59", "Chapter 3, Figures 32, 33, 36 (Admin screens)", "AI Configuration, Reports and Analytics (admin) and User Detail are described as working screens but do not exist.", "Remove them or label them as future work.", "FIX", "HIGH", "C10"),
+    ("R60", "Chapter 3, Storyboards, Figures 37 to 40", "Describe Teacher to Parent messaging, push notifications, weekly summaries, an AI configuration screen, announcements, report export, a learner who 'registers', and 'My Lessons'.", "Use the corrections in C11.", "UPDATED", "MEDIUM", "C11"),
+    ("R61", "Chapter 3, page 105", "'as detailed in parent.png' (a file name left in the text).", "Delete.", "FIX", "LOW", "C11"),
+    ("R62", "Chapter 3, Data Dictionary, Tables 7 to 22", "Column lists no longer match the database (for example PIN VARCHAR 10, class not null, many missing columns, 'Act_GameType'). Nine tables are missing.", "Apply the change table and add the nine tables (C12).", "UPDATED", "HIGH", "C12"),
+    ("R63", "Chapter 3, Table 14 (Curriculum Guide) and the ERD narrative", "There is no curriculum_guides table. The MATATAG codes are in settings and on each activity.", "Delete the table and the sentences about it (C12).", "FIX", "HIGH", "C12"),
+    ("R64", "Chapter 3, Table 20 (Badge)", "There is no badges table. The 100 badges are defined in a settings file.", "Delete the table; keep Learner_Badge with a badge code (C12).", "FIX", "MEDIUM", "C12"),
+    ("R65", "Chapter 3, Figure 41 (ERD) and pages 130 to 131", "The diagram shows 16 entities; the database has 23 tables. The narrative mentions the curriculum guide, SMS notifications, Phil-IRI level on the learner, 'section' on the teacher.", "Replace with C12.", "UPDATED", "HIGH", "C12"),
+    ("R66", "Chapter 3, Network Design, Figures 42 and 43, pages 124 to 127", "Google Cloud Speech-to-Text, an SMS Gateway API, a MySQL database in a data centre, a school LAN with Android tablets as the only learner path.", "Replace with C13.", "UPDATED", "HIGH", "C13"),
+    ("R67", "Chapter 3, page 127", "'This dual-path design ensures that no parent is excluded ... due to lack of internet access or a smartphone': the SMS path does not exist.", "Removed in C13. If the digital equity goal stays, say it as a limit and future work.", "FIX", "HIGH", "C13"),
+    ("R68", "Chapter 3, Development Phase, page 127", "XAMPP, Android Studio, Google Cloud Speech-to-Text, a Philippine SMS gateway.", "Replace with C14.", "UPDATED", "MEDIUM", "C14"),
+    ("R69", "Chapter 3, Technology Stack, Table 23", "Kotlin, Android SDK, Android Studio, HTML/CSS/JavaScript/PHP, Bootstrap, Cloud SQL, SMS Gateway, Google Cloud Speech-to-Text, RESTful API. Real: React Native with Expo, Laravel 13, TiDB Cloud, Render, Vosk, Gemini, Gmail API.", "Replace the table and the paragraphs with C15; add Figure 45.", "UPDATED", "HIGH", "C15"),
+    ("R70", "Chapter 3, Software Specification, Table 24", "Same old stack; 'Android OS Version 8.0 and above' (the real minimum is Android 7).", "Replace with C16.", "UPDATED", "HIGH", "C16"),
+    ("R71", "Chapter 3, Hardware Specification, Table 25", "'Camera 12MP or higher', 'Octa Core 2.0 GHz', '6 GB' for the Android device: not requirements of the app; a microphone is the real need; no server row.", "Replace with C17 and fill the test phone in.", "UPDATED", "MEDIUM", "C17"),
+    ("R72", "Chapter 3, List of Modules, Tables 26.1 to 26.5", "Nine modules, 15 points. Missing the adaptive support and the Admin module; many functions changed.", "Replace with C18.", "UPDATED", "HIGH", "C18"),
+    ("R73", "Chapter 3 (nowhere)", "No testing or evaluation evidence at all, in a thesis about a system.", "Add C19 and fill the bracketed results.", "NEW", "HIGH", "C19"),
+    ("R74", "Chapter 3 (nowhere)", "No data privacy or ethics section, although the system holds children's data and the Data Privacy Act applies.", "Add C20.", "NEW", "HIGH", "C20"),
+    ("R75", "References, pages 140 to 144", "Grouped by type, not one alphabetical list; Guthrie & Wigfield out of order; Ryan & Deci without DOI; three cited sources missing; new sources needed.", "Use 04: add N1 to N13, make the fixes, decide about one list.", "FIX", "MEDIUM", "04"),
+    ("R80", "Chapter 3, section order", "The contents puts Database Design (ERD) before the Data Dictionary, but in version 29 the ERD section (page 128) comes after the Technology Stack and after the Data Dictionary (page 107).", "Move the whole Database Design section before the Data Dictionary (C12).", "FIX", "MEDIUM", "C12"),
+]

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="860" viewBox="0 0 760 860" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="860" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">TaraBasa AI: network topology</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">Replaces Figure 43. Links as they are used today: school WiFi, home or mobile data, and the cloud.</text>
+<rect x="14" y="74" width="360" height="196" rx="8" fill="#E4F4F1" fill-opacity="0.55" stroke="#79BDB5" stroke-width="1.2"/>
+<rect x="14" y="74" width="360" height="26" rx="8" fill="#79BDB5" fill-opacity="0.55"/>
+<text x="26" y="91.32" font-size="12" font-weight="bold" text-anchor="start" fill="#1F2937">At the partner school (local area network)</text>
+<rect x="386" y="74" width="360" height="196" rx="8" fill="#E8F1FB" fill-opacity="0.55" stroke="#7FA8D6" stroke-width="1.2"/>
+<rect x="386" y="74" width="360" height="26" rx="8" fill="#7FA8D6" fill-opacity="0.55"/>
+<text x="398" y="91.32" font-size="12" font-weight="bold" text-anchor="start" fill="#1F2937">At home or in an office</text>
+<rect x="14" y="394" width="732" height="424" rx="8" fill="#FFF0DC" fill-opacity="0.55" stroke="#E8A04F" stroke-width="1.2"/>
+<rect x="14" y="394" width="732" height="26" rx="8" fill="#E8A04F" fill-opacity="0.55"/>
+<text x="26" y="411.32" font-size="12" font-weight="bold" text-anchor="start" fill="#1F2937">Cloud (data centres, mainly Singapore)</text>
+<polyline points="82.0,166.0 82.0,184.0 148.0,184.0 148.0,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="148.0,202.0 144.0,194.0 152.0,194.0" fill="#44546A"/>
+<polyline points="202.0,166.0 202.0,184.0 193.0,184.0 193.0,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="193.0,202.0 189.0,194.0 197.0,194.0" fill="#44546A"/>
+<polyline points="316.0,166.0 316.0,184.0 238.0,184.0 238.0,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="238.0,202.0 234.0,194.0 242.0,194.0" fill="#44546A"/>
+<polyline points="452.0,166.0 452.0,184.0 520.0,184.0 520.0,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="520.0,202.0 516.0,194.0 524.0,194.0" fill="#44546A"/>
+<polyline points="572.0,166.0 572.0,184.0 565.0,184.0 565.0,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="565.0,202.0 561.0,194.0 569.0,194.0" fill="#44546A"/>
+<polyline points="687.0,166.0 687.0,184.0 610.0,184.0 610.0,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="610.0,202.0 606.0,194.0 614.0,194.0" fill="#44546A"/>
+<polyline points="193.0,246.0 193.0,288.0 380.0,288.0 380.0,316.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,316.0 376.0,308.0 384.0,308.0" fill="#44546A"/>
+<polygon points="193.0,246.0 197.0,254.0 189.0,254.0" fill="#44546A"/>
+<polyline points="565.0,246.0 565.0,288.0 380.0,288.0 380.0,316.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,316.0 376.0,308.0 384.0,308.0" fill="#44546A"/>
+<polygon points="565.0,246.0 569.0,254.0 561.0,254.0" fill="#44546A"/>
+<polyline points="380.0,360.0 380.0,440.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,440.0 376.0,432.0 384.0,432.0" fill="#44546A"/>
+<polygon points="380.0,360.0 384.0,368.0 376.0,368.0" fill="#44546A"/>
+<polyline points="328.0,504.0 328.0,540.0 132.0,540.0 132.0,570.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="132.0,570.0 128.0,562.0 136.0,562.0" fill="#44546A"/>
+<polygon points="328.0,504.0 332.0,512.0 324.0,512.0" fill="#44546A"/>
+<polyline points="380.0,504.0 380.0,570.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,570.0 376.0,562.0 384.0,562.0" fill="#44546A"/>
+<polygon points="380.0,504.0 384.0,512.0 376.0,512.0" fill="#44546A"/>
+<polyline points="445.0,504.0 445.0,540.0 623.0,540.0 623.0,570.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="623.0,570.0 619.0,562.0 627.0,562.0" fill="#44546A"/>
+<polygon points="445.0,504.0 449.0,512.0 441.0,512.0" fill="#44546A"/>
+<rect x="28" y="110" width="108" height="56" rx="7" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.5"/><text x="82.0" y="135.0" font-size="11" text-anchor="middle" fill="#1F2937">Teacher laptop</text><text x="82.0" y="148.7" font-size="11" text-anchor="middle" fill="#1F2937">or phone</text>
+<rect x="146" y="110" width="112" height="56" rx="7" fill="#EEE9FA" stroke="#A894DA" stroke-width="1.5"/><text x="202.0" y="135.0" font-size="11" text-anchor="middle" fill="#1F2937">Learner Android</text><text x="202.0" y="148.7" font-size="11" text-anchor="middle" fill="#1F2937">tablets</text>
+<rect x="268" y="110" width="96" height="56" rx="7" fill="#EEE9FA" stroke="#A894DA" stroke-width="1.5"/><text x="316.0" y="135.0" font-size="11" text-anchor="middle" fill="#1F2937">Learner or</text><text x="316.0" y="148.7" font-size="11" text-anchor="middle" fill="#1F2937">teacher phone</text>
+<rect x="118" y="202" width="150" height="44" rx="7" fill="#F3F5F8" stroke="#B8C0CC" stroke-width="1.5"/><text x="193.0" y="228.2" font-size="12" text-anchor="middle" fill="#1F2937">School WiFi router</text>
+<rect x="398" y="110" width="108" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="452.0" y="135.0" font-size="11" text-anchor="middle" fill="#1F2937">Parent phone</text><text x="452.0" y="148.7" font-size="11" text-anchor="middle" fill="#1F2937">or laptop</text>
+<rect x="516" y="110" width="112" height="56" rx="7" fill="#EEE9FA" stroke="#A894DA" stroke-width="1.5"/><text x="572.0" y="135.0" font-size="11" text-anchor="middle" fill="#1F2937">Child&#x27;s phone</text><text x="572.0" y="148.7" font-size="11" text-anchor="middle" fill="#1F2937">or tablet</text>
+<rect x="638" y="110" width="98" height="56" rx="7" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="687.0" y="135.0" font-size="11" text-anchor="middle" fill="#1F2937">Admin laptop</text><text x="687.0" y="148.7" font-size="11" text-anchor="middle" fill="#1F2937">(website only)</text>
+<rect x="490" y="202" width="150" height="44" rx="7" fill="#F3F5F8" stroke="#B8C0CC" stroke-width="1.5"/><text x="565.0" y="220.7" font-size="12" text-anchor="middle" fill="#1F2937">Home WiFi or mobile</text><text x="565.0" y="235.7" font-size="12" text-anchor="middle" fill="#1F2937">data</text>
+<rect x="150" y="316" width="460" height="44" rx="7" fill="#F3F5F8" stroke="#B8C0CC" stroke-width="1.5"/><text x="380.0" y="342.6" font-size="13" font-weight="bold" text-anchor="middle" fill="#1F2937">Internet service providers and the public Internet</text>
+<rect x="250" y="440" width="260" height="64" rx="7" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.5"/><text x="380.0" y="469.0" font-size="11" font-weight="bold" text-anchor="middle" fill="#1F2937">Render web service (Docker)</text><text x="380.0" y="482.7" font-size="11" font-weight="bold" text-anchor="middle" fill="#1F2937">Laravel 13: website, API, rules, queue worker</text>
+<path d="M34,578 a98.0,8 0 0 1 196,0 v68 a98.0,8 0 0 1 -196,0 z" fill="#F3F5F8" stroke="#44546A" stroke-width="1.6"/><path d="M34,578 a98.0,8 0 0 0 196,0" fill="none" stroke="#44546A" stroke-width="1.4"/><text x="132.0" y="602.1" font-size="11" text-anchor="middle" fill="#1F2937">TiDB Cloud (AWS Singapore)</text><text x="132.0" y="615.9" font-size="11" text-anchor="middle" fill="#1F2937">MySQL compatible</text><text x="132.0" y="629.6" font-size="11" text-anchor="middle" fill="#1F2937">(SQLite on a developer PC)</text>
+<rect x="267" y="570" width="226" height="56" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="380.0" y="595.0" font-size="11" text-anchor="middle" fill="#1F2937">Reading service (Vosk)</text><text x="380.0" y="608.7" font-size="11" text-anchor="middle" fill="#1F2937">Render free service</text>
+<rect x="267" y="640" width="226" height="56" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="380.0" y="665.0" font-size="11" text-anchor="middle" fill="#1F2937">Activity writer (Gemini)</text><text x="380.0" y="678.7" font-size="11" text-anchor="middle" fill="#1F2937">Render free service</text>
+<rect x="267" y="710" width="226" height="56" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="380.0" y="735.0" font-size="11" text-anchor="middle" fill="#1F2937">Adaptive recommender</text><text x="380.0" y="748.7" font-size="11" text-anchor="middle" fill="#1F2937">Render free service</text>
+<rect x="516" y="570" width="214" height="56" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="623.0" y="595.0" font-size="11" text-anchor="middle" fill="#1F2937">Gmail API</text><text x="623.0" y="608.7" font-size="11" text-anchor="middle" fill="#1F2937">(emails to adults)</text>
+<rect x="516" y="640" width="214" height="56" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="623.0" y="665.0" font-size="11" text-anchor="middle" fill="#1F2937">Google sign in</text><text x="623.0" y="678.7" font-size="11" text-anchor="middle" fill="#1F2937">(OAuth, optional)</text>
+<text x="380.0" y="800.9" font-size="11" text-anchor="middle" fill="#5B6675">The Admin works on the website only. There is no SMS channel: adults see updates inside the app and the website.</text>
+<text x="24" y="848" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="837" width="16" height="12" rx="3" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.4"/>
+<text x="102" y="847" font-size="11" fill="#1F2937">Our server</text>
+<rect x="178.0" y="837" width="16" height="12" rx="3" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.4"/>
+<text x="200.0" y="847" font-size="11" fill="#1F2937">Outside service</text>
+<rect x="299.0" y="837" width="16" height="12" rx="3" fill="#F3F5F8" stroke="#B8C0CC" stroke-width="1.4"/>
+<text x="321.0" y="847" font-size="11" fill="#1F2937">Network or data</text>
+</svg>

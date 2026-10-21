@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Text, View } from 'react-native';
 import * as api from './api';
-import { Chips, Field, Segmented } from './fields';
+import { Chips, Field, LegalLinks, Segmented } from './fields';
 import { TopBar } from './teacher/kit';
 import { Btn, H2, Notice, P, Panel, Screen, Small } from './ui';
 import { colors, fonts, space } from './theme';
@@ -51,6 +51,11 @@ export function MyProfile({ account, onBack, onAccount, withTabBar = true, extra
               <Btn label="Delete my account" tone="ghost" onPress={onDelete} />
             </Panel>
           ) : null}
+          <Panel style={{ gap: space[6] }}>
+            <H2>Privacy and terms</H2>
+            <Small>What TaraBasa AI keeps, what you agreed to, and how to ask for something to be removed. These open in your browser.</Small>
+            <LegalLinks />
+          </Panel>
           {extra}
         </View>
       </Screen>

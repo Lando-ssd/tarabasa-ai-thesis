@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="636" viewBox="0 0 760 636" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="636" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Module 4: Reading Activity Management</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">UPDATED in version 2. The Teacher chooses how many drafts per level, can write for a class, places each draft in a level, and</text>
+<text x="24" y="65" font-size="12" fill="#5B6675">assigning checks that the children can read it.</text>
+<polyline points="380.0,190.0 380.0,236.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,311.0 238.0,311.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,351.0 238.0,351.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,391.0 238.0,391.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,431.0 238.0,431.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,471.0 238.0,471.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,511.0 238.0,511.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,551.0 238.0,551.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,274.0 222.0,551.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="380.0,114.0 380.0,152.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<rect x="40" y="74" width="680" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="97.8" font-size="11" text-anchor="middle" fill="#1F2937">TaraBasa AI: AI-Powered Adaptive Reading Intervention System with Gamified Learning for Grade 1-3 Learners</text>
+<rect x="230.0" y="152" width="300" height="38" rx="7" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="380.0" y="175.6" font-size="13" font-weight="bold" text-anchor="middle" fill="#1F2937">Reading Activity Management</text>
+<rect x="216.0" y="236" width="328" height="38" rx="7" fill="#F3F5F8" stroke="#B8C0CC" stroke-width="1.5"/><text x="380.0" y="259.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Teacher</text>
+<rect x="238.0" y="296" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="314.9" font-size="11" text-anchor="middle" fill="#1F2937">View activities</text>
+<rect x="238.0" y="336" width="306" height="30" rx="6" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="391.0" y="354.9" font-size="11" text-anchor="middle" fill="#1F2937">Generate activity with AI (levels, background) (updated)</text>
+<rect x="238.0" y="376" width="306" height="30" rx="6" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.5"/><text x="391.0" y="394.9" font-size="11" text-anchor="middle" fill="#1F2937">Write for a class (new)</text>
+<rect x="238.0" y="416" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="434.9" font-size="11" text-anchor="middle" fill="#1F2937">View generation credits</text>
+<rect x="238.0" y="456" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="474.9" font-size="11" text-anchor="middle" fill="#1F2937">Edit activity</text>
+<rect x="238.0" y="496" width="306" height="30" rx="6" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="391.0" y="514.9" font-size="11" text-anchor="middle" fill="#1F2937">Place in a level, or reject (updated)</text>
+<rect x="238.0" y="536" width="306" height="30" rx="6" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="391.0" y="554.9" font-size="11" text-anchor="middle" fill="#1F2937">Assign activity (can they read it?) (updated)</text>
+<text x="24" y="620" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="609" width="16" height="12" rx="3" fill="#E3F5E8" stroke="#6CBF86" stroke-width="1.4"/>
+<text x="102" y="619" font-size="11" fill="#1F2937">NEW</text>
+<rect x="149.0" y="609" width="16" height="12" rx="3" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.4"/>
+<text x="171.0" y="619" font-size="11" fill="#1F2937">UPDATED</text>
+<rect x="245.0" y="609" width="16" height="12" rx="3" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.4"/>
+<text x="267.0" y="619" font-size="11" fill="#1F2937">UNCHANGED</text>
+</svg>

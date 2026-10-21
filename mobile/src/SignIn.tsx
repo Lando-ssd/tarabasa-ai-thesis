@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as api from './api';
 import { CardScanner } from './CardScanner';
-import { TextLink } from './fields';
+import { LegalLinks, TextLink } from './fields';
 import { looksLikeCode, normalizeCode } from './learnerCode';
 import { Animation, Btn, Busy, H1, H2, Notice, P, Panel, Screen, Small, useKeyboardOpen } from './ui';
 import { colors, fonts, size, space } from './theme';
@@ -80,6 +80,7 @@ export function SignIn({ onSignedIn, notice, onEmail }: Props) {
           <View style={{ alignSelf: 'stretch', gap: space[4] }}>
             <Btn label="Log in" tone="blue" onPress={signIn} disabled={!ready} loading={busy} />
             {onEmail ? <TextLink lead="Teacher or Parent?" label="Log in with email" onPress={onEmail} /> : null}
+            {keyboardOpen ? null : <LegalLinks />}
           </View>
         }
       >

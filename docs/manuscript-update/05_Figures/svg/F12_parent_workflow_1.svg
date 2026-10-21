@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="1057" viewBox="0 0 760 1057" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="1057" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Parent workflow (1 of 2): account and child profile</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">Replaces Figures 5.1 and part of 5.2. A Parent cannot start a child&#x27;s reading: the child signs in with the PIN.</text>
+<rect x="14" y="76" width="321.77777777777777" height="929.0" rx="8" fill="#E8F1FB" fill-opacity="0.55" stroke="#7FA8D6" stroke-width="1.2"/>
+<rect x="14" y="76" width="321.77777777777777" height="30" rx="8" fill="#7FA8D6" fill-opacity="0.55"/>
+<text x="174.88888888888889" y="95.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Parent</text>
+<rect x="343.77777777777777" y="76" width="402.22222222222223" height="929.0" rx="8" fill="#FFF0DC" fill-opacity="0.55" stroke="#E8A04F" stroke-width="1.2"/>
+<rect x="343.77777777777777" y="76" width="402.22222222222223" height="30" rx="8" fill="#E8A04F" fill-opacity="0.55"/>
+<text x="544.8888888888889" y="95.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">TaraBasa system</text>
+<polyline points="174.9,164.0 174.9,203.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,203.0 170.9,195.0 178.9,195.0" fill="#44546A"/>
+<polyline points="324.8,231.0 354.8,231.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,231.0 346.8,235.0 346.8,227.0" fill="#44546A"/>
+<polyline points="544.9,259.0 544.9,271.0 174.9,271.0 174.9,283.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,283.0 170.9,275.0 178.9,275.0" fill="#44546A"/>
+<polyline points="324.8,311.0 354.8,311.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,311.0 346.8,315.0 346.8,307.0" fill="#44546A"/>
+<polyline points="544.9,339.0 544.9,351.0 174.9,351.0 174.9,363.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,363.0 170.9,355.0 178.9,355.0" fill="#44546A"/>
+<polyline points="324.8,391.0 354.8,391.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,391.0 346.8,395.0 346.8,387.0" fill="#44546A"/>
+<polyline points="544.9,419.0 544.9,431.0 174.9,431.0 174.9,443.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,443.0 170.9,435.0 178.9,435.0" fill="#44546A"/>
+<polyline points="324.8,471.0 354.8,471.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,471.0 346.8,475.0 346.8,467.0" fill="#44546A"/>
+<polyline points="544.9,499.0 544.9,511.0 174.9,511.0 174.9,523.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,523.0 170.9,515.0 178.9,515.0" fill="#44546A"/>
+<polyline points="324.8,551.0 354.8,551.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,551.0 346.8,555.0 346.8,547.0" fill="#44546A"/>
+<polyline points="544.9,579.0 544.9,591.0 174.9,591.0 174.9,603.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,603.0 170.9,595.0 178.9,595.0" fill="#44546A"/>
+<polyline points="324.8,631.0 354.8,631.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,631.0 346.8,635.0 346.8,627.0" fill="#44546A"/>
+<polyline points="544.9,659.0 544.9,671.0 174.9,671.0 174.9,683.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,683.0 170.9,675.0 178.9,675.0" fill="#44546A"/>
+<polyline points="324.8,711.0 354.8,711.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="354.8,711.0 346.8,715.0 346.8,707.0" fill="#44546A"/>
+<polyline points="544.9,739.0 544.9,751.0 174.9,751.0 174.9,763.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="174.9,763.0 170.9,755.0 178.9,755.0" fill="#44546A"/>
+<polyline points="324.8,791.0 544.9,791.0 544.9,843.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="544.9,843.0 540.9,835.0 548.9,835.0" fill="#44546A"/>
+<polyline points="424.9,871.0 324.8,871.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="324.8,871.0 332.8,867.0 332.8,875.0" fill="#44546A"/>
+<rect x="361.3" y="862.0" width="27.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="374.8" y="874.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">Yes</text>
+<polyline points="544.9,899.0 544.9,923.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="544.9,923.0 540.9,915.0 548.9,915.0" fill="#44546A"/>
+<rect x="549.4" y="902.0" width="23.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="560.9" y="914.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">No</text>
+<rect x="139.88888888888889" y="138.0" width="70" height="26" rx="13.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="174.9" y="155.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Start</text>
+<rect x="25.0" y="203.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="235.2" font-size="12" text-anchor="middle" fill="#1F2937">Sign up: name, email, password</text>
+<rect x="354.7777777777778" y="203.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="235.2" font-size="12" text-anchor="middle" fill="#1F2937">Check the form and email domain; send confirmation link</text>
+<rect x="25.0" y="283.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="315.2" font-size="12" text-anchor="middle" fill="#1F2937">Confirm the email, then sign in</text>
+<rect x="354.7777777777778" y="283.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="315.2" font-size="12" text-anchor="middle" fill="#1F2937">Check the password; limit wrong tries</text>
+<rect x="25.0" y="363.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="387.7" font-size="12" text-anchor="middle" fill="#1F2937">Add a child: name, grade, character, reading stage,</text><text x="174.9" y="402.7" font-size="12" text-anchor="middle" fill="#1F2937">home language, interests</text>
+<rect x="354.7777777777778" y="363.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="395.2" font-size="12" text-anchor="middle" fill="#1F2937">Keep the profile; guess the starting step</text>
+<rect x="25.0" y="443.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="475.2" font-size="12" text-anchor="middle" fill="#1F2937">Answer 3 questions for the grade; set the 4 digit PIN</text>
+<rect x="354.7777777777778" y="443.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="467.7" font-size="12" text-anchor="middle" fill="#1F2937">Create the learner and Learner Code (with check digit); keep the</text><text x="544.9" y="482.7" font-size="12" text-anchor="middle" fill="#1F2937">PIN hashed</text>
+<rect x="25.0" y="523.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="555.2" font-size="12" text-anchor="middle" fill="#1F2937">Print or show the learner card with QR code</text>
+<rect x="354.7777777777778" y="523.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="555.2" font-size="12" text-anchor="middle" fill="#1F2937">Draw the QR here; it holds only the code, never the PIN</text>
+<rect x="25.0" y="603.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="635.2" font-size="12" text-anchor="middle" fill="#1F2937">Link an existing child: code and the child&#x27;s PIN</text>
+<rect x="354.7777777777778" y="603.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="635.2" font-size="12" text-anchor="middle" fill="#1F2937">Check the PIN; limit wrong tries; tell the other guardians</text>
+<rect x="25.0" y="683.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="707.7" font-size="12" text-anchor="middle" fill="#1F2937">Child forgot the PIN: make a new one (password</text><text x="174.9" y="722.7" font-size="12" text-anchor="middle" fill="#1F2937">needed)</text>
+<rect x="354.7777777777778" y="683.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="707.7" font-size="12" text-anchor="middle" fill="#1F2937">Apply the rules (max 3 a day); end the child&#x27;s sign ins; tell the other</text><text x="544.9" y="722.7" font-size="12" text-anchor="middle" fill="#1F2937">guardians</text>
+<rect x="25.0" y="763.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="795.2" font-size="12" text-anchor="middle" fill="#1F2937">Remove a child&#x27;s profile (password needed)</text>
+<polygon points="544.8888888888889,843.0 664.8888888888889,871.0 544.8888888888889,899.0 424.8888888888889,871.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.6"/><text x="544.9" y="875.2" font-size="12" text-anchor="middle" fill="#1F2937">Another guardian linked?</text>
+<rect x="25.0" y="843.0" width="299.77777777777777" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="174.9" y="875.2" font-size="12" text-anchor="middle" fill="#1F2937">Only you are unlinked; the child stays</text>
+<rect x="354.7777777777778" y="923.0" width="380.22222222222223" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="544.9" y="955.2" font-size="12" text-anchor="middle" fill="#1F2937">Delete the child and every record</text>
+<text x="24" y="1043" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="1032" width="16" height="12" rx="3" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.4"/>
+<text x="102" y="1042" font-size="11" fill="#1F2937">Step</text>
+<rect x="146.0" y="1032" width="16" height="12" rx="3" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.4"/>
+<text x="168.0" y="1042" font-size="11" fill="#1F2937">Decision</text>
+</svg>

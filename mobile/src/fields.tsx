@@ -1,8 +1,9 @@
 import { forwardRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { Icon, Small } from './ui';
 import { colors, fonts, size, space } from './theme';
 import { s } from './scale';
+import { LEGAL_URLS } from './config';
 
 // Form pieces for the email sign in and sign up screens: a labelled field, a choice between a few options, and a link.
 // They follow the website's forms (label above, error under the field) and the phone rules (every tap at least 48dp).
@@ -140,7 +141,78 @@ export function TextLink({ lead, label, onPress }: { lead?: string; label: strin
   );
 }
 
+/** A piece of the words next to a consent box: plain text, or a link to one of the legal pages (opens in the phone's browser). */
+export type ConsentPart = string | { label: string; url: string };
+
+/**
+ * One consent box, as on the website: big enough to tap, empty until the person ticks it, the words say exactly what is agreed
+ * to and link to the page that explains it, and the message (from the form or the server) shows under it.
+ */
+export function Consent({ checked, onChange, parts, error }: { checked: boolean; onChange: (next: boolean) => void; parts: ConsentPart[]; error?: string | null }) {
+  const words = parts.map((p) => (typeof p === 'string' ? p : p.label)).join('');
+  return (
+    <View style={st.consentWrap}>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked }}
+        accessibilityLabel={words}
+        onPress={() => onChange(!checked)}
+        style={[st.consent, checked && st.consentOn, !!error && st.consentBad]}
+      >
+        <View style={[st.consentBox, checked && st.consentBoxOn]}>{checked ? <Icon name="check" size={s(18)} color={colors.white} /> : null}</View>
+        <Text maxFontSizeMultiplier={FONT_CAP} style={st.consentText}>
+          {parts.map((p, i) =>
+            typeof p === 'string' ? (
+              p
+            ) : (
+              <Text key={i} accessibilityRole="link" onPress={() => Linking.openURL(p.url).catch(() => {})} style={st.consentLink}>
+                {p.label}
+              </Text>
+            ),
+          )}
+        </Text>
+      </Pressable>
+      {error ? (
+        <Small style={{ color: colors.bad }}>{error}</Small>
+      ) : null}
+    </View>
+  );
+}
+
+/** A quiet row of links to the legal pages (Privacy, Terms, Cookies, Refunds). */
+export function LegalLinks() {
+  const items: { label: string; url: string }[] = [
+    { label: 'Privacy', url: LEGAL_URLS.privacy },
+    { label: 'Terms', url: LEGAL_URLS.terms },
+    { label: 'Cookies', url: LEGAL_URLS.cookies },
+    { label: 'Refunds', url: LEGAL_URLS.refunds },
+  ];
+  return (
+    <View style={st.legalRow} accessibilityRole="menu">
+      {items.map((it) => (
+        <Pressable key={it.label} accessibilityRole="link" accessibilityLabel={`${it.label} policy`} onPress={() => Linking.openURL(it.url).catch(() => {})} style={st.legalItem}>
+          <Text maxFontSizeMultiplier={FONT_CAP} style={st.legalText}>
+            {it.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 const st = StyleSheet.create({
+  consentWrap: { alignSelf: 'stretch', gap: space[4] },
+  consent: { flexDirection: 'row', alignItems: 'flex-start', gap: space[12], padding: space[12], minHeight: size.touch, borderRadius: s(14), borderWidth: 2, borderColor: colors.line, backgroundColor: colors.white },
+  consentOn: { borderColor: colors.blue },
+  consentBad: { borderColor: colors.bad, backgroundColor: colors.badSoft },
+  consentBox: { width: s(26), height: s(26), marginTop: s(1), borderRadius: s(7), borderWidth: 2, borderColor: colors.slate, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  consentBoxOn: { backgroundColor: colors.blue, borderColor: colors.blue },
+  consentText: { flex: 1, fontFamily: fonts.uiRegular, fontSize: s(15), lineHeight: s(22), color: colors.ink },
+  consentLink: { fontFamily: fonts.uiBold, color: colors.blueDark, textDecorationLine: 'underline' },
+  legalRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space[4] },
+  legalItem: { minHeight: size.touch, paddingHorizontal: space[12], alignItems: 'center', justifyContent: 'center' },
+  legalText: { fontFamily: fonts.uiRegular, fontSize: s(14), color: colors.slate, textDecorationLine: 'underline' },
+
   field: { alignSelf: 'stretch', gap: space[4] },
   label: { fontFamily: fonts.uiBold, fontSize: s(13), letterSpacing: s(0.8), textTransform: 'uppercase', color: colors.slate },
   box: {

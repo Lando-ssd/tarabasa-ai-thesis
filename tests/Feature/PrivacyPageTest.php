@@ -30,8 +30,10 @@ class PrivacyPageTest extends TestCase
         $page->assertSee('The app does not save the recording.', false);
         $page->assertSee('We do not sell information', false);
         $page->assertSee('Gmail', false);
-        $page->assertSee('Google Fonts', false);
         $page->assertSee('A child cannot sign up alone.', false);
+        // Fonts are served from this site now, so the page must NOT list Google Fonts as a service any more.
+        $page->assertDontSee('Google Fonts', false);
+        $page->assertSee('no font company sees your address', false);
     }
 
     public function test_it_describes_the_phone_app(): void
@@ -86,10 +88,10 @@ class PrivacyPageTest extends TestCase
 
     public function test_the_contact_line_follows_the_setting(): void
     {
-        config(['app.privacy_contact' => null]);
-        $this->get('/privacy')->assertSee('tell the school administrator', false);
+        config(['legal.contact_email' => null]);
+        $this->get('/privacy')->assertSee('the school administrator or the TaraBasa AI team who gave you access', false);
 
-        config(['app.privacy_contact' => 'help@example.com']);
+        config(['legal.contact_email' => 'help@example.com']);
         $this->get('/privacy')->assertSee('mailto:help@example.com', false);
     }
 

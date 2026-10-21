@@ -172,6 +172,7 @@ export function Generate({ onBack, onStarted }: Props) {
 
           <Field label="Topic (optional)" value={topic} onChangeText={setTopic} placeholder="e.g. Animals on the farm" maxLength={200} error={errors.topic} />
           <Field label="Anything else for the writer (optional)" value={notes} onChangeText={setNotes} lines={2} maxLength={1000} error={errors.teacher_notes} />
+          <Small>Please do not type a child's name or other personal details here or in Topic. This text is sent to an AI service.</Small>
 
           {problem ? <Notice text={problem} /> : null}
         </View>

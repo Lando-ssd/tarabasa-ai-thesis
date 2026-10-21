@@ -81,7 +81,7 @@
             @else
               <div class="field"><label for="gTopic">Topic <span class="opt">optional</span></label><input type="text" id="gTopic" name="topic" placeholder="e.g. Animals" maxlength="200" value="{{ old('topic') }}"></div>
             @endif
-            <div class="field" style="margin-bottom:0"><label for="gNotes">Notes for the AI <span class="opt">optional</span></label><textarea id="gNotes" name="teacher_notes" maxlength="1000" placeholder="e.g. Use words with the sh sound">{{ old('teacher_notes') }}</textarea></div>
+            <div class="field" style="margin-bottom:0"><label for="gNotes">Notes for the AI <span class="opt">optional</span></label><textarea id="gNotes" name="teacher_notes" maxlength="1000" placeholder="e.g. Use words with the sh sound">{{ old('teacher_notes') }}</textarea><p style="margin:6px 0 0;font-size:12.5px;line-height:1.4;color:var(--muted,#587086)">Please do not type a child's name or other personal details here or in Topic. This text is sent to an AI service.</p></div>
           </div>
 
           <div>

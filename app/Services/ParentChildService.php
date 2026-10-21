@@ -53,9 +53,13 @@ class ParentChildService
     }
 
     /** @return array<string, mixed> */
-    public function createRules(): array
+    public function createRules(bool $requireConsent = true, bool $hasPhoto = false): array
     {
         return [
+            // The parent's consent for the child's information (the Parent and Guardian Consent notice). The photo has its own box,
+            // needed only when a photo is sent. Without a ticked box nothing about the child is kept.
+            'parent_consent' => ConsentService::termsRule($requireConsent),
+            'photo_consent' => $hasPhoto ? ['accepted'] : ['nullable', 'boolean'],
             'first_name' => ['required', 'string', 'max:100', 'regex:'.self::NAME_REGEX],
             'middle_name' => ['nullable', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100', 'regex:'.self::NAME_REGEX],
@@ -85,6 +89,7 @@ class ParentChildService
     public function createMessages(): array
     {
         return [
+            ...ConsentService::messages(),
             'first_name.regex' => 'First name may only contain letters, spaces, hyphens, and apostrophes — no numbers.',
             'last_name.regex' => 'Last name may only contain letters, spaces, hyphens, and apostrophes — no numbers.',
             'avatar_photo.image' => 'That file doesn\'t look like a real image.',
@@ -102,7 +107,7 @@ class ParentChildService
      *
      * @param  array<string, mixed>  $validated  already checked with createRules()
      */
-    public function create(User $user, array $validated, ?UploadedFile $photo = null): Learner
+    public function create(User $user, array $validated, ?UploadedFile $photo = null, string $channel = 'web'): Learner
     {
         $answers = collect([$validated['q1'], $validated['q2'], $validated['q3']]);
         $yesCount = $answers->filter(fn ($answer) => $answer === 'yes')->count();
@@ -124,7 +129,7 @@ class ParentChildService
 
         $placementAnswers = ['q1' => $validated['q1'], 'q2' => $validated['q2'], 'q3' => $validated['q3']];
 
-        return $this->withFreshCode(function () use ($validated, $masteryLevel, $parent, $photoPath, $placementAnswers) {
+        return $this->withFreshCode(function () use ($validated, $masteryLevel, $parent, $photoPath, $placementAnswers, $user, $channel) {
             $learner = Learner::create([
                 'learner_code' => Learner::generateUniqueCode(),
                 'class_id' => null,
@@ -150,6 +155,12 @@ class ParentChildService
                 'is_creator' => true,
                 'linked_at' => now(),
             ]);
+
+            // What the parent agreed to, kept with the child: the child's information, and (separately) the photo if there is one.
+            ConsentService::record($user, ConsentService::CHILD_DATA, $validated['parent_consent'] ?? false, $learner, $channel);
+            if ($photoPath) {
+                ConsentService::record($user, ConsentService::CHILD_PHOTO, $validated['photo_consent'] ?? false, $learner, $channel);
+            }
 
             return $learner;
         });
@@ -180,7 +191,7 @@ class ParentChildService
      *
      * @throws ValidationException with the message under `learner_code`
      */
-    public function link(User $user, string $rawCode, string $pin, string $relationship): Learner
+    public function link(User $user, string $rawCode, string $pin, string $relationship, mixed $confirmedGuardian = false, string $channel = 'web'): Learner
     {
         $parent = $user->parentProfile;
         $code = LearnerCode::normalize($rawCode);
@@ -223,6 +234,9 @@ class ParentChildService
             'is_creator' => false,
             'linked_at' => now(),
         ]);
+
+        // The linking guardian confirms they are the child's parent or guardian (a record, so it can be shown later).
+        ConsentService::record($user, ConsentService::CHILD_LINK, $confirmedGuardian, $learner, $channel);
 
         return $learner;
     }

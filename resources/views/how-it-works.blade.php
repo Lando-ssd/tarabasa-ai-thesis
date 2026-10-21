@@ -15,10 +15,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How TaraBasa decides | TaraBasa AI</title>
 <meta name="description" content="Every rule TaraBasa AI uses to decide where a child starts, when they move up, what to suggest and when to tell a teacher, with its numbers and sources.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="{{ asset('css/fonts.css') }}?v={{ substr(md5_file(public_path('css/fonts.css')), 0, 10) }}">
 <style>
   :root{ --ink:#15283a; --muted:#587086; --line:#dbe7f3; --bg:#f5f9ff; --blue:#1c7ed6; --orange:#ee8a26; --orange-lip:#b4560b; --soft:#eef6ff; }
   *{ box-sizing:border-box; } html,body{ margin:0; }

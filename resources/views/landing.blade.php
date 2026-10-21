@@ -4,10 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TaraBasa AI | Reading support for Grade 1 to 3</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="{{ asset('css/fonts.css') }}?v={{ substr(md5_file(public_path('css/fonts.css')), 0, 10) }}">
 <script src="{{ asset('vendor/lottie-web-5.12.2.min.js') }}"></script>
 <style>
   :root{
@@ -662,7 +659,7 @@
      (#eef9f0) and fades to a pale sky, the owl peeks over the top edge of
      the card (behind it), and the animated globe fills the full width at the
      very bottom of the page, edge to edge, with the card overlapping its top. */
-  .finale-privacy{ color:inherit; text-decoration:underline; text-underline-offset:3px; }
+  .finale-privacy{ color:inherit; text-decoration:underline; text-underline-offset:3px; display:inline-block; padding:6px 2px; }
   .finale-privacy:hover{ text-decoration-thickness:2px; }
   .finale{
     position:relative;
@@ -948,7 +945,7 @@
       <div class="hero-grid">
         <div class="hero-copy">
           <h1 class="hero-headline">Every child deserves to <span class="accent">love reading.</span></h1>
-          <p class="hero-sub">AI-powered, teacher-verified reading support built for Grade&nbsp;1–3 Filipino learners.</p>
+          <p class="hero-sub">AI-assisted reading support for Grade&nbsp;1–3 Filipino learners, with teachers and parents in the loop.</p>
         </div>
 
         <div class="hero-mascot" data-parallax="0.03">
@@ -989,7 +986,7 @@
       </div>
       <div id="readingText" class="reading-text">
         <h2 class="section-headline">Real reading, <span class="section-accent">actually fun</span></h2>
-        <p class="section-body">TaraBasa listens while a child reads a real story out loud, checking every word as they go, right there in the moment.</p>
+        <p class="section-body">TaraBasa listens while a child reads a real story out loud, then checks each word and shows what to practise.</p>
       </div>
     </div>
 
@@ -1014,7 +1011,7 @@
         </div>
         <div id="learnerText" class="learner-text">
           <h2 class="section-headline">Personalized for every learner</h2>
-          <p class="section-body">TaraBasa pays attention to how the last story went and quietly adjusts what comes next, so a child keeps climbing at their own pace instead of getting stuck or bored.</p>
+          <p class="section-body">TaraBasa looks at how recent readings went and adjusts what it suggests next, so a child can practise at a pace that suits them.</p>
         </div>
       </div>
 
@@ -1032,7 +1029,7 @@
       <div class="stay-text-wrap">
         <div id="stayText" class="stay-text">
           <h2 class="section-headline">Stay motivated</h2>
-          <p class="section-body">Streaks, points and a friendly nudge from Tara keep a child looking forward to reading again tomorrow, not dreading it.</p>
+          <p class="section-body">Streaks, points, badges and a friendly nudge from Tara give a child reasons to come back and read again.</p>
         </div>
       </div>
 
@@ -1061,8 +1058,8 @@
   <section class="school-scene" id="schoolScene">
     <div class="school-scene-inner">
       <div id="schoolText" class="school-text">
-        <h2 class="section-headline">Backed by real teachers</h2>
-        <p class="section-body">Every activity a child sees is checked by an actual teacher before it goes live, and every real session sends an update straight to their teacher and parent.</p>
+        <h2 class="section-headline">Teachers stay in charge</h2>
+        <p class="section-body">Teachers approve the activities they give their class, and each finished reading sends an update to the child's parent, and to the teacher if the child is in a class.</p>
       </div>
     </div>
 
@@ -1099,7 +1096,7 @@
         <div class="games-text-wrap">
           <div id="gamesText" class="games-text">
             <h2 class="section-headline">Learning that feels like play</h2>
-            <p class="section-body">Balloon Pop, Word Train and Sentence Stars turn reading aloud into a real game, built around each child's own tricky words, no points or pressure attached.</p>
+            <p class="section-body">Balloon Pop, Word Train and Sentence Stars turn reading aloud into a real game that starts with each child's own tricky words, with no points or pressure attached.</p>
           </div>
         </div>
 
@@ -1161,7 +1158,7 @@
         <svg class="finale-spark s3" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4Z"/></svg>
 
         <h2 id="finaleTitle" class="finale-title">Ready to start <span class="accent">reading?</span></h2>
-        <p class="finale-body"><span>Teachers and parents set it up in a few minutes.</span> <span>Children log in on the same page with their own code and a secret PIN.</span></p>
+        <p class="finale-body"><span>Teachers and parents set it up.</span> <span>Children log in on the same page with their own code and a secret PIN.</span></p>
 
         <!-- One log in for everyone: the page itself works out whether a person is a grown-up
              (email and password) or a child (learner code and PIN). -->
@@ -1190,8 +1187,8 @@
       <div class="finale-brand"><img src="{{ asset('images/logo.png') }}" alt="TaraBasa AI logo"><b>TaraBasa<span>AI</span></b></div>
       <div class="finale-end-line">
         <strong>Every child deserves to love reading.</strong>
-        <small>AI powered, teacher verified reading support for Grade 1 to 3 Filipino learners.</small>
-        <small><a class="finale-privacy" href="{{ route('privacy') }}">Privacy</a> &nbsp;&middot;&nbsp; <a class="finale-privacy" href="{{ route('how-it-works') }}">How TaraBasa decides</a></small>
+        <small>AI-assisted reading support for Grade 1 to 3 Filipino learners. A student capstone project, not made or endorsed by the Department of Education.</small>
+        <small><a class="finale-privacy" href="{{ route('privacy') }}">Privacy</a> &nbsp;&middot;&nbsp; <a class="finale-privacy" href="{{ route('terms') }}">Terms</a> &nbsp;&middot;&nbsp; <a class="finale-privacy" href="{{ route('cookies') }}">Cookies</a> &nbsp;&middot;&nbsp; <a class="finale-privacy" href="{{ route('refunds') }}">Refunds</a> &nbsp;&middot;&nbsp; <a class="finale-privacy" href="{{ route('consent') }}">Parent consent</a> &nbsp;&middot;&nbsp; <a class="finale-privacy" href="{{ route('how-it-works') }}">How TaraBasa decides</a></small>
       </div>
       <a class="finale-top-btn" id="backToTopBtn" href="#pageTop">Back to top</a>
     </div>

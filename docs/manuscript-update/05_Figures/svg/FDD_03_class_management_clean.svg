@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="626" viewBox="0 0 760 626" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="626" fill="#FFFFFF"/>
+<polyline points="380.0,130.0 380.0,176.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,251.0 238.0,251.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,291.0 238.0,291.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,331.0 238.0,331.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,371.0 238.0,371.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,411.0 238.0,411.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,451.0 238.0,451.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,491.0 238.0,491.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,531.0 238.0,531.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,571.0 238.0,571.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="222.0,214.0 222.0,571.0" fill="none" stroke="#44546A" stroke-width="1.4"/>
+<polyline points="380.0,54.0 380.0,92.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<rect x="40" y="14" width="680" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="37.9" font-size="11" text-anchor="middle" fill="#1F2937">TaraBasa AI: AI-Powered Adaptive Reading Intervention System with Gamified Learning for Grade 1-3 Learners</text>
+<rect x="230.0" y="92" width="300" height="38" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="115.5" font-size="13" font-weight="bold" text-anchor="middle" fill="#1F2937">Class Management</text>
+<rect x="216.0" y="176" width="328" height="38" rx="7" fill="#F3F5F8" stroke="#B8C0CC" stroke-width="1.5"/><text x="380.0" y="199.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Teacher</text>
+<rect x="238.0" y="236" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="254.8" font-size="11" text-anchor="middle" fill="#1F2937">View classes by school year</text>
+<rect x="238.0" y="276" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="294.9" font-size="11" text-anchor="middle" fill="#1F2937">Create class (one grade only)</text>
+<rect x="238.0" y="316" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="334.9" font-size="11" text-anchor="middle" fill="#1F2937">Edit class</text>
+<rect x="238.0" y="356" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="374.9" font-size="11" text-anchor="middle" fill="#1F2937">Add learner by code or QR scan</text>
+<rect x="238.0" y="396" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="414.9" font-size="11" text-anchor="middle" fill="#1F2937">View roster and reading groups</text>
+<rect x="238.0" y="436" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="454.9" font-size="11" text-anchor="middle" fill="#1F2937">View learner profile</text>
+<rect x="238.0" y="476" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="494.9" font-size="11" text-anchor="middle" fill="#1F2937">Move learner to another class</text>
+<rect x="238.0" y="516" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="534.9" font-size="11" text-anchor="middle" fill="#1F2937">View class history</text>
+<rect x="238.0" y="556" width="306" height="30" rx="6" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="391.0" y="574.9" font-size="11" text-anchor="middle" fill="#1F2937">Manage learner promotion</text>
+</svg>

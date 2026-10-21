@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="614.0" viewBox="0 0 760 614.0" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="614.0" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Admin workflow</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">Replaces Figure 6.1. The Admin works on the website only; there is no profile page for the Admin.</text>
+<rect x="14" y="132" width="238.66666666666666" height="408.0" rx="8" fill="#FFF3D6" fill-opacity="0.55" stroke="#E0B04A" stroke-width="1.2"/>
+<rect x="260.66666666666663" y="132" width="238.66666666666666" height="408.0" rx="8" fill="#E4F4F1" fill-opacity="0.55" stroke="#79BDB5" stroke-width="1.2"/>
+<rect x="507.33333333333326" y="132" width="238.66666666666666" height="408.0" rx="8" fill="#FFF0DC" fill-opacity="0.55" stroke="#E8A04F" stroke-width="1.2"/>
+<polyline points="380.0,106.0 380.0,120.0 133.3,120.0 133.3,144.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,144.0 129.3,136.0 137.3,136.0" fill="#44546A"/>
+<polyline points="133.3,178.0 133.3,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,202.0 129.3,194.0 137.3,194.0" fill="#44546A"/>
+<polyline points="133.3,248.0 133.3,272.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,272.0 129.3,264.0 137.3,264.0" fill="#44546A"/>
+<polyline points="133.3,318.0 133.3,342.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,342.0 129.3,334.0 137.3,334.0" fill="#44546A"/>
+<polyline points="133.3,418.0 133.3,442.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="133.3,442.0 129.3,434.0 137.3,434.0" fill="#44546A"/>
+<polyline points="380.0,106.0 380.0,144.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,144.0 376.0,136.0 384.0,136.0" fill="#44546A"/>
+<polyline points="380.0,178.0 380.0,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,202.0 376.0,194.0 384.0,194.0" fill="#44546A"/>
+<polyline points="380.0,242.0 380.0,266.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,266.0 376.0,258.0 384.0,258.0" fill="#44546A"/>
+<polyline points="380.0,306.0 380.0,330.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,330.0 376.0,322.0 384.0,322.0" fill="#44546A"/>
+<polyline points="380.0,376.0 380.0,400.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,400.0 376.0,392.0 384.0,392.0" fill="#44546A"/>
+<polyline points="380.0,106.0 380.0,120.0 626.7,120.0 626.7,144.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,144.0 622.7,136.0 630.7,136.0" fill="#44546A"/>
+<polyline points="626.7,178.0 626.7,202.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,202.0 622.7,194.0 630.7,194.0" fill="#44546A"/>
+<polyline points="626.7,242.0 626.7,266.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,266.0 622.7,258.0 630.7,258.0" fill="#44546A"/>
+<polyline points="626.7,312.0 626.7,336.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,336.0 622.7,328.0 630.7,328.0" fill="#44546A"/>
+<polyline points="626.7,382.0 626.7,406.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,406.0 622.7,398.0 630.7,398.0" fill="#44546A"/>
+<polyline points="626.7,446.0 626.7,470.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="626.7,470.0 622.7,462.0 630.7,462.0" fill="#44546A"/>
+<polyline points="133.3,488.0 133.3,552.0 380.0,552.0 380.0,566.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,566.0 376.0,558.0 384.0,558.0" fill="#44546A"/>
+<polyline points="380.0,446.0 380.0,566.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,566.0 376.0,558.0 384.0,558.0" fill="#44546A"/>
+<polyline points="626.7,516.0 626.7,552.0 380.0,552.0 380.0,566.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="380.0,566.0 376.0,558.0 384.0,558.0" fill="#44546A"/>
+<rect x="310.0" y="76" width="140" height="30" rx="15.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="380.0" y="95.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Admin sign in</text>
+<rect x="23.999999999999986" y="144" width="218.66666666666666" height="34" rx="7" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.5"/><text x="133.3" y="165.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Approvals</text>
+<rect x="23.999999999999986" y="202" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="133.3" y="221.7" font-size="12" text-anchor="middle" fill="#1F2937">Open Approvals: Waiting, Rejected,</text><text x="133.3" y="236.7" font-size="12" text-anchor="middle" fill="#1F2937">Grade requests</text>
+<rect x="23.999999999999986" y="272.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="133.3" y="291.7" font-size="12" text-anchor="middle" fill="#1F2937">See school, employee ID, grades and</text><text x="133.3" y="306.7" font-size="12" text-anchor="middle" fill="#1F2937">whether the email is confirmed</text>
+<rect x="23.999999999999986" y="342.0" width="218.66666666666666" height="76.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="133.3" y="361.7" font-size="12" text-anchor="middle" fill="#1F2937">Check the email is confirmed and the</text><text x="133.3" y="376.7" font-size="12" text-anchor="middle" fill="#1F2937">details are right; then Approve, or</text><text x="133.3" y="391.7" font-size="12" text-anchor="middle" fill="#1F2937">Reject with a reason the teacher will</text><text x="133.3" y="406.7" font-size="12" text-anchor="middle" fill="#1F2937">see</text>
+<rect x="23.999999999999986" y="442.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="133.3" y="461.7" font-size="12" text-anchor="middle" fill="#1F2937">Reopen a rejected teacher; approve</text><text x="133.3" y="476.7" font-size="12" text-anchor="middle" fill="#1F2937">or decline a grade request</text>
+<rect x="270.66666666666663" y="144" width="218.66666666666666" height="34" rx="7" fill="#E4F4F1" stroke="#79BDB5" stroke-width="1.5"/><text x="380.0" y="165.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Accounts</text>
+<rect x="270.66666666666663" y="202" width="218.66666666666666" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="226.2" font-size="12" text-anchor="middle" fill="#1F2937">Open Accounts; search or filter</text>
+<rect x="270.66666666666663" y="266" width="218.66666666666666" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="290.2" font-size="12" text-anchor="middle" fill="#1F2937">Deactivate or reactivate an account</text>
+<rect x="270.66666666666663" y="330" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="349.7" font-size="12" text-anchor="middle" fill="#1F2937">Confirm an email by hand (with a</text><text x="380.0" y="364.7" font-size="12" text-anchor="middle" fill="#1F2937">reason)</text>
+<rect x="270.66666666666663" y="400.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="380.0" y="419.7" font-size="12" text-anchor="middle" fill="#1F2937">Delete an account (with a reason;</text><text x="380.0" y="434.7" font-size="12" text-anchor="middle" fill="#1F2937">data privacy)</text>
+<rect x="517.3333333333333" y="144" width="218.66666666666666" height="34" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5"/><text x="626.7" y="165.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">System health and log</text>
+<rect x="517.3333333333333" y="202" width="218.66666666666666" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="626.7" y="226.2" font-size="12" text-anchor="middle" fill="#1F2937">Open System health</text>
+<rect x="517.3333333333333" y="266" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="626.7" y="285.7" font-size="12" text-anchor="middle" fill="#1F2937">Check now: wake the three services,</text><text x="626.7" y="300.7" font-size="12" text-anchor="middle" fill="#1F2937">then test them</text>
+<rect x="517.3333333333333" y="336.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="626.7" y="355.7" font-size="12" text-anchor="middle" fill="#1F2937">See Working, Asleep or Needs you</text><text x="626.7" y="370.7" font-size="12" text-anchor="middle" fill="#1F2937">for each service and email</text>
+<rect x="517.3333333333333" y="406.0" width="218.66666666666666" height="40" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="626.7" y="430.2" font-size="12" text-anchor="middle" fill="#1F2937">Reconnect email sending if needed</text>
+<rect x="517.3333333333333" y="470.0" width="218.66666666666666" height="46.0" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="626.7" y="489.7" font-size="12" text-anchor="middle" fill="#1F2937">Open the Activity log: who did what,</text><text x="626.7" y="504.7" font-size="12" text-anchor="middle" fill="#1F2937">and why</text>
+<rect x="300.0" y="566.0" width="160" height="30" rx="15.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="380.0" y="585.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Log out</text>
+</svg>

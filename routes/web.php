@@ -29,6 +29,12 @@ Route::get('/', function () {
 
 // The privacy page: public, plain words, and the address Google asks for to publish the Gmail sender.
 Route::view('/privacy', 'privacy')->name('privacy');
+// The other legal documents (same layout, same version number in config/legal.php): Terms of Use, Cookie Policy, Refund Policy and the
+// Parent and Guardian Consent notice. Public, no sign in, linked from the footer and from every place a person is asked to agree.
+Route::view('/terms', 'legal.terms')->name('terms');
+Route::view('/cookies', 'legal.cookies')->name('cookies');
+Route::view('/refunds', 'legal.refunds')->name('refunds');
+Route::view('/parent-consent', 'legal.consent')->name('consent');
 // How TaraBasa decides: every rule the app uses about a child, a class or an activity, with its numbers and sources (public).
 Route::get('/how-it-works', [\App\Http\Controllers\HowItWorksController::class, 'show'])->name('how-it-works');
 

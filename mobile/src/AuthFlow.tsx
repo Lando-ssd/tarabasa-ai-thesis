@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { BackHandler, KeyboardAvoidingView, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as api from './api';
-import { Chips, Field, Segmented, TextLink } from './fields';
+import { Chips, Consent, Field, Segmented, TextLink } from './fields';
+import { LEGAL_URLS } from './config';
 import { SignIn } from './SignIn';
 import { Btn, Busy, H1, H2, Icon, IconBtn, Notice, P, Screen, Small } from './ui';
 import { colors, fonts, space } from './theme';
@@ -349,8 +350,11 @@ function PasswordFields({ p }: { p: ReturnType<typeof usePersonFields> }) {
   );
 }
 
+const AGREE_TERMS = 'Please tick the box to agree, or we cannot make your account.';
+
 function ParentForm({ onBack, onRegistered }: { onBack: () => void; onRegistered: (r: api.Registered) => void }) {
   const p = usePersonFields();
+  const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const slow = useSlow(busy);
@@ -358,6 +362,7 @@ function ParentForm({ onBack, onRegistered }: { onBack: () => void; onRegistered
   async function submit() {
     if (busy) return;
     const found = p.check();
+    if (!agreed) found.accepts_terms = AGREE_TERMS;
     if (Object.keys(found).length) {
       p.setErrors(found);
       return;
@@ -365,7 +370,7 @@ function ParentForm({ onBack, onRegistered }: { onBack: () => void; onRegistered
     setBusy(true);
     setError(null);
     try {
-      onRegistered(await api.registerParent({ ...p.form, email: p.form.email.trim().toLowerCase() }));
+      onRegistered(await api.registerParent({ ...p.form, email: p.form.email.trim().toLowerCase(), accepts_terms: true }));
     } catch (e) {
       const fields = api.fieldErrors(e);
       p.setErrors(fields);
@@ -380,6 +385,12 @@ function ParentForm({ onBack, onRegistered }: { onBack: () => void; onRegistered
     <FormScreen title="Parent sign up" onBack={onBack} footer={<Btn label="Create my account" onPress={submit} loading={busy} />}>
       <PersonFields p={p} />
       <PasswordFields p={p} />
+      <Consent
+        checked={agreed}
+        onChange={(v) => (setAgreed(v), p.setErrors((e) => ({ ...e, accepts_terms: '' })))}
+        error={p.errors.accepts_terms}
+        parts={['I am 18 or older. I agree to the ', { label: 'Terms of Use', url: LEGAL_URLS.terms }, ' and I have read the ', { label: 'Privacy Policy', url: LEGAL_URLS.privacy }, '.']}
+      />
       {error ? <Notice text={error} /> : null}
       {busy ? <Busy text={slow ? WAKING : 'Creating your account'} /> : null}
     </FormScreen>
@@ -392,6 +403,7 @@ function TeacherForm({ onBack, onRegistered }: { onBack: () => void; onRegistere
   const [employeeId, setEmployeeId] = useState('');
   const [mode, setMode] = useState<'single' | 'multi'>('single');
   const [grades, setGrades] = useState<string[]>([]);
+  const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const slow = useSlow(busy);
@@ -415,6 +427,7 @@ function TeacherForm({ onBack, onRegistered }: { onBack: () => void; onRegistere
     if (!employeeId.trim()) found.employee_id = 'Please type your employee ID.';
     if (mode === 'single' && grades.length !== 1) found.grades_handled = 'Pick the one grade you handle.';
     if (mode === 'multi' && grades.length < 2) found.grades_handled = 'Tick at least two grades, or choose One grade.';
+    if (!agreed) found.accepts_terms = AGREE_TERMS;
     if (Object.keys(found).length) {
       p.setErrors(found);
       return;
@@ -430,6 +443,7 @@ function TeacherForm({ onBack, onRegistered }: { onBack: () => void; onRegistere
           employee_id: employeeId.trim(),
           grades_mode: mode,
           grades_handled: grades,
+          accepts_terms: true,
         }),
       );
     } catch (e) {
@@ -463,6 +477,12 @@ function TeacherForm({ onBack, onRegistered }: { onBack: () => void; onRegistere
         {p.errors.grades_handled ? <Small style={{ color: colors.bad }}>{p.errors.grades_handled}</Small> : null}
         <Small style={{ textAlign: 'center' }}>Every class holds one grade only. With more than one grade you make a separate class for each.</Small>
       </View>
+      <Consent
+        checked={agreed}
+        onChange={(v) => (setAgreed(v), p.setErrors((e) => ({ ...e, accepts_terms: '' })))}
+        error={p.errors.accepts_terms}
+        parts={['I am 18 or older and I teach at the school I entered above. I agree to the ', { label: 'Terms of Use', url: LEGAL_URLS.terms }, ' and I have read the ', { label: 'Privacy Policy', url: LEGAL_URLS.privacy }, '.']}
+      />
       {error ? <Notice text={error} /> : null}
       {busy ? <Busy text={slow ? WAKING : 'Creating your account'} /> : null}
     </FormScreen>

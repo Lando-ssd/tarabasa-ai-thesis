@@ -96,9 +96,20 @@ services:
       - key: ADAPTIVE_RECOMMENDER_KEY
         sync: false
 
-      # ---- an address people can write to about their information (shown on /privacy); optional
+      # ---- the legal pages (/privacy, /terms, /cookies, /refunds, /parent-consent); all optional, see config/legal.php
+      # An address people can write to about their information. Without it the pages tell people to ask the school administrator
+      # or the team instead, so set it as soon as the mailbox exists.
       - key: PRIVACY_CONTACT_EMAIL
         sync: false
+      # Printed on every legal page after "run by" (for example the school or university and a postal address).
+      - key: LEGAL_OPERATOR_DETAIL
+        sync: false
+      # The person accountable for following the Data Privacy Act (Section 21(b)), if the team names one.
+      - key: LEGAL_ACCOUNTABLE_PERSON
+        sync: false
+      # Turn on (true) once every phone has app build 0.5.5, which sends the consent boxes. The website always requires them.
+      - key: API_CONSENT_REQUIRED
+        value: "false"
 
       # ---- the one Admin account (created or updated at every start; 12+ characters)
       - key: ADMIN_EMAIL

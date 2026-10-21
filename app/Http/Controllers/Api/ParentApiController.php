@@ -104,11 +104,11 @@ class ParentApiController extends Controller
     public function storeChild(Request $request): JsonResponse
     {
         // A phone sends the character, not a photo: photos need a place to live that survives a restart, which the server does not have yet.
-        $rules = $this->children->createRules();
-        unset($rules['avatar_photo']);
+        $rules = $this->children->createRules((bool) config('legal.api_consent_required'));
+        unset($rules['avatar_photo'], $rules['photo_consent']);
 
         $validated = $request->validate($rules, $this->children->createMessages());
-        $learner = $this->children->create($request->user(), $validated);
+        $learner = $this->children->create($request->user(), $validated, null, 'app');
 
         return response()->json(['child' => $this->childRow($learner->load('schoolClass'), false), 'message' => "{$learner->first_name} was added."], 201);
     }
@@ -120,12 +120,14 @@ class ParentApiController extends Controller
             'learner_code' => ['required', 'string', 'max:20'],
             'pin' => ['required', 'digits:4'],
             'relationship' => ['required', Rule::in(['Mother', 'Father', 'Guardian'])],
+            'guardian_confirm' => config('legal.api_consent_required') ? ['accepted'] : ['nullable', 'boolean'],
         ], [
+            ...\App\Services\ConsentService::messages(),
             'pin.required' => "Type the child's 4 digit PIN.",
             'pin.digits' => 'The PIN is 4 digits.',
         ]);
 
-        $learner = $this->children->link($request->user(), $validated['learner_code'], $validated['pin'], $validated['relationship']);
+        $learner = $this->children->link($request->user(), $validated['learner_code'], $validated['pin'], $validated['relationship'], $validated['guardian_confirm'] ?? false, 'app');
 
         return response()->json(['child' => $this->childRow($learner->load('schoolClass'), false), 'message' => "You're now linked to {$learner->first_name} as a guardian."]);
     }

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="914" viewBox="0 0 760 914" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="760" height="914" fill="#FFFFFF"/>
+<text x="24" y="30" font-size="19" font-weight="bold" fill="#0B5CAD">Teacher workflow (3 of 4): activities</text>
+<text x="24" y="50" font-size="12" fill="#5B6675">Replaces the activity part of Figure 4.2. The Teacher decides the level; the AI only suggests it.</text>
+<rect x="14" y="76" width="314.7826086956522" height="786.0" rx="8" fill="#E4F4F1" fill-opacity="0.55" stroke="#79BDB5" stroke-width="1.2"/>
+<rect x="14" y="76" width="314.7826086956522" height="30" rx="8" fill="#79BDB5" fill-opacity="0.55"/>
+<text x="171.3913043478261" y="95.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">Teacher</text>
+<rect x="336.7826086956522" y="76" width="409.21739130434787" height="786.0" rx="8" fill="#FFF0DC" fill-opacity="0.55" stroke="#E8A04F" stroke-width="1.2"/>
+<rect x="336.7826086956522" y="76" width="409.21739130434787" height="30" rx="8" fill="#E8A04F" fill-opacity="0.55"/>
+<text x="541.3913043478261" y="95.32" font-size="12" font-weight="bold" text-anchor="middle" fill="#1F2937">TaraBasa system and AI services</text>
+<polyline points="171.4,165.0 171.4,206.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="171.4,206.0 167.4,198.0 175.4,198.0" fill="#44546A"/>
+<polyline points="317.8,234.0 347.8,234.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="347.8,234.0 339.8,238.0 339.8,230.0" fill="#44546A"/>
+<polyline points="541.4,262.0 541.4,275.0 171.4,275.0 171.4,288.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="171.4,288.0 167.4,280.0 175.4,280.0" fill="#44546A"/>
+<polyline points="317.8,316.0 347.8,316.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="347.8,316.0 339.8,320.0 339.8,312.0" fill="#44546A"/>
+<polyline points="541.4,344.0 541.4,357.0 171.4,357.0 171.4,370.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="171.4,370.0 167.4,362.0 175.4,362.0" fill="#44546A"/>
+<polyline points="317.8,398.0 347.8,398.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="347.8,398.0 339.8,402.0 339.8,394.0" fill="#44546A"/>
+<polyline points="541.4,426.0 541.4,439.0 171.4,439.0 171.4,452.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="171.4,452.0 167.4,444.0 175.4,444.0" fill="#44546A"/>
+<polyline points="317.8,480.0 541.4,480.0 541.4,527.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="541.4,527.0 537.4,519.0 545.4,519.0" fill="#44546A"/>
+<polyline points="401.4,562.0 317.8,562.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="317.8,562.0 325.8,558.0 325.8,566.0" fill="#44546A"/>
+<rect x="348.1" y="553.0" width="23.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="359.6" y="565.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">No</text>
+<polyline points="25.0,562.0 19.0,562.0 19.0,480.0 25.0,480.0" fill="none" stroke="#44546A" stroke-width="1.6" stroke-dasharray="6 4"/>
+<polygon points="25.0,480.0 17.0,484.0 17.0,476.0" fill="#44546A"/>
+<polyline points="541.4,597.0 541.4,616.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="541.4,616.0 537.4,608.0 545.4,608.0" fill="#44546A"/>
+<rect x="543.9" y="600.0" width="27.0" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.92"/>
+<text x="557.4" y="612.5" font-size="11" font-weight="bold" text-anchor="middle" fill="#44546A">Yes</text>
+<polyline points="541.4,672.0 541.4,685.0 171.4,685.0 171.4,698.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="171.4,698.0 167.4,690.0 175.4,690.0" fill="#44546A"/>
+<polyline points="317.8,726.0 347.8,726.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="347.8,726.0 339.8,730.0 339.8,722.0" fill="#44546A"/>
+<polyline points="541.4,754.0 541.4,767.0 171.4,767.0 171.4,780.0" fill="none" stroke="#44546A" stroke-width="1.6"/>
+<polygon points="171.4,780.0 167.4,772.0 175.4,772.0" fill="#44546A"/>
+<rect x="126.3913043478261" y="139.0" width="90" height="26" rx="13.0" fill="#0B5CAD" stroke="#0B5CAD" stroke-width="1.6"/><text x="171.4" y="156.2" font-size="12" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Activities</text>
+<rect x="25.0" y="206.0" width="292.7826086956522" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="171.4" y="230.7" font-size="12" text-anchor="middle" fill="#1F2937">Ask for activities: grade, skill, kind, how many per</text><text x="171.4" y="245.7" font-size="12" text-anchor="middle" fill="#1F2937">level; optionally for a class</text>
+<rect x="347.7826086956522" y="206.0" width="387.21739130434787" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="541.4" y="230.7" font-size="12" text-anchor="middle" fill="#1F2937">Check a credit is left; for a class, read its readings and write a short</text><text x="541.4" y="245.7" font-size="12" text-anchor="middle" fill="#1F2937">basis</text>
+<rect x="25.0" y="288.0" width="292.7826086956522" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="171.4" y="320.2" font-size="12" text-anchor="middle" fill="#1F2937">Keep working; a notice shows the progress</text>
+<rect x="347.7826086956522" y="288.0" width="387.21739130434787" height="56" rx="7" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.5" stroke-dasharray="6 4"/><text x="541.4" y="312.7" font-size="12" text-anchor="middle" fill="#1F2937">AI activity writer (Gemini) writes drafts in the background (about 2</text><text x="541.4" y="327.7" font-size="12" text-anchor="middle" fill="#1F2937">minutes)</text>
+<rect x="25.0" y="370.0" width="292.7826086956522" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="171.4" y="394.7" font-size="12" text-anchor="middle" fill="#1F2937">Review each draft: edit, place in Easy, Medium or</text><text x="171.4" y="409.7" font-size="12" text-anchor="middle" fill="#1F2937">Hard, or reject</text>
+<rect x="347.7826086956522" y="370.0" width="387.21739130434787" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="541.4" y="402.2" font-size="12" text-anchor="middle" fill="#1F2937">Save the Teacher&#x27;s level next to the AI&#x27;s suggestion; show why</text>
+<rect x="25.0" y="452.0" width="292.7826086956522" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="171.4" y="476.7" font-size="12" text-anchor="middle" fill="#1F2937">Assign to a learner, class, reading group or focus</text><text x="171.4" y="491.7" font-size="12" text-anchor="middle" fill="#1F2937">group</text>
+<polygon points="541.3913043478261,527.0 681.3913043478261,562.0 541.3913043478261,597.0 401.3913043478261,562.0" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.6"/><text x="541.4" y="558.7" font-size="12" text-anchor="middle" fill="#1F2937">Can these children read it?</text><text x="541.4" y="573.7" font-size="12" text-anchor="middle" fill="#1F2937">(grade, length)</text>
+<rect x="25.0" y="534.0" width="292.7826086956522" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="171.4" y="566.2" font-size="12" text-anchor="middle" fill="#1F2937">See the reason; choose another activity</text>
+<rect x="347.7826086956522" y="616.0" width="387.21739130434787" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="541.4" y="648.2" font-size="12" text-anchor="middle" fill="#1F2937">Save the assignment</text>
+<rect x="25.0" y="698.0" width="292.7826086956522" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="171.4" y="722.7" font-size="12" text-anchor="middle" fill="#1F2937">Share an approved activity to the Open Repository</text><text x="171.4" y="737.7" font-size="12" text-anchor="middle" fill="#1F2937">(free or paid)</text>
+<rect x="347.7826086956522" y="698.0" width="387.21739130434787" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="541.4" y="730.2" font-size="12" text-anchor="middle" fill="#1F2937">List it once; add 2 free credits to the teacher</text>
+<rect x="25.0" y="780.0" width="292.7826086956522" height="56" rx="7" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.5"/><text x="171.4" y="804.7" font-size="12" text-anchor="middle" fill="#1F2937">Later: see which activities helped the class</text><text x="171.4" y="819.7" font-size="12" text-anchor="middle" fill="#1F2937">(Analytics)</text>
+<text x="24" y="900" font-size="11" font-weight="bold" fill="#5B6675">LEGEND</text>
+<rect x="80" y="889" width="16" height="12" rx="3" fill="#E8F1FB" stroke="#7FA8D6" stroke-width="1.4"/>
+<text x="102" y="899" font-size="11" fill="#1F2937">Step</text>
+<rect x="146.0" y="889" width="16" height="12" rx="3" fill="#FFF0DC" stroke="#E8A04F" stroke-width="1.4"/>
+<text x="168.0" y="899" font-size="11" fill="#1F2937">Outside service</text>
+<rect x="267.0" y="889" width="16" height="12" rx="3" fill="#FFF3D6" stroke="#E0B04A" stroke-width="1.4"/>
+<text x="289.0" y="899" font-size="11" fill="#1F2937">Decision</text>
+</svg>

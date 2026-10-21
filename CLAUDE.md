@@ -1389,7 +1389,7 @@ recorded here rather than left as a silent mismatch:
   should "assign a random avatar" automatically. The actual
   implementation lets the Parent choose a preset character (an earlier
   deviation) and now also upload a real photo of the child, with no
-  privacy/consent gate anywhere in the flow. No actor prompt or patch
+  privacy/consent gate anywhere in the flow. **SUPERSEDED 2026-10-21:** the photo now has its own separate, optional consent box and the whole child profile needs the parent's consent (see "Legal pages, consent records and no third parties"). No actor prompt or patch
   doc addresses child photo storage/consent at all — this is genuinely
   unaddressed ground, not a resolved question, and is worth revisiting
   before this goes anywhere beyond a dev build.
@@ -7347,7 +7347,7 @@ that plays the syllable method's four steps for one longer word at a time. The f
   The phone app needs the screens and a new build.
 - **Sources corrected on the way:** Ehri (2005) is about how children move from letter sounds to sounding out to reading by sight, NOT about the order of letters, words, sentences and stories (fixed on `/how-it-works`, in `config/syllable_method.php` and in the basis doc); the Seymour line no longer claims it explains why closed syllables come first (that is the team's choice). Still not checked: the IDA claim about closed syllables, Dolch 1936, the National Reading Panel report itself, the Phil-IRI 97/90 bands, the Fisher and Frey year.
 
-## Practice game rules in one config, and the games and word bank on /how-it-works (2026-10-20 night, BUILT LOCALLY, NOT PUSHED)
+## Practice game rules in one config, and the games and word bank on /how-it-works (2026-10-20 night, PUSHED to mobile-app as `5a972b1` and MERGED INTO THE LIVE BRANCH as `7aa1aa2`; live /how-it-works shows section 12, 656 tests passed on the merged code)
 
 The owner said "continue whats next". The numbers every Practice Game shares were copied in several places (three web game pages, three phone files, a private constant and a `match` in
 `PracticeGameService`), and the public page "How TaraBasa decides" said nothing about the games or the word bank. Now:
@@ -7364,6 +7364,76 @@ The owner said "continue whats next". The numbers every Practice Game shares wer
   reading follows the MATATAG codes the games already send to the speech checker (RL1PWS-I-5, EN2PWS-I-3, EN3PWS-I-2; only the first two were read in the guides, the third is only the code), the spaced review
   idea of the word bank is the team's own design and NO study was checked for these numbers, and the page says so. It also says no real child has played the games yet.
 - **Tests:** `PracticeGameRulesTest` (7). Related suites (`HowItWorksTest`, `SyllableStepsGameTest`, `PracticeGamesVoiceTest`, `AdaptivePatternTest`, `MobileApiTest`) pass with it.
+
+## Manuscript update pack (2026-10-20, COMMITTED LOCALLY on mobile-app, NOT pushed)
+
+The owner asked for a review of the manuscript (version 29 PDF, 188 pages) with the updated tech stack, new system flow charts, a NEW FDD for the panel,
+new literature kept separate, and everything split so the teammate who writes the manuscript can work from it, keeping the manuscript's font, size and spacing.
+Lives in `docs/manuscript-update/` (5 Word files, `05_Figures/` as PNG + SVG + editable `.drawio`, and `tools/` with the Python scripts that generate it all).
+- **Files.** `00_README_START_HERE` (work order, formatting rules, decisions, limits), `01_Review_and_Change_Register` (64 findings R01 to R64 with page, action, type, priority, block;
+  Annex 1 old to new Figure and Table numbers; Annex 2 page number errors in the typed Contents, List of Tables and List of Figures: 30 of 36, 23 of 26 and 41 of 43 are wrong),
+  `02_Insert_Ready_Text` (Parts A to D, blocks A1 to C20, each with a grey "Place at / Replaces / Basis" box that must not be pasted), `03_FDD_and_Use_Case_Panel_Review`
+  (the new FDD with every function marked new, updated or unchanged, 12 questions for the panel, v29 to v2 mapping, the wrong workflow figures), `04_New_References_and_Basis`
+  (13 new references N1 to N13 with status VERIFIED / LISTED / RECALLED, citation fixes, feature to source table, what was not found).
+- **Formatting copied from the manuscript's Word styles:** Letter, margins L 1.5 in and R, T, B 1 in, Times New Roman 11 pt justified, 1.5 spacing, 0.5 in first line indent,
+  H1 14 bold centered, H2 12 bold centered, H3 11 bold left, table caption above (label then TITLE IN CAPS), figure caption below (label plain, title bold and underlined),
+  tables full width thin black borders, figures at most 6.0 in wide. Working pages (README, register, panel, references) are Calibri and are not manuscript text.
+- **New figures** (all from one description, so they cannot disagree): system flow, architecture and tech stack, network model and topology, learner/teacher/parent/admin
+  workflows (14 figures), adaptive rule chain, ERD v2 (23 tables: 14 of the 16 in v29 plus 9 new; Curriculum Guide and Badge are not tables), an 11-module FDD (112 functions: 39 new,
+  33 updated, 40 unchanged; v29 has 9 modules and 80), 6 use case diagrams drawn from the same function list. Editable at app.diagrams.net.
+- **Things the pack says that matter for the defense:** SMS and Google Speech-to-Text are not in the system (it uses Vosk through a reading service and sends emails only); the stack
+  is Laravel 13 + React Native with Expo + TiDB Cloud on Render, not Kotlin + XAMPP + Bootstrap + Cloud SQL; "AI" means a speech recognition service plus written rules and a formula service,
+  nothing was trained, and the numbers in Table 7 are the team's own settings.
+- **Checked:** the five files were opened in Word itself and exported to PDF (78, 12, 3, 19 and 4 pages; no blank pages; no meta box split across pages).
+- **NOT done / needs the team:** study school (Cebu City vs Suba Elementary, Liloan), respondent counts for the Validation Board, results of the user acceptance test and the phone model for C19,
+  whether to keep the old UI figures, programmers for modules 10 and 11, privacy contact email (also `PRIVACY_CONTACT_EMAIL` on Render); references marked RECALLED or LISTED must be read
+  before the defense; DepEd order numbers came from search results (deped.gov.ph returned 403), re-read the originals; the Word source in Downloads is from July 2026, older than the PDF.
+- **Regenerate:** `docs/manuscript-update/tools/src` (`build_all.py` for figures, `build_docs.py` for the Word files). The scripts use Windows Arial fonts and python-docx and Pillow.
+
+## Legal pages, consent records and no third parties (2026-10-21, COMMITTED LOCALLY on mobile-app, NOT pushed)
+
+The owner asked for the legal documents ("I do not want to be sued for this vibe coded system") laid out like the well known sites, a check for
+cookies, analytics, third party embeds, fake reviews and unsupported claims, consent forms, and every risk flagged. Said plainly to the owner and to be said
+again: **nobody on the team is a lawyer and no document makes a project lawsuit proof.** `docs/legal/LEGAL-RISK-REGISTER.md` is the honest list (what was fixed, what only the
+team can do, what needs a lawyer); `docs/legal/DATA-INVENTORY.md` is the factual basis (every datum, every outside service, cookies, a draft of the Play "Data safety" answers).
+- **Five public pages**, one layout (`layouts/legal.blade.php`: a list of the documents on the left, a sticky "On this page", a plain words "short version" card, numbered sections
+  with copyable links, version and date, print stylesheet, phone layout with a collapsed table of contents): `/privacy` (rewritten, 16 sections, keeps `#delete` and the phone app
+  section the tests and Play Console rely on), `/terms`, `/cookies`, `/refunds`, `/parent-consent` (views in `resources/views/legal/`). Values live in `config/legal.php`
+  (`version` 2026-10-21, `updated`, `operator`, `operator_detail`, `contact_email` from `PRIVACY_CONTACT_EMAIL`, `accountable_person`, `reply_days` 30, `api_consent_required`).
+  The contact phrase is `partials/legal-contact.blade.php`: it has NO trailing newline and an empty `<?php ?>` before its last `@endif` on purpose (Blade only sees a directive
+  that does not touch a letter, and a newline would print as a space before the full stop). The Privacy Policy points at its own sections by number ("section 11"), and a test pins
+  the order. **Rule:** if what the app does with data changes (a new service, a cookie, saved audio, analytics, a payment gateway), change the page in the same commit, bump `version`
+  and add a row to the page's "Changes" table; the tests fail until you do.
+- **What the audit found.** No analytics, tracking, pixels, session replay, crash reporter, embeds or ads anywhere, on the website or in the phone app (`mobile/package.json`). The ONLY
+  third party was **Google Fonts on 21 pages** (every visitor's IP went to Google; LG Munich 2022 fined this): now self hosted (`public/fonts`, `public/css/fonts.css`, five families,
+  Latin subset, SIL OFL licence note in `public/fonts/LICENSE.txt`) and the CSP says `font-src 'self' data:`. What still leaves: the bare `/health` wake up request from the visitor's
+  browser to the teammate services (`partials/wake-from-browser`, credentials omitted, no referrer; disclosed in the Privacy and Cookie Policies) and the Google sign in link out.
+  **Cookies: exactly two**, `tarabasa-ai-session` (`config('session.cookie')`, HttpOnly, Secure on https, SameSite Lax) and `XSRF-TOKEN`; no remember me. **No cookie banner on purpose**
+  (strictly necessary cookies only); a banner must be built before anything else is added. `sessions` stores IP and browser details (disclosed). No payment library: the Open Repository
+  "paid" unlock is simulated, and `/refunds` says so.
+- **Claims removed from the home page** (all stronger than the app): "AI-powered, teacher-verified", "checking every word as they go, right there in the moment" (scoring happens after the
+  recording is sent), "every activity a child sees is checked by an actual teacher" (the first check and the games are written by the team), an outcome promise, "set it up in a few
+  minutes". Added "not made or endorsed by the Department of Education". There were never any reviews, ratings, testimonials, statistics or logos. A test blocks the old phrases.
+- **Consent** (nothing was asked before): `consent_records` (user, learner, kind, `policy_version`, channel web or app, accepted_at, withdrawn_at; no IP or browser details),
+  `App\Services\ConsentService` writes a row only for a ticked box. Kinds: `terms_privacy` (Parent and Teacher sign up), `child_data` (last step of Add your child: required),
+  `child_photo` (separate, optional box shown only when a photo is chosen; website only), `child_link` (a second guardian confirms they are the child's parent or guardian). The website
+  requires them; the API accepts them and requires them only when `API_CONSENT_REQUIRED=true` (default false, so phone builds before 0.5.5 can still sign up: **set it to true on Render
+  once every tester has 0.5.5**). Component `<x-consent-check>`; `DataErasureService` deletes the rows with the child or the person (and a parent leaving a co-guarded child loses only
+  their own rows for that child). A teacher is told on the Generate form, the phone and both policies not to type a child's name (the text goes to a Google AI model); there is no
+  software filter for names.
+- **Phone 0.5.5** (`mobile/app.json` 0.5.5, versionCode 15): `Consent` and `LegalLinks` in `src/fields.tsx`, `LEGAL_URLS` in `src/config.ts`; consent boxes in both sign ups, the
+  add-a-child wizard (last step) and link; legal links on the child's sign in and in My profile; the do-not-type-a-name note on Generate. `tsc --noEmit` is clean. **The APK was NOT built.**
+- **Tests:** `LegalPagesTest` (13: pages open, link to each other, contact follows the setting, section numbers, no request to another company in any view/js/css, fonts local, only the
+  two cookies and their flags, no payment package, home page claims, house copy rules, wake up request) and `ConsentCaptureTest` (15). Existing tests that fill the forms now tick the
+  boxes. Full suite 685 tests, 0 failures. Looked at in a browser: the five pages at 1280 and 375 (no sideways scroll, collapsed table of contents), the wizard's last step, the link
+  page and parent sign up. (Headless Edge cannot go below 500 px wide, so a "390" screenshot is a cropped 500; the Browser pane's screenshots time out on sticky pages, use DOM measurements.)
+- **Open, from the register (the owner must do or decide these):** set `PRIVACY_CONTACT_EMAIL` (mailbox not created yet when this was written) and `LEGAL_OPERATOR_DETAIL`,
+  `LEGAL_ACCOUNTABLE_PERSON` on Render; check whether NPC Circular 2022-04 (registration of the DPO and the data processing system) applies; a short Privacy Impact Assessment; written
+  agreements with Render, TiDB, Google and the teammate's services (the scoring service has no password); a breach plan (the policy promises 72 hours); a retention rule for
+  inactive accounts; check the Gemini key's billing tier (free tier lets Google use inputs); no "remove only the photo" button, no self service export, no "remove from class" for a
+  parent; a lawyer's reading of the Terms; COPPA or GDPR if children outside the Philippines sign up; Google Play Families Policy at listing time. The NPC site returned 403 to the
+  build machine, so anything about NPC circulars was read in law firm summaries only (the Act's own text was read on lawphil.net).
+- The manuscript pack (`docs/manuscript-update`, block C20) now mentions the consent boxes and the legal pages.
 
 ## Before pushing this round (checklist for the next session)
 

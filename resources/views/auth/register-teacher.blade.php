@@ -92,6 +92,8 @@
              value="{{ old('contact_number') }}">
     </div>
 
+    <x-consent-check name="accepts_terms">I am 18 or older and I teach at the school I entered above. I agree to the <a href="{{ route('terms') }}" target="_blank" rel="noopener">Terms of Use</a> and I have read the <a href="{{ route('privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.</x-consent-check>
+
     <button type="submit" class="submit-btn" id="submitBtn">Register</button>
   </form>
 
