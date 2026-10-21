@@ -69,8 +69,9 @@ class PrivacyPageTest extends TestCase
 
     public function test_the_recording_claim_is_still_true_the_app_stores_no_audio(): void
     {
-        // The only file the app writes with ->store() is the optional avatar photo. If a recording is
-        // ever stored, this fails and the page must be changed first.
+        // The app writes no file with ->store() at all: the optional photo of a child is kept in the database (LearnerPhoto),
+        // because the free host wipes the server disk. If anything is ever stored as a file, above all a recording, this
+        // fails and the page must be changed first.
         $stored = [];
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path())) as $file) {
             if ($file->isFile() && $file->getExtension() === 'php') {
@@ -83,7 +84,7 @@ class PrivacyPageTest extends TestCase
             }
         }
 
-        $this->assertSame(['avatars'], array_values(array_unique($stored)), 'The app now stores a new kind of file. Update the privacy page.');
+        $this->assertSame([], array_values(array_unique($stored)), 'The app now stores a file. Update the privacy page.');
     }
 
     public function test_the_contact_line_follows_the_setting(): void

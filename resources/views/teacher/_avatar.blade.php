@@ -14,4 +14,4 @@
     // The picture a child picks is one short character (an animal); anything longer is not a picture.
     $hasGlyph = $glyph !== '' && mb_strlen($glyph) <= 2 && ! preg_match('/^[A-Za-z0-9]$/u', $glyph);
 @endphp
-<span class="{{ $avClass }}{{ $hasGlyph ? '' : ' init c'.$tone }}" aria-hidden="true">{{ $hasGlyph ? $glyph : $initials }}@if ($learner->avatar_photo_path)<img src="{{ Storage::url($learner->avatar_photo_path) }}" alt="" onerror="this.style.display='none'">@endif</span>
+<span class="{{ $avClass }}{{ $hasGlyph ? '' : ' init c'.$tone }}" aria-hidden="true">{{ $hasGlyph ? $glyph : $initials }}@if ($learner->photo_version)<img src="{{ $learner->photoUrl() }}" alt="" onerror="this.style.display='none'">@endif</span>

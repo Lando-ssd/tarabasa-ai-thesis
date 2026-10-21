@@ -159,7 +159,9 @@ class ConsentCaptureTest extends TestCase
         $this->actingAs($user)->post(route('parent.children.store'), $this->childForm(['parent_consent' => '1', 'photo_consent' => '1', 'avatar_photo' => $this->photo()]))->assertOk();
 
         $kid = Learner::firstOrFail();
-        $this->assertNotNull($kid->avatar_photo_path);
+        $this->assertNotNull($kid->photo_version, 'the photo is kept, in the database');
+        $this->assertSame(1, \App\Models\LearnerPhoto::where('learner_id', $kid->id)->count());
+        $this->assertSame([], Storage::disk('public')->allFiles(), 'and no file is written to the server disk, which the free host wipes');
         $this->assertSame(['child_data', 'child_photo'], ConsentRecord::where('learner_id', $kid->id)->orderBy('id')->pluck('kind')->all());
     }
 

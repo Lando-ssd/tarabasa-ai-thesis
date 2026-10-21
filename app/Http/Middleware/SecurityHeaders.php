@@ -53,7 +53,9 @@ class SecurityHeaders
             $response->headers->set('Strict-Transport-Security', 'max-age=15552000');
         }
 
-        $isFile = $response instanceof BinaryFileResponse || $response instanceof StreamedResponse;
+        // A file, and a child's photo (its controller sets its own short, private cache time and a version in the address), are
+        // not "pages": without this every photo on a list of children would be downloaded again on every page.
+        $isFile = $response instanceof BinaryFileResponse || $response instanceof StreamedResponse || $request->routeIs('photos.learner');
         if (! $isFile && (Auth::guard('web')->check() || Auth::guard('learner')->check())) {
             $response->headers->set('Cache-Control', 'no-store, private');
         }

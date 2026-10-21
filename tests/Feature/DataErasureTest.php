@@ -114,7 +114,7 @@ class DataErasureTest extends TestCase
     {
         $total = 0;
 
-        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records'] as $table) {
+        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records', 'learner_photos'] as $table) {
             $total += DB::table($table)->where('learner_id', $kid->id)->count();
         }
 
@@ -137,7 +137,8 @@ class DataErasureTest extends TestCase
         $kid = $this->child($parent);
         $this->fillChild($kid, $user);
         Storage::disk('public')->put('avatars/mia.png', 'x');
-        $kid->update(['avatar_photo_path' => 'avatars/mia.png']);
+        $kid->update(['avatar_photo_path' => 'avatars/mia.png', 'photo_version' => 1760000000]);
+        DB::table('learner_photos')->insert(['learner_id' => $kid->id, 'mime' => 'image/png', 'data' => base64_encode('x'), 'updated_at' => now()]);
         $this->assertGreaterThan(8, $this->everyRowAbout($kid), 'the test child must have rows in every table to start with');
 
         $this->removeChild($user, $kid)->assertRedirect(route('parent.children.index'))->assertSessionHas('status', "Mia's profile and every reading record were deleted.");

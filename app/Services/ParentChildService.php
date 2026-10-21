@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Controllers\LearnerController;
 use App\Models\Learner;
+use App\Models\LearnerPhoto;
 use App\Models\Notification;
 use App\Models\User;
 use App\Support\LearnerCode;
@@ -67,8 +68,9 @@ class ParentChildService
             'avatar_id' => ['required', Rule::in(LearnerController::AVATARS)],
             'theme_color' => ['nullable', Rule::in(['blue', 'pink'])],
             // A cropped photo (if the Parent chose one instead of a character) arrives as a real file. Laravel's 'image' rule checks
-            // the real content, not the file name.
-            'avatar_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            // the real content, not the file name. The browser crops it to 480 by 480 pixels first, so a real one is tens of
+            // kilobytes; 1 MB is a generous ceiling because the photo is kept in the database.
+            'avatar_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:1024'],
             'reading_stage' => ['required', Rule::in(array_keys(self::READING_STAGES))],
             // Learning style is no longer asked: the research does not support teaching to a style (Pashler et al., 2008).
             'home_language' => ['nullable', Rule::in(LearnerController::HOME_LANGUAGES)],
@@ -94,7 +96,7 @@ class ParentChildService
             'last_name.regex' => 'Last name may only contain letters, spaces, hyphens, and apostrophes — no numbers.',
             'avatar_photo.image' => 'That file doesn\'t look like a real image.',
             'avatar_photo.mimes' => 'Photos must be a JPG, PNG, or WEBP file.',
-            'avatar_photo.max' => 'Photos must be 2MB or smaller.',
+            'avatar_photo.max' => 'That photo is too large after cropping. Please choose a smaller one.',
         ];
     }
 
@@ -124,12 +126,9 @@ class ParentChildService
 
         $parent = $user->parentProfile;
 
-        // Stored under a random, unguessable file name (not the code or the name), so the path itself tells nobody who the child is.
-        $photoPath = $photo ? $photo->store('avatars', 'public') : null;
-
         $placementAnswers = ['q1' => $validated['q1'], 'q2' => $validated['q2'], 'q3' => $validated['q3']];
 
-        return $this->withFreshCode(function () use ($validated, $masteryLevel, $parent, $photoPath, $placementAnswers, $user, $channel) {
+        return $this->withFreshCode(function () use ($validated, $masteryLevel, $parent, $photo, $placementAnswers, $user, $channel) {
             $learner = Learner::create([
                 'learner_code' => Learner::generateUniqueCode(),
                 'class_id' => null,
@@ -140,7 +139,6 @@ class ParentChildService
                 'pin' => Hash::make($validated['pin']),
                 'avatar_id' => $validated['avatar_id'],
                 'theme_color' => $validated['theme_color'] ?? 'blue',
-                'avatar_photo_path' => $photoPath,
                 'mastery_level' => $masteryLevel,
                 'home_language' => $validated['home_language'] ?? null,
                 'supports' => array_values($validated['supports'] ?? []),
@@ -156,9 +154,15 @@ class ParentChildService
                 'linked_at' => now(),
             ]);
 
+            // The photo is kept in the database with the child (it used to be a file on the server's disk, which the free hosting
+            // plan wipes). Done in the same transaction, so a child never exists without the photo that was consented to.
+            if ($photo) {
+                LearnerPhoto::put($learner, $photo);
+            }
+
             // What the parent agreed to, kept with the child: the child's information, and (separately) the photo if there is one.
             ConsentService::record($user, ConsentService::CHILD_DATA, $validated['parent_consent'] ?? false, $learner, $channel);
-            if ($photoPath) {
+            if ($photo) {
                 ConsentService::record($user, ConsentService::CHILD_PHOTO, $validated['photo_consent'] ?? false, $learner, $channel);
             }
 

@@ -101,7 +101,8 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Version</th><th>What changed</th></tr></thead>
     <tbody>
-      <tr><td>{{ config('legal.version') }}</td><td>The first version of the Cookie Policy.</td></tr>
+      <tr><td>{{ config('legal.version') }}</td><td>No change to the cookies. The Privacy Policy changed: where a child's photo is kept and who sees it.</td></tr>
+      <tr><td>2026-10-21</td><td>The first version of the Cookie Policy.</td></tr>
     </tbody>
   </table></div>
 </section>

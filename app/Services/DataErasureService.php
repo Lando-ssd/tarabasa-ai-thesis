@@ -240,7 +240,7 @@ class DataErasureService
 
         $learner->tokens()->delete();
 
-        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records'] as $table) {
+        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records', 'learner_photos'] as $table) {
             DB::table($table)->where('learner_id', $id)->delete();
         }
 

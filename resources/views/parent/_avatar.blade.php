@@ -9,4 +9,4 @@
     $avatarGlyph = $learner->avatar_id ?? '';
     $avatarShown = ($avatarGlyph !== '' && mb_strlen($avatarGlyph) <= 4) ? $avatarGlyph : mb_strtoupper(mb_substr($learner->first_name, 0, 1));
 @endphp
-<span class="{{ $avClass }}">{{ $avatarShown }}@if ($learner->avatar_photo_path)<img src="{{ Storage::url($learner->avatar_photo_path) }}" alt="" onerror="this.style.display='none'">@endif</span>
+<span class="{{ $avClass }}">{{ $avatarShown }}@if ($learner->photo_version)<img src="{{ $learner->photoUrl() }}" alt="" onerror="this.style.display='none'">@endif</span>

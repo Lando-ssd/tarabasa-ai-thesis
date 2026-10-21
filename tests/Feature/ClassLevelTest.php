@@ -148,7 +148,7 @@ class ClassLevelTest extends TestCase
     {
         [$user, $t] = $this->teacher();
         $class = $this->klass($t, 'Grade 1', 'Sampaguita');
-        $withPhoto = $this->kid($class, 3, ['first_name' => 'Pia', 'last_name' => 'Lim', 'avatar_photo_path' => 'avatars/pia.jpg']);
+        $withPhoto = $this->kid($class, 3, ['first_name' => 'Pia', 'last_name' => 'Lim', 'photo_version' => 1760000000]);
         $withGlyph = $this->kid($class, 3, ['first_name' => 'Tomas', 'avatar_id' => "\u{1F98A}"]);
         $plain = $this->kid($class, 3, ['first_name' => 'Noel', 'last_name' => 'Ong', 'avatar_id' => 'A']);
 
@@ -156,7 +156,8 @@ class ClassLevelTest extends TestCase
 
         $this->assertStringContainsString('Search learners', $html);
         $this->assertStringNotContainsString('Search this class', $html);
-        $this->assertStringContainsString('storage/avatars/pia.jpg', $html, 'the uploaded photo is shown');
+        $this->assertStringContainsString('/photos/learner/'.$withPhoto->id.'?v=1760000000', $html, 'the uploaded photo is shown, from the private address');
+        $this->assertStringNotContainsString('storage/avatars', $html, 'never from the server disk');
         $this->assertStringContainsString('onerror="this.style.display=', $html, 'a missing file falls back to the picture or the initials');
         $this->assertStringContainsString("\u{1F98A}", $html, 'the picture the child chose');
         $this->assertMatchesRegularExpression('/class="av init c\d" aria-hidden="true">NO<\/span>/', $html, 'initials when there is neither a photo nor a picture');
