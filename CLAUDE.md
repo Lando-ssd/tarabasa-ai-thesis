@@ -7390,7 +7390,7 @@ Lives in `docs/manuscript-update/` (5 Word files, `05_Figures/` as PNG + SVG + e
   before the defense; DepEd order numbers came from search results (deped.gov.ph returned 403), re-read the originals; the Word source in Downloads is from July 2026, older than the PDF.
 - **Regenerate:** `docs/manuscript-update/tools/src` (`build_all.py` for figures, `build_docs.py` for the Word files). The scripts use Windows Arial fonts and python-docx and Pillow.
 
-## Legal pages, consent records and no third parties (2026-10-21, COMMITTED LOCALLY on mobile-app, NOT pushed)
+## Legal pages, consent records and no third parties (2026-10-21, PUSHED to mobile-app as f1a5018 and MERGED INTO THE LIVE BRANCH as 54e24e4, deployed and checked live)
 
 The owner asked for the legal documents ("I do not want to be sued for this vibe coded system") laid out like the well known sites, a check for
 cookies, analytics, third party embeds, fake reviews and unsupported claims, consent forms, and every risk flagged. Said plainly to the owner and to be said
@@ -7434,6 +7434,17 @@ team can do, what needs a lawyer); `docs/legal/DATA-INVENTORY.md` is the factual
   parent; a lawyer's reading of the Terms; COPPA or GDPR if children outside the Philippines sign up; Google Play Families Policy at listing time. The NPC site returned 403 to the
   build machine, so anything about NPC circulars was read in law firm summaries only (the Act's own text was read on lawphil.net).
 - The manuscript pack (`docs/manuscript-update`, block C20) now mentions the consent boxes and the legal pages.
+- **Merged to the live branch on 2026-10-21 (the owner's explicit yes), clean merge, 685 tests passing on the merged code.** A test that needed PHP's GD extension (`UploadedFile::fake()->image()`)
+  errored on this machine because `F:\php\php.ini` has `;extension=gd`; the two photo tests now use a real 1 by 1 PNG (`ConsentCaptureTest::photo()`), so they run anywhere (fix `f1a5018`). Checked on the
+  live host after the deploy (from outside, read only, no account made): `/up`, `/privacy`, `/terms`, `/cookies`, `/refunds`, `/parent-consent` all 200; no `fonts.googleapis`/`fonts.gstatic` in
+  `/`, `/privacy`, `/login`, `/register/parent`, `/learner/login`; `/css/fonts.css` and the woff2 served; CSP says `font-src 'self' data:`; exactly the two cookies with `secure`, `httponly` (session) and
+  `samesite=lax`; `name="accepts_terms"` is in both sign up forms; the home page has the new wording and none of the removed claims. NOT checked live: the `consent_records` table itself (the startup
+  script runs `migrate --force` under `set -e`, so the new build serving the new pages means the migration ran) and a real sign up writing a consent row (Claude may not create accounts on a live site;
+  the first real sign up proves it).
+- **Hosted preview of the new pages and consent screens:** https://claude.ai/artifact/JKvta1kRty3gGk6BLnfimv (private to the owner). The real pages rendered from the real templates with made-up people,
+  at phone, tablet and laptop size, plus a "What changed" box with the home page before and after wording. Made by `tools/legal-preview/` (`CaptureLegalPreviewTest.php` saves the pages, `build_legal_preview.py`
+  inlines styles, fonts and the logo and opens the wizard's last step and the Generate window directly, `TaraBasa-Legal-Preview.html` is the viewer; README.md has the three steps). The phone app's own
+  consent screens and the home page animations are not drawn in it.
 
 ## Before pushing this round (checklist for the next session)
 
