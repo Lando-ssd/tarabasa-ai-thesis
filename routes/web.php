@@ -13,6 +13,7 @@ use App\Http\Controllers\GmailAuthorizationController;
 use App\Http\Controllers\LearnerAuthController;
 use App\Http\Controllers\LearnerController;
 use App\Http\Controllers\LearnerDiagnosticController;
+use App\Http\Controllers\LearnerPhotoController;
 use App\Http\Controllers\LearnerReadingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ParentDashboardController;
@@ -37,6 +38,10 @@ Route::view('/refunds', 'legal.refunds')->name('refunds');
 Route::view('/parent-consent', 'legal.consent')->name('consent');
 // How TaraBasa decides: every rule the app uses about a child, a class or an activity, with its numbers and sources (public).
 Route::get('/how-it-works', [\App\Http\Controllers\HowItWorksController::class, 'show'])->name('how-it-works');
+
+// A child's photo (kept in the database). Not behind `auth` because a child's own sign in and a phone's token are allowed too: the
+// controller decides who may see which child, and answers "not found" to everyone else. A page of children asks once per child.
+Route::get('/photos/learner/{learner}', [LearnerPhotoController::class, 'show'])->middleware('throttle:600,1')->name('photos.learner');
 
 Route::get('/register/teacher', [AuthController::class, 'showTeacherRegister'])->name('register.teacher');
 Route::post('/register/teacher', [AuthController::class, 'storeTeacher'])->name('register.teacher.submit');

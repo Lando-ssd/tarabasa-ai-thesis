@@ -62,8 +62,8 @@
       @else
         {{ $initial }}
       @endif
-      @if ($learner->avatar_photo_path)
-        <img src="{{ Storage::url($learner->avatar_photo_path) }}" alt="" onerror="this.style.display='none'">
+      @if ($learner->photo_version)
+        <img src="{{ $learner->photoUrl() }}" alt="" onerror="this.style.display='none'">
       @endif
     </div>
     <div class="sf-text"><b>Hi, {{ $learner->first_name }}!</b><span>{{ $learner->grade_level }}</span></div>

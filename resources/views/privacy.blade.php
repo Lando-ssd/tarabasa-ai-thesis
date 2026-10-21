@@ -157,7 +157,7 @@
 <section id="abroad">
   <h2>Where it is kept</h2>
   <p>The website, its database and the phone app's server are in Singapore. The scoring and recommendation services are hosted on Render, and Google's services (Gmail, Gemini, Google sign in) run in Google's own data centres, so some information is handled outside the Philippines. The Data Privacy Act keeps us responsible for information that we send to a service we use, and we send only what that service needs.</p>
-  <p><b>Photos</b> are stored on the website server's disk. On our free hosting plan that disk can be wiped when the service restarts, in which case the app shows the child's initial instead. Photos are not backed up.</p>
+  <p><b>Photos</b> are kept in the database together with the rest of the child's profile, not as separate files, so restarting or redeploying the website does not remove them. A photo is shown only to a signed in parent or guardian of the child, to the teacher of the class the child is in, and to the child. We make no backups of our own; a photo is covered only by whatever the database provider keeps for the database as a whole.</p>
 </section>
 
 <section id="keep">
@@ -227,7 +227,8 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Version</th><th>What changed</th></tr></thead>
     <tbody>
-      <tr><td>{{ config('legal.version') }}</td><td>Rewritten with a summary, a list of every service, retention times and rights. Added the Terms of Use, Cookie Policy, Refund Policy and Parent and Guardian Consent. Fonts are now served from this website, not from Google.</td></tr>
+      <tr><td>{{ config('legal.version') }}</td><td>A child's photo is now kept in the database instead of on the website server's disk, so it is no longer lost when the website restarts. It is shown only to the child's parents or guardians, the child's class teacher and the child.</td></tr>
+      <tr><td>2026-10-21</td><td>Rewritten with a summary, a list of every service, retention times and rights. Added the Terms of Use, Cookie Policy, Refund Policy and Parent and Guardian Consent. Fonts are now served from this website, not from Google.</td></tr>
       <tr><td>2026-10-20</td><td>The first public version of the Privacy page.</td></tr>
     </tbody>
   </table></div>

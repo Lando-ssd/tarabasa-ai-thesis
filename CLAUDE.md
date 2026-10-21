@@ -5404,7 +5404,7 @@ rail can't clip them (the rail must not set `overflow`; only `.right-col` scroll
 The stylesheet's `?v=` is now a CONTENT hash (`md5_file`), not `filemtime`: on
 Railway the mtime did not change between deploys, so browsers kept a stale cached
 copy of the CSS after a deploy.
-**Uploaded photos do not survive a redeploy:** child avatar photos are written to
+**FIXED 2026-10-21, see "Child photos are kept in the database" near the end of this file.** **Uploaded photos did not survive a redeploy:** child avatar photos were written to
 `storage/app/public` on Railway's ephemeral disk, so after a deploy the file is
 gone and the image is broken (seen on the live site). The sidebar now falls back to
 the child's initial, but the photo itself is lost until Railway gets a persistent
@@ -7390,7 +7390,7 @@ Lives in `docs/manuscript-update/` (5 Word files, `05_Figures/` as PNG + SVG + e
   before the defense; DepEd order numbers came from search results (deped.gov.ph returned 403), re-read the originals; the Word source in Downloads is from July 2026, older than the PDF.
 - **Regenerate:** `docs/manuscript-update/tools/src` (`build_all.py` for figures, `build_docs.py` for the Word files). The scripts use Windows Arial fonts and python-docx and Pillow.
 
-## Legal pages, consent records and no third parties (2026-10-21, COMMITTED LOCALLY on mobile-app, NOT pushed)
+## Legal pages, consent records and no third parties (2026-10-21, PUSHED to mobile-app as f1a5018 and MERGED INTO THE LIVE BRANCH as 54e24e4, deployed and checked live)
 
 The owner asked for the legal documents ("I do not want to be sued for this vibe coded system") laid out like the well known sites, a check for
 cookies, analytics, third party embeds, fake reviews and unsupported claims, consent forms, and every risk flagged. Said plainly to the owner and to be said
@@ -7434,6 +7434,44 @@ team can do, what needs a lawyer); `docs/legal/DATA-INVENTORY.md` is the factual
   parent; a lawyer's reading of the Terms; COPPA or GDPR if children outside the Philippines sign up; Google Play Families Policy at listing time. The NPC site returned 403 to the
   build machine, so anything about NPC circulars was read in law firm summaries only (the Act's own text was read on lawphil.net).
 - The manuscript pack (`docs/manuscript-update`, block C20) now mentions the consent boxes and the legal pages.
+- **Merged to the live branch on 2026-10-21 (the owner's explicit yes), clean merge, 685 tests passing on the merged code.** A test that needed PHP's GD extension (`UploadedFile::fake()->image()`)
+  errored on this machine because `F:\php\php.ini` has `;extension=gd`; the two photo tests now use a real 1 by 1 PNG (`ConsentCaptureTest::photo()`), so they run anywhere (fix `f1a5018`). Checked on the
+  live host after the deploy (from outside, read only, no account made): `/up`, `/privacy`, `/terms`, `/cookies`, `/refunds`, `/parent-consent` all 200; no `fonts.googleapis`/`fonts.gstatic` in
+  `/`, `/privacy`, `/login`, `/register/parent`, `/learner/login`; `/css/fonts.css` and the woff2 served; CSP says `font-src 'self' data:`; exactly the two cookies with `secure`, `httponly` (session) and
+  `samesite=lax`; `name="accepts_terms"` is in both sign up forms; the home page has the new wording and none of the removed claims. NOT checked live: the `consent_records` table itself (the startup
+  script runs `migrate --force` under `set -e`, so the new build serving the new pages means the migration ran) and a real sign up writing a consent row (Claude may not create accounts on a live site;
+  the first real sign up proves it).
+- **Hosted preview of the new pages and consent screens:** https://claude.ai/artifact/JKvta1kRty3gGk6BLnfimv (private to the owner). The real pages rendered from the real templates with made-up people,
+  at phone, tablet and laptop size, plus a "What changed" box with the home page before and after wording. Made by `tools/legal-preview/` (`CaptureLegalPreviewTest.php` saves the pages, `build_legal_preview.py`
+  inlines styles, fonts and the logo and opens the wizard's last step and the Generate window directly, `TaraBasa-Legal-Preview.html` is the viewer; README.md has the three steps). The phone app's own
+  consent screens and the home page animations are not drawn in it.
+
+## Child photos are kept in the database, not on the server disk (2026-10-21, BUILT LOCALLY, committed on mobile-app, NOT pushed or merged)
+
+The owner asked to fix "the photo disappearing problem": every uploaded child photo vanished whenever the free Render service slept or redeployed (its disk is wiped), and the app
+fell back to the child's initial. Fixed by keeping the photo where data survives, the database, with no new service, account or key.
+- **Storage.** New table `learner_photos` (one row per child: `mime`, `data` as base64 `longText`, `updated_at`; `learner_id` unique with a cascading foreign key, so the picture cannot outlive the child) and
+  a new nullable `learners.photo_version` (a whole number that grows with every replacement; null means no photo). Migration `2026_10_21_000200`. `LearnerPhoto::put($learner, $uploadedFile)` is the one way a photo
+  is saved (jpeg, png or webp only; version always increases). The browser already crops every photo to a 480 by 480 JPEG before upload, so a photo is tens of kilobytes; the server ceiling is now 1 MB (`max:1024`,
+  was 2 MB; the message says "too large after cropping"). The photo is saved in the SAME transaction as the child (`ParentChildService::create`), and the separate photo consent is still recorded.
+- **Showing it.** `Learner::photoUrl()` is the one answer to "where is this child's photo" (the website's four avatar views, the created page and the phone API's `avatarPhotoUrl` all use it; it needs no extra query
+  because `photo_version` is a column of the child's own row). The address is `/photos/learner/{id}?v={version}` (`photos.learner`, `LearnerPhotoController`). It is NOT public: allowed are the child (own sign in, or own
+  phone token), a parent or guardian linked to the child, and the teacher of the class the child is in; everyone else, including an Admin, a guest, a deactivated account and a teacher of another class, gets 404 (never 403), even
+  with a guessed version or a forged `If-None-Match`. Cache: `private, max-age=3600` plus an ETag and a 304 reply; `SecurityHeaders` leaves this route's cache header alone (it skips `photos.learner`), because its usual
+  `no-store` would make every photo on a list of children download again on every page.
+- **Erasure.** `DataErasureService` clears `learner_photos` with the child's other tables (and the cascade backs that up). `tests/Feature/PrivacyPageTest` now pins that the app writes NO file with `->store()` at all.
+- **Old files.** The migration moves any photo file still on a disk into the table (and deletes the file) and clears a pointer whose file is already gone, so `learners.avatar_photo_path` is empty after it and no longer written
+  (the column stays: a shipped migration is never edited). On Render the old container's files are already gone, so nothing is recovered: the photos lost before this fix are lost; parents must add them again.
+- **Legal.** The Privacy Policy no longer says the photo disk "can be wiped"; it says the photo is in the database and who sees it. `config/legal.php` version is now `2026-10-21.2`; the Changes tables of the Privacy, Terms and
+  Cookie pages list each version by its own number (they used to print the current version, which would have relabelled the old row). `docs/legal/DATA-INVENTORY.md` and risk O11 updated: the disappearing is fixed;
+  still open: no "remove only the photo" button, and no protection of the photo beyond the database provider's own.
+- **Tests.** `LearnerPhotoTest` (18: kept in the database with no file written, survives a wiped disk, replaced photo gets a new version, only image types, size ceiling, who may see it for parent, second guardian, other parent,
+  class teacher, other teacher, a teacher with no class, the child, another child, guest, Admin, phone tokens incl. a deactivated adult, cache headers, 304, deletion with the child, cascade, the migration's move of old files).
+  Full suite 703 passing. Checked in a browser against the local server as the demo parent: the photo draws in the child's card, headers are `max-age=3600, private`, the conditional request answers 304, and an unlinked child's
+  photo answers 404 in every variant, identical to a child that does not exist. The demo photos were removed from the local database afterwards.
+- **Not done / honest limits.** Not on the live site until merged and deployed (the migration runs by itself at deploy; it only adds a table and a column). A photo is base64 text in a database row (about a third bigger than the
+  file); with a 1 MB ceiling and tens of kilobytes in practice this is fine for a class, not a design for thousands of large images. The phone app has no photo upload and still draws initials (nothing in `mobile/src` uses
+  `avatarPhotoUrl`; if it ever does it must send the bearer token). The manuscript ERD figure (23 tables) is already stale: it lacks `consent_records` and now `learner_photos`.
 
 ## Before pushing this round (checklist for the next session)
 

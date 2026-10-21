@@ -11,8 +11,8 @@
 <div class="card-outer">
   <div class="card center">
     <div class="big-avatar">
-      @if ($learner->avatar_photo_path)
-        <img src="{{ Storage::url($learner->avatar_photo_path) }}" alt="{{ $learner->first_name }}" class="avatar-photo-img">
+      @if ($learner->photo_version)
+        <img src="{{ $learner->photoUrl() }}" alt="{{ $learner->first_name }}" class="avatar-photo-img">
       @else
         {{ $learner->avatar_id }}
       @endif

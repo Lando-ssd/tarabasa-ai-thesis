@@ -39,6 +39,7 @@ class Learner extends Model implements AuthenticatableContract
         'pin',
         'avatar_id',
         'avatar_photo_path',
+        'photo_version',
         'mastery_level',
         'competency_states',
         'next_recommended_competency',
@@ -104,6 +105,21 @@ class Learner extends Model implements AuthenticatableContract
     {
         return $this->belongsToMany(ParentAccount::class, 'parent_learners', 'learner_id', 'parent_id')
             ->withPivot(['relationship', 'is_creator', 'linked_at']);
+    }
+
+    public function photo(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(LearnerPhoto::class);
+    }
+
+    /**
+     * Where this child's photo is shown from, or null when there is none. Every page and the phone API ask here, so there is one
+     * answer. The address is not public: the picture is only handed to someone allowed to see this child (LearnerPhotoController).
+     * `photo_version` is a column of the child's own row, so a list of children needs no extra query to know who has a photo.
+     */
+    public function photoUrl(): ?string
+    {
+        return $this->photo_version ? route('photos.learner', ['learner' => $this->id, 'v' => $this->photo_version]) : null;
     }
 
     public function promotionRecords(): \Illuminate\Database\Eloquent\Relations\HasMany

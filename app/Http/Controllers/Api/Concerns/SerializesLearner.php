@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\Concerns;
 
 use App\Models\Learner;
 use App\Support\ReadingLevel;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Shared between LearnerApiController and LearnerReadingApiController —
@@ -23,7 +22,8 @@ trait SerializesLearner
             'firstName' => $learner->first_name,
             'gradeLevel' => $learner->grade_level,
             'avatarId' => $learner->avatar_id,
-            'avatarPhotoUrl' => $learner->avatar_photo_path ? Storage::url($learner->avatar_photo_path) : null,
+            // Not a public address: the picture is only handed to the child's own token or to an adult allowed to see this child.
+            'avatarPhotoUrl' => $learner->photoUrl(),
             'masteryLevel' => $learner->mastery_level ?? 'New',
             'points' => $learner->points,
             // The old stored counter: one point per scored reading, never reset. Kept so older clients keep working;

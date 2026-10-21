@@ -1,0 +1,268 @@
+<title>TaraBasa Legal Pages Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a header, then a control rail on the left and one device on the right that scales to fit. The device comes first on a narrow screen. */
+:root {
+  --bg: #eef3f8; --surface: #ffffff; --ink: #17324d; --muted: #56697a; --line: #d7e3ef;
+  --accent: #1f6bb8; --accent-ink: #ffffff; --sky: #e8f1fb; --chip: #f5f9fd; --device: #1f2d3b; --toast: #17324d; --toast-ink: #ffffff;
+  --new: #0f7a4a; --new-bg: #e3f6ec; --old: #9a3b2e; --old-bg: #fbeae7;
+  --font-display: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  --font-ui: 'Barlow Semi Condensed', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1a26; --surface: #152636; --ink: #e8f0f8; --muted: #9db2c6; --line: #2a425b;
+    --accent: #7db4f2; --accent-ink: #06182b; --sky: #14283d; --chip: #1a2f44; --device: #0a121b; --toast: #e8f0f8; --toast-ink: #0e1a26;
+    --new: #6fd6a3; --new-bg: #123626; --old: #f0a99f; --old-bg: #3a1c18;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1a26; --surface: #152636; --ink: #e8f0f8; --muted: #9db2c6; --line: #2a425b;
+  --accent: #7db4f2; --accent-ink: #06182b; --sky: #14283d; --chip: #1a2f44; --device: #0a121b; --toast: #e8f0f8; --toast-ink: #0e1a26;
+  --new: #6fd6a3; --new-bg: #123626; --old: #f0a99f; --old-bg: #3a1c18;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 16px; line-height: 1.45; padding-inline: 16px; padding-block: 20px 36px; }
+.head { max-width: 1240px; margin: 0 auto 18px; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1.1; margin: 0 0 6px; color: var(--accent); text-wrap: balance; }
+h2 { font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.lede { margin: 0; color: var(--muted); max-width: 64ch; }
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); } .stage { order: -1; position: static !important; } }
+.rail { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.group { display: flex; flex-direction: column; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+button.chip { font: inherit; font-weight: 600; color: var(--ink); background: var(--chip); border: 2px solid var(--line); border-radius: 999px; padding: 7px 14px; min-height: 40px; cursor: pointer; text-align: left; }
+button.chip:hover { border-color: var(--accent); }
+button.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.chip:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.size small { display: block; font-weight: 500; font-size: 12px; opacity: 0.8; }
+.note { background: var(--sky); border-radius: 14px; padding: 12px 14px; font-size: 14px; }
+.note p { margin: 0 0 6px; } .note p:last-child { margin: 0; }
+.note b { font-weight: 700; }
+details { border: 2px solid var(--line); border-radius: 14px; background: var(--surface); }
+summary { cursor: pointer; font-weight: 700; padding: 10px 14px; }
+details .in { padding: 0 14px 14px; font-size: 14px; color: var(--muted); }
+details .in h3 { font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); margin: 12px 0 6px; }
+details .in h3:first-child { margin-top: 0; }
+details ul { margin: 0; padding: 0 0 0 18px; }
+details li { margin-bottom: 6px; }
+.ba { display: grid; gap: 6px; margin: 0 0 10px; }
+.ba div { border-radius: 10px; padding: 7px 10px; font-size: 13.5px; line-height: 1.35; }
+.ba .was { background: var(--old-bg); color: var(--ink); }
+.ba .now { background: var(--new-bg); color: var(--ink); }
+.ba b { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
+.ba .was b { color: var(--old); } .ba .now b { color: var(--new); }
+.stage { display: flex; flex-direction: column; align-items: center; min-width: 0; gap: 12px; position: sticky; top: 16px; }
+.stage-box { width: 100%; display: flex; justify-content: center; }
+.device { background: var(--device); padding: 12px; box-shadow: 0 28px 50px -22px rgba(10, 24, 40, 0.6); transform-origin: top center; }
+.screen { position: relative; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
+.screen iframe { display: block; border: 0; background: #fff; flex: none; }
+.bar-top { flex: none; height: 24px; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font: 700 11px/1 system-ui, sans-serif; color: #1f2d3b; background: #f1f3f4; }
+.urlbar { flex: none; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: #f1f3f4; border-bottom: 1px solid #dfe3e6; }
+.url { flex: 1; min-width: 0; height: 28px; border-radius: 14px; background: #fff; border: 1px solid #dfe3e6; display: flex; align-items: center; gap: 6px; padding: 0 10px; font: 500 12px/1 system-ui, sans-serif; color: #3c4043; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.url svg { flex: none; }
+.bar-bottom { flex: none; height: 24px; background: #fff; position: relative; }
+.bar-bottom::after { content: ""; position: absolute; left: 50%; top: 10px; width: 110px; height: 4px; margin-left: -55px; border-radius: 4px; background: #1f2d3b; opacity: 0.85; }
+.desk .bar-top, .desk .bar-bottom { display: none; }
+.toast { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); max-width: 86%; background: var(--toast); color: var(--toast-ink); padding: 10px 14px; border-radius: 12px; font: 600 13px/1.3 system-ui, sans-serif; text-align: center; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 5; }
+.toast.on { opacity: 0.96; }
+.cap { margin: 0; font-size: 14px; color: var(--muted); text-align: center; max-width: 64ch; }
+</style>
+
+<header class="head">
+  <h1>TaraBasa Legal Pages Preview</h1>
+  <p class="lede">The new Privacy, Terms, Cookie and Refund pages, the parent consent notice, and the screens that now ask people to agree. Each one is the website's own page, drawn at phone, tablet and laptop size. Use the links inside a page to move around.</p>
+</header>
+
+<div class="wrap">
+  <div class="rail">
+    <div class="group"><h2>Screen size</h2><div class="row" id="sizes" role="group" aria-label="Screen size"></div></div>
+    <div class="group"><h2>New pages</h2><div class="row" id="g-new" role="group" aria-label="New legal pages"></div></div>
+    <div class="group"><h2>Where people are asked to agree</h2><div class="row" id="g-ask" role="group" aria-label="Screens with consent boxes"></div></div>
+    <div class="group"><h2>Updated pages</h2><div class="row" id="g-upd" role="group" aria-label="Updated pages"></div></div>
+
+    <div class="note">
+      <p><b>Made-up people.</b> Carla Domingo, her child Maria and the teacher Elena Reyes are sample data. Nothing here is saved or sent.</p>
+      <p><b>Preview only.</b> Buttons that would save something show a note. Links between the pages work.</p>
+      <p><b>Not drawn here.</b> The phone app's own consent boxes, and the small animations on the home page.</p>
+    </div>
+
+    <details open>
+      <summary>What changed</summary>
+      <div class="in">
+        <h3>New</h3>
+        <ul>
+          <li>Five pages in one layout: Privacy Policy (rewritten), Terms of Use, Cookie Policy, Refund Policy and Parent and Guardian Consent. Each has a short version at the top, numbered sections, a version and a date.</li>
+          <li>People now tick a box to agree, and the system writes down who agreed, to what, which version of the pages, and when.</li>
+          <li>Fonts are served from TaraBasa's own site, so no visitor's address is sent to Google.</li>
+        </ul>
+        <h3>Home page, before and after</h3>
+        <div class="ba"><div class="was"><b>Before</b>AI-powered, teacher-verified reading support</div><div class="now"><b>Now</b>AI-assisted reading support, with teachers and parents in the loop</div></div>
+        <div class="ba"><div class="was"><b>Before</b>checking every word as they go, right there in the moment</div><div class="now"><b>Now</b>then checks each word and shows what to practise</div></div>
+        <div class="ba"><div class="was"><b>Before</b>Backed by real teachers. Every activity a child sees is checked by an actual teacher</div><div class="now"><b>Now</b>Teachers stay in charge. Teachers approve the activities they give their class</div></div>
+        <div class="ba"><div class="was"><b>Before</b>so a child keeps climbing at their own pace instead of getting stuck or bored</div><div class="now"><b>Now</b>so a child can practise at a pace that suits them</div></div>
+        <div class="ba"><div class="was"><b>Before</b>Teachers and parents set it up in a few minutes</div><div class="now"><b>Now</b>Teachers and parents set it up</div></div>
+        <div class="ba"><div class="was"><b>Before</b>Footer: Privacy, How TaraBasa decides</div><div class="now"><b>Now</b>Adds Terms, Cookies, Refunds, Parent consent, and a line that this is a student project not endorsed by DepEd</div></div>
+        <h3>Where consent is asked</h3>
+        <ul>
+          <li>Parent sign up and Teacher sign up: agree to the Terms and read the Privacy Policy.</li>
+          <li>Add a child, last step: the parent confirms they are the child's parent or guardian. A photo has its own separate box.</li>
+          <li>Link to an existing child: a second guardian confirms they are the child's parent or guardian.</li>
+        </ul>
+        <h3>Not changed</h3>
+        <ul><li>Reading, scoring, levels, games and the Teacher screens work as before.</li></ul>
+      </div>
+    </details>
+  </div>
+
+  <div class="stage">
+    <div class="stage-box" id="box">
+      <div class="device" id="device">
+        <div class="screen" id="screen">
+          <div class="bar-top" aria-hidden="true"><span>9:41</span><span>LTE 87%</span></div>
+          <div class="urlbar" aria-hidden="true">
+            <div class="url"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span id="url">tarabasa-ai.onrender.com</span></div>
+          </div>
+          <iframe id="page" title="TaraBasa AI page" src="about:blank"></iframe>
+          <div class="bar-bottom" aria-hidden="true"></div>
+          <div class="toast" id="toast" role="status"></div>
+        </div>
+      </div>
+    </div>
+    <p class="cap" id="cap"></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var SIZES = [
+    { key: 'small', label: 'Small phone', w: 360, h: 640 },
+    { key: 'common', label: 'Common phone', w: 390, h: 844 },
+    { key: 'tablet', label: 'Tablet', w: 768, h: 1024 },
+    { key: 'laptop', label: 'Laptop', w: 1280, h: 800, desk: true }
+  ];
+  // id, label, the address shown in the browser bar
+  var SCREENS = {
+    new: [
+      ['privacy', 'Privacy Policy', '/privacy'], ['terms', 'Terms of Use', '/terms'], ['cookies', 'Cookie Policy', '/cookies'],
+      ['refunds', 'Refund Policy', '/refunds'], ['consent', 'Parent and Guardian Consent', '/parent-consent']
+    ],
+    ask: [
+      ['signup-parent', 'Parent sign up', '/register/parent'], ['signup-teacher', 'Teacher sign up', '/register/teacher'],
+      ['add-child-consent', 'Add a child, last step', '/parent/children/create'], ['add-child-photo', 'Add a child, with a photo', '/parent/children/create'],
+      ['link-child', 'Link to a child', '/parent/children/link']
+    ],
+    upd: [
+      ['landing', 'Home page', '/'], ['login', 'Log in', '/login'], ['learner-login', "Child's sign in", '/learner/login'],
+      ['children', 'Children (remove a child)', '/parent/children'], ['profile-parent', 'Parent profile', '/parent/profile'],
+      ['profile-teacher', 'Teacher profile', '/teacher/profile'], ['teacher-generate', 'Teacher: Generate window', '/teacher/activities']
+    ]
+  };
+  var state = { size: 'laptop', screen: 'privacy' };
+  try {
+    var saved = JSON.parse(localStorage.getItem('tb-legal-preview') || '{}');
+    if (saved.size) state.size = saved.size;
+    if (saved.screen) state.screen = saved.screen;
+  } catch (e) {}
+
+  var $ = function (id) { return document.getElementById(id); };
+  var all = {};
+  Object.keys(SCREENS).forEach(function (g) { SCREENS[g].forEach(function (s) { all[s[0]] = s; }); });
+  if (!all[state.screen]) state.screen = 'privacy';
+  if (!SIZES.some(function (s) { return s.key === state.size; })) state.size = 'laptop';
+
+  function chip(label, sub, onClick, key, group) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip' + (sub ? ' size' : ''); b.dataset.key = key; b.dataset.group = group;
+    b.innerHTML = label + (sub ? '<small>' + sub + '</small>' : '');
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  SIZES.forEach(function (s) { $('sizes').appendChild(chip(s.label, s.w + ' x ' + s.h, function () { state.size = s.key; render(true); }, s.key, 'size')); });
+  Object.keys(SCREENS).forEach(function (g) {
+    SCREENS[g].forEach(function (s) { $('g-' + g).appendChild(chip(s[1], '', function () { go(s[0]); }, s[0], 'screen')); });
+  });
+
+  function curSize() { return SIZES.filter(function (s) { return s.key === state.size; })[0]; }
+  function go(id) { state.screen = id; render(true); }
+
+  var docs = {};
+  var seq = 0;
+  function load(id) {
+    var frame = $('page');
+    seq += 1; var mine = seq;
+    function put(html) { if (mine !== seq) return; frame.srcdoc = html; }
+    if (docs[id]) return put(docs[id]);
+    fetch('screens/' + id + '.html').then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.text(); })
+      .then(function (html) { docs[id] = html; put(html); })
+      .catch(function () { if (mine === seq) { frame.removeAttribute('srcdoc'); frame.src = 'screens/' + id + '.html'; } });
+  }
+
+  function fit() {
+    var s = curSize();
+    var outerW = s.w + 24, outerH = s.h + 24;
+    var availW = $('box').clientWidth || outerW;
+    var availH = Math.max(480, window.innerHeight - 80);
+    var k = Math.min(1, availW / outerW, availH / outerH);
+    $('device').style.transform = 'scale(' + k + ')';
+    $('box').style.height = Math.round(outerH * k) + 'px';
+    return k;
+  }
+
+  function render(reload) {
+    var s = curSize(), scr = all[state.screen];
+    var dev = $('device'), screen = $('screen'), frame = $('page');
+    dev.style.width = (s.w + 24) + 'px'; dev.style.height = (s.h + 24) + 'px';
+    dev.style.borderRadius = (s.key === 'laptop' ? 14 : s.key === 'tablet' ? 30 : 46) + 'px';
+    screen.style.width = s.w + 'px'; screen.style.height = s.h + 'px';
+    screen.style.borderRadius = (s.key === 'laptop' ? 6 : s.key === 'tablet' ? 20 : 34) + 'px';
+    screen.classList.toggle('desk', !!s.desk);
+    var chrome = s.desk ? 40 : 24 + 40 + 24;
+    frame.style.width = s.w + 'px'; frame.style.height = (s.h - chrome) + 'px';
+    $('url').textContent = 'tarabasa-ai.onrender.com' + scr[2];
+    if (reload) load(state.screen);
+    document.querySelectorAll('button.chip').forEach(function (b) {
+      var on = b.dataset.group === 'size' ? b.dataset.key === state.size : b.dataset.key === state.screen;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var k = fit();
+    $('cap').textContent = s.label + ', ' + s.w + ' x ' + s.h + '. The page area is ' + s.w + ' x ' + (s.h - chrome) +
+      (s.desk ? '' : ' once the browser bar and the phone bars are counted') + (k < 0.995 ? '. Drawn at ' + Math.round(k * 100) + '% to fit your window.' : '.');
+    try { localStorage.setItem('tb-legal-preview', JSON.stringify(state)); } catch (e) {}
+  }
+
+  var toastTimer = null;
+  function toast(text) {
+    var t = $('toast'); t.textContent = text; t.classList.add('on');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('on'); }, 2600);
+  }
+
+  // a tap inside the page: a link goes to the matching screen, anything else says it is not in the preview
+  var MAP = {
+    '/privacy': 'privacy', '/terms': 'terms', '/cookies': 'cookies', '/refunds': 'refunds', '/parent-consent': 'consent', '/': 'landing',
+    '/register/parent': 'signup-parent', '/register/teacher': 'signup-teacher', '/login': 'login', '/learner/login': 'learner-login',
+    '/parent/children': 'children', '/parent/children/create': 'add-child-consent', '/parent/children/link': 'link-child',
+    '/parent/profile': 'profile-parent', '/teacher/profile': 'profile-teacher', '/teacher/activities': 'teacher-generate'
+  };
+  function route(href) {
+    var u;
+    try { u = new URL(href, 'http://localhost:8000'); } catch (e) { return toast('This link is not part of the preview.'); }
+    var p = u.pathname.length > 1 ? u.pathname.replace(/\/+$/, '') : u.pathname;
+    var id = MAP[p];
+    if (id && all[id]) { go(id); return; }
+    toast('This part is not in the preview. It works on the real site.');
+  }
+  window.addEventListener('message', function (e) {
+    if (e.source !== $('page').contentWindow || !e.data) return;
+    if (e.data.tb === 'nav') route(e.data.href);
+    if (e.data.tb === 'form') toast('Preview only: nothing is saved or sent.');
+  });
+  window.addEventListener('resize', function () { fit(); });
+  render(true);
+})();
+</script>
