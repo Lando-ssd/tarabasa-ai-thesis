@@ -43,6 +43,14 @@ class ConsentCaptureTest extends TestCase
         return $user;
     }
 
+    /** A real 1 by 1 PNG, so the test needs no GD extension (UploadedFile::fake()->image() does). */
+    private function photo(): UploadedFile
+    {
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+
+        return UploadedFile::fake()->createWithContent('maria.png', $png);
+    }
+
     private function childForm(array $o = []): array
     {
         return $o + [
@@ -141,14 +149,14 @@ class ConsentCaptureTest extends TestCase
     public function test_a_photo_needs_its_own_separate_consent(): void
     {
         $user = $this->parentUser();
-        $photo = UploadedFile::fake()->image('maria.png', 200, 200);
+        $photo = $this->photo();
 
         $this->actingAs($user)->from(route('parent.children.create'))->post(route('parent.children.store'), $this->childForm(['parent_consent' => '1', 'avatar_photo' => $photo]))
             ->assertSessionHasErrors('photo_consent');
         $this->assertSame(0, Learner::count(), 'the child is not made, and no photo stored, without the photo box');
         $this->assertSame([], Storage::disk('public')->allFiles());
 
-        $this->actingAs($user)->post(route('parent.children.store'), $this->childForm(['parent_consent' => '1', 'photo_consent' => '1', 'avatar_photo' => UploadedFile::fake()->image('maria.png', 200, 200)]))->assertOk();
+        $this->actingAs($user)->post(route('parent.children.store'), $this->childForm(['parent_consent' => '1', 'photo_consent' => '1', 'avatar_photo' => $this->photo()]))->assertOk();
 
         $kid = Learner::firstOrFail();
         $this->assertNotNull($kid->avatar_photo_path);
