@@ -73,7 +73,7 @@ class LearnerQrTest extends TestCase
 
         $page = $this->post(route('parent.children.store'), [
             'first_name' => 'Maria', 'last_name' => 'Perez', 'grade_level' => 'Grade 1', 'avatar_id' => '🦁', 'reading_stage' => 'letters',
-            'q1' => 'yes', 'q2' => 'no', 'q3' => 'no', 'pin' => '1234', 'pin_confirmation' => '1234',
+            'q1' => 'yes', 'q2' => 'no', 'q3' => 'no', 'pin' => '1234', 'pin_confirmation' => '1234', 'parent_consent' => '1',
         ])->assertOk();
 
         $kid = Learner::where('first_name', 'Maria')->firstOrFail();

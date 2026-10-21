@@ -59,6 +59,8 @@
              placeholder="Re-type your password" required>
     </div>
 
+    <x-consent-check name="accepts_terms">I am 18 or older. I agree to the <a href="{{ route('terms') }}" target="_blank" rel="noopener">Terms of Use</a> and I have read the <a href="{{ route('privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.</x-consent-check>
+
     <div class="verify-note">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       @if (config('auth.require_verified_email'))

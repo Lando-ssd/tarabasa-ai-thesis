@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as api from '../api';
-import { Chips, Field, Segmented } from '../fields';
+import { Chips, Consent, Field, Segmented } from '../fields';
+import { LEGAL_URLS } from '../config';
 import { Btn, IconBtn, Notice, P, Screen, Small } from '../ui';
 import { Loading, TopBar, useLoad } from '../teacher/kit';
 import { Meter } from './kit';
@@ -21,7 +22,7 @@ const STEP_OF: Record<string, number> = {
   avatar_id: 1,
   reading_stage: 2, supports: 2, interests: 2,
   q1: 3, q2: 3, q3: 3,
-  pin: 4, pin_confirmation: 4,
+  pin: 4, pin_confirmation: 4, parent_consent: 4,
 };
 
 const ANSWERS: { key: string; label: string }[] = [
@@ -48,6 +49,7 @@ export function AddChild({ onBack, onDone, onCard }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [pin, setPin] = useState('');
   const [again, setAgain] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -108,6 +110,7 @@ export function AddChild({ onBack, onDone, onCard }: Props) {
     if (at === 4) {
       if (!/^\d{4}$/.test(pin)) found.pin = 'The PIN is 4 digits.';
       else if (pin !== again) found.pin_confirmation = 'The two PINs are not the same.';
+      if (!agreed) found.parent_consent = "Please tick the box to confirm you are this child's parent or guardian and you agree, or we cannot add the child.";
     }
     return found;
   }
@@ -140,6 +143,7 @@ export function AddChild({ onBack, onDone, onCard }: Props) {
         q3: answers.q3,
         pin,
         pin_confirmation: again,
+        parent_consent: true,
       });
       setMade(done.child);
     } catch (e) {
@@ -247,6 +251,27 @@ export function AddChild({ onBack, onDone, onCard }: Props) {
               <P>{first.trim() || 'Your child'} uses this PIN, with their Learner Code or card, to open their own app. Choose 4 digits and keep them private.</P>
               <Field label="PIN" value={pin} onChangeText={(t) => (clear('pin'), setPin(t.replace(/\D/g, '').slice(0, 4)))} keyboardType="number-pad" maxLength={4} password error={errors.pin} />
               <Field label="PIN again" value={again} onChangeText={(t) => (clear('pin_confirmation'), setAgain(t.replace(/\D/g, '').slice(0, 4)))} keyboardType="number-pad" maxLength={4} password error={errors.pin_confirmation} />
+              {/* The parent's consent for the child's information. What it covers is on the Parent and Guardian Consent page; nothing is kept without it. */}
+              <View style={{ gap: space[8], marginTop: space[8] }}>
+                <Text maxFontSizeMultiplier={1.25} style={st.label}>
+                  Before we save
+                </Text>
+                <P>
+                  You are giving us information about {first.trim() || 'your child'}: their name, grade, how they read, and their reading results. Their voice is sent to be scored and is not saved. You, any other guardian, and the teacher of a class they join can see their progress.
+                </P>
+                <Consent
+                  checked={agreed}
+                  onChange={(v) => (setAgreed(v), clear('parent_consent'))}
+                  error={errors.parent_consent}
+                  parts={[
+                    "I am this child's parent or legal guardian, and I agree to TaraBasa AI keeping and using my child's information as described in the ",
+                    { label: 'Parent and Guardian Consent', url: LEGAL_URLS.consent },
+                    ' notice and the ',
+                    { label: 'Privacy Policy', url: LEGAL_URLS.privacy },
+                    '.',
+                  ]}
+                />
+              </View>
             </>
           ) : null}
 

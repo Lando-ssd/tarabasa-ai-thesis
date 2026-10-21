@@ -240,7 +240,7 @@ class DataErasureService
 
         $learner->tokens()->delete();
 
-        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners'] as $table) {
+        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records'] as $table) {
             DB::table($table)->where('learner_id', $id)->delete();
         }
 
@@ -284,6 +284,7 @@ class DataErasureService
         DB::table('admin_actions')->where('target_user_id', $id)->update(['target_name' => "a deleted {$role} account", 'detail' => null]);
         DB::table('notifications')->where('recipient_user_id', $id)->delete();
         DB::table('learner_pin_changes')->where('user_id', $id)->update(['user_id' => null]);
+        DB::table('consent_records')->where('user_id', $id)->delete();
         DB::table('password_reset_tokens')->where('email', $user->email)->delete();
         $user->tokens()->delete();
 
@@ -368,6 +369,7 @@ class DataErasureService
 
         DB::table('repository_unlocks')->where('learner_id', $learner->id)->where('parent_id', $parent->id)->update(['parent_id' => $keeperParentId]);
         DB::table('notifications')->where('recipient_user_id', $user->id)->where('learner_id', $learner->id)->delete();
+        DB::table('consent_records')->where('user_id', $user->id)->where('learner_id', $learner->id)->delete();
         $parent->learners()->detach($learner->id);
 
         $who = $user->first_name.($relationship ? " ({$relationship})" : '');

@@ -137,7 +137,7 @@ class EmailVerificationLinkTest extends TestCase
 
         $this->withHeaders($proxy)->post(route('register.teacher.submit'), [
             'first_name' => 'Pinky', 'last_name' => 'Reyes', 'email' => 'pinky@example.com', 'password' => 'Passw0rd!', 'password_confirmation' => 'Passw0rd!',
-            'school_name' => 'Rizal ES', 'employee_id' => 'EMP-1', 'grades_mode' => 'single', 'grades_handled' => ['Grade 2'],
+            'school_name' => 'Rizal ES', 'employee_id' => 'EMP-1', 'grades_mode' => 'single', 'grades_handled' => ['Grade 2'], 'accepts_terms' => '1',
         ])->assertOk();
 
         $user = User::where('email', 'pinky@example.com')->firstOrFail();

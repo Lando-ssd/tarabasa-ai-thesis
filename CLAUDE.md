@@ -1389,7 +1389,7 @@ recorded here rather than left as a silent mismatch:
   should "assign a random avatar" automatically. The actual
   implementation lets the Parent choose a preset character (an earlier
   deviation) and now also upload a real photo of the child, with no
-  privacy/consent gate anywhere in the flow. No actor prompt or patch
+  privacy/consent gate anywhere in the flow. **SUPERSEDED 2026-10-21:** the photo now has its own separate, optional consent box and the whole child profile needs the parent's consent (see "Legal pages, consent records and no third parties"). No actor prompt or patch
   doc addresses child photo storage/consent at all — this is genuinely
   unaddressed ground, not a resolved question, and is worth revisiting
   before this goes anywhere beyond a dev build.
@@ -7389,6 +7389,51 @@ Lives in `docs/manuscript-update/` (5 Word files, `05_Figures/` as PNG + SVG + e
   whether to keep the old UI figures, programmers for modules 10 and 11, privacy contact email (also `PRIVACY_CONTACT_EMAIL` on Render); references marked RECALLED or LISTED must be read
   before the defense; DepEd order numbers came from search results (deped.gov.ph returned 403), re-read the originals; the Word source in Downloads is from July 2026, older than the PDF.
 - **Regenerate:** `docs/manuscript-update/tools/src` (`build_all.py` for figures, `build_docs.py` for the Word files). The scripts use Windows Arial fonts and python-docx and Pillow.
+
+## Legal pages, consent records and no third parties (2026-10-21, COMMITTED LOCALLY on mobile-app, NOT pushed)
+
+The owner asked for the legal documents ("I do not want to be sued for this vibe coded system") laid out like the well known sites, a check for
+cookies, analytics, third party embeds, fake reviews and unsupported claims, consent forms, and every risk flagged. Said plainly to the owner and to be said
+again: **nobody on the team is a lawyer and no document makes a project lawsuit proof.** `docs/legal/LEGAL-RISK-REGISTER.md` is the honest list (what was fixed, what only the
+team can do, what needs a lawyer); `docs/legal/DATA-INVENTORY.md` is the factual basis (every datum, every outside service, cookies, a draft of the Play "Data safety" answers).
+- **Five public pages**, one layout (`layouts/legal.blade.php`: a list of the documents on the left, a sticky "On this page", a plain words "short version" card, numbered sections
+  with copyable links, version and date, print stylesheet, phone layout with a collapsed table of contents): `/privacy` (rewritten, 16 sections, keeps `#delete` and the phone app
+  section the tests and Play Console rely on), `/terms`, `/cookies`, `/refunds`, `/parent-consent` (views in `resources/views/legal/`). Values live in `config/legal.php`
+  (`version` 2026-10-21, `updated`, `operator`, `operator_detail`, `contact_email` from `PRIVACY_CONTACT_EMAIL`, `accountable_person`, `reply_days` 30, `api_consent_required`).
+  The contact phrase is `partials/legal-contact.blade.php`: it has NO trailing newline and an empty `<?php ?>` before its last `@endif` on purpose (Blade only sees a directive
+  that does not touch a letter, and a newline would print as a space before the full stop). The Privacy Policy points at its own sections by number ("section 11"), and a test pins
+  the order. **Rule:** if what the app does with data changes (a new service, a cookie, saved audio, analytics, a payment gateway), change the page in the same commit, bump `version`
+  and add a row to the page's "Changes" table; the tests fail until you do.
+- **What the audit found.** No analytics, tracking, pixels, session replay, crash reporter, embeds or ads anywhere, on the website or in the phone app (`mobile/package.json`). The ONLY
+  third party was **Google Fonts on 21 pages** (every visitor's IP went to Google; LG Munich 2022 fined this): now self hosted (`public/fonts`, `public/css/fonts.css`, five families,
+  Latin subset, SIL OFL licence note in `public/fonts/LICENSE.txt`) and the CSP says `font-src 'self' data:`. What still leaves: the bare `/health` wake up request from the visitor's
+  browser to the teammate services (`partials/wake-from-browser`, credentials omitted, no referrer; disclosed in the Privacy and Cookie Policies) and the Google sign in link out.
+  **Cookies: exactly two**, `tarabasa-ai-session` (`config('session.cookie')`, HttpOnly, Secure on https, SameSite Lax) and `XSRF-TOKEN`; no remember me. **No cookie banner on purpose**
+  (strictly necessary cookies only); a banner must be built before anything else is added. `sessions` stores IP and browser details (disclosed). No payment library: the Open Repository
+  "paid" unlock is simulated, and `/refunds` says so.
+- **Claims removed from the home page** (all stronger than the app): "AI-powered, teacher-verified", "checking every word as they go, right there in the moment" (scoring happens after the
+  recording is sent), "every activity a child sees is checked by an actual teacher" (the first check and the games are written by the team), an outcome promise, "set it up in a few
+  minutes". Added "not made or endorsed by the Department of Education". There were never any reviews, ratings, testimonials, statistics or logos. A test blocks the old phrases.
+- **Consent** (nothing was asked before): `consent_records` (user, learner, kind, `policy_version`, channel web or app, accepted_at, withdrawn_at; no IP or browser details),
+  `App\Services\ConsentService` writes a row only for a ticked box. Kinds: `terms_privacy` (Parent and Teacher sign up), `child_data` (last step of Add your child: required),
+  `child_photo` (separate, optional box shown only when a photo is chosen; website only), `child_link` (a second guardian confirms they are the child's parent or guardian). The website
+  requires them; the API accepts them and requires them only when `API_CONSENT_REQUIRED=true` (default false, so phone builds before 0.5.5 can still sign up: **set it to true on Render
+  once every tester has 0.5.5**). Component `<x-consent-check>`; `DataErasureService` deletes the rows with the child or the person (and a parent leaving a co-guarded child loses only
+  their own rows for that child). A teacher is told on the Generate form, the phone and both policies not to type a child's name (the text goes to a Google AI model); there is no
+  software filter for names.
+- **Phone 0.5.5** (`mobile/app.json` 0.5.5, versionCode 15): `Consent` and `LegalLinks` in `src/fields.tsx`, `LEGAL_URLS` in `src/config.ts`; consent boxes in both sign ups, the
+  add-a-child wizard (last step) and link; legal links on the child's sign in and in My profile; the do-not-type-a-name note on Generate. `tsc --noEmit` is clean. **The APK was NOT built.**
+- **Tests:** `LegalPagesTest` (13: pages open, link to each other, contact follows the setting, section numbers, no request to another company in any view/js/css, fonts local, only the
+  two cookies and their flags, no payment package, home page claims, house copy rules, wake up request) and `ConsentCaptureTest` (15). Existing tests that fill the forms now tick the
+  boxes. Full suite 685 tests, 0 failures. Looked at in a browser: the five pages at 1280 and 375 (no sideways scroll, collapsed table of contents), the wizard's last step, the link
+  page and parent sign up. (Headless Edge cannot go below 500 px wide, so a "390" screenshot is a cropped 500; the Browser pane's screenshots time out on sticky pages, use DOM measurements.)
+- **Open, from the register (the owner must do or decide these):** set `PRIVACY_CONTACT_EMAIL` (mailbox not created yet when this was written) and `LEGAL_OPERATOR_DETAIL`,
+  `LEGAL_ACCOUNTABLE_PERSON` on Render; check whether NPC Circular 2022-04 (registration of the DPO and the data processing system) applies; a short Privacy Impact Assessment; written
+  agreements with Render, TiDB, Google and the teammate's services (the scoring service has no password); a breach plan (the policy promises 72 hours); a retention rule for
+  inactive accounts; check the Gemini key's billing tier (free tier lets Google use inputs); no "remove only the photo" button, no self service export, no "remove from class" for a
+  parent; a lawyer's reading of the Terms; COPPA or GDPR if children outside the Philippines sign up; Google Play Families Policy at listing time. The NPC site returned 403 to the
+  build machine, so anything about NPC circulars was read in law firm summaries only (the Act's own text was read on lawphil.net).
+- The manuscript pack (`docs/manuscript-update`, block C20) now mentions the consent boxes and the legal pages.
 
 ## Before pushing this round (checklist for the next session)
 

@@ -1,0 +1,8 @@
+The font files in this folder are served from this site instead of from Google, so that a visitor's
+internet address is not sent to Google just to show text.
+
+Families: Baloo 2, Barlow Semi Condensed, Inter, Lexend, Fredoka (Latin subset).
+All five are free fonts published under the SIL Open Font License, Version 1.1
+(https://openfontlicense.org). The copyright notices of the authors are in each family's page on
+https://fonts.google.com (for example https://fonts.google.com/specimen/Inter). The licence allows use,
+copying and serving the fonts with a website; the fonts may not be sold on their own.

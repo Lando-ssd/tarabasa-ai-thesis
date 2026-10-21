@@ -98,6 +98,19 @@
   </div>
 </div>
 
+{{-- Where to read what this account agreed to. The wording lives on the legal pages; this only links to them. --}}
+<div class="card" style="margin-top:16px">
+  <p class="card-title">Privacy and terms</p>
+  <p class="card-sub">What TaraBasa AI keeps, what you agreed to, and how to ask for something to be removed.</p>
+  <p style="margin:0">
+    <a href="{{ route('privacy') }}">Privacy Policy</a> &nbsp;&middot;&nbsp;
+    <a href="{{ route('terms') }}">Terms of Use</a> &nbsp;&middot;&nbsp;
+    <a href="{{ route('cookies') }}">Cookie Policy</a> &nbsp;&middot;&nbsp;
+    <a href="{{ route('refunds') }}">Refund Policy</a>@if (auth()->user()?->user_type === 'Parent') &nbsp;&middot;&nbsp;
+    <a href="{{ route('consent') }}">Parent and Guardian Consent</a>@endif
+  </p>
+</div>
+
 {{-- Delete my account. What it would do is told first; the password is asked for in the window. DataErasureService enforces every rule. --}}
 @php $eraseFailed = (string) old('erase_form') === '1' && $errors->erase->any(); @endphp
 <div class="card erase-card" id="delete" style="margin-top:16px">

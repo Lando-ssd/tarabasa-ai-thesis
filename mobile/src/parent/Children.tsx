@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import * as api from '../api';
-import { Chips, Field } from '../fields';
+import { Chips, Consent, Field } from '../fields';
+import { LEGAL_URLS } from '../config';
 import { Btn, Icon, IconBtn, Notice, P, Panel, Screen, Small } from '../ui';
 import { Loading, TonePill, TopBar, useLoad } from '../teacher/kit';
 import { BAND_TONE, ChildFace } from './kit';
@@ -113,6 +114,7 @@ export function LinkChild({ onBack, onLinked }: { onBack: () => void; onLinked: 
   const [code, setCode] = useState('');
   const [pin, setPin] = useState('');
   const [relationship, setRelationship] = useState('Mother');
+  const [confirmed, setConfirmed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -122,13 +124,14 @@ export function LinkChild({ onBack, onLinked }: { onBack: () => void; onLinked: 
     const found: Record<string, string> = {};
     if (!code.trim()) found.learner_code = 'Type the child\'s Learner Code.';
     if (!/^\d{4}$/.test(pin)) found.pin = 'The PIN is 4 digits.';
+    if (!confirmed) found.guardian_confirm = "Please tick the box to confirm you are this child's parent or guardian.";
     setErrors(found);
     if (Object.keys(found).length) return;
 
     setBusy(true);
     setError(null);
     try {
-      const done = await api.linkChild({ learner_code: code.trim(), pin, relationship });
+      const done = await api.linkChild({ learner_code: code.trim(), pin, relationship, guardian_confirm: true });
       onLinked(done.message);
     } catch (e) {
       const fields = api.fieldErrors(e);
@@ -154,6 +157,12 @@ export function LinkChild({ onBack, onLinked }: { onBack: () => void; onLinked: 
             <Chips label="Relationship" options={RELATIONSHIPS} picked={[relationship]} onToggle={setRelationship} />
             {errors.relationship ? <Small style={{ color: colors.bad }}>{errors.relationship}</Small> : null}
           </View>
+          <Consent
+            checked={confirmed}
+            onChange={(v) => (setConfirmed(v), setErrors((e) => ({ ...e, guardian_confirm: '' })))}
+            error={errors.guardian_confirm}
+            parts={["I am this child's parent or legal guardian, and I agree to the ", { label: 'Parent and Guardian Consent', url: LEGAL_URLS.consent }, ' notice and the ', { label: 'Privacy Policy', url: LEGAL_URLS.privacy }, '.']}
+          />
           {error ? <Notice text={error} /> : null}
         </View>
       </Screen>

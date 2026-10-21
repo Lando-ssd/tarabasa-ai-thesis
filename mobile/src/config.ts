@@ -2,6 +2,15 @@
 // (for example http://localhost:8123 while testing against the computer's own server).
 export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'https://tarabasa-ai.onrender.com').replace(/\/+$/, '');
 
+// The legal pages the website serves (the same ones the website's sign up forms link to). Opened in the phone's browser.
+export const LEGAL_URLS = {
+  privacy: `${API_URL}/privacy`,
+  terms: `${API_URL}/terms`,
+  cookies: `${API_URL}/cookies`,
+  refunds: `${API_URL}/refunds`,
+  consent: `${API_URL}/parent-consent`,
+} as const;
+
 // The free host goes to sleep when nobody uses it, and the first request after that can take a minute.
 export const REQUEST_TIMEOUT_MS = 90_000;
 

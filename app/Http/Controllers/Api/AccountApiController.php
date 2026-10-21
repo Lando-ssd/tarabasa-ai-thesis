@@ -56,17 +56,17 @@ class AccountApiController extends Controller
     public function registerTeacher(Request $request): JsonResponse
     {
         $this->normalizeEmail($request);
-        $validated = $request->validate($this->accounts->teacherRules(), $this->accounts->registrationEmailMessages());
+        $validated = $request->validate($this->accounts->teacherRules((bool) config('legal.api_consent_required')), $this->accounts->registrationEmailMessages());
 
-        return $this->registered($this->accounts->registerTeacher($validated));
+        return $this->registered($this->accounts->registerTeacher($validated, 'app'));
     }
 
     public function registerParent(Request $request): JsonResponse
     {
         $this->normalizeEmail($request);
-        $validated = $request->validate($this->accounts->parentRules(), $this->accounts->registrationEmailMessages());
+        $validated = $request->validate($this->accounts->parentRules((bool) config('legal.api_consent_required')), $this->accounts->registrationEmailMessages());
 
-        return $this->registered($this->accounts->registerParent($validated));
+        return $this->registered($this->accounts->registerParent($validated, 'app'));
     }
 
     /** "Send the link again". The answer is the same whether or not the address has an account. */

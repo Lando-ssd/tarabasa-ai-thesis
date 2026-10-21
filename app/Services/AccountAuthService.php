@@ -57,14 +57,16 @@ class AccountAuthService
     public function registrationEmailMessages(): array
     {
         return [
+            ...ConsentService::messages(),
             'email.email' => 'That email address does not look real. Check the spelling, or use another address.',
             'email.unique' => 'That email address already has an account. Log in instead, or use another address.',
         ];
     }
 
-    public function teacherRules(): array
+    public function teacherRules(bool $requireConsent = true): array
     {
         return [
+            'accepts_terms' => ConsentService::termsRule($requireConsent),
             'first_name' => ['required', 'string', 'max:255'],
             'middle_initial' => ['nullable', 'string', 'max:5'],
             'last_name' => ['required', 'string', 'max:255'],
@@ -77,9 +79,10 @@ class AccountAuthService
         ];
     }
 
-    public function parentRules(): array
+    public function parentRules(bool $requireConsent = true): array
     {
         return [
+            'accepts_terms' => ConsentService::termsRule($requireConsent),
             'first_name' => ['required', 'string', 'max:255'],
             'middle_initial' => ['nullable', 'string', 'max:5'],
             'last_name' => ['required', 'string', 'max:255'],
@@ -89,11 +92,11 @@ class AccountAuthService
     }
 
     /** Creates the Teacher (Pending, 2 free generation credits). The caller already validated with teacherRules(). */
-    public function registerTeacher(array $validated): User
+    public function registerTeacher(array $validated, string $channel = 'web'): User
     {
         $grades = Teacher::gradesFromValidated($validated);
 
-        return DB::transaction(function () use ($validated, $grades) {
+        return DB::transaction(function () use ($validated, $grades, $channel) {
             $user = User::create([
                 'first_name' => $validated['first_name'],
                 'middle_initial' => $validated['middle_initial'] ?? null,
@@ -113,13 +116,15 @@ class AccountAuthService
                 'grades_handled' => $grades,
             ]);
 
+            ConsentService::record($user, ConsentService::TERMS_PRIVACY, $validated['accepts_terms'] ?? false, null, $channel);
+
             return $user;
         });
     }
 
-    public function registerParent(array $validated): User
+    public function registerParent(array $validated, string $channel = 'web'): User
     {
-        return DB::transaction(function () use ($validated) {
+        return DB::transaction(function () use ($validated, $channel) {
             $user = User::create([
                 'first_name' => $validated['first_name'],
                 'middle_initial' => $validated['middle_initial'] ?? null,
@@ -130,6 +135,8 @@ class AccountAuthService
             ]);
 
             ParentAccount::create(['user_id' => $user->id]);
+
+            ConsentService::record($user, ConsentService::TERMS_PRIVACY, $validated['accepts_terms'] ?? false, null, $channel);
 
             return $user;
         });
@@ -162,6 +169,7 @@ class AccountAuthService
         DB::transaction(function () use ($user) {
             Teacher::where('user_id', $user->id)->delete();
             ParentAccount::where('user_id', $user->id)->delete();
+            DB::table('consent_records')->where('user_id', $user->id)->delete();
             $user->delete();
         });
     }

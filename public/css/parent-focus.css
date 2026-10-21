@@ -206,3 +206,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   #navRow.is-first #prevBtn{ display:none; }
 }
 @media (prefers-reduced-motion:reduce){ .step-enter{ animation:none; } *{ transition:none !important; } }
+
+/* ---------- consent (add a child, last step) ---------- */
+.consent-block{ margin:22px 0 0; padding:16px 16px 4px; border:2px solid var(--blue-line); border-radius:18px; background:var(--blue-bg); text-align:left; }
+.consent-block p{ margin:0 0 10px; font-size:14px; line-height:1.55; color:var(--ink); }
+.consent-block .consent-title{ margin:0 0 6px; font:700 21px/1.2 var(--font-game); letter-spacing:.03em; text-transform:uppercase; color:var(--blue-ink); }

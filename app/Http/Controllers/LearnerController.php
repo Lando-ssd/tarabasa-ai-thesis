@@ -103,7 +103,7 @@ class LearnerController extends Controller
 
     public function store(Request $request): View
     {
-        $validated = $request->validate($this->children->createRules(), $this->children->createMessages());
+        $validated = $request->validate($this->children->createRules(true, $request->hasFile('avatar_photo')), $this->children->createMessages());
 
         $learner = $this->children->create($request->user(), $validated, $request->file('avatar_photo'));
 
@@ -149,13 +149,15 @@ class LearnerController extends Controller
             'learner_code' => ['required', 'string', 'max:20'],
             'pin' => ['required', 'digits:4'],
             'relationship' => ['required', Rule::in(['Mother', 'Father', 'Guardian'])],
+            'guardian_confirm' => ['accepted'],
         ], [
+            ...\App\Services\ConsentService::messages(),
             'pin.required' => "Type the child's 4 digit PIN.",
             'pin.digits' => "The PIN is 4 digits.",
         ]);
 
         try {
-            $learner = $this->children->link($request->user(), $validated['learner_code'], $validated['pin'], $validated['relationship']);
+            $learner = $this->children->link($request->user(), $validated['learner_code'], $validated['pin'], $validated['relationship'], $validated['guardian_confirm']);
         } catch (ValidationException $e) {
             // Only the code and the relationship come back into the form, never the PIN.
             return back()->withErrors($e->errors())->withInput($request->only('learner_code', 'relationship'));

@@ -103,6 +103,7 @@ class DataErasureTest extends TestCase
         DB::table('game_plays')->insert(['learner_id' => $kid->id, 'game' => 'balloon-pop', 'level_reached' => 1, 'top_level_cleared' => false, 'had_perfect_round' => false, 'rounds' => 1, 'played_at' => now()]);
         Notification::create(['recipient_user_id' => $guardian->id, 'learner_id' => $kid->id, 'type' => 'Session Summary', 'message' => 'Mia read.']);
         DB::table('learner_pin_changes')->insert(['learner_id' => $kid->id, 'user_id' => $guardian->id, 'method' => 'generated', 'changed_at' => now()]);
+        DB::table('consent_records')->insert(['user_id' => $guardian->id, 'learner_id' => $kid->id, 'kind' => 'child_data', 'policy_version' => '2026-10-21', 'channel' => 'web', 'accepted_at' => now()]);
         $owner = Teacher::create(['user_id' => User::create(['first_name' => 'Tess', 'last_name' => 'Owner', 'email' => 'owner'.++$this->seq.'@example.com', 'password' => 'Passw0rd!', 'user_type' => 'Teacher'])->id, 'school_name' => 'S', 'employee_id' => 'O'.$this->seq, 'status' => 'Active']);
         $listing = OpenRepositoryListing::create(['activity_id' => $this->activity($owner)->id, 'teacher_id' => $owner->id, 'price_type' => 'Free', 'price' => 0]);
         RepositoryRating::create(['listing_id' => $listing->id, 'parent_id' => ParentAccount::where('user_id', $guardian->id)->value('id'), 'learner_id' => $kid->id, 'rating' => 5, 'comment' => 'Mia loved it']);
@@ -113,7 +114,7 @@ class DataErasureTest extends TestCase
     {
         $total = 0;
 
-        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners'] as $table) {
+        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records'] as $table) {
             $total += DB::table($table)->where('learner_id', $kid->id)->count();
         }
 

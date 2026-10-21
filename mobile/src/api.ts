@@ -368,6 +368,8 @@ export type TeacherSignUp = {
   contact_number?: string;
   grades_mode: 'single' | 'multi';
   grades_handled: string[];
+  /** The adult's "I agree" box (Terms of Use and Privacy Policy). The server keeps a record of it. */
+  accepts_terms: boolean;
 };
 
 export type ParentSignUp = Omit<TeacherSignUp, 'school_name' | 'employee_id' | 'contact_number' | 'grades_mode' | 'grades_handled'>;
@@ -846,6 +848,8 @@ export type NewChild = {
   q3: string;
   pin: string;
   pin_confirmation: string;
+  /** The parent's consent for the child's information (the Parent and Guardian Consent notice). Nothing is kept without it. */
+  parent_consent: boolean;
 };
 
 const put = (body: unknown): RequestInit => ({ method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -865,7 +869,7 @@ export const parentChildOptions = () => request<ChildOptions>('/api/parent/child
 
 export const addChild = (body: NewChild) => request<{ child: ParentChild; message: string }>('/api/parent/children', json(body));
 
-export const linkChild = (body: { learner_code: string; pin: string; relationship: string }) =>
+export const linkChild = (body: { learner_code: string; pin: string; relationship: string; guardian_confirm: boolean }) =>
   request<{ child: ParentChild; message: string }>('/api/parent/children/link', json(body));
 
 export const childCard = (id: number) => request<{ name: string; firstName: string; code: string; qrSvg: string }>(`/api/parent/children/${id}/card`);
