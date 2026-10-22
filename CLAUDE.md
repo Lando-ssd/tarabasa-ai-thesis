@@ -7446,7 +7446,7 @@ team can do, what needs a lawyer); `docs/legal/DATA-INVENTORY.md` is the factual
   inlines styles, fonts and the logo and opens the wizard's last step and the Generate window directly, `TaraBasa-Legal-Preview.html` is the viewer; README.md has the three steps). The phone app's own
   consent screens and the home page animations are not drawn in it.
 
-## Child photos are kept in the database, not on the server disk (2026-10-21, BUILT LOCALLY, committed on mobile-app, NOT pushed or merged)
+## Child photos are kept in the database, not on the server disk (2026-10-21, PUSHED to mobile-app as 84efe00 and MERGED INTO THE LIVE BRANCH as 7ceaa0c, deployed and checked live)
 
 The owner asked to fix "the photo disappearing problem": every uploaded child photo vanished whenever the free Render service slept or redeployed (its disk is wiped), and the app
 fell back to the child's initial. Fixed by keeping the photo where data survives, the database, with no new service, account or key.
@@ -7469,7 +7469,11 @@ fell back to the child's initial. Fixed by keeping the photo where data survives
   class teacher, other teacher, a teacher with no class, the child, another child, guest, Admin, phone tokens incl. a deactivated adult, cache headers, 304, deletion with the child, cascade, the migration's move of old files).
   Full suite 703 passing. Checked in a browser against the local server as the demo parent: the photo draws in the child's card, headers are `max-age=3600, private`, the conditional request answers 304, and an unlinked child's
   photo answers 404 in every variant, identical to a child that does not exist. The demo photos were removed from the local database afterwards.
-- **Not done / honest limits.** Not on the live site until merged and deployed (the migration runs by itself at deploy; it only adds a table and a column). A photo is base64 text in a database row (about a third bigger than the
+- **Live (2026-10-21, the owner's explicit "push and merge it to live").** Clean merge, 703 tests passing on the merged code, then checked on the live host from outside (read only, no account made): `/up` and the legal and sign in pages
+  answer 200; `/privacy` shows version `2026-10-21.2`, the new "kept in the database" sentence and none of the old "that disk can be wiped" sentence; the Terms and Cookie Changes tables show both versions; `/photos/learner/1` answers
+  404 to a guest and carries `x-ratelimit-limit: 600`, which only the new build sends, so the route exists. NOT checked live: that a photo can really be saved and shown (Claude may not create accounts on a live site; the first real
+  photo upload proves it) and the table itself (the startup script runs `migrate --force` under `set -e`, so the new build serving pages means the migration ran).
+- **Not done / honest limits.** A photo is base64 text in a database row (about a third bigger than the
   file); with a 1 MB ceiling and tens of kilobytes in practice this is fine for a class, not a design for thousands of large images. The phone app has no photo upload and still draws initials (nothing in `mobile/src` uses
   `avatarPhotoUrl`; if it ever does it must send the bearer token). The manuscript ERD figure (23 tables) is already stale: it lacks `consent_records` and now `learner_photos`.
 

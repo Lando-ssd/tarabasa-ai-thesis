@@ -252,6 +252,35 @@ class ServiceErrorsTest extends TestCase
         $this->assertSame(4, $this->sentTo('reader.test/analyze'));
     }
 
+    public function test_one_recording_never_holds_a_web_worker_longer_than_its_budget(): void
+    {
+        // With only a few web workers, a recording that keeps asking a sleeping checker again and again used to hold one for
+        // up to 12 minutes; two people testing at once then left no worker for the host's health check and the host restarted
+        // the site (a 502). A budget with too little left for another try stops after the first one, with a plain message.
+        config(['services.reading_ai.max_hold' => 20]);
+        Http::fake(['reader.test/analyze' => Http::response('<html>Service waking up</html>', 503)]);
+
+        try {
+            app(ReadingAiClient::class)->analyze(UploadedFile::fake()->create('recording.webm', 20, 'audio/webm'), $this->activity());
+            $this->fail('should have thrown');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('waking up or busy', $e->errors()['audio'][0]);
+        }
+
+        $this->assertSame(1, $this->sentTo('reader.test/analyze'), 'no second try when there is no time left for it');
+    }
+
+    public function test_a_normal_budget_still_lets_a_recording_be_asked_again(): void
+    {
+        config(['services.reading_ai.max_hold' => 100]);
+        Http::fake(['reader.test/analyze' => Http::sequence()->push('<html>Service waking up</html>', 503)->push('<html>Service waking up</html>', 503)->push($this->goodAnswer(), 200)]);
+
+        $outcome = app(ReadingAiClient::class)->analyze(UploadedFile::fake()->create('recording.webm', 20, 'audio/webm'), $this->activity());
+
+        $this->assertFalse($outcome['unclear']);
+        $this->assertSame(3, $this->sentTo('reader.test/analyze'));
+    }
+
     public function test_a_rejected_recording_request_is_not_repeated_and_is_not_called_unclear(): void
     {
         Http::fake(['reader.test/analyze' => Http::response(['detail' => [['loc' => ['body', 'competency_code'], 'msg' => 'Field required']]], 422)]);
