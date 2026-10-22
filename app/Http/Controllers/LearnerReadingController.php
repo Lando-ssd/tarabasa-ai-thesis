@@ -114,4 +114,13 @@ class LearnerReadingController extends Controller
 
         return response()->noContent();
     }
+
+    /**
+     * Asked by the recording page, a few seconds apart, before it sends a recording: is the scoring service awake?
+     * Always answers within a few seconds (see ReadingAiClient::isReady), so no web worker is held while it wakes.
+     */
+    public function ready(ReadingAiClient $readingAi): \Illuminate\Http\JsonResponse
+    {
+        return response()->json(['ready' => $readingAi->isReady()]);
+    }
 }

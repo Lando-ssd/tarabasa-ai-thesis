@@ -128,6 +128,13 @@
     // "no answer" or a server error does not.
     const PING_URL = @json(url('/up'));
     const PING_TIMEOUT_MS = 8000;
+    // Before the recording is sent, ask (a few seconds apart) whether the scoring service is awake. The free host
+    // puts it to sleep and it needs up to a minute to wake; sending the recording into that wait made the server hold
+    // one of its few workers for the whole time. Asking first keeps the wait on this screen, where the recording is
+    // safe, and the recording is then sent to a service that answers at once. Any trouble asking just sends it.
+    const READY_URL = @json(route('learner.ready'));
+    const READY_POLL_MS = 3000;
+    const READY_MAX_MS = 90000;
     const SLOW_NOTE_AFTER_MS = 20000;
     const VERY_SLOW_NOTE_AFTER_MS = 60000;
 
@@ -322,16 +329,43 @@
       }, VERY_SLOW_NOTE_AFTER_MS));
     }
 
+    function checkerIsAwake() {
+      if (!('fetch' in window)) return Promise.resolve();
+
+      const note = document.getElementById('slowNote');
+      const started = Date.now();
+
+      function ask() {
+        return fetch(READY_URL, { cache: 'no-store', credentials: 'same-origin', headers: { Accept: 'application/json' } })
+          .then(r => (r.ok ? r.json() : { ready: true }))
+          .then(answer => {
+            if (answer.ready || Date.now() - started > READY_MAX_MS) return;
+            note.textContent = 'Waking up the reading checker. This can take up to a minute. Your reading is safe.';
+            note.style.display = 'block';
+            return new Promise(resolve => setTimeout(resolve, READY_POLL_MS)).then(ask);
+          })
+          .catch(() => {});
+      }
+
+      return ask().then(() => { note.style.display = 'none'; note.textContent = ''; });
+    }
+
+    let preparing = false;
+
     window.tarabasaSubmitRecording = function () {
-      if (submitting) return;
+      if (submitting || preparing) return;
+      preparing = true;
       clearSlowNotes();
       showStep('checking');
 
       connectionLooksOk().then(ok => {
-        if (!ok) { showStep('offline'); return; }
-        submitting = true;
-        startSlowNotes();
-        document.getElementById('recordForm').submit();
+        if (!ok) { preparing = false; showStep('offline'); return; }
+
+        return checkerIsAwake().then(() => {
+          submitting = true;
+          startSlowNotes();
+          document.getElementById('recordForm').submit();
+        });
       });
     };
 
@@ -349,6 +383,7 @@
     window.addEventListener('pageshow', e => {
       if (e.persisted) {
         submitting = false;
+        preparing = false;
         clearSlowNotes();
         showStep('ready');
       }

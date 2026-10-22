@@ -117,6 +117,9 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
     // Wakes the scoring service as a reading or speaking screen opens (see ReadingAiClient::wake()).
     Route::get('/warm', [LearnerReadingController::class, 'warm'])->middleware('throttle:20,1')->name('warm');
 
+    // Asked by the recording page before it sends a recording (see ReadingAiClient::isReady).
+    Route::get('/ready', [LearnerReadingController::class, 'ready'])->middleware('throttle:60,1')->name('ready');
+
     Route::middleware('learner.diagnostic')->group(function () {
         Route::get('/dashboard', [LearnerAuthController::class, 'dashboard'])->name('dashboard');
         // Step 3 "Finding what to read" — resolves real Teacher assignments

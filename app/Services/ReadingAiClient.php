@@ -110,6 +110,14 @@ class ReadingAiClient
         $budget = (int) config('services.reading_ai.max_hold', 100);
         $left = fn (): int => max(0, $budget - (int) (microtime(true) - $started));
 
+        // A timeline in the host's log (warning level, so it shows at the level the host runs at): a "started" line with no
+        // "finished" line after it means the request never ended normally, for example because the site restarted.
+        Log::warning('Recording: scoring started', [
+            'activity' => $activity->id,
+            'kb' => (int) round(((int) $audio->getSize()) / 1024),
+            'checker_known_awake' => ServiceWake::isKnownAwake('reader'),
+        ]);
+
         if ($wait > 0 && ! ServiceWake::isKnownAwake('reader')) {
             $this->awaitReady(min($wait, $left()));
         }
@@ -160,6 +168,14 @@ class ReadingAiClient
         if (! ServiceReply::isTransient($response)) {
             ServiceWake::markAwake('reader');
         }
+
+        Log::warning('Recording: scoring finished', [
+            'activity' => $activity->id,
+            'status' => $response->status(),
+            'tries' => $try > self::TEMPORARY_ERROR_TRIES ? self::TEMPORARY_ERROR_TRIES : $try,
+            'seconds' => round(microtime(true) - $started, 1),
+            'peak_mb' => round(memory_get_peak_usage(true) / 1048576, 1),
+        ]);
 
         // A 422 is ambiguous: Reading-api sends it both for genuinely
         // unusable AUDIO (silent, too short, no speech) and for a bad
@@ -222,6 +238,40 @@ class ReadingAiClient
     public function awaitReady(int $seconds = 100): bool
     {
         return ServiceWake::await(config('services.reading_ai.url'), 'reader', $seconds);
+    }
+
+    /**
+     * A short, quiet "is the checker awake right now?" for the recording page to ask BEFORE it sends the recording.
+     * It never waits long (one health ask of a few seconds at most) and starts the background wake when the checker
+     * sleeps, so the page can poll this a few times while the child sees "waking up", and the recording itself is
+     * then sent to a checker that answers at once. Holding a web worker for the whole wake instead (the host has
+     * only four) is what used to make two people testing at once bring the site down.
+     * True when no checker is configured (nothing to wait for).
+     */
+    public function isReady(): bool
+    {
+        $url = config('services.reading_ai.url');
+
+        if (! $url || ServiceWake::isKnownAwake('reader')) {
+            return true;
+        }
+
+        $this->wake();
+
+        // One short ask, no pause and no log line: this is called every few seconds while a child waits.
+        try {
+            $response = Http::timeout(4)->get(rtrim($url, '/').'/health');
+
+            if ($response->successful()) {
+                ServiceWake::markAwake('reader');
+
+                return true;
+            }
+        } catch (\Throwable) {
+            // asleep or unreachable: not ready yet
+        }
+
+        return false;
     }
 
     /**
