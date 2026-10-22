@@ -7498,6 +7498,25 @@ The owner's teammate tested phone build 0.5.2 while the owner tested the website
   free Postgres expires after 30 days but the app does not use it. Check Render Billing "Free usage" and the TiDB usage page weekly until the end of November.
 - **The APK for the test:** `D:/tools/apk-out/TaraBasa-0.5.4-tester-pack.zip` (26.6 MB; the APK, its checksum, START-HERE and the two checklists) was handed to the owner. 0.5.5 (consent boxes in the app) is still not built.
 
+**Second round, same day (2026-10-22, BUILT LOCALLY, NOT PUSHED): the 502 came back on the live site after 5c6db1e.** The owner sent a screenshot of the same Chrome 502 on
+`/learner/diagnostic/record` and asked for a fix. The cause is STILL not confirmed (Render Events/Logs and the diary were not available to read; the owner has not yet sent them). What was checked: the idle live site stays
+stable (36 of 36 health asks fine), and a real first check run locally against the LIVE reading checker works (200 in 32 s), so the code path itself is sound. It is possible the owner tested before the 5c6db1e deploy finished.
+Three changes aim at the same chain (a slow request holding one of the four workers on a 512 MB instance), and one makes the next failure readable:
+- **Wake the checker on the child's screen, before the recording is sent.** New `GET /learner/ready` (`learner.ready`, `LearnerReadingController::ready`, throttled 60 a minute, learner sign in needed) answers `{"ready": true|false}` using
+  `ReadingAiClient::isReady()`: true at once when no checker is configured or it was seen awake in the last 8 minutes (`ServiceWake`); otherwise it starts the background wake-up (once per 2 minutes), asks the health page ONCE
+  with a 4 second limit, and says false if that did not answer. It never throws and never holds a worker for more than about 4 seconds. The recording widget (`_recording-widget.blade.php`, used by the reading screen, the first
+  check and Bookshelf re-read) now runs `checkerIsAwake()` after the internet check and BEFORE posting the form: every 3 seconds up to 90 seconds, with the note "Waking up the reading checker. This can take up to a minute. Your reading is
+  safe." If the ask itself fails or the 90 seconds pass, the recording is sent anyway (the server budget still protects the workers). A second tap is ignored (`preparing`), and the Back button resets it.
+- **The recommender can no longer hold a worker for long.** `AdaptiveRecommendatorClient::post` now waits at most 30 seconds (PHP limit 60) instead of 90 (120). It is enrichment only: a child is initialised on their next scored reading.
+- **A timeline in the server log.** `ReadingAiClient::analyze` writes `Recording: scoring started` (activity, size in KB, whether the checker was known awake) and `Recording: scoring finished` (status, tries, seconds, peak memory in MB) as warnings, so
+  Render's log shows how long each recording held a worker and how much memory it used, and a restart can be matched with a recording. Nothing in these lines names a child.
+- **Tested.** `tests/Feature/RecordingReadinessTest.php` (7: guest redirect, no checker, known awake needs no ask, a health answer makes it ready and remembered, a waking checker is not ready and the wake-up queues once, a dead checker is not
+  ready and not an error, the page holds the address and the note). Full suite 712 passing. In a browser against the local server with a throwaway child (deleted): with ready answers false, false, true the page asked at 0.1, 3.1 and 6.1 seconds,
+  showed the waking note and sent the recording once at 6.1 seconds (a double tap sent once); with the ready ask failing it sent the recording anyway after 0.4 seconds.
+- **Not covered / honest limits.** The PHONE app does not do this readiness wait (it only gets the server-side cap), so a phone recording to a sleeping checker still waits on the server for up to 100 seconds; adding it needs an app change and a new APK
+  (0.5.5 is not built). The cause of the live 502 may be elsewhere (memory, TiDB quota, a restart for another reason): the new log lines and Render's Events are what will tell.
+- **To ship:** needs the owner's explicit "push and merge" (the earlier approval covered only 5c6db1e). After the deploy a guest asking `/learner/ready` is redirected to `/learner/login`, and the recording page's script contains "Waking up the reading checker"; those are the signs of the new build.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.
