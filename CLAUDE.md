@@ -7517,7 +7517,7 @@ Three changes aim at the same chain (a slow request holding one of the four work
   (0.5.5 is not built). The cause of the live 502 may be elsewhere (memory, TiDB quota, a restart for another reason): the new log lines and Render's Events are what will tell.
 - **Shipped (the owner said "push and merge it to live").** Clean merge, 712 tests passing on the merged code. Checked live from outside: `/learner/ready` went from 404 to a redirect to `/learner/login` (seen at the second ask, 30 seconds after the first), the home, child login, sign in, privacy and how-it-works pages answer 200, `/api/learner/dashboard` answers 401. NOT checked live: the recording page itself (needs a child's sign in; Claude may not make accounts on a live site), and whether the 502 is gone (needs a real test).
 
-## First check: the letters line and honest progress dots (2026-10-22, built after the 502 fixes; see the commit and the status line at the end of this section)
+## First check: the letters line and honest progress dots (2026-10-22, PUSHED to mobile-app as 22d2fba and FAST-FORWARDED INTO THE LIVE BRANCH, deployed and checked live)
 
 The owner tested the first reading check on the live site (no more 502) and it ended after ONE Letters item while the screen showed three dots, one filled. They expected it to move through all three.
 - **It was not a bug.** The three dots meant "up to three". The staircase moves up at 90 percent or more, stops at 70 to 89, and below 70 on the easiest rung also stops. A letters item has six letters, so ONE letter missed is 83.33 percent and
@@ -7537,6 +7537,8 @@ The owner tested the first reading check on the live site (no more 502) and it e
   `hr`, `r`, `fl` for a different set. Vosk writes letter names as words, so adjacent letters become one token ("hr", "fl") or are dropped. This is the likeliest reason a real child ends on letters, and the lower line only helps a little. The next step is a LETTERS-ONLY scorer: split a
   spoken token made of letter names ("hr" becomes h r), and accept letter-name words (are for R, see for C, bee for B, eye for I, kay for K) on the letters rung only. It is not built and needs real child recordings to set the rules honestly. A child's first letter set rotates by learner id
   (`(id + rung index) % 3`: id 1 mod 3 starts on set B, 2 mod 3 on set C, 0 on set A), which matters when a test recording must match the set shown.
+
+- **Shipped (the owner said "build both and push it to live").** 718 tests passing on the exact tree that was pushed (the live branch was already an ancestor of mobile-app, so it went out as a fast-forward). Checked live from outside: `/how-it-works` shows "naming 5 of the 6 letters moves the child on" and "never promises a number of texts", the home, child login, sign in and privacy pages answer 200, `/learner/ready` still redirects a guest. NOT checked live: the reading screen itself (needs a child's sign in; no accounts on a live site) and whether a real child now gets past the letters item.
 
 ## Before pushing this round (checklist for the next session)
 
