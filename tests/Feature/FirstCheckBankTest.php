@@ -279,6 +279,128 @@ class FirstCheckBankTest extends TestCase
         $this->assertSame(1, ReadingSession::where('learner_id', $kid->id)->count());
     }
 
+    // ------------------------------------------------------------- the letters line and the dots
+
+    private float $nextAccuracy = 0;
+
+    private bool $analyzeFaked = false;
+
+    /**
+     * Reads one item with the speech service answering $accuracy, and returns the response. Http::fake keeps
+     * the FIRST answer it was given for a URL, so one fake is registered per test and it answers whatever
+     * score was set last.
+     */
+    private function readItem(Learner $kid, float $accuracy)
+    {
+        $this->nextAccuracy = $accuracy;
+
+        if (! $this->analyzeFaked) {
+            Http::fake(['reading.test/analyze' => fn () => Http::response($this->analysis($this->nextAccuracy))]);
+            $this->analyzeFaked = true;
+        }
+
+        return $this->actingAs($kid, 'learner')
+            ->post(route('learner.diagnostic.record'), ['audio' => UploadedFile::fake()->create('r.webm', 30, 'audio/webm')]);
+    }
+
+    public function test_five_letters_of_six_move_a_child_on_to_the_first_words_instead_of_ending_the_check(): void
+    {
+        $kid = $this->learner(['reading_stage' => 'starting', 'placement_answers' => null]);
+        $this->actingAs($kid, 'learner')->get(route('learner.diagnostic.passage'))->assertOk();
+        $service = app(LearnerDiagnosticService::class);
+        $this->assertSame('letters', $service->diagnosticState($kid)['current_tier']);
+
+        // One letter name heard differently: 5 of 6 is 83.33 percent. On the usual 90 line this ended the
+        // whole check on the lowest step; on the letters line (80) the child goes on to the first words.
+        $this->readItem($kid, round(5 / 6 * 100, 2))->assertOk()->assertSee('Keep Going');
+
+        $state = $service->diagnosticState($kid);
+        $this->assertNotNull($state, 'the check is still going');
+        $this->assertSame('phonics_easy', $state['current_tier']);
+        $this->assertNull($kid->fresh()->reading_rung, 'nothing is saved until the check ends');
+    }
+
+    public function test_four_letters_of_six_still_end_the_check_on_letters(): void
+    {
+        $kid = $this->learner(['reading_stage' => 'starting', 'placement_answers' => null]);
+        $this->actingAs($kid, 'learner')->get(route('learner.diagnostic.passage'))->assertOk();
+
+        $this->readItem($kid, round(4 / 6 * 100, 2))->assertOk()->assertSee('Start Exploring');
+
+        $kid->refresh();
+        $this->assertSame(0, $kid->reading_rung);
+        $this->assertSame('Letter Explorer', ReadingLevel::stepName($kid));
+        $this->assertSame(1, ReadingSession::where('learner_id', $kid->id)->count());
+    }
+
+    public function test_a_child_who_names_most_letters_but_cannot_read_the_words_steps_back_and_the_check_still_ends(): void
+    {
+        $kid = $this->learner(['reading_stage' => 'starting', 'placement_answers' => null]);
+        $this->actingAs($kid, 'learner')->get(route('learner.diagnostic.passage'))->assertOk();
+        $service = app(LearnerDiagnosticService::class);
+        $firstLetters = $service->currentActivityId($service->diagnosticState($kid));
+
+        $this->readItem($kid, 83.33)->assertOk()->assertSee('Keep Going');          // letters: on to the words
+        $this->readItem($kid, 40)->assertOk()->assertSee('Keep Going');             // words too hard: back to letters
+        $state = $service->diagnosticState($kid);
+        $this->assertSame('letters', $state['current_tier']);
+        $this->assertNotSame($firstLetters, $service->currentActivityId($state), 'the letters come back as a different set');
+
+        $this->readItem($kid, 83.33)->assertOk()->assertSee('Start Exploring');     // the third item always ends it
+
+        $kid->refresh();
+        $this->assertNull($service->diagnosticState($kid));
+        $this->assertSame(0, $kid->reading_rung, 'the last rung read is where the child lands');
+        $this->assertSame('Beginning', $kid->mastery_level);
+        $this->assertSame(3, ReadingSession::where('learner_id', $kid->id)->where('session_type', 'Diagnostic')->count());
+    }
+
+    public function test_the_lower_letters_line_does_not_touch_any_other_rung(): void
+    {
+        // A child whose Parent says they know letters and sounds starts on the first words.
+        $kid = $this->learner(['reading_stage' => 'letters', 'placement_answers' => null]);
+        $this->actingAs($kid, 'learner')->get(route('learner.diagnostic.passage'))->assertOk();
+        $this->assertSame('phonics_easy', app(LearnerDiagnosticService::class)->diagnosticState($kid)['current_tier']);
+
+        // 85 percent on the words is still "this is your step": only 90 moves up from here.
+        $this->readItem($kid, 85)->assertOk()->assertSee('Start Exploring');
+
+        $kid->refresh();
+        $this->assertSame(1, $kid->reading_rung);
+        $this->assertSame(90.0, LearnerDiagnosticService::moveUpAt('phonics_easy'));
+        $this->assertSame(80.0, LearnerDiagnosticService::moveUpAt('letters'));
+    }
+
+    public function test_the_dots_never_promise_a_total_none_on_the_first_item_then_one_per_item_reached(): void
+    {
+        $kid = $this->learner(['reading_stage' => 'starting', 'placement_answers' => null]);
+        $dots = fn (string $html) => substr_count($html, '<div class="pdot ');
+
+        // First item: no row of dots at all.
+        $first = $this->actingAs($kid, 'learner')->get(route('learner.diagnostic.passage'))->assertOk()->getContent();
+        $this->assertSame(0, $dots($first));
+        $this->assertStringContainsString('Letters', $first);
+
+        // After it, the "Great job" screen shows one dot (done) and nothing for the future.
+        $between = $this->readItem($kid, 83.33)->assertOk()->getContent();
+        $this->assertSame(1, substr_count($between, '<span class="fb-dot '));
+        $this->assertSame(1, substr_count($between, '<span class="fb-dot done'));
+        $this->assertStringContainsString('1 reading done', $between);
+        $this->assertStringNotContainsString('up to', $between);
+
+        // Second item: two dots, the first done and this one current.
+        $second = $this->get(route('learner.diagnostic.passage'))->assertOk()->getContent();
+        $this->assertSame(2, $dots($second));
+        $this->assertSame(1, substr_count($second, '<div class="pdot done'));
+        $this->assertSame(1, substr_count($second, '<div class="pdot current'));
+
+        // Third item: three dots.
+        $this->readItem($kid, 40)->assertOk();
+        $third = $this->get(route('learner.diagnostic.passage'))->assertOk()->getContent();
+        $this->assertSame(3, $dots($third));
+        $this->assertSame(2, substr_count($third, '<div class="pdot done'));
+    }
+
     // ------------------------------------------------------------- what production looks like before this ships
 
     public function test_letter_rows_made_before_the_bank_are_reused_and_filled_in_not_duplicated(): void

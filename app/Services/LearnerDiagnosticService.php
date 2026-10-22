@@ -50,7 +50,7 @@ class LearnerDiagnosticService
         'Proficient' => 'You\'re a Super Reader!',
     ];
 
-    private const MAX_PASSAGES = 3;
+    public const MAX_PASSAGES = 3;
 
     public const MAX_UNCLEAR_ATTEMPTS = 3;
 
@@ -216,9 +216,21 @@ class LearnerDiagnosticService
     }
 
     /**
-     * >=90% moves up a rung (stop if already at the top), <70% moves down a
-     * rung (stop if already at the bottom), 70-89% stops right here regardless
-     * of item count. Capped at 3 items regardless of outcome.
+     * The accuracy at which an item moves the check up a rung: config('diagnostic.staircase.up_at')
+     * (90), except on the letters rung, which has its own lower line (letters_up_at, 80) because one
+     * letter name heard differently out of six is already 83 percent. See config/diagnostic.php.
+     */
+    public static function moveUpAt(?string $tier): float
+    {
+        $staircase = config('diagnostic.staircase');
+
+        return (float) ($tier === DiagnosticPlacement::LETTERS ? $staircase['letters_up_at'] : $staircase['up_at']);
+    }
+
+    /**
+     * Moves up a rung at moveUpAt() or more (stop if already at the top), down a rung under
+     * config('diagnostic.staircase.down_below') (stop if already at the bottom), and anything in
+     * between stops right here regardless of item count. Capped at MAX_PASSAGES items regardless of outcome.
      */
     private function applyStaircaseStep(Learner $learner, array $state, Activity $activity, array $result): array
     {
@@ -255,9 +267,9 @@ class LearnerDiagnosticService
         $tierIndex = $tierIndex === false ? 0 : $tierIndex;
         $nextTier = null;
 
-        if ($accuracy >= 90) {
+        if ($accuracy >= self::moveUpAt($tier)) {
             $nextTier = $rungs[$tierIndex + 1] ?? null;
-        } elseif ($accuracy < 70) {
+        } elseif ($accuracy < (float) config('diagnostic.staircase.down_below')) {
             $nextTier = $tierIndex > 0 ? $rungs[$tierIndex - 1] : null;
         }
 

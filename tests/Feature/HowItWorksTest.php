@@ -65,6 +65,24 @@ class HowItWorksTest extends TestCase
         $this->assertStringContainsString('confidence under <span class="num">0.33</span>', $html);
     }
 
+    public function test_the_first_check_staircase_and_the_letters_exception_follow_the_config(): void
+    {
+        $html = $this->get('/how-it-works')->assertOk()->getContent();
+        $this->assertStringContainsString('<span class="num">90 percent or more</span> moves the check up one step', $html);
+        $this->assertStringContainsString('<span class="num">70 to 89 percent</span> stops it', $html);
+        $this->assertStringContainsString('naming <span class="num">5 of the 6</span> letters moves the child on', $html);
+        $this->assertStringContainsString('never promises a number of texts', $html);
+
+        config(['diagnostic.staircase.up_at' => 85, 'diagnostic.staircase.down_below' => 60, 'diagnostic.staircase.letters_up_at' => 66]);
+
+        $html = $this->get('/how-it-works')->assertOk()->getContent();
+        $this->assertStringContainsString('<span class="num">85 percent or more</span> moves the check up one step', $html);
+        $this->assertStringContainsString('<span class="num">under 60 percent</span> moves it down', $html);
+        $this->assertStringContainsString('<span class="num">60 to 84 percent</span> stops it', $html);
+        $this->assertStringContainsString('<span class="num">66 percent</span>', $html);
+        $this->assertStringContainsString('naming <span class="num">4 of the 6</span> letters', $html, '66 percent of six letters is four');
+    }
+
     public function test_every_mistake_pattern_is_listed_with_its_code(): void
     {
         $html = $this->get('/how-it-works')->getContent();

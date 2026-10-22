@@ -146,7 +146,7 @@
 <main class="fb {{ $mood === 'sad' ? 'sad' : 'happy' }} {{ ! empty($details) ? 'has-details' : '' }}">
 
   @isset($dotsTotal)
-    <div class="fb-dots" role="img" aria-label="{{ $dotsDone }} of up to {{ $dotsTotal }} readings done">
+    <div class="fb-dots" role="img" aria-label="{{ $dotsDone }} {{ $dotsDone === 1 ? 'reading' : 'readings' }} done">
       @for ($i = 1; $i <= $dotsTotal; $i++)
         <span class="fb-dot {{ $i <= $dotsDone ? 'done' : '' }}"></span>
       @endfor

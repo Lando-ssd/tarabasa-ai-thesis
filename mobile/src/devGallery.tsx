@@ -189,8 +189,7 @@ function screenFor(name: string) {
     case 'check-letters':
       return (
         <ReadingScene
-          eyebrow="Passage 1"
-          dots={{ done: 0, total: 3 }}
+          eyebrow="Letters"
           direction="Say the name of each letter, one at a time."
           passage={{ kind: 'letters', letters: ['S', 'A', 'T', 'P', 'I', 'N'].map((c) => ({ upper: c, lower: c.toLowerCase() })) }}
           footer={<MicButton onRecorded={noop} />}

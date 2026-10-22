@@ -167,7 +167,7 @@ function letterTile(count: number, gridW: number) {
 
 function Dots({ done, total }: { done: number; total: number }) {
   return (
-    <View style={styles.dots} accessible accessibilityLabel={`Passage ${done + 1} of up to ${total}`}>
+    <View style={styles.dots} accessible accessibilityLabel={`Passage ${done + 1}`}>
       {Array.from({ length: total }, (_, i) => (
         <View key={i} style={[styles.dot, i < done && styles.dotDone, i === done && styles.dotNow]} />
       ))}

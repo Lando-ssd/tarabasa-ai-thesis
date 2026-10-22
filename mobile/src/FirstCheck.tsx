@@ -97,8 +97,10 @@ export function FirstCheck({ firstName, onDone }: { firstName: string; onDone: (
     case 'item':
       return (
         <ReadingScene
-          eyebrow={`Passage ${phase.item.passageNumber}`}
-          dots={{ done: phase.item.passageNumber - 1, total: phase.item.maxPassages }}
+          eyebrow={phase.item.activity.kind === 'letters' ? 'Letters' : `Passage ${phase.item.passageNumber}`}
+          // The check stops as soon as it knows the child's level, so the dots never promise a total: none on the
+          // first item, then one dot per item reached so far (the same as the website).
+          dots={phase.item.passageNumber > 1 ? { done: phase.item.passageNumber - 1, total: phase.item.passageNumber } : undefined}
           direction={phase.item.activity.prompt}
           passage={
             phase.item.activity.kind === 'letters'

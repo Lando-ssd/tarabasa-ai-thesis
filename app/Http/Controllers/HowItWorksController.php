@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\ClassActivityOutcomes;
+use App\Services\LearnerDiagnosticService;
 use App\Services\TeacherAlerts;
 use App\Services\WordBank;
 use App\Support\ClassLevel;
@@ -85,6 +86,7 @@ class HowItWorksController extends Controller
             'outcomePaired' => ClassActivityOutcomes::MIN_PAIRED,
             'outcomeSame' => ClassActivityOutcomes::SAME_WITHIN,
             'tiers' => ReadingLevel::TIER_RUNGS,
+            'check' => $this->firstCheck(),
             'games' => [
                 'rounds' => (int) $gameConfig['rounds'],
                 'perRound' => (int) $gameConfig['per_round'],
@@ -111,5 +113,24 @@ class HowItWorksController extends Controller
                 'data' => $syllableConfig['data'],
             ],
         ]);
+    }
+
+    /** The first reading check's staircase, read from the config and the service it runs on. */
+    private function firstCheck(): array
+    {
+        $staircase = config('diagnostic.staircase');
+        $lettersPerItem = count(config('diagnostic.letters.sets.0.letters', []));
+        $lettersUpAt = (float) $staircase['letters_up_at'];
+
+        return [
+            'maxItems' => LearnerDiagnosticService::MAX_PASSAGES,
+            'upAt' => (int) $staircase['up_at'],
+            'downBelow' => (int) $staircase['down_below'],
+            'stopTo' => (int) $staircase['up_at'] - 1,
+            'lettersUpAt' => (int) $lettersUpAt,
+            'lettersPerItem' => $lettersPerItem,
+            // The fewest letters out of the six that reach the letters line (5 of 6 at 80 percent).
+            'lettersNeeded' => $lettersPerItem > 0 ? (int) ceil($lettersUpAt / 100 * $lettersPerItem - 1e-9) : 0,
+        ];
     }
 }

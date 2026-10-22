@@ -7517,6 +7517,27 @@ Three changes aim at the same chain (a slow request holding one of the four work
   (0.5.5 is not built). The cause of the live 502 may be elsewhere (memory, TiDB quota, a restart for another reason): the new log lines and Render's Events are what will tell.
 - **Shipped (the owner said "push and merge it to live").** Clean merge, 712 tests passing on the merged code. Checked live from outside: `/learner/ready` went from 404 to a redirect to `/learner/login` (seen at the second ask, 30 seconds after the first), the home, child login, sign in, privacy and how-it-works pages answer 200, `/api/learner/dashboard` answers 401. NOT checked live: the recording page itself (needs a child's sign in; Claude may not make accounts on a live site), and whether the 502 is gone (needs a real test).
 
+## First check: the letters line and honest progress dots (2026-10-22, built after the 502 fixes; see the commit and the status line at the end of this section)
+
+The owner tested the first reading check on the live site (no more 502) and it ended after ONE Letters item while the screen showed three dots, one filled. They expected it to move through all three.
+- **It was not a bug.** The three dots meant "up to three". The staircase moves up at 90 percent or more, stops at 70 to 89, and below 70 on the easiest rung also stops. A letters item has six letters, so ONE letter missed is 83.33 percent and
+  the check ended on the lowest step (Letter Explorer, Beginning). Only 6 of 6 moved up. The old page comment even said "the check may stop after 1 or 2", but nothing on screen did.
+- **The rule, now in one config.** `config/diagnostic.php` `staircase`: `up_at` 90, `down_below` 70, `letters_up_at` 80. `LearnerDiagnosticService::moveUpAt($tier)` (public static) returns the letters line for the letters rung and `up_at` for every
+  other rung; `MAX_PASSAGES` is now public. At 80, naming 5 of 6 letters moves the child on to the first words (CVC); if those are too hard (under 70) the check steps back down to letters by itself, so the generosity costs at most one more item, and the third item
+  still always ends it. 4 of 6 (66.67) still ends the check on letters. The numbers are the team's own choice, not the curriculum's (say so to the adviser).
+- **The dots never promise a total.** The reading screen shows NO dots on item 1 and from item 2 on one dot per item reached (earlier ones teal, this one orange); the "Great job" screen shows only the dots done (total equals done), with the aria text "1 reading done".
+  Labels stay "Letters" / "Passage N" (the label tells the child what to do). The phone source has the same (`FirstCheck.tsx`, `ReadingScene.tsx`, and its letters item now says "Letters", not "Passage 1"); **a new phone build is needed for that part, 0.5.5 is not built, and older builds still show three dots**.
+  The letters rule is server side, so the phone gets it at once.
+- **`/how-it-works` reads the numbers from the config** (`HowItWorksController::firstCheck()`; the old text had 3, 90, 70 and 70 to 89 as literals) and has a new "Letters are the exception" paragraph and a line about the dots. A test changes the config and checks the page follows.
+- **Tests:** `FirstCheckBankTest` (5 new: 5 of 6 moves on, 4 of 6 still ends, move on then step back then the third item ends it, the lower line touches no other rung, the dots), `HowItWorksTest` (1 new). All five fail with the line set back to 90 (checked). A helper trap worth remembering:
+  `Http::fake` keeps the FIRST answer for a URL, so a test that fakes `reading.test/analyze` twice keeps getting the first score; register one fake that answers a changing value (`FirstCheckBankTest::readItem`).
+- **Verified for real** (local server, throwaway children, the LIVE reading service, synthesized voices, all removed afterwards): a child who named 5 of 6 letters (HREFL, K left out) got 83.33, "Great job!" with ONE dot and "Keep Going", then item 2 was the first words (dog pig bus bed top bag) with two dots (one done, one current); item 1 had no dots.
+  3 of 4 recordings of five letters (David plain, Zira and David with commas) scored exactly 83.33 and moved on.
+- **REAL FINDING, not fixed: the speech service runs letter names together.** One recording ("H R E F L" read quickly by Zira with no pauses) came back as `h`, `r` then nothing for e, f, l and `fl` for k: 33.33 percent and the check ended. An earlier throwaway child got
+  `hr`, `r`, `fl` for a different set. Vosk writes letter names as words, so adjacent letters become one token ("hr", "fl") or are dropped. This is the likeliest reason a real child ends on letters, and the lower line only helps a little. The next step is a LETTERS-ONLY scorer: split a
+  spoken token made of letter names ("hr" becomes h r), and accept letter-name words (are for R, see for C, bee for B, eye for I, kay for K) on the letters rung only. It is not built and needs real child recordings to set the rules honestly. A child's first letter set rotates by learner id
+  (`(id + rung index) % 3`: id 1 mod 3 starts on set B, 2 mod 3 on set C, 0 on set A), which matters when a test recording must match the set shown.
+
 ## Before pushing this round (checklist for the next session)
 
 The user's rule stands: nothing is pushed until they have looked at it on localhost and said go.

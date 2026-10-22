@@ -103,6 +103,24 @@ return [
         ],
     ],
 
+    // When the check moves between rungs (the staircase), as the accuracy of the item just read.
+    // At most `max_items` items are read. `up_at` or more moves up one rung, under `down_below` moves
+    // down one rung, anything between stops the check where it is.
+    //
+    // Letters are the exception: `letters_up_at` replaces `up_at` on the letters rung only. Naming six
+    // letters aloud is the weakest thing the speech service can check (a letter name is one short
+    // sound, and H "aitch", L "el" and F "eff" are easily heard as something else), and with six
+    // letters a single miss is 83 percent. At 90 that one miss ended the whole check on the lowest
+    // step and placed a child who knows most of their letters as a Letter Explorer; at 80, five
+    // letters of six move the child on to the first words, and if the words are too hard the check
+    // steps back down by itself (under `down_below`), so being generous costs at most one extra item.
+    // The numbers are the team's own choice, not the curriculum's.
+    'staircase' => [
+        'up_at' => 90,
+        'down_below' => 70,
+        'letters_up_at' => 80,
+    ],
+
     'letters' => [
         // Six letters per item, in the usual phonics teaching order (s a t p i n
         // first). Three sets, so a child who swings back to this rung, or a second

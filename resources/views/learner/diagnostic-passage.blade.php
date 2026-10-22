@@ -7,14 +7,16 @@
   ('letters' or 'passage'), the direction to show, the mic and done wording and,
   for letters, the letters themselves.
 
-  Part 4.5: simple visual progress so the child knows there's a clear end in
-  sight. Three dots are always shown (the check may stop after 1 or 2) rather
-  than a false "of N" count, since the real total isn't known ahead of time.
+  Part 4.5: simple visual progress. The check is adaptive and stops as soon as it knows the child's
+  level (it can end after 1, 2 or 3 items), so the row of dots never promises a total: the first item
+  shows none, and from the second item on there is one dot per item reached so far (the earlier ones
+  done, the present one orange). It used to show three dots from the start, and a child who finished
+  after one item felt something had gone wrong.
 --}}
 @include('learner._reading-scene', [
     'pageTitle' => "Let's Read Together | TaraBasa AI",
     'eyebrow' => $present['kind'] === 'letters' ? 'Letters' : 'Passage '.$passageNumber,
-    'dotsTotal' => $maxPassages,
+    'dotsTotal' => $passageNumber > 1 ? $passageNumber : null,
     'dotsCurrent' => $passageNumber,
     'prompt' => $present['prompt'],
     'letters' => $present['kind'] === 'letters' ? $present['letters'] : null,
