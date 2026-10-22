@@ -100,14 +100,25 @@ class ReadingAiClient
         // server saw the checker answer a few minutes ago, the health page is asked first and waited for.
         $wait = (int) config('services.reading_ai.ready_wait', 100);
 
+        // The whole call (waking, sending, asking again) may hold one of the few web workers for this long and no longer.
+        // Before this, a sleeping checker could keep a worker for up to 12 minutes (60 s waking, then four tries of up to
+        // 120 s each), the phone gave up after 4 and the child tapped Send Again, so two people testing at once used up
+        // every worker, the host's health check went unanswered, and the host restarted the site in the middle of
+        // recordings (a 502 on the website, "could not reach TaraBasa" on the phone). Out of time is a plain, kind message:
+        // the checker is waking up, send it again in a moment (the wait below is what wakes it).
+        $started = microtime(true);
+        $budget = (int) config('services.reading_ai.max_hold', 100);
+        $left = fn (): int => max(0, $budget - (int) (microtime(true) - $started));
+
         if ($wait > 0 && ! ServiceWake::isKnownAwake('reader')) {
-            $this->awaitReady($wait);
+            $this->awaitReady(min($wait, $left()));
         }
 
         for ($try = 1; $try <= self::TEMPORARY_ERROR_TRIES; $try++) {
             try {
                 // The recording is opened again for every try: the first one read it to the end.
-                $response = Http::timeout(120)
+                // Never longer than what is left of the budget, but long enough for the checker's own work.
+                $response = Http::timeout(max(30, min(120, $left())))
                     ->attach('file', fopen($audio->getRealPath(), 'r'), $filename)
                     ->post(rtrim($url, '/').'/analyze', $fields);
             } catch (ConnectionException $e) {
@@ -123,7 +134,8 @@ class ReadingAiClient
                 $trail[] = $response->status();
             }
 
-            if (! $response->failed() || ! ServiceReply::isTransient($response) || $try === self::TEMPORARY_ERROR_TRIES) {
+            // Another try only while there is time for it to finish inside the budget.
+            if (! $response->failed() || ! ServiceReply::isTransient($response) || $try === self::TEMPORARY_ERROR_TRIES || $left() < 30) {
                 break;
             }
 
@@ -137,11 +149,11 @@ class ReadingAiClient
             // (this is what wakes it); only when that does not work is there a plain pause before the next try.
             ServiceWake::forget('reader');
 
-            if ($wait > 0 && $this->awaitReady(min($wait, 60))) {
+            if ($wait > 0 && $this->awaitReady(min($wait, 60, max(0, $left() - 25)))) {
                 continue;
             }
 
-            sleep(ServiceReply::pause($response, $try, (int) config('services.retry_pause', self::TEMPORARY_ERROR_PAUSE)));
+            sleep(min(ServiceReply::pause($response, $try, (int) config('services.retry_pause', self::TEMPORARY_ERROR_PAUSE)), max(0, $left() - 25)));
         }
 
         // Any real answer (even a rejection of the recording) proves the checker is awake.
