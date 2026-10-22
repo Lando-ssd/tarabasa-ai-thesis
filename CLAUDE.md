@@ -7498,7 +7498,7 @@ The owner's teammate tested phone build 0.5.2 while the owner tested the website
   free Postgres expires after 30 days but the app does not use it. Check Render Billing "Free usage" and the TiDB usage page weekly until the end of November.
 - **The APK for the test:** `D:/tools/apk-out/TaraBasa-0.5.4-tester-pack.zip` (26.6 MB; the APK, its checksum, START-HERE and the two checklists) was handed to the owner. 0.5.5 (consent boxes in the app) is still not built.
 
-**Second round, same day (2026-10-22, BUILT LOCALLY, NOT PUSHED): the 502 came back on the live site after 5c6db1e.** The owner sent a screenshot of the same Chrome 502 on
+**Second round, same day (2026-10-22, PUSHED to mobile-app as 7e1866b and MERGED INTO THE LIVE BRANCH as 685d428, deployed and checked live): the 502 came back on the live site after 5c6db1e.** The owner sent a screenshot of the same Chrome 502 on
 `/learner/diagnostic/record` and asked for a fix. The cause is STILL not confirmed (Render Events/Logs and the diary were not available to read; the owner has not yet sent them). What was checked: the idle live site stays
 stable (36 of 36 health asks fine), and a real first check run locally against the LIVE reading checker works (200 in 32 s), so the code path itself is sound. It is possible the owner tested before the 5c6db1e deploy finished.
 Three changes aim at the same chain (a slow request holding one of the four workers on a 512 MB instance), and one makes the next failure readable:
@@ -7515,7 +7515,7 @@ Three changes aim at the same chain (a slow request holding one of the four work
   showed the waking note and sent the recording once at 6.1 seconds (a double tap sent once); with the ready ask failing it sent the recording anyway after 0.4 seconds.
 - **Not covered / honest limits.** The PHONE app does not do this readiness wait (it only gets the server-side cap), so a phone recording to a sleeping checker still waits on the server for up to 100 seconds; adding it needs an app change and a new APK
   (0.5.5 is not built). The cause of the live 502 may be elsewhere (memory, TiDB quota, a restart for another reason): the new log lines and Render's Events are what will tell.
-- **To ship:** needs the owner's explicit "push and merge" (the earlier approval covered only 5c6db1e). After the deploy a guest asking `/learner/ready` is redirected to `/learner/login`, and the recording page's script contains "Waking up the reading checker"; those are the signs of the new build.
+- **Shipped (the owner said "push and merge it to live").** Clean merge, 712 tests passing on the merged code. Checked live from outside: `/learner/ready` went from 404 to a redirect to `/learner/login` (seen at the second ask, 30 seconds after the first), the home, child login, sign in, privacy and how-it-works pages answer 200, `/api/learner/dashboard` answers 401. NOT checked live: the recording page itself (needs a child's sign in; Claude may not make accounts on a live site), and whether the 502 is gone (needs a real test).
 
 ## Before pushing this round (checklist for the next session)
 
