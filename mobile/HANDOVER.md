@@ -291,6 +291,18 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
   because the preview has no microphone. `tsc --noEmit` clean. Server tests: `SyllableStepsGameTest` (22).
 - **Not proven:** a real phone, the real microphone in step 4, Tara's real phone voice saying parts such as "bas" and "ket", the glow ring and tile glide on a real screen, a small phone (360 by 640).
 
+## Version 0.5.5 (2026-10-23): consent boxes, honest dots, legal links
+- **File:** `D:/tools/apk-out/TaraBasa-AI-0.5.5-test15.apk` (42.2 MiB, arm64 only, versionCode 15, SHA-256 `4335accf5536b505f4ee46276cff242aa4fe4b8d53104880911af5a259e61c34`, signed with the debug key, fine for tests,
+  built from `D:	b` with `expo prebuild --clean` and `assembleRelease`, about 25 minutes while other work ran). The tester pack is `D:/tools/apk-out/TaraBasa-0.5.5-tester-pack.zip` (25.4 MB: the APK, its checksum, START-HERE and the two checklists, with a
+  "New in 0.5.5" part in each). **Send this one.**
+- **What is new compared with 0.5.4:** the consent tick boxes in both sign ups, the add-a-child wizard (last step) and link; the Privacy, Terms and consent links on the child's sign in and in My profile; the note on Generate not to type a child's name; the
+  first reading check shows no dots on item 1 and then one dot per item reached (the server rule that 5 of 6 letters moves a child on already applies to every build).
+- **Checked inside the file:** package com.tarabasaai.app, versionCode 15 / versionName 0.5.5, arm64-v8a, 10 permissions, the bundle holds the live address and the new consent and legal strings, and no `http://localhost` address. `tsc --noEmit` is clean.
+- **Server side:** the website now scores recordings in the background (committed locally as `a73c191`, NOT pushed when this was written). The phone still scores inside the request, now behind a limit of 2 at once: a third request at the same moment gets
+  a 503 with the message "Many children are reading at the same moment. Please wait a few seconds and try again.", which the phone shows on its Send Again screen (the tester pack tells testers about it).
+- **Set `API_CONSENT_REQUIRED=true` on Render only after every tester has 0.5.5**; until then the server accepts a sign up without the boxes.
+- **Not proven:** a real phone, the real microphone, the consent screens on a small phone, the Android keyboard with the new boxes.
+
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
    on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,
