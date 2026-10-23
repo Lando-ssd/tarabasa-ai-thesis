@@ -1,0 +1,50 @@
+name: Keep TaraBasa awake
+
+# The website and its three helper services (reading checker, activity writer, recommender) run on free hosting
+# that puts a service to sleep after 15 quiet minutes. The first request then waits 30 to 60 seconds, and a child's
+# reading can fail with "error 429" while the reading checker wakes up.
+#
+# HOW TO USE (about 5 minutes before a test or the presentation):
+#   GitHub > this repository > Actions > "Keep TaraBasa awake" > Run workflow > choose the hours > Run workflow.
+#   Open the running job and its step log: it prints a line per address every 4 minutes. When all four say 200
+#   (the first round can take about a minute), everything is awake and stays awake until the hours are over.
+#   To stop early: open the running job and press Cancel workflow.
+#
+# It only asks each address's public health page, the same page the app itself uses. It costs nothing (public repository).
+# Do not leave it on for days: the free hosts give each account a limited number of free running hours a month, and
+# keeping a service awake all day all month would use them up. Use it for the hours you need.
+
+on:
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "How many hours to keep everything awake"
+        required: true
+        default: "3"
+        type: choice
+        options: ["1", "2", "3", "4", "5"]
+
+permissions: {}
+
+jobs:
+  keep-awake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Ask all four addresses every 4 minutes
+        env:
+          HOURS: ${{ inputs.hours }}
+        run: |
+          urls="https://tarabasa-ai.onrender.com/up https://reading-api-v5fp.onrender.com/health https://acitvity-api.onrender.com/health https://adaptive-recommendator.onrender.com/health"
+          end=$(( $(date +%s) + HOURS * 3600 ))
+          round=0
+          while [ "$(date +%s)" -lt "$end" ]; do
+            round=$((round + 1))
+            echo "---- round $round at $(date -u +%H:%M:%S) UTC (200 means awake)"
+            for u in $urls; do
+              ( code=$(curl -s -o /dev/null -m 150 -w '%{http_code}' "$u" || true); echo "$code  $u" ) &
+            done
+            wait
+            sleep 240
+          done
+          echo "Finished: kept awake for $HOURS hour(s). The services will fall asleep again after 15 quiet minutes."
