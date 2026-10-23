@@ -30,6 +30,11 @@
   client-side-only heads-up for the most common real cause, not a
   replacement for it.
 
+  The recording is sent in the BACKGROUND (fetch), not by posting the form: the server saves it and a background worker
+  scores it (App\Services\BackgroundScoring), while this page only asks "is it done?" every couple of seconds and then
+  opens the result. Nothing stays open between the asks, so a class recording at once cannot use up the server's few
+  web workers. A browser without fetch still posts the form and is scored inside that request, as before.
+
   Once the audio is ready to submit, calls `window.tarabasaBeforeSubmit()`
   if an including page has defined it — giving that page a chance to
   insert its own step (e.g. a comprehension quiz) before the real form
@@ -99,7 +104,7 @@
 {{-- The connection was down (or too slow to answer) the moment the recording was about to be sent.
      The recording is still on this screen, so "Send Again" needs no new reading. --}}
 <div class="step" id="stepOffline">
-  <div class="note-banner amber">We could not reach the internet. Your reading is still here. Check the connection, then tap Send Again.</div>
+  <div class="note-banner amber" id="offlineMsg" role="alert">We could not reach the internet. Your reading is still here. Check the connection, then tap Send Again.</div>
   <button type="button" class="big-btn" id="sendAgainBtn">Send Again</button>
   <button type="button" class="rec-linkbtn" id="readAgainBtn">Read it again instead</button>
 </div>
@@ -137,9 +142,18 @@
     const READY_MAX_MS = 90000;
     const SLOW_NOTE_AFTER_MS = 20000;
     const VERY_SLOW_NOTE_AFTER_MS = 60000;
+    // After sending, ask how it is going this often; no ask waits longer than POLL_ASK_TIMEOUT_MS, and the page gives up
+    // after POLL_GIVE_UP_MS (the server gives up on a job a little sooner and says so).
+    const POLL_MS = 2000;
+    const POLL_ASK_TIMEOUT_MS = 25000;
+    const POLL_GIVE_UP_MS = 270000;
+    const OFFLINE_TEXT = 'We could not reach the internet. Your reading is still here. Check the connection, then tap Send Again.';
+    const SEND_FAILED_TEXT = 'Something went wrong while sending your reading. Your reading is still here. Tap Send Again.';
 
     let mediaRecorder, chunks = [], stream, timerInterval, seconds = 0;
     let submitting = false, slowTimers = [];
+    // One per recording, sent with it and again with "Send Again": the server then knows it is the same reading and never counts it twice.
+    let recordingKey = null;
     let audioCtx, analyser, levelCheckInterval, hasDetectedSound = false;
 
     const steps = {
@@ -281,6 +295,8 @@
       else if (mimeType.includes('ogg')) ext = 'ogg';
       else if (mimeType.includes('wav')) ext = 'wav';
 
+      recordingKey = newKey();
+
       const blob = new Blob(chunks, { type: mimeType });
       const file = new File([blob], 'recording.' + ext, { type: mimeType });
 
@@ -293,6 +309,11 @@
       } else {
         window.tarabasaSubmitRecording();
       }
+    }
+
+    function newKey() {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+      return 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
     }
 
     function connectionLooksOk() {
@@ -320,7 +341,7 @@
     function startSlowNotes() {
       const note = document.getElementById('slowNote');
       slowTimers.push(setTimeout(() => {
-        note.textContent = 'Still working. The internet may be slow. Please keep this screen open.';
+        note.textContent = 'Still working. The internet may be slow, or many children may be reading at the same time. Please keep this screen open.';
         note.style.display = 'block';
       }, SLOW_NOTE_AFTER_MS));
       slowTimers.push(setTimeout(() => {
@@ -352,6 +373,86 @@
 
     let preparing = false;
 
+    // Shows a problem in the "Send Again" step. The recording is still in this page, so trying again needs no new reading.
+    function showProblem(message, canSendAgain) {
+      submitting = false;
+      preparing = false;
+      clearSlowNotes();
+      document.getElementById('offlineMsg').textContent = message || SEND_FAILED_TEXT;
+      document.getElementById('sendAgainBtn').style.display = canSendAgain === false ? 'none' : '';
+      showStep('offline');
+    }
+
+    // The server answered "queued", "running", "done" or "failed" (or, for a practice try that is no longer allowed, "redirect").
+    function followAnswer(data) {
+      data = data || {};
+      if (data.status === 'redirect' && data.url) { window.location.assign(data.url); return; }
+      if (data.status === 'done' && data.resultUrl) { window.location.assign(data.resultUrl); return; }
+      if (data.status === 'failed') { showProblem(data.message); return; }
+      if (data.statusUrl) { askHowItIsGoing(data.statusUrl, Date.now(), 0); return; }
+      showProblem(SEND_FAILED_TEXT);
+    }
+
+    // One quick question at a time, a couple of seconds apart. A dropped connection while waiting does not lose the reading
+    // (it is being scored on the server), so keep asking until there is an answer or it is clearly gone.
+    function askHowItIsGoing(url, started, errors) {
+      if (Date.now() - started > POLL_GIVE_UP_MS) { showProblem('That took too long. Your reading may not have been counted. Tap Send Again.'); return; }
+
+      const ctrl = ('AbortController' in window) ? new AbortController() : null;
+      const timer = setTimeout(() => { if (ctrl) ctrl.abort(); }, POLL_ASK_TIMEOUT_MS);
+
+      fetch(url, { cache: 'no-store', credentials: 'same-origin', headers: { Accept: 'application/json' }, signal: ctrl ? ctrl.signal : undefined })
+        .then(r => {
+          clearTimeout(timer);
+          if (r.redirected && /\/login/.test(r.url)) { window.location.assign(r.url); return null; }
+          if (r.status === 404 || r.status === 401 || r.status === 403) throw { gone: true };
+          if (!r.ok) throw { retry: true };
+          return r.json();
+        })
+        .then(d => {
+          if (d === null) return;
+          if (d.status === 'done' && d.resultUrl) { window.location.assign(d.resultUrl); return; }
+          if (d.status === 'failed') { showProblem(d.message); return; }
+          setTimeout(() => askHowItIsGoing(url, started, 0), POLL_MS);
+        })
+        .catch(err => {
+          clearTimeout(timer);
+          if (err && err.gone) { showProblem('We lost track of your reading. Please read it again.', false); return; }
+          setTimeout(() => askHowItIsGoing(url, started, errors + 1), errors > 3 ? 5000 : 2500);
+        });
+    }
+
+    function sendRecording() {
+      const form = document.getElementById('recordForm');
+
+      // A browser that cannot send in the background posts the form itself; the server then scores it right there.
+      if (!('fetch' in window) || typeof FormData === 'undefined') { form.submit(); return; }
+
+      // Also carries the quiz answers: their radio buttons belong to this form (form="recordForm").
+      const body = new FormData(form);
+      body.set('client_key', recordingKey || (recordingKey = newKey()));
+
+      fetch(form.action, {
+        method: 'POST',
+        body: body,
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      })
+        .then(r => {
+          // Signed out in the meantime: the server sent us to the sign in page.
+          if (r.redirected && /\/login/.test(r.url)) { window.location.assign(r.url); return null; }
+          return r.json().catch(() => ({})).then(data => ({ r, data }));
+        })
+        .then(res => {
+          if (!res) return;
+          if (res.r.ok) { followAnswer(res.data); return; }
+          if (res.r.status === 419 || res.r.status === 401) { showProblem('This screen was open for a long time. Tap Read it again to start fresh.', false); return; }
+          const first = res.data && res.data.errors && res.data.errors.audio ? res.data.errors.audio[0] : null;
+          showProblem(res.r.status === 422 ? (first || res.data.message || SEND_FAILED_TEXT) : SEND_FAILED_TEXT);
+        })
+        .catch(() => showProblem(OFFLINE_TEXT));
+    }
+
     window.tarabasaSubmitRecording = function () {
       if (submitting || preparing) return;
       preparing = true;
@@ -359,12 +460,12 @@
       showStep('checking');
 
       connectionLooksOk().then(ok => {
-        if (!ok) { preparing = false; showStep('offline'); return; }
+        if (!ok) { showProblem(OFFLINE_TEXT); return; }
 
         return checkerIsAwake().then(() => {
           submitting = true;
           startSlowNotes();
-          document.getElementById('recordForm').submit();
+          sendRecording();
         });
       });
     };

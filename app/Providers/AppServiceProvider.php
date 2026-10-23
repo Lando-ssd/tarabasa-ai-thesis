@@ -6,7 +6,10 @@ use App\Mail\Transport\GmailApiTransport;
 use App\Models\Notification;
 use App\Queue\PlainLockDatabaseConnector;
 use App\Support\TeacherNav;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -51,6 +54,19 @@ class AppServiceProvider extends ServiceProvider
         $this->app->afterResolving('queue', function ($manager) {
             $manager->extend('database', fn () => new PlainLockDatabaseConnector($this->app['db']));
         });
+
+        // "A scoring worker is alive" signal, so a waiting recording is only ever scored inside a web request
+        // when no worker has been seen at all (see BackgroundScoring::refresh).
+        \App\Services\BackgroundScoring::listen();
+
+        // The child's reading screens ask quick questions while a recording is being sent and scored. They are counted
+        // per CHILD: counted per address, a whole class behind the school's one internet address shared a single allowance
+        // and the children after the first few were turned away.
+        $perChild = fn (Request $request) => $request->user('learner')?->id ? 'learner:'.$request->user('learner')->id : $request->ip();
+        RateLimiter::for('scoring-status', fn (Request $request) => Limit::perMinute(120)->by($perChild($request)));
+        RateLimiter::for('learner-ready', fn (Request $request) => Limit::perMinute(60)->by($perChild($request)));
+        RateLimiter::for('learner-warm', fn (Request $request) => Limit::perMinute(20)->by($perChild($request)));
+        RateLimiter::for('learner-game-check', fn (Request $request) => Limit::perMinute(90)->by($perChild($request)));
 
         Mail::extend('gmail-api', function () {
             return new GmailApiTransport(

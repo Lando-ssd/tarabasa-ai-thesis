@@ -52,9 +52,30 @@ export PHP_CLI_SERVER_WORKERS=4
 # never be written and charged twice.
 (
     while true; do
-        php artisan queue:work --sleep=2 --tries=1 --timeout=900 --max-time=1800 || true
+        php artisan queue:work --queue=default --sleep=2 --tries=1 --timeout=900 --max-time=1800 || true
         sleep 2
     done
 ) &
+
+# The scoring workers. A child's recording used to be scored INSIDE the web request, which held one of the four web
+# workers for 5 to 45 seconds while the speech service worked, and a class pressing "done" together left none free for
+# the host's health check (a 502 for everybody). Now the web request only saves the recording and a worker here scores
+# it (ScoreRecordingJob, App\Services\BackgroundScoring) while the child's page asks "is it done?" every couple of
+# seconds. They have their own queue so a recording never waits behind the minutes-long activity writing above.
+#
+# SCORING_WORKERS (default 2) is how many run. Each is a PHP process, about as large as a web worker, and the free host
+# has 512 MB: if the host's memory graph ever shows it near the limit, set SCORING_WORKERS=1 in the host's variables
+# (no code change). The speech service itself may only score one recording at a time (not measured), which would then be the real limit.
+# --sleep=2: an idle worker looks for work every 2 seconds. --timeout is longer than the job's own wait (config/scoring.php).
+i=1
+while [ "$i" -le "${SCORING_WORKERS:-2}" ]; do
+    (
+        while true; do
+            php artisan queue:work --queue=scoring --sleep=2 --tries=1 --timeout=240 --max-time=1800 || true
+            sleep 2
+        done
+    ) &
+    i=$((i + 1))
+done
 
 exec php artisan serve --host=0.0.0.0 --port="${PORT:-8080}" --no-reload

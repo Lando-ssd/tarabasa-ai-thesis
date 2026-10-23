@@ -51,4 +51,25 @@ class ServerStartupTest extends TestCase
         $this->assertStringContainsString('--no-reload', $serve);
         $this->assertStringContainsString('Only creating a single server', $serve, 'Laravel changed how artisan serve treats PHP_CLI_SERVER_WORKERS: re-check docker/entrypoint.sh and the live deploy log');
     }
+
+    public function test_recordings_are_scored_by_workers_on_their_own_queue(): void
+    {
+        $script = $this->script();
+
+        // The scoring workers: their own queue, so a recording never waits behind the minutes-long activity writing.
+        $this->assertMatchesRegularExpression('/php artisan queue:work --queue=scoring\b/', $script);
+        $this->assertMatchesRegularExpression('/SCORING_WORKERS:-\d+/', $script, 'how many scoring workers run must be a host setting with a default');
+
+        // The existing worker stays on the default queue (activity writing), and no worker is left reading every queue.
+        $this->assertMatchesRegularExpression('/php artisan queue:work --queue=default\b/', $script);
+        $this->assertDoesNotMatchRegularExpression('/queue:work(?![^\n]*--queue=)/', $script, 'every queue worker must name its queue');
+    }
+
+    public function test_the_scoring_queue_name_in_the_job_matches_the_workers(): void
+    {
+        $job = new \App\Jobs\ScoreRecordingJob('x');
+
+        $this->assertSame('scoring', $job->queue);
+        $this->assertStringContainsString('--queue='.$job->queue, $this->script());
+    }
 }

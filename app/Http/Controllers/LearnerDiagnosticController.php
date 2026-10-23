@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Models\ScoringJob;
+use App\Services\BackgroundScoring;
 use App\Services\LearnerDiagnosticService;
 use App\Services\ReadingAiClient;
 use App\Support\DiagnosticPlacement;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -70,7 +73,8 @@ class LearnerDiagnosticController extends Controller
         ]);
     }
 
-    public function submitRecording(Request $request, ReadingAiClient $readingAi, LearnerDiagnosticService $service): View
+    /** One item of the first reading check. Scored in the background like any reading (see LearnerReadingController::submitRecording). */
+    public function submitRecording(Request $request, ReadingAiClient $readingAi, LearnerDiagnosticService $service, BackgroundScoring $scoring): View|JsonResponse
     {
         $learner = $request->user('learner');
         $state = $service->diagnosticState($learner);
@@ -81,10 +85,21 @@ class LearnerDiagnosticController extends Controller
 
         $validated = $request->validate([
             'audio' => ['required', 'file', 'max:15360'],
+            'client_key' => ['nullable', 'string', 'max:64'],
         ]);
+
+        if ($request->expectsJson()) {
+            return $scoring->submit($request, ScoringJob::DIAGNOSTIC, $learner, $activity, $validated['audio']);
+        }
 
         $outcome = $service->recordAttempt($learner, $state, $activity, $validated['audio'], $readingAi);
 
+        return $this->renderRecording($outcome);
+    }
+
+    /** The screen after one item of the check: try again, keep going, or the finished result. */
+    public function renderRecording(array $outcome): View
+    {
         return match ($outcome['status']) {
             'unclear' => view('learner.reading-unclear', ['activity' => null, 'final' => $outcome['final'], 'isDiagnostic' => true]),
             'continue' => view('learner.diagnostic-encourage', [
@@ -93,7 +108,7 @@ class LearnerDiagnosticController extends Controller
                 'maxPassages' => $outcome['maxPassages'],
             ]),
             'finished' => view('learner.diagnostic-results', [
-                'learner' => $outcome['learner'],
+                'learner' => $outcome['learner'] ?? request()->user('learner'),
                 'finalLevel' => $outcome['finalLevel'],
                 'resultLabel' => $outcome['resultLabel'],
                 'newBadges' => $outcome['newBadges'],

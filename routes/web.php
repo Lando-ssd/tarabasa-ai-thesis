@@ -20,6 +20,7 @@ use App\Http\Controllers\ParentDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\RepositoryController;
+use App\Http\Controllers\ScoringController;
 use App\Http\Controllers\TeacherDashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -115,10 +116,15 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
     Route::post('/reading-preferences/font-step', [LearnerAuthController::class, 'updateReadingFontStep'])->name('reading-preferences.font-step');
 
     // Wakes the scoring service as a reading or speaking screen opens (see ReadingAiClient::wake()).
-    Route::get('/warm', [LearnerReadingController::class, 'warm'])->middleware('throttle:20,1')->name('warm');
+    Route::get('/warm', [LearnerReadingController::class, 'warm'])->middleware('throttle:learner-warm')->name('warm');
 
     // Asked by the recording page before it sends a recording (see ReadingAiClient::isReady).
-    Route::get('/ready', [LearnerReadingController::class, 'ready'])->middleware('throttle:60,1')->name('ready');
+    Route::get('/ready', [LearnerReadingController::class, 'ready'])->middleware('throttle:learner-ready')->name('ready');
+
+    // After a recording is sent it is scored in the background (App\Services\BackgroundScoring): the page asks "is it done?"
+    // every couple of seconds, then opens the result. Outside 'learner.diagnostic' because the first reading check is scored this way too.
+    Route::get('/scoring/{job}/status', [ScoringController::class, 'status'])->middleware('throttle:scoring-status')->name('scoring.status');
+    Route::get('/scoring/{job}/result', [ScoringController::class, 'result'])->middleware('throttle:scoring-status')->name('scoring.result');
 
     Route::middleware('learner.diagnostic')->group(function () {
         Route::get('/dashboard', [LearnerAuthController::class, 'dashboard'])->name('dashboard');
@@ -149,8 +155,8 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         Route::redirect('/games/word-builder', '/learner/games');
         Route::redirect('/games/letter-match', '/learner/games');
         // Something read aloud (a word, a row, a sentence) checked by the same service that scores readings. Practice only: nothing is saved.
-        Route::post('/games/check-text', [GameController::class, 'checkText'])->middleware('throttle:90,1')->name('games.check-text');
-        Route::post('/games/check-word', [GameController::class, 'checkWord'])->middleware('throttle:90,1')->name('games.check-word');
+        Route::post('/games/check-text', [GameController::class, 'checkText'])->middleware(['throttle:learner-game-check', 'scoring.slots'])->name('games.check-text');
+        Route::post('/games/check-word', [GameController::class, 'checkWord'])->middleware(['throttle:learner-game-check', 'scoring.slots'])->name('games.check-word');
         Route::post('/games/{game}/finish', [GameController::class, 'finish'])->middleware('throttle:30,1')->name('games.finish');
 
         Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');

@@ -3,8 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Models\Learner;
+use App\Models\ScoringJob;
+use App\Services\BackgroundScoring;
 use App\Services\LearnerReadingService;
 use App\Services\ReadingAiClient;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -20,7 +25,13 @@ use Illuminate\View\View;
  */
 class LearnerReadingController extends Controller
 {
-    public function submitRecording(Request $request, Activity $activity, ReadingAiClient $readingAi, LearnerReadingService $service): View
+    /**
+     * A scored reading. The child's page sends the recording in the background (it asks for JSON): the recording is then
+     * saved and scored by a background worker, and the page opens renderRecording() through ScoringController once it is
+     * done, so no web worker waits on the speech service. A plain form post (a browser that cannot send in the
+     * background) is still scored right here, as before.
+     */
+    public function submitRecording(Request $request, Activity $activity, ReadingAiClient $readingAi, LearnerReadingService $service, BackgroundScoring $scoring): View|JsonResponse
     {
         $learner = $request->user('learner');
 
@@ -34,17 +45,28 @@ class LearnerReadingController extends Controller
         $validated = $request->validate([
             'audio' => ['required', 'file', 'max:15360'],
             'answers' => ['nullable', 'array'],
+            'client_key' => ['nullable', 'string', 'max:64'],
         ]);
+
+        if ($request->expectsJson()) {
+            return $scoring->submit($request, ScoringJob::READING, $learner, $activity, $validated['audio'], ['answers' => $validated['answers'] ?? null]);
+        }
 
         $outcome = $service->recordAttempt($learner, $activity, $validated['audio'], $validated['answers'] ?? null, $readingAi);
 
+        return $this->renderRecording($outcome, $activity);
+    }
+
+    /** The results (or "didn't quite catch that") screen for a scored reading. Drawn the same whether it came straight from the post or from the background. */
+    public function renderRecording(array $outcome, Activity $activity): View
+    {
         if ($outcome['status'] === 'unclear') {
             return view('learner.reading-unclear', ['activity' => $activity, 'final' => $outcome['final']]);
         }
 
         return view('learner.reading-results', [
-            'activity' => $outcome['activity'],
-            'learner' => $outcome['learner'],
+            'activity' => $outcome['activity'] ?? $activity,
+            'learner' => $outcome['learner'] ?? request()->user('learner'),
             'accuracy' => $outcome['accuracy'],
             'wcpm' => $outcome['wcpm'],
             'levelBefore' => $outcome['levelBefore'],
@@ -65,24 +87,37 @@ class LearnerReadingController extends Controller
     /**
      * A practice try before the real reading (stage 2 of the practice stage). Free and unscored:
      * the child sees the same word by word look, but nothing is saved and no points, streak or level
-     * move. Two tries at most; after that the child reads for real.
+     * move. Two tries at most; after that the child reads for real. Scored in the background like a
+     * real reading (see submitRecording).
      */
-    public function submitPractice(Request $request, Activity $activity, ReadingAiClient $readingAi, LearnerReadingService $service): View|\Illuminate\Http\RedirectResponse
+    public function submitPractice(Request $request, Activity $activity, ReadingAiClient $readingAi, LearnerReadingService $service, BackgroundScoring $scoring): View|RedirectResponse|JsonResponse
     {
         $learner = $request->user('learner');
 
         abort_unless($activity->isAccessibleByLearner($learner), 403);
 
         if ($service->practiceTriesLeft($learner, $activity) === 0) {
-            return redirect()->route('learner.activity.show', [$activity, 'stage' => 'real']);
+            $realUrl = route('learner.activity.show', [$activity, 'stage' => 'real']);
+
+            return $request->expectsJson() ? response()->json(['status' => 'redirect', 'url' => $realUrl]) : redirect($realUrl);
         }
 
         $validated = $request->validate([
             'audio' => ['required', 'file', 'max:15360'],
+            'client_key' => ['nullable', 'string', 'max:64'],
         ]);
+
+        if ($request->expectsJson()) {
+            return $scoring->submit($request, ScoringJob::PRACTICE, $learner, $activity, $validated['audio']);
+        }
 
         $outcome = $service->recordPractice($learner, $activity, $validated['audio'], $readingAi);
 
+        return $this->renderPractice($outcome, $activity, $learner);
+    }
+
+    public function renderPractice(array $outcome, Activity $activity, Learner $learner): View
+    {
         if ($outcome['status'] === 'unclear') {
             return view('learner.activity-practice-unclear', ['activity' => $activity]);
         }

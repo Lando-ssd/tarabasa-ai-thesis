@@ -134,20 +134,22 @@ Route::middleware(['auth:sanctum', 'token.actor:learner'])->prefix('learner')->n
     // Diagnostic — deliberately NOT gated by the diagnostic-complete check,
     // same reasoning as the web routes: this is how a Learner completes it.
     Route::get('/diagnostic/passage', [LearnerDiagnosticApiController::class, 'passage'])->name('diagnostic.passage');
-    Route::post('/diagnostic/record', [LearnerDiagnosticApiController::class, 'submitRecording'])->name('diagnostic.record');
+    // The phone still scores inside the request, so these routes hold a web worker while the speech service thinks: at most a few at once
+    // (App\Http\Middleware\LimitScoringWorkers) so the rest stay free for pages and the host's health check.
+    Route::post('/diagnostic/record', [LearnerDiagnosticApiController::class, 'submitRecording'])->middleware('scoring.slots')->name('diagnostic.record');
 
     Route::middleware('learner.diagnostic.api')->group(function () {
         Route::get('/dashboard', [LearnerApiController::class, 'dashboard'])->name('dashboard');
         Route::get('/activities', [LearnerApiController::class, 'activities'])->name('activities.index');
         Route::get('/activities/{activity}', [LearnerApiController::class, 'showActivity'])->name('activities.show');
-        Route::post('/activities/{activity}/record', [LearnerReadingApiController::class, 'submitRecording'])->name('activities.record');
+        Route::post('/activities/{activity}/record', [LearnerReadingApiController::class, 'submitRecording'])->middleware('scoring.slots')->name('activities.record');
         // The two free practice tries before the real reading (scored for feedback only, nothing saved).
-        Route::post('/activities/{activity}/practice', [LearnerReadingApiController::class, 'submitPractice'])->name('activities.practice');
+        Route::post('/activities/{activity}/practice', [LearnerReadingApiController::class, 'submitPractice'])->middleware('scoring.slots')->name('activities.practice');
 
         // My Shelf: the stories the child has really read, and a free re-read of one (unscored, nothing saved).
         Route::get('/bookshelf', [LearnerBookshelfApiController::class, 'index'])->name('bookshelf.index');
         Route::get('/bookshelf/{activity}', [LearnerBookshelfApiController::class, 'show'])->name('bookshelf.show');
-        Route::post('/bookshelf/{activity}/reread', [LearnerBookshelfApiController::class, 'reread'])->name('bookshelf.reread');
+        Route::post('/bookshelf/{activity}/reread', [LearnerBookshelfApiController::class, 'reread'])->middleware('scoring.slots')->name('bookshelf.reread');
 
         // Practice Games (free play, all read-aloud): what the Games screen needs, what each game offers, something read aloud, and "a game ended".
         Route::get('/games', [LearnerGamesApiController::class, 'index'])->name('games.index');
@@ -155,8 +157,8 @@ Route::middleware(['auth:sanctum', 'token.actor:learner'])->prefix('learner')->n
         Route::get('/games/train', [LearnerGamesApiController::class, 'train'])->name('games.train');
         Route::get('/games/sentences', [LearnerGamesApiController::class, 'sentences'])->name('games.sentences');
         Route::get('/games/syllables', [LearnerGamesApiController::class, 'syllables'])->name('games.syllables');
-        Route::post('/games/check-text', [LearnerGamesApiController::class, 'checkText'])->middleware('throttle:90,1')->name('games.check-text');
-        Route::post('/games/check-word', [LearnerGamesApiController::class, 'checkWord'])->middleware('throttle:90,1')->name('games.check-word');
+        Route::post('/games/check-text', [LearnerGamesApiController::class, 'checkText'])->middleware(['throttle:90,1', 'scoring.slots'])->name('games.check-text');
+        Route::post('/games/check-word', [LearnerGamesApiController::class, 'checkWord'])->middleware(['throttle:90,1', 'scoring.slots'])->name('games.check-word');
         Route::post('/games/{game}/finish', [LearnerGamesApiController::class, 'finish'])->middleware('throttle:30,1')->name('games.finish');
     });
 

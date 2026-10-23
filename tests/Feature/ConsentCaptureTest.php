@@ -169,7 +169,7 @@ class ConsentCaptureTest extends TestCase
     {
         $this->actingAs($this->parentUser())->get(route('parent.children.create'))->assertOk()
             ->assertSee('name="parent_consent"', false)->assertSee('name="photo_consent"', false)->assertSee(route('consent'), false)
-            ->assertSee('is not saved', false);
+            ->assertSee('is deleted as soon as it has been scored', false);
     }
 
     // ------------------------------------------------------------ a second guardian linking

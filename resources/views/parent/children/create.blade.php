@@ -192,7 +192,7 @@
              kept without it. The photo has its own box, shown only when a photo was chosen. --}}
         <div class="consent-block">
           <p class="consent-title">Before we save</p>
-          <p>You are giving us information about <span class="child-name-ref">your child</span>: their name, grade, how they read, and their reading results. Their voice is sent to be scored and <b>is not saved</b>. You and any other guardian, and the teacher of a class they join, can see their progress.</p>
+          <p>You are giving us information about <span class="child-name-ref">your child</span>: their name, grade, how they read, and their reading results. Their voice is sent to be scored and <b>is deleted as soon as it has been scored</b>. You and any other guardian, and the teacher of a class they join, can see their progress.</p>
           <x-consent-check name="parent_consent" id="parent_consent">I am this child's parent or legal guardian, and I agree to TaraBasa AI keeping and using my child's information as described in the <a href="{{ route('consent') }}" target="_blank" rel="noopener">Parent and Guardian Consent</a> notice and the <a href="{{ route('privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.</x-consent-check>
           <div id="photoConsentRow" hidden>
             <x-consent-check name="photo_consent" id="photo_consent" :required="false">I also agree to TaraBasa AI keeping my child's photo. I have the right to share it.</x-consent-check>

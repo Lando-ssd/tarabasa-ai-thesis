@@ -294,7 +294,7 @@
   <ul>
     <li>It does not decide for a teacher or a parent. Alerts and suggestions come with their reasons, and a person acts.</li>
     <li>It does not hide an activity from a child, and it does not show a child a score on the first reading check.</li>
-    <li>It does not keep a child's recording (see the <a href="{{ route('privacy') }}">Privacy page</a>).</li>
+    <li>It does not keep a child's recording after it has been scored (see the <a href="{{ route('privacy') }}">Privacy page</a>).</li>
     <li>It does not learn by itself. No number on this page changes unless a person changes it.</li>
   </ul>
 

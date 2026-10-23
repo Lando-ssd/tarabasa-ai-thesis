@@ -24,7 +24,7 @@
 @section('summary')
   <ul>
     <li>A child's information can only be added by a parent or legal guardian, who must agree first.</li>
-    <li>To make a child's profile you agree to us keeping the child's name, grade and reading results, and to the child's voice being sent to be scored. <b>The recording is not saved.</b></li>
+    <li>To make a child's profile you agree to us keeping the child's name, grade and reading results, and to the child's voice being sent to be scored. <b>The recording is not kept: it is deleted as soon as it has been scored.</b></li>
     <li>The child's photo is optional and has its own separate tick box. Extra details (home language, what helps, topics) are optional too.</li>
     <li>You can withdraw consent at any time by deleting the child. Saying no costs you nothing except that the child cannot use TaraBasa AI.</li>
   </ul>
@@ -50,7 +50,7 @@
     <tbody>
       <tr><td>Keep your child's first name, last name (and middle name if you enter one), grade, a 4 digit PIN (scrambled) and a learner code.</td><td>Required</td><td>To make the child's profile and let the child sign in.</td></tr>
       <tr><td>Keep how your child reads now (a stage and three short questions you answer).</td><td>Required</td><td>So the first reading check starts at the right place, not too hard or too easy.</td></tr>
-      <tr><td>Record your child's voice when the child taps the microphone, send it to a scoring service, and keep the result (scores and the words heard). <b>The recording itself is not saved.</b></td><td>Required</td><td>To score each reading and show progress.</td></tr>
+      <tr><td>Record your child's voice when the child taps the microphone, send it to a scoring service, and keep the result (scores and the words heard). <b>The recording itself is not kept: it is deleted as soon as it has been scored.</b></td><td>Required</td><td>To score each reading and show progress.</td></tr>
       <tr><td>Keep your child's reading results: scores, words missed, reading level, points, badges and alerts.</td><td>Required</td><td>To choose what to read next, and to tell you and the teacher how your child is doing.</td></tr>
       <tr><td>Show this to you and any other guardian you link, to the teacher of a class your child joins, and, for running the service, to the site administrator.</td><td>Required</td><td>That is the purpose of the app. See "Who can see it" in the Privacy Policy.</td></tr>
       <tr><td>Use the outside services listed in the Privacy Policy (hosting, database, speech scoring, recommendation, email), sending each one only what it needs.</td><td>Required</td><td>They do part of the work.</td></tr>

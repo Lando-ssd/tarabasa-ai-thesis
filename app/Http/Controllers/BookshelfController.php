@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Models\ScoringJob;
+use App\Services\BackgroundScoring;
 use App\Services\LearnerReadingService;
 use App\Services\ReadingAiClient;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -37,7 +40,8 @@ class BookshelfController extends Controller
         return view('learner.bookshelf-reread', ['activity' => $activity, 'learner' => $learner]);
     }
 
-    public function submitReread(Request $request, Activity $activity, ReadingAiClient $readingAi, LearnerReadingService $service): View
+    /** A free re-read from the shelf. Scored in the background like any reading (see LearnerReadingController::submitRecording). */
+    public function submitReread(Request $request, Activity $activity, ReadingAiClient $readingAi, LearnerReadingService $service, BackgroundScoring $scoring): View|JsonResponse
     {
         $learner = $request->user('learner');
 
@@ -45,10 +49,20 @@ class BookshelfController extends Controller
 
         $validated = $request->validate([
             'audio' => ['required', 'file', 'max:15360'],
+            'client_key' => ['nullable', 'string', 'max:64'],
         ]);
+
+        if ($request->expectsJson()) {
+            return $scoring->submit($request, ScoringJob::REREAD, $learner, $activity, $validated['audio']);
+        }
 
         $outcome = $service->recordFreeReattempt($activity, $validated['audio'], $readingAi);
 
+        return $this->renderReread($outcome, $activity);
+    }
+
+    public function renderReread(array $outcome, Activity $activity): View
+    {
         if ($outcome['status'] === 'unclear') {
             return view('learner.bookshelf-reread-unclear', ['activity' => $activity]);
         }

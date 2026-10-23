@@ -122,12 +122,21 @@ class ReadingAiClient
             $this->awaitReady(min($wait, $left()));
         }
 
+        // The recording is read into memory once (a reading is well under a megabyte; the upload limit is 15) instead of being
+        // handed over as an open file. An open handle blocks deleting the temporary recording on Windows, and a background
+        // worker that lives for hours should not depend on garbage collection to give handles back. It is also what lets
+        // every try below send the whole recording again.
+        $contents = file_get_contents($audio->getRealPath());
+
+        if ($contents === false) {
+            throw ValidationException::withMessages(['audio' => 'We lost your recording on the way. Please read it again.']);
+        }
+
         for ($try = 1; $try <= self::TEMPORARY_ERROR_TRIES; $try++) {
             try {
-                // The recording is opened again for every try: the first one read it to the end.
                 // Never longer than what is left of the budget, but long enough for the checker's own work.
                 $response = Http::timeout(max(30, min(120, $left())))
-                    ->attach('file', fopen($audio->getRealPath(), 'r'), $filename)
+                    ->attach('file', $contents, $filename)
                     ->post(rtrim($url, '/').'/analyze', $fields);
             } catch (ConnectionException $e) {
                 Log::error('Reading AI connection failed', ['error' => $e->getMessage()]);

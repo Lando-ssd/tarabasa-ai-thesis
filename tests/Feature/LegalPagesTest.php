@@ -208,7 +208,7 @@ class LegalPagesTest extends TestCase
     {
         $page = $this->get('/parent-consent')->assertOk();
 
-        foreach (['Required', 'Optional', 'separate tick box', 'The recording itself is not saved', 'Changing your mind', 'If you do not agree'] as $line) {
+        foreach (['Required', 'Optional', 'separate tick box', 'The recording itself is not kept', 'Changing your mind', 'If you do not agree'] as $line) {
             $page->assertSee($line, false);
         }
 

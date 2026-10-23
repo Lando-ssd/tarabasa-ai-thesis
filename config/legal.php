@@ -8,12 +8,12 @@
  * row to the "Changes" table at the end of the Privacy Policy and the Terms of Use in the same commit.
  *
  * These pages must say only what the app really does. `tests/Feature/LegalPagesTest.php` pins the claims that matter
- * (no third party requests, only the cookies listed, recordings not stored, payments simulated). If the app starts
+ * (no third party requests, only the cookies listed, recordings kept only while they are scored, payments simulated). If the app starts
  * doing something new with data, change the page in the same commit.
  */
 return [
-    'version' => '2026-10-21.2',
-    'updated' => '21 October 2026',
+    'version' => '2026-10-23',
+    'updated' => '23 October 2026',
 
     // Who is responsible. Printed on every page. Set LEGAL_OPERATOR_DETAIL (for example the school or university and a
     // postal address) as soon as the team knows what it may print; until then the pages say "the student team".

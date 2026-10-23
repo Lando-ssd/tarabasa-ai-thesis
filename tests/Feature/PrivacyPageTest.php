@@ -27,7 +27,8 @@ class PrivacyPageTest extends TestCase
     {
         $page = $this->get('/privacy')->assertOk();
 
-        $page->assertSee('The app does not save the recording.', false);
+        $page->assertSee('The app does not keep the recording.', false);
+        $page->assertSee('deleted the moment the scoring ends', false);
         $page->assertSee('We do not sell information', false);
         $page->assertSee('Gmail', false);
         $page->assertSee('A child cannot sign up alone.', false);
@@ -70,8 +71,9 @@ class PrivacyPageTest extends TestCase
     public function test_the_recording_claim_is_still_true_the_app_stores_no_audio(): void
     {
         // The app writes no file with ->store() at all: the optional photo of a child is kept in the database (LearnerPhoto),
-        // because the free host wipes the server disk. If anything is ever stored as a file, above all a recording, this
-        // fails and the page must be changed first.
+        // because the free host wipes the server disk. The ONLY file it writes is the temporary recording that waits to be scored
+        // (ScoringJob, deleted when the job ends: pinned in BackgroundScoringTest). If anything else is ever stored as a file, above
+        // all a recording kept for good, this fails and the page must be changed first.
         $stored = [];
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path())) as $file) {
             if ($file->isFile() && $file->getExtension() === 'php') {

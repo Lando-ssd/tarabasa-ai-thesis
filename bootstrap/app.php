@@ -49,6 +49,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'learner.diagnostic.api' => \App\Http\Middleware\EnsureDiagnosticCompleteApi::class,
             // Which kind of person a phone token belongs to (learner, teacher or parent), so one kind of token can never reach another's routes.
             'token.actor' => \App\Http\Middleware\EnsureTokenActor::class,
+            // At most a few requests that score a recording INSIDE the request at once, so web workers stay free (see the class).
+            'scoring.slots' => \App\Http\Middleware\LimitScoringWorkers::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

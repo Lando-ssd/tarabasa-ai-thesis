@@ -26,7 +26,7 @@ form. If the app starts keeping or sending something new, update this file in th
 | Sent emails (confirmation, password reset): address and text | The TaraBasa Gmail account ("Sent") | Adults | The team who hold the mailbox | Until someone deletes them. **Open item.** |
 | Server logs | Render | Visitors | The team; Render | Render's rules |
 
-**Not stored:** the voice recording (neither by the app nor, by its code, by the scoring service); precise location; address; phone number of a child; birth date; contacts; device identifiers; advertising IDs.
+**Not kept:** the voice recording, beyond the seconds it takes to score it. On the website the recording waits in a temporary file on our own server while a background worker scores it, and the file is deleted when the scoring ends (`App\Services\BackgroundScoring`, `ScoringJob::discardAudio`; stray files are swept after minutes, and a deleted child's waiting recording is deleted with the child). The phone app still sends it straight to the server and deletes its own copy. By its code, the scoring service does not store it either; precise location; address; phone number of a child; birth date; contacts; device identifiers; advertising IDs.
 
 ## 2. What leaves the system
 
@@ -71,7 +71,7 @@ Verify every answer against the form's current wording before submitting; Google
 |---|---|
 | Does the app collect or share user data? | Collects. Does not share with third parties for their own purposes; service providers process it for us. |
 | Personal info | Name, email address, user IDs (learner code), other info (school name, employee ID, optional contact number). |
-| Audio | Voice or sound recordings: **collected** (sent off the phone for scoring), processed only to produce a score, **not stored**. Consider declaring it as collected even though processing is brief. |
+| Audio | Voice or sound recordings: **collected** (sent off the phone for scoring), processed only to produce a score, **kept only while it is being scored** (seconds), then deleted. Consider declaring it as collected even though processing is brief. |
 | Photos and videos | Not collected by the phone app. (The camera only scans a QR code; the picture is not kept or sent.) |
 | App activity | App interactions (readings, scores, badges, games). |
 | Location, contacts, calendar, files, health, financial info, web browsing, device or other IDs, advertising ID | Not collected. |

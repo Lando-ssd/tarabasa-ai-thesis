@@ -48,6 +48,9 @@ class WakeServiceJob implements ShouldQueue
             return;
         }
 
-        static::dispatch($service);
+        // Waking the reading checker goes on the scoring queue: the default queue also writes activities, which takes minutes,
+        // and a child's reading screen must not wait for that before the checker is woken. (The others stay on the default queue:
+        // a worker that is busy waking the generator or the recommender would hold up recordings.)
+        static::dispatch($service)->onQueue($service === 'reader' ? 'scoring' : 'default');
     }
 }

@@ -1,7 +1,8 @@
 {{--
   The Privacy Policy (public, no sign in). Plain words, because parents and teachers read it, and it says only what the
-  app really does. It was checked against the code on 2026-10-21 (and the phone app part against mobile/src): recordings
-  are not saved by the app (the phone deletes its own temporary copy, see mobile/src/recordingFiles.ts), nothing is sold,
+  app really does. It was checked against the code on 2026-10-23 (and the phone app part against mobile/src): recordings
+  are kept only while they are scored (the website's scoring waits on a temporary file that is deleted when the job ends,
+  App\Services\BackgroundScoring; the phone deletes its own temporary copy, see mobile/src/recordingFiles.ts), nothing is sold,
   there are no analytics or advertising cookies and no outside font or script service, and every outside service is
   listed with what it receives. The phone app's permissions (microphone, camera) are in mobile/app.json; if one is added,
   say what it is for here. The address Google asks for to publish the Gmail sender is this page (/privacy), and the
@@ -38,7 +39,7 @@
   <ul>
     <li>TaraBasa AI is a reading practice website and phone app for Grade 1 to 3 learners, built by a student team as a capstone project.</li>
     <li>We keep only what is needed to teach reading: names, grade, and reading results. A child's parent and class teacher can see the child's progress.</li>
-    <li>A child's voice is recorded only when the child taps the microphone. <b>The app does not save the recording.</b> We keep the scores and the words the speech recognizer heard, not the sound.</li>
+    <li>A child's voice is recorded only when the child taps the microphone. <b>The app does not keep the recording.</b> It is deleted as soon as it has been scored. We keep the scores and the words the speech recognizer heard, not the sound.</li>
     <li>We do not sell information, show advertising, or use analytics or tracking. The only cookies are the ones that keep a person signed in. We do not load fonts or scripts from other companies.</li>
     <li>A parent decides what to enter about a child, and can delete the child, or the whole account, at any time. Nobody has to approve it.</li>
     <li>A few outside services do part of the work (hosting, a database, speech scoring, email). Section 7 lists each one and what it receives.</li>
@@ -77,8 +78,9 @@
 
 <section id="voice">
   <h2>Voice recordings</h2>
-  <p>A child's voice is recorded, in the browser or in the phone app, only when the child taps the microphone. The recording is sent over an encrypted connection to a speech scoring service, which works out which words were said and returns the scores. <b>The app does not save the recording.</b> We keep the result (the scores and the words that were heard), not the audio.</p>
+  <p>A child's voice is recorded, in the browser or in the phone app, only when the child taps the microphone. The recording is sent over an encrypted connection to a speech scoring service, which works out which words were said and returns the scores. <b>The app does not keep the recording.</b> We keep the result (the scores and the words that were heard), not the audio.</p>
   <ul>
+    <li>On the website, the recording waits for a few seconds in a temporary file on our own server while a background worker scores it. The file is deleted the moment the scoring ends, whether it worked or not. A file left behind by a crash is removed within minutes, and the recording of a child who is deleted goes with the child. Nobody listens to it.</li>
     <li>The scoring service handles each recording in a temporary folder that is removed when the request ends. By its program code, it does not store the audio or the words. We read that code to check this; we have not had it audited by anyone else.</li>
     <li>The phone checks, on the phone itself, that a voice was heard. If nothing was heard, nothing is sent.</li>
     <li>The short microphone check at the start of the first reading only listens, and keeps and sends nothing.</li>
@@ -227,7 +229,8 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Version</th><th>What changed</th></tr></thead>
     <tbody>
-      <tr><td>{{ config('legal.version') }}</td><td>A child's photo is now kept in the database instead of on the website server's disk, so it is no longer lost when the website restarts. It is shown only to the child's parents or guardians, the child's class teacher and the child.</td></tr>
+      <tr><td>{{ config('legal.version') }}</td><td>A recording now waits for a few seconds in a temporary file on our server while it is scored in the background, and is deleted as soon as the scoring ends. Before, the website scored it while the page waited and did not keep it at all. Nothing else about voice recordings changed.</td></tr>
+      <tr><td>2026-10-21.2</td><td>A child's photo is now kept in the database instead of on the website server's disk, so it is no longer lost when the website restarts. It is shown only to the child's parents or guardians, the child's class teacher and the child.</td></tr>
       <tr><td>2026-10-21</td><td>Rewritten with a summary, a list of every service, retention times and rights. Added the Terms of Use, Cookie Policy, Refund Policy and Parent and Guardian Consent. Fonts are now served from this website, not from Google.</td></tr>
       <tr><td>2026-10-20</td><td>The first public version of the Privacy page.</td></tr>
     </tbody>
