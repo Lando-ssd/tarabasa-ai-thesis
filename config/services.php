@@ -60,7 +60,7 @@ return [
         'ready_wait' => (int) env('READING_AI_READY_WAIT', 60),
         // The most seconds ONE recording may hold a web worker (waking, sending and asking again together). The host has
         // only a few workers; past this the child gets a plain "waking up, send it again" message instead.
-        'max_hold' => (int) env('READING_AI_MAX_HOLD', 100),
+        'max_hold' => (int) env('READING_AI_MAX_HOLD', 45),
     ],
 
     // Teammate's deployed Adaptive_Recommendator (deterministic, stateless

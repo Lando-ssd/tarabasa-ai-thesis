@@ -107,7 +107,7 @@ class ReadingAiClient
         // recordings (a 502 on the website, "could not reach TaraBasa" on the phone). Out of time is a plain, kind message:
         // the checker is waking up, send it again in a moment (the wait below is what wakes it).
         $started = microtime(true);
-        $budget = (int) config('services.reading_ai.max_hold', 100);
+        $budget = (int) config('services.reading_ai.max_hold', 45);
         $left = fn (): int => max(0, $budget - (int) (microtime(true) - $started));
 
         // A timeline in the host's log (warning level, so it shows at the level the host runs at): a "started" line with no
@@ -249,11 +249,18 @@ class ReadingAiClient
     }
 
     /**
-     * A short, quiet "is the checker awake right now?" for the recording page to ask BEFORE it sends the recording.
-     * It never waits long (one health ask of a few seconds at most) and starts the background wake when the checker
-     * sleeps, so the page can poll this a few times while the child sees "waking up", and the recording itself is
-     * then sent to a checker that answers at once. Holding a web worker for the whole wake instead (the host has
-     * only four) is what used to make two people testing at once bring the site down.
+     * A quiet "is the checker awake right now?" for the recording page to ask BEFORE it sends the recording.
+     * It never waits and never asks the checker itself: it answers from what this server already knows (the
+     * checker answered a few minutes ago) and, when the checker sleeps, starts the background wake-up (the
+     * queue worker stays connected to the checker's health page for as long as it takes and remembers the
+     * answer). So the page can poll this every few seconds while the child sees "waking up", each poll costs the
+     * server almost nothing, and the recording is then sent to a checker that answers at once.
+     *
+     * Why it must not ask the checker here: the host has only four web workers and one slow CPU, and it removes
+     * the whole site from service when its own health check is not answered within 5 seconds (Render's events
+     * on 2026-10-22 and 23 were all "HTTP health check failed (timed out after 5 seconds)", and each is a 502 for
+     * everyone). An earlier version of this method asked the checker for up to 4 seconds on every poll, which kept
+     * a worker busy about half the time for every waiting child.
      * True when no checker is configured (nothing to wait for).
      */
     public function isReady(): bool
@@ -265,19 +272,6 @@ class ReadingAiClient
         }
 
         $this->wake();
-
-        // One short ask, no pause and no log line: this is called every few seconds while a child waits.
-        try {
-            $response = Http::timeout(4)->get(rtrim($url, '/').'/health');
-
-            if ($response->successful()) {
-                ServiceWake::markAwake('reader');
-
-                return true;
-            }
-        } catch (\Throwable) {
-            // asleep or unreachable: not ready yet
-        }
 
         return false;
     }

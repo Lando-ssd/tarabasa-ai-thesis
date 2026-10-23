@@ -115,15 +115,15 @@ class AdaptiveRecommendatorClient
         // Longer than the HTTP timeout below so a slow call is caught
         // as a ConnectionException, not killed by PHP's fatal time limit.
         //
-        // The wait is short on purpose (30 s, it used to be 90 s): this is an enrichment, never needed to finish a
+        // The wait is short on purpose (10 s, it used to be 90 s): this is an enrichment, never needed to finish a
         // reading, and every caller carries on without it (a child is initialised from the first check on the next scored
         // reading). Holding one of the host's four web workers for a minute and a half for it, right after the
         // recording was scored, is what starved the site under two testers.
-        set_time_limit(60);
+        set_time_limit(25);
 
         try {
             $response = Http::withHeaders(['X-App-Key' => $key])
-                ->timeout(30)
+                ->timeout(10)
                 ->post(rtrim($url, '/').$path, $payload);
         } catch (ConnectionException $e) {
             Log::error('Adaptive Recommendator connection failed', ['path' => $path, 'error' => $e->getMessage()]);
