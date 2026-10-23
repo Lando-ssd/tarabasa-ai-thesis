@@ -66,7 +66,7 @@ MODULES = [
                           ("Re-read activity for free", "same"), ("Change text size", "new")]),
          ]),
     dict(no=8, name="Dashboard Analytics", v29="Module 8: Dashboard Analytics", change="UPDATED",
-         why="Teacher overview, 'Did it work?' and a class report; Parent sees the level in plain words and tips to practise at home.",
+         why="Teacher overview, 'Did it work?' and a class report; Parent sees the child's reading step (the same four steps the child sees) in plain words, and tips to practise at home.",
          actors=[
              ("Teacher", [("View dashboard", "same"), ("Select learner or group", "same"), ("View analytics overview", "upd"),
                           ("View 'Did it work?'", "new"), ("Download class report (CSV)", "new"), ("View reading history", "same")]),
