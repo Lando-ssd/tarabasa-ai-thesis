@@ -57,6 +57,10 @@ TABS = [
          title="Glossary and the numbers on one page",
          tag="What every term means, and every setting in one place. Search it while you study.",
          mins=15, sub_h3=False, search="terms"),
+    dict(id="team", file="08-TEAM-SCRIPTS.md", num="8", label="Team scripts",
+         title="Team scripts: four speakers, one defense",
+         tag="Who speaks when, a card for each speaker, who answers which questions, and a rehearsal plan.",
+         mins=15, sub_h3=False),
 ]
 
 LABELS = "CURRICULUM|RESEARCH|TEAM CHOICE|GUIDELINE|FACT|ASSUMPTION|TO VALIDATE|FILL|CONFIRM|VERIFIED|LISTED|RECALLED"
@@ -1124,7 +1128,7 @@ def main():
 <body>
 <header class="top">
 <h1>TaraBasa AI: defense study kit</h1>
-<p>Understand it, do not memorize it. Eight tabs, one for each part of the defense. Start with tab 0, then go in order.</p>
+<p>Understand it, do not memorize it. Nine tabs, one for each part of the defense. Start with tab 0, then go in order.</p>
 {legend}
 </header>
 <nav class="tabs" role="tablist" aria-label="Study kit tabs"><div class="in">{"".join(pills)}</div></nav>

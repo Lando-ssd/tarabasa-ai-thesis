@@ -100,7 +100,7 @@ In the project folder (not `mobile`):
 ```powershell
 php -d memory_limit=1G artisan test
 ```
-It takes a few minutes. At the last check **775 tests passed**. A single test file:
+It takes a few minutes. At the last check **788 tests passed**. A single test file:
 ```powershell
 php artisan test tests/Feature/LetterNamesTest.php
 ```

@@ -15,9 +15,10 @@ claim says how far it was checked.
 | 5 | `05-QUESTIONS-AND-ANSWERS.md` | The 10 standard defense questions (translated) plus about 70 practice questions, each with a model answer. | Fifth, then cover the answers and test yourself. |
 | 6 | `06-RUN-AND-TROUBLESHOOT.md` | How to run the website and the app on your computer step by step, and where to look when something breaks (Render, TiDB, GitHub, phone). | Before the demo. |
 | 7 | `07-GLOSSARY-AND-NUMBERS.md` | What Phil-IRI, DepEd, MATATAG and every technical word means, and the one-page list of numbers. | Keep open while you study. |
+| 8 | `08-TEAM-SCRIPTS.md` | Who speaks when in a four person defense: a card for each speaker, who answers which questions, what to do if someone is missing, and a rehearsal plan. | When you split the parts. |
 
 The easiest way to study is the web page `TaraBasa-Defense-Study-Kit.html` (in this same folder). Double click it to open it in a browser. It has **one tab for each file above**
-(tab 0 to tab 7), a menu on the left of every tab, drawn diagrams (the sign-up sequence, the network, the reading ladder, the business canvas, the break-even chart),
+(tab 0 to tab 8), a menu on the left of every tab, drawn diagrams (the sign-up sequence, the network, the reading ladder, the business canvas, the break-even chart),
 and a search box in the Questions and Words tabs. It also works on a phone. For paper: Ctrl + P, then Save as PDF (every tab prints in order).
 If you change a `.md` file, run `python build_kit_html.py` in this folder to rebuild the page.
 
@@ -35,7 +36,7 @@ Every basis in this kit carries one of three labels. Learn them, because they ar
 
 1. **Never say the AI was trained.** No model was trained, because there is no collection of children's recordings. The system is a speech recognition
    service (Vosk), an AI language model that writes activity drafts (Gemini), and **written rules and formulas**. Say it before they ask.
-2. **Never say it was tested with real children.** It was tested with automated tests (775 passing), with computer voices, and in live use by the team.
+2. **Never say it was tested with real children.** It was tested with automated tests (788 passing), with computer voices, and in live use by the team.
    Real-child testing is the next step and the first limitation. Fill in the results of your teacher survey and user acceptance test **only** with the real
    numbers from your appendices.
 3. **Never say DepEd approved it.** It follows DepEd documents. It is not made or endorsed by the Department of Education (the home page says so).
@@ -65,5 +66,5 @@ Every basis in this kit carries one of three labels. Learn them, because they ar
 
 Use this shape, it works for any question: **(1) what we did, (2) what the data or the source shows, (3) what we did not measure, (4) what we would do next.**
 
-Example: "Did it improve reading scores?" Answer: "We built and tested the system and it works as designed (775 automated tests). We did not run a
+Example: "Did it improve reading scores?" Answer: "We built and tested the system and it works as designed (788 automated tests). We did not run a
 long-term study, so we cannot claim reading scores improved. The next step is a classroom pilot that compares children's Phil-IRI results before and after."

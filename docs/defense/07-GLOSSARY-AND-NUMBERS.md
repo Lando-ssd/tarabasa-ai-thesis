@@ -182,7 +182,7 @@ Sign in: 5 tries then wait. PIN reset: 3 per child per day. Class code lookup: 2
 Tap target 48 points (phone) or 44 pixels (web). Passage text 23 pixels or more. Five text sizes.
 
 ### The size of the work
-4 user roles; 775 automated tests passing (23 October 2026); 100 badges; 10 mistake patterns; 4 games; 7 rungs; 4 child steps; 3 recommender skills; 3 outside AI services; 1 hosting provider; 1 database.
+4 user roles; 788 automated tests passing (23 October 2026); 100 badges; 10 mistake patterns; 4 games; 7 rungs; 4 child steps; 3 recommender skills; 3 outside AI services; 1 hosting provider; 1 database.
 
 ### Money (file 04)
 Cash cost for a steady school about USD 48 to 55 a month (about PHP 3,000 at 58 per USD, an assumption); example school fee PHP 1,500 a month; break-even two schools at that price.

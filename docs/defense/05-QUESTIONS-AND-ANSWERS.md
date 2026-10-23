@@ -44,7 +44,7 @@ What we do **not** claim: better speech accuracy than commercial products, or mo
 Then say what you would do next: a consented classroom pilot."
 
 ### A8. How did you prove that it works?
-"What we can say truthfully: it works **as designed**. We have **775 automated tests** that pass, we ran real readings through the live services with computer voices and measured the results (for example letter-name repair went from 14 to 18 of 18 rows right with no score lowered), we tested every screen at phone and laptop sizes, and the team used it live.
+"What we can say truthfully: it works **as designed**. We have **788 automated tests** that pass, we ran real readings through the live services with computer voices and measured the results (for example letter-name repair went from 14 to 18 of 18 rows right with no score lowered), we tested every screen at phone and laptop sizes, and the team used it live.
 The **teacher survey and the user acceptance test** in the manuscript give the opinion of real users: **[FILL: the real numbers, with n]**.
 What we have **not** proven is that children's reading scores improved. That needs a pilot over weeks."
 
@@ -292,7 +292,7 @@ Yes. A guardian removes a child; with another guardian linked it only unlinks th
 ## Part H. Testing and evidence
 
 **H1. How was it tested?**
-775 automated tests; live runs with computer voices through the real speech service; browser checks at several screen sizes; load tests with a slow fake service; and the team's own use.
+788 automated tests; live runs with computer voices through the real speech service; browser checks at several screen sizes; load tests with a slow fake service; and the team's own use.
 
 **H2. What did the teacher survey and the user acceptance test show?**
 **[FILL: use the real numbers and n from Appendices D and E.]** If asked about a number you cannot trace to an appendix, say "I will check the appendix" and do not guess.

@@ -121,7 +121,7 @@ Why the email step exists: it proves the address is real, and it protects agains
 | Activity writing | **Google Gemini** language model, through a small service | A language model can write many leveled texts quickly. A teacher approves every draft, so errors do not reach a child. | AI text can be wrong or too hard; that is why a human approves. |
 | Recommendations | **Formulas** (exponential moving average of skill scores, a confidence value), no machine learning | Explainable and testable; no data to train on. | It does not "learn". |
 | Email | **Gmail API** over HTTPS | The free host blocks the usual email ports, and an API call works anywhere. | Depends on the Gmail account's token. |
-| Code and tests | **GitHub**, **PHPUnit** (775 automated tests), TypeScript type checking | Every rule is tested, so a change cannot silently break a number on the "how it decides" page. | |
+| Code and tests | **GitHub**, **PHPUnit** (788 automated tests), TypeScript type checking | Every rule is tested, so a change cannot silently break a number on the "how it decides" page. | |
 
 ## 5. Web versus phone app: the difference
 
@@ -142,7 +142,7 @@ Why both? "Teachers and parents often prefer a bigger screen and need Admin tool
 
 ## 6. How the code is built, tested and deployed
 
-1. A developer changes the code and runs the tests (`php artisan test`: 775 pass) and the app's type check.
+1. A developer changes the code and runs the tests (`php artisan test`: 788 pass) and the app's type check.
 2. The change is pushed to GitHub. Render watches the branch `claude/admin-dashboard-approvals-62dcd0` and rebuilds the Docker image.
 3. On start the container migrates the database (adds new tables), refreshes the Admin account, and starts the web server and the background workers.
 4. The phone app is built separately into an Android installer (APK) and sent to testers. The website needs no installer.
