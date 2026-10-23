@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\SchoolClass;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Models\UserPhoto;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -41,6 +43,44 @@ class AccountProfileService
     public function updateProfile(User $user, array $validated): void
     {
         $user->update($validated);
+    }
+
+    /** A profile photo: a real picture (jpeg, png or webp) of at most 1 MB. The website and the phone shrink it to 480 by 480 first. */
+    public function photoRules(): array
+    {
+        return ['photo' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:1024']];
+    }
+
+    public function photoMessages(): array
+    {
+        return [
+            'photo.required' => 'Choose a photo first.',
+            'photo.image' => 'That file is not a picture. Choose a photo (jpg, png or webp).',
+            'photo.mimes' => 'Choose a jpg, png or webp photo.',
+            'photo.max' => 'That photo is too large. Choose a smaller one, or a photo that is cropped to a square.',
+            'photo.uploaded' => 'The photo could not be sent. Try a smaller photo.',
+        ];
+    }
+
+    /**
+     * Keeps the person's own photo. Only a Teacher or a Parent has one; the photo is shown to nobody else (see UserPhotoController).
+     *
+     * @throws ValidationException under `photo` when the file is not a picture this app keeps
+     */
+    public function setPhoto(User $user, UploadedFile $file): void
+    {
+        abort_unless(in_array($user->user_type, ['Teacher', 'Parent'], true), 403);
+
+        try {
+            UserPhoto::put($user, $file);
+        } catch (\InvalidArgumentException) {
+            throw ValidationException::withMessages(['photo' => 'Choose a jpg, png or webp photo.']);
+        }
+    }
+
+    public function removePhoto(User $user): void
+    {
+        UserPhoto::remove($user);
     }
 
     public function passwordRules(): array

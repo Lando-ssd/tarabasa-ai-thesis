@@ -664,3 +664,7 @@ table.rep{ width:100%; border-collapse:collapse; font-size:13.5px; } table.rep t
 .oc-row{ padding:12px 0 4px; border-top:2px solid var(--line); } .oc-row:first-of-type{ border-top:0; padding-top:4px; }
 .oc-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
 .oc-head{ margin:0 0 4px; font-weight:600; } .oc-row .note{ margin:0 0 6px; }
+
+/* A Teacher's or Parent's own photo fills the little circles (sidebar, top bar, profile page) over their initial. */
+.me-av, .head-av{ position:relative; overflow:hidden; }
+.me-av img, .head-av img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:50%; }

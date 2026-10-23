@@ -43,6 +43,8 @@ Route::get('/how-it-works', [\App\Http\Controllers\HowItWorksController::class, 
 // A child's photo (kept in the database). Not behind `auth` because a child's own sign in and a phone's token are allowed too: the
 // controller decides who may see which child, and answers "not found" to everyone else. A page of children asks once per child.
 Route::get('/photos/learner/{learner}', [LearnerPhotoController::class, 'show'])->middleware('throttle:600,1')->name('photos.learner');
+// A Teacher's or Parent's own photo: only the person it belongs to can open it (a web session or their own phone token); everyone else gets "not found".
+Route::get('/photos/user/{user}', [\App\Http\Controllers\UserPhotoController::class, 'show'])->middleware('throttle:600,1')->name('photos.user');
 
 Route::get('/register/teacher', [AuthController::class, 'showTeacherRegister'])->name('register.teacher');
 Route::post('/register/teacher', [AuthController::class, 'storeTeacher'])->name('register.teacher.submit');
@@ -86,6 +88,9 @@ Route::middleware('auth')->group(function () {
     // view is reached from its own dashboard nav.
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    // Their own photo (the page shrinks it to a square first; only they can ever see it).
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->middleware('throttle:20,1')->name('profile.photo');
+    Route::delete('/profile/photo', [ProfileController::class, 'removePhoto'])->name('profile.photo.remove');
     Route::put('/profile/grades', [ProfileController::class, 'updateGrades'])->name('profile.grades.update');
     Route::delete('/profile/grades/request', [ProfileController::class, 'cancelGradeRequest'])->name('profile.grades.cancel');
     // A Teacher or Parent deletes their own account (password again).

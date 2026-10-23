@@ -49,4 +49,13 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(ParentAccount::class, 'user_id');
     }
+
+    /**
+     * Where this person's own photo is shown, or null when they have none. The version in the address changes with the photo (so a
+     * browser never keeps an old picture). Only the person it belongs to can open it; see UserPhotoController.
+     */
+    public function photoUrl(): ?string
+    {
+        return $this->photo_version ? route('photos.user', ['user' => $this->id, 'v' => $this->photo_version]) : null;
+    }
 }

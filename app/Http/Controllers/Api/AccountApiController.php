@@ -173,6 +173,7 @@ class AccountApiController extends Controller
             'lastName' => $user->last_name,
             'email' => $user->email,
             'contactNumber' => $user->contact_number,
+            'photoUrl' => $user->photoUrl(),
         ];
 
         if ($user->user_type === 'Teacher') {

@@ -28,7 +28,7 @@
   <div class="main-col">
     <div class="phone-top">
       <div class="brand">TaraBasa<span>AI</span></div>
-      <a class="me-av" href="{{ route('parent.profile.edit') }}" aria-label="My profile">{{ mb_strtoupper(mb_substr($me->first_name, 0, 1)) }}</a>
+      <a class="me-av" href="{{ route('parent.profile.edit') }}" aria-label="My profile">{{ mb_strtoupper(mb_substr($me->first_name, 0, 1)) }}@if ($me->photo_version)<img src="{{ $me->photoUrl() }}" alt="" onerror="this.style.display='none'">@endif</a>
     </div>
     <main class="main"><div class="wrap">
       @yield('content')

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import type { Account } from '../api';
 import * as api from '../api';
+import { AccountAvatar } from '../AccountAvatar';
 import { Icon, H2, P, Screen } from '../ui';
 import { Banner, Initial, ListRow, Loading, Tile, TopBar, useLoad } from './kit';
 import { colors, space } from '../theme';
@@ -31,7 +32,11 @@ export function TeacherHome({ account, go, onLoaded }: Props) {
 
   return (
     <Screen withTabBar>
-      <TopBar title={`Hi, ${account.firstName}`} sub={data ? `Here is what needs you today. School year ${data.schoolYear.replace('-', ' to ')}` : (t?.schoolName ?? 'Teacher')} right={<Initial name={account.firstName} px={s(48)} />} />
+      <TopBar title={`Hi, ${account.firstName}`} sub={data ? `Here is what needs you today. School year ${data.schoolYear.replace('-', ' to ')}` : (t?.schoolName ?? 'Teacher')} right={
+          <AccountAvatar account={account} px={s(48)}>
+            <Initial name={account.firstName} px={s(48)} />
+          </AccountAvatar>
+        } />
 
       <View style={{ gap: space[14] }}>
         {!active ? (

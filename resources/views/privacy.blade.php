@@ -62,8 +62,8 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Whose</th><th>What</th><th>Where it comes from</th></tr></thead>
     <tbody>
-      <tr><td><b>Parents</b></td><td>First name, middle initial, last name, email address, a password (kept scrambled, never readable), and, for a guardian who links to a child someone else added, how you are related to the child (for example mother). A record of when you agreed to the Terms and Privacy Policy, and which version.</td><td>You, when you sign up and add a child.</td></tr>
-      <tr><td><b>Teachers</b></td><td>The same name, email and password details, plus school name, employee ID, the grades you handle, and an optional contact number. The class lists you create, the activities you write or share, and which alerts you marked as handled.</td><td>You. The site administrator checks the school details.</td></tr>
+      <tr><td><b>Parents</b></td><td>First name, middle initial, last name, email address, a password (kept scrambled, never readable), and, for a guardian who links to a child someone else added, how you are related to the child (for example mother). A record of when you agreed to the Terms and Privacy Policy, and which version. An optional photo of yourself, if you add one.</td><td>You, when you sign up and add a child.</td></tr>
+      <tr><td><b>Teachers</b></td><td>The same name, email and password details, plus school name, employee ID, the grades you handle, and an optional contact number. The class lists you create, the activities you write or share, and which alerts you marked as handled. An optional photo of yourself, if you add one.</td><td>You. The site administrator checks the school details.</td></tr>
       <tr><td><b>Children</b></td><td>First name, optional middle name, last name, grade, an avatar or an optional photo, a learner code and a 4 digit PIN (kept scrambled). The parent also tells us how the child reads now (a stage and three short questions) and may add the home language, what helps the child most, and topics the child likes.</td><td>A parent adds each child. A child cannot sign up alone.</td></tr>
       <tr><td><b>What a child does</b></td><td>For each reading: the date, the scores, the speed, which words were missed, and the words the speech recognizer heard. The child's reading step and level, points, streak, badges, which practice games were finished (game and level only), a list of words the child keeps missing, and alerts about the child.</td><td>The child, while reading.</td></tr>
       <tr><td><b>Technical</b></td><td>While you are signed in, the website keeps a session record that includes your internet address (IP address) and browser details. Counters of wrong sign in tries (by address and email or learner code) for a few minutes. Error records, which hold the kind of error and the service that failed, for 14 days. Our hosting company also keeps ordinary server logs.</td><td>Your device, automatically.</td></tr>
@@ -73,7 +73,7 @@
   <div class="lg-note">
     <p><b>Sensitive information.</b> Under the Data Privacy Act, a person's age and information about their education are <b>sensitive personal information</b>. A child's grade and reading results therefore get extra care: we collect them only with a parent's consent, keep them small, show them only to the people in section 6, and delete them when asked.</p>
   </div>
-  <p>We do not collect a child's address, phone number, birth date, location, contacts, or anything from the phone's files or photos.</p>
+  <p>We do not collect a child's address, phone number, birth date, location or contacts, or anything from the phone's files. The only pictures the website or the phone app ever look at are ones a person chooses on purpose: a photo of a child, your own profile photo, or a picture of a learner card.</p>
 </section>
 
 <section id="voice">
@@ -150,9 +150,10 @@
     <li><b>Microphone:</b> used only while a child is reading or saying a word. The phone first checks, on the phone itself, that a voice was heard. If nothing was heard, nothing is sent.</li>
     <li><b>The phone's copy of a recording</b> is removed as soon as our server has answered. If sending fails, the copy stays so the child can send it again, and it is removed the next time the app opens or the child logs out.</li>
     <li><b>Camera:</b> used only to scan the QR code on a learner card. The picture is read on the phone and is not saved or sent anywhere. Only the code printed on the card is used to fill in the sign in box. A child can type the code instead.</li>
+    <li><b>Your photos:</b> the app opens the phone's photo gallery only when you tap <b>Use a photo of the code</b> or choose a profile photo, and it reads only the picture you pick. A picture of a learner card is read on the phone to find the code, and is not saved or sent. A profile photo is shrunk to a small square on the phone and sent to be kept (see Where it is kept).</li>
     <li><b>Kept on the phone:</b> the sign in token and the person's first name, in the phone's secure storage. Both are removed when the person logs out.</li>
     <li><b>Voice that reads aloud:</b> the phone's own voice. Nothing is sent anywhere for that.</li>
-    <li><b>Not used:</b> advertising, analytics, location, contacts, files or photos on the phone, and the phone's advertising ID.</li>
+    <li><b>Not used:</b> advertising, analytics, location, contacts, the phone's files, any photo you did not choose yourself, and the phone's advertising ID.</li>
   </ul>
 </section>
 
@@ -160,6 +161,7 @@
   <h2>Where it is kept</h2>
   <p>The website, its database and the phone app's server are in Singapore. The scoring and recommendation services are hosted on Render, and Google's services (Gmail, Gemini, Google sign in) run in Google's own data centres, so some information is handled outside the Philippines. The Data Privacy Act keeps us responsible for information that we send to a service we use, and we send only what that service needs.</p>
   <p><b>Photos</b> are kept in the database together with the rest of the child's profile, not as separate files, so restarting or redeploying the website does not remove them. A photo is shown only to a signed in parent or guardian of the child, to the teacher of the class the child is in, and to the child. We make no backups of our own; a photo is covered only by whatever the database provider keeps for the database as a whole.</p>
+  <p><b>Your own profile photo</b> (a teacher or a parent) is kept the same way. It is shown only to you, signed in on the website or in the phone app. No child, parent, teacher or the Administrator can open it. You can remove it at any time on your Profile and it is deleted from the database, and it goes when you delete your account.</p>
 </section>
 
 <section id="keep">
@@ -200,7 +202,7 @@
   <ul>
     <li><b>A child's profile:</b> a parent opens <b>My children</b> (<b>Children</b> in the phone app), taps <b>Remove</b> on the child and types their password. If the parent is the child's only guardian, the profile and every reading record, badge, word and alert are deleted, and so is the photo if there was one. If another guardian is linked, only the parent who asked is removed and the child stays for the other guardian.</li>
     <li><b>An account:</b> a parent or teacher opens <b>Profile</b> (in the phone app: the picture at the top, or <b>More</b>, then <b>My profile</b>) and chooses <b>Delete my account</b>. A parent's account takes with it the children who have no other guardian. A teacher's account takes the classes and the activities shared to the library. The learners stay with their parents. Activities a teacher wrote stay without the teacher's name, because children's reading history is attached to them.</li>
-    <li><b>Only the photo:</b> there is no button for this yet. Ask us, or delete the child's profile.</li>
+    <li><b>Only a photo:</b> your own profile photo has a <b>Remove photo</b> button on your Profile. A child's photo has no button yet: ask us, or delete the child's profile.</li>
   </ul>
   <p>We keep one line that a deletion happened (what kind, and when) and nothing that says who it was.</p>
   <p>If you cannot sign in, write to @include('partials.legal-contact') and the site administrator can delete it for you.</p>
@@ -229,7 +231,8 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Version</th><th>What changed</th></tr></thead>
     <tbody>
-      <tr><td>{{ config('legal.version') }}</td><td>A recording now waits for a few seconds in a temporary file on our server while it is scored in the background, and is deleted as soon as the scoring ends. Before, the website scored it while the page waited and did not keep it at all. Nothing else about voice recordings changed.</td></tr>
+      <tr><td>{{ config('legal.version') }}</td><td>Teachers and parents can add a profile photo of themselves. It is kept in the database like a child's photo, is shown only to the person it belongs to, can be removed at any time and goes when the account is deleted. The phone app can also read the code on a learner card from a picture you choose from your photos; that picture is read on the phone and is not saved or sent.</td></tr>
+      <tr><td>2026-10-23</td><td>A recording now waits for a few seconds in a temporary file on our server while it is scored in the background, and is deleted as soon as the scoring ends. Before, the website scored it while the page waited and did not keep it at all. Nothing else about voice recordings changed.</td></tr>
       <tr><td>2026-10-21.2</td><td>A child's photo is now kept in the database instead of on the website server's disk, so it is no longer lost when the website restarts. It is shown only to the child's parents or guardians, the child's class teacher and the child.</td></tr>
       <tr><td>2026-10-21</td><td>Rewritten with a summary, a list of every service, retention times and rights. Added the Terms of Use, Cookie Policy, Refund Policy and Parent and Guardian Consent. Fonts are now served from this website, not from Google.</td></tr>
       <tr><td>2026-10-20</td><td>The first public version of the Privacy page.</td></tr>

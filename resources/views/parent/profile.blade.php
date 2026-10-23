@@ -9,7 +9,7 @@
 
 @section('content')
 <div class="head-row">
-  <div class="head-av">{{ mb_strtoupper(mb_substr($user->first_name, 0, 1)) }}{{ mb_strtoupper(mb_substr($user->last_name, 0, 1)) }}</div>
+  <div class="head-av">{{ mb_strtoupper(mb_substr($user->first_name, 0, 1)) }}{{ mb_strtoupper(mb_substr($user->last_name, 0, 1)) }}@if ($user->photo_version)<img src="{{ $user->photoUrl() }}" alt="" onerror="this.style.display='none'">@endif</div>
   <div>
     <h1 style="margin:0">My profile</h1>
     <div class="note">{{ $user->email }}</div>
@@ -19,6 +19,8 @@
 @if (session('status'))
   <div class="flash">{{ session('status') }}</div>
 @endif
+
+@include('partials.profile-photo-card', ['user' => $user])
 
 <div class="profile-grid">
   <div class="card">

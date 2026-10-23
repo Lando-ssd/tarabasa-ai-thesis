@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import { File } from 'expo-file-system';
 import { buildMultipart, newBoundary, type MultipartPart } from './multipart';
 import { API_URL, APP_VERSION, REQUEST_TIMEOUT_MS, UPLOAD_QUICK_FAILURE_SECONDS, UPLOAD_RETRY_PAUSES_MS, UPLOAD_TIMEOUT_MS } from './config';
+import { forgetPhotos } from './photoCache';
 import { discardRecording } from './recordingFiles';
 import * as storage from './storage';
 
@@ -251,6 +252,8 @@ export async function saveToken(token: string) {
 export async function clearToken() {
   await storage.removeItem(TOKEN_KEY);
   await storage.removeItem(ACTOR_KEY);
+  // a profile photo downloaded for the person who just signed out must not be there for the next person
+  forgetPhotos();
 }
 
 /** Who the saved token belongs to, so the app opens the right screens when it starts again. */
@@ -440,6 +443,8 @@ export type Account = {
   lastName: string;
   email: string;
   contactNumber: string | null;
+  /** The address of the person's own profile photo, or null when there is none. Private: it needs this person's sign in to open. */
+  photoUrl?: string | null;
   /** Only for a Teacher. status is Pending until the Admin approves the school details. */
   teacher?: {
     status: 'Pending' | 'Active' | 'Rejected' | string | null;
@@ -1091,6 +1096,50 @@ export const updateProfile = (body: { first_name: string; middle_initial?: strin
 
 export const changePassword = (body: { current_password: string; password: string; password_confirmation: string }) =>
   request<{ message: string }>('/api/auth/profile/password', put(body));
+
+/** Saves the person's own profile photo: an already shrunk JPEG, sent as plain bytes like a recording is. */
+export function uploadProfilePhoto(bytes: Uint8Array) {
+  const boundary = newBoundary();
+  const body = buildMultipart([{ name: 'photo', filename: 'photo.jpg', type: 'image/jpeg', bytes }], boundary);
+  return request<{ message: string; account: Account }>('/api/auth/profile/photo', {
+    method: 'POST',
+    headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+    body: body as unknown as BodyInit,
+  });
+}
+
+export const removeProfilePhoto = () => request<{ message: string; account: Account }>('/api/auth/profile/photo', { method: 'DELETE' });
+
+/**
+ * Downloads the person's own photo and returns it as a data address the app can draw, or null when it cannot be had. The photo is
+ * private, so the request carries the sign in token. The app never uses the address the server printed (it may be configured with a
+ * different public address); it asks this server's own API for its own photo.
+ */
+export async function fetchPhotoDataUri(photoUrl: string): Promise<string | null> {
+  const token = await getToken();
+  // The app asks for its own photo at its own API address (no id in it); the ?v= number only makes a new photo a new address.
+  const version = /[?&]v=(\d+)/.exec(photoUrl)?.[1];
+  const path = `/api/auth/profile/photo${version ? `?v=${version}` : ''}`;
+  const headers: Record<string, string> = { Accept: 'image/*' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${API_URL}${path}`, { headers, signal: controller.signal });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /** What deleting the signed in account would do, in plain sentences, and why it cannot be done yet (`blocked`) when that is so. */
 export const eraseInfo = () => request<{ lines: string[]; blocked: string | null }>('/api/auth/account/erase-info');

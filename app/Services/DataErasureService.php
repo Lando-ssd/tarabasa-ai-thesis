@@ -288,6 +288,7 @@ class DataErasureService
         DB::table('notifications')->where('recipient_user_id', $id)->delete();
         DB::table('learner_pin_changes')->where('user_id', $id)->update(['user_id' => null]);
         DB::table('consent_records')->where('user_id', $id)->delete();
+        DB::table('user_photos')->where('user_id', $id)->delete(); // the person's own profile photo (the foreign key would also remove it)
         DB::table('password_reset_tokens')->where('email', $user->email)->delete();
         $user->tokens()->delete();
 

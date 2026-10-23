@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as api from '../api';
-import { Btn, H2, Icon, P, Panel, Screen, Small } from '../ui';
+import { AccountAvatar } from '../AccountAvatar';
+import { Avatar, Btn, H2, Icon, P, Panel, Screen, Small } from '../ui';
 import { Banner, ListRow, Loading, TonePill, Tile, useLoad } from '../teacher/kit';
 import { Card, ChildChips, ChildFace, LevelPill, Meter } from './kit';
 import { colors, fonts, size, space } from '../theme';
@@ -54,7 +55,9 @@ export function ParentHome({ account, childId, onPick, refreshKey, onProfile, on
           <Small>{data && data.children.length > 0 ? `${greeting()}. Here is how your ${data.children.length === 1 ? 'child is' : 'children are'} doing.` : `${greeting()}. Welcome to TaraBasa AI`}</Small>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="My profile" onPress={onProfile} style={st.profile}>
-          <Icon name="user-circle" size={s(36)} color={colors.blueDark} />
+          <AccountAvatar account={account} px={s(44)}>
+            <Avatar name={account.firstName} px={s(44)} />
+          </AccountAvatar>
         </Pressable>
       </View>
 

@@ -25,6 +25,22 @@ class ProfileApiController extends Controller
         return response()->json(['message' => 'Profile updated.', 'account' => $this->payload($request->user()->refresh())]);
     }
 
+    /** The person's own photo (the phone shrinks it to a square first). Only they can ever see it again; see UserPhotoController. */
+    public function photo(Request $request): JsonResponse
+    {
+        $request->validate($this->profile->photoRules(), $this->profile->photoMessages());
+        $this->profile->setPhoto($request->user(), $request->file('photo'));
+
+        return response()->json(['message' => 'Photo saved.', 'account' => $this->payload($request->user()->refresh())]);
+    }
+
+    public function removePhoto(Request $request): JsonResponse
+    {
+        $this->profile->removePhoto($request->user());
+
+        return response()->json(['message' => 'Photo removed.', 'account' => $this->payload($request->user()->refresh())]);
+    }
+
     public function password(Request $request): JsonResponse
     {
         $this->profile->changePassword($request->user(), $request->validate($this->profile->passwordRules()));
@@ -78,6 +94,7 @@ class ProfileApiController extends Controller
             'lastName' => $user->last_name,
             'email' => $user->email,
             'contactNumber' => $user->contact_number,
+            'photoUrl' => $user->photoUrl(),
         ];
 
         if ($user->user_type === 'Teacher') {

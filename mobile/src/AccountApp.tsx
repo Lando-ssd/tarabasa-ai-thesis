@@ -368,7 +368,7 @@ function ParentApp({ account: initial, onSignOut, onDeleted }: Props) {
       screen = <Children refreshKey={refresh} flash={flash} onOpen={(child) => setRoute({ name: 'card', child })} onAdd={() => setRoute({ name: 'add' })} onLink={() => setRoute({ name: 'link' })} />;
     }
   } else if (tab === 'progress') {
-    screen = <ParentProgress childId={childId} onPick={setChildId} refreshKey={refresh} onProfile={() => setProfile(true)} go={goTab} />;
+    screen = <ParentProgress account={account} childId={childId} onPick={setChildId} refreshKey={refresh} onProfile={() => setProfile(true)} go={goTab} />;
   } else if (tab === 'activities') {
     screen = <ParentActivities childId={childId} onPick={setChildId} refreshKey={refresh} onAdd={addChild} />;
   } else {

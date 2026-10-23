@@ -28,7 +28,7 @@
   <div class="main-col">
     <div class="phone-top">
       <div class="brand">TaraBasa<span>AI</span></div>
-      <button type="button" class="me-av" data-open="menuDlg" aria-label="More">{{ mb_strtoupper(mb_substr($me->first_name, 0, 1)) }}</button>
+      <button type="button" class="me-av" data-open="menuDlg" aria-label="More">{{ mb_strtoupper(mb_substr($me->first_name, 0, 1)) }}@if ($me->photo_version)<img src="{{ $me->photoUrl() }}" alt="" onerror="this.style.display='none'">@endif</button>
     </div>
     <main class="main"><div class="wrap">
       @if ($errors->any() && ! old('form'))

@@ -1,9 +1,12 @@
 import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Text, View } from 'react-native';
 import * as api from './api';
+import { AccountAvatar } from './AccountAvatar';
 import { Chips, Field, LegalLinks, Segmented } from './fields';
+import { chooseProfilePhoto } from './profilePhoto';
 import { TopBar } from './teacher/kit';
-import { Btn, H2, Notice, P, Panel, Screen, Small } from './ui';
+import { Avatar, Btn, H2, Notice, P, Panel, Screen, Small } from './ui';
+import { s } from './scale';
 import { colors, fonts, space } from './theme';
 
 const GRADES = ['Grade 1', 'Grade 2', 'Grade 3'];
@@ -34,6 +37,7 @@ export function MyProfile({ account, onBack, onAccount, withTabBar = true, extra
       <Screen withTabBar={withTabBar}>
         <TopBar title="My profile" sub={account.email} onBack={onBack} />
         <View style={{ gap: space[16] }}>
+          <PhotoCard account={account} onAccount={onAccount} />
           <Details account={account} onAccount={onAccount} />
           {teacher ? <Grades account={account} onAccount={onAccount} /> : null}
           <Password />
@@ -88,6 +92,80 @@ function useSaver() {
     }
   }
   return { busy, message, problem, errors, setErrors, run };
+}
+
+/**
+ * The person's own profile photo. It is chosen from the phone's photos, cut to a square and shrunk on the phone, then saved on the
+ * server, where only this person can ever open it. Nobody else sees it: not a child, a parent, a teacher or the Admin.
+ */
+function PhotoCard({ account, onAccount }: { account: api.Account; onAccount: (a: api.Account) => void }) {
+  const [working, setWorking] = useState<null | 'choosing' | 'saving' | 'removing'>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const has = !!account.photoUrl;
+
+  const choose = async () => {
+    if (working) return;
+    setMessage(null);
+    setProblem(null);
+    setWorking('choosing');
+    try {
+      const picked = await chooseProfilePhoto();
+      if (picked.kind === 'cancelled') return;
+      if (picked.kind === 'error') {
+        setProblem(picked.message);
+        return;
+      }
+      setWorking('saving');
+      const result = await api.uploadProfilePhoto(picked.bytes);
+      setMessage(result.message);
+      onAccount(result.account);
+    } catch (e) {
+      const fields = api.fieldErrors(e);
+      setProblem(fields.photo ?? (e instanceof Error ? e.message : 'Something went wrong. Please try again.'));
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  const remove = async () => {
+    if (working) return;
+    setMessage(null);
+    setProblem(null);
+    setWorking('removing');
+    try {
+      const result = await api.removeProfilePhoto();
+      setMessage(result.message);
+      onAccount(result.account);
+    } catch (e) {
+      setProblem(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  return (
+    <Panel style={{ gap: space[10] }}>
+      <H2>Profile photo</H2>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[16] }}>
+        <AccountAvatar account={account} px={s(88)}>
+          <Avatar name={account.firstName} px={s(88)} />
+        </AccountAvatar>
+        <Small style={{ flex: 1 }}>Only you see your photo. It appears next to your name on your own screens, never to children, parents, teachers or the Admin.</Small>
+      </View>
+      {message ? <Notice tone="good" text={message} /> : null}
+      {problem ? <Notice text={problem} /> : null}
+      <Btn
+        label={working === 'saving' ? 'Saving your photo' : has ? 'Change photo' : 'Choose a photo'}
+        icon={has ? 'pencil-simple' : 'plus'}
+        onPress={choose}
+        loading={working === 'choosing' || working === 'saving'}
+        disabled={working === 'removing'}
+      />
+      {has ? <Btn label="Remove photo" tone="ghost" icon="x" onPress={remove} loading={working === 'removing'} disabled={working === 'choosing' || working === 'saving'} /> : null}
+      <Small>A square picture works best. You pick it from your photos, and it is shrunk on your phone before it is saved.</Small>
+    </Panel>
+  );
 }
 
 function Details({ account, onAccount }: { account: api.Account; onAccount: (a: api.Account) => void }) {

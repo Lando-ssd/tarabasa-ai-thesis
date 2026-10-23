@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as api from '../api';
-import { H2, Icon, P, Panel, Screen, Small } from '../ui';
+import { AccountAvatar } from '../AccountAvatar';
+import { Avatar, H2, Icon, P, Panel, Screen, Small } from '../ui';
 import { Loading, TonePill, Tile, TopBar, useLoad } from '../teacher/kit';
 import { Card, ChildChips, ChildFace, LevelPill, Meter } from './kit';
 import { Reading } from './ParentHome';
@@ -8,6 +9,7 @@ import { colors, fonts, space } from '../theme';
 import { s } from '../scale';
 
 type Props = {
+  account: api.Account;
   childId: number | null;
   onPick: (id: number) => void;
   refreshKey: number;
@@ -20,7 +22,7 @@ type Props = {
  * when the readings show a clear pattern, the week, a small chart of recent accuracy and the history. Nothing is invented: with too
  * few readings it says so.
  */
-export function ParentProgress({ childId, onPick, refreshKey, onProfile, go }: Props) {
+export function ParentProgress({ account, childId, onPick, refreshKey, onProfile, go }: Props) {
   const { data, error, reload } = useLoad(() => api.parentProgress(childId), [childId, refreshKey]);
   const c = data?.child ?? null;
 
@@ -31,7 +33,9 @@ export function ParentProgress({ childId, onPick, refreshKey, onProfile, go }: P
         sub={c ? `${c.firstName}, ${c.readings} ${c.readings === 1 ? 'reading' : 'readings'} so far` : undefined}
         right={
           <Pressable accessibilityRole="button" accessibilityLabel="My profile" onPress={onProfile} style={st.profile}>
-            <Icon name="user-circle" size={s(36)} color={colors.blueDark} />
+            <AccountAvatar account={account} px={s(44)}>
+              <Avatar name={account.firstName} px={s(44)} />
+            </AccountAvatar>
           </Pressable>
         }
       />

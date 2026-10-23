@@ -2,7 +2,7 @@
   "expo": {
     "name": "TaraBasa AI",
     "slug": "tarabasa-ai",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.tarabasaai.app",
-      "versionCode": 20,
+      "versionCode": 21,
       "adaptiveIcon": {
         "backgroundColor": "#0062CF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -50,7 +50,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "TaraBasa AI reads the code on a learner card from a photo you choose."
+          "photosPermission": "TaraBasa AI reads the code on a learner card, or sets your profile photo, from a photo you choose."
         }
       ],
       "expo-font",

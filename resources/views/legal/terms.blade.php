@@ -164,7 +164,9 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Version</th><th>What changed</th></tr></thead>
     <tbody>
-      <tr><td>{{ config('legal.version') }}</td><td>No change to these terms. The Privacy Policy changed: where a child's photo is kept and who sees it.</td></tr>
+      <tr><td>{{ config('legal.version') }}</td><td>No change to these terms. The Privacy Policy changed: teachers and parents can add a profile photo of themselves, and the phone app can read a learner card from a picture you choose.</td></tr>
+      <tr><td>2026-10-23</td><td>No change to these terms. The Privacy Policy changed: a recording waits a few seconds in a temporary file while it is scored.</td></tr>
+      <tr><td>2026-10-21.2</td><td>No change to these terms. The Privacy Policy changed: where a child's photo is kept and who sees it.</td></tr>
       <tr><td>2026-10-21</td><td>The first version of the Terms of Use.</td></tr>
     </tbody>
   </table></div>

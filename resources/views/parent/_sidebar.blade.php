@@ -36,7 +36,7 @@
       </button>
     </form>
     <a class="me" href="{{ route('parent.profile.edit') }}" style="text-decoration:none;color:inherit;">
-      <div class="me-av">{{ mb_strtoupper(mb_substr($me->first_name, 0, 1)) }}</div>
+      <div class="me-av">{{ mb_strtoupper(mb_substr($me->first_name, 0, 1)) }}@if ($me->photo_version)<img src="{{ $me->photoUrl() }}" alt="" onerror="this.style.display='none'">@endif</div>
       <div><b>Hi, {{ $me->first_name }}!</b><span>Parent</span></div>
     </a>
   </div>

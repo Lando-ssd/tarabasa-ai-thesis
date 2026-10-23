@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\AccountProfileService;
 use App\Services\DataErasureService;
 use Illuminate\Http\RedirectResponse;
@@ -48,6 +49,34 @@ class ProfileController extends Controller
             // What deleting the account would do, told on the screen before anyone is asked for a password.
             'erase' => $this->erasure->accountImpact($user),
         ]);
+    }
+
+    /** The person's own photo. The page shrinks it to a square first; the server still checks that it is a real, small picture. */
+    public function updatePhoto(Request $request): RedirectResponse
+    {
+        $user = $this->photoOwner($request);
+
+        $request->validate($this->profile->photoRules(), $this->profile->photoMessages());
+
+        $this->profile->setPhoto($user, $request->file('photo'));
+
+        return back()->with('status', 'Photo saved.');
+    }
+
+    public function removePhoto(Request $request): RedirectResponse
+    {
+        $this->profile->removePhoto($this->photoOwner($request));
+
+        return back()->with('status', 'Photo removed.');
+    }
+
+    /** Only a Teacher or a Parent has a profile photo. Anyone else who reaches this address (a child's session, an Administrator) is turned away. */
+    private function photoOwner(Request $request): User
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User && in_array($user->user_type, ['Teacher', 'Parent'], true), 403);
+
+        return $user;
     }
 
     public function update(Request $request): RedirectResponse

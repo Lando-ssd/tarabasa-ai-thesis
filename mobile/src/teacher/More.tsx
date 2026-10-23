@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import type { Account } from '../api';
+import { AccountAvatar } from '../AccountAvatar';
 import { Avatar, Btn, H1, Icon, Screen, Small } from '../ui';
 import { Banner, ListRow, TonePill } from './kit';
 import { colors, space } from '../theme';
@@ -27,7 +28,9 @@ export function More({ account, claimable = 0, onOpen, onSignOut }: Props) {
     <Screen withTabBar>
       <View style={{ gap: space[14] }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[12] }}>
-          <Avatar name={account.firstName} px={s(64)} />
+          <AccountAvatar account={account} px={s(64)}>
+            <Avatar name={account.firstName} px={s(64)} />
+          </AccountAvatar>
           <View style={{ flex: 1, gap: space[4] }}>
             <H1 numberOfLines={2}>{full}</H1>
             <Small>{t?.schoolName ?? 'Teacher'}</Small>

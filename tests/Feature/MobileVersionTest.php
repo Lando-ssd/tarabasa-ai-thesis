@@ -81,4 +81,30 @@ class MobileVersionTest extends TestCase
         }
         $this->assertStringContainsString('Use a photo of my card', file_get_contents(base_path('mobile/src/CardScanner.tsx')));
     }
+
+    /**
+     * A Teacher's or Parent's profile photo (0.6.1). The privacy page promises the app opens the photo gallery only when a person
+     * chooses one, so this must never use the camera. The photo is private: it is fetched with the sign in token and forgotten at sign out.
+     */
+    public function test_the_profile_photo_uses_the_gallery_only_and_is_forgotten_at_sign_out(): void
+    {
+        $photo = file_get_contents(base_path('mobile/src/profilePhoto.ts'));
+        $this->assertStringContainsString('launchImageLibraryAsync', $photo);
+        $this->assertStringNotContainsString('launchCameraAsync', $photo, 'the privacy page says the app only opens the gallery');
+        $this->assertStringContainsString('PHOTO_SIDE = 480', $photo, 'the same 480 pixel square as the website');
+
+        $api = file_get_contents(base_path('mobile/src/api.ts'));
+        $this->assertStringContainsString("'/api/auth/profile/photo'", $api);
+        $this->assertStringContainsString('Authorization = `Bearer ${token}`', $api, 'the photo is private, so it is fetched with the sign in token');
+        $this->assertMatchesRegularExpression('/export async function clearToken\(\) \{[^}]*forgetPhotos\(\);/s', $api, 'signing out must forget the downloaded photo');
+
+        $profile = file_get_contents(base_path('mobile/src/MyProfile.tsx'));
+        foreach (['Profile photo', 'Choose a photo', 'Change photo', 'Remove photo', 'Only you see your photo'] as $text) {
+            $this->assertStringContainsString($text, $profile, "My profile must say: {$text}");
+        }
+
+        $json = json_decode(file_get_contents(base_path('mobile/app.json')), true);
+        $this->assertContains('expo-image-manipulator', array_keys(json_decode(file_get_contents(base_path('mobile/package.json')), true)['dependencies']));
+        $this->assertNotContains('android.permission.RECORD_AUDIO', $json['expo']['android']['blockedPermissions']);
+    }
 }

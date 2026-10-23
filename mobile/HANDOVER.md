@@ -337,6 +337,21 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - A migration (`2026_10_23_000200_reword_old_parent_alerts`) rewords old alerts addressed to parents so they stop showing the old words; teachers'
   alerts are untouched.
 
+## Version 0.6.1 (2026-10-24): a profile photo for Teachers and Parents
+
+- **0.6.1** (0.6.0 plus this; send 0.6.1, not 0.6.0): My profile (Teacher and Parent) has a new **Profile photo** card at the top: Choose a photo, Change photo and
+  Remove photo. The picture is chosen from the phone's photos (the gallery only, never the camera, because the Privacy Policy says so), cut to a centred square by
+  the phone's own cropper, shrunk to 480 by 480 and saved as a small JPEG (`src/profilePhoto.ts`, new package `expo-image-manipulator`), then sent as plain bytes like a
+  recording (`api.uploadProfilePhoto`, `POST /api/auth/profile/photo`; `DELETE` removes it). The server keeps it in the database, so it survives a restart.
+- **Private.** Only the person it belongs to can open it (`GET /photos/user/{id}`, 404 for everyone else, including an Admin and a child), so the phone downloads it with
+  its sign in token (`api.fetchPhotoDataUri`), keeps it in memory (`photoCache.ts`) and forgets it at sign out (`clearToken`). The circle shows it over the initial
+  (`AccountAvatar.tsx`): Teacher Home, Teacher More, Parent Home, Parent Progress and My profile. If the photo cannot be had, the initial stays.
+- The Parent's top corner on Home and Progress now shows the person's initial circle (or photo) instead of the generic user icon.
+- The server tells the app the address in `account.photoUrl` (the login answer, `GET /api/auth/me` and every profile change). An older server simply has no
+  `photoUrl`, so an app newer than its server shows initials and no photo card works until the server is updated (the server part must be live first).
+- Checked: `tsc --noEmit` clean; server tests (`ProfilePhotoTest` 10, `MobileVersionTest` 5) pass; the website flow was driven in a real browser. NOT checked on a real
+  phone: the system photo picker and cropper, the shrinking, the upload, and the photo showing in the circles.
+
 ## Version 0.6.0 (2026-10-23): "Add a learner" like the website, and a photo of the card
 
 - **0.6.0** (0.5.9 plus this; send 0.6.0): the Teacher's class screen now has ONE button, **Add a learner**, which opens a sheet in the same order as the

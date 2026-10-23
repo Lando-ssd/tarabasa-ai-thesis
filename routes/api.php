@@ -50,6 +50,11 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
         Route::put('/profile/password', [ProfileApiController::class, 'password'])->middleware('throttle:10,1')->name('profile.password');
         Route::put('/profile/grades', [ProfileApiController::class, 'grades'])->name('profile.grades');
         Route::post('/profile/grades/cancel', [ProfileApiController::class, 'cancelGrades'])->name('profile.grades.cancel');
+        // Their own profile photo (only they can ever see it).
+        Route::post('/profile/photo', [ProfileApiController::class, 'photo'])->middleware('throttle:20,1')->name('profile.photo');
+        Route::delete('/profile/photo', [ProfileApiController::class, 'removePhoto'])->name('profile.photo.remove');
+        // The person's own photo as a picture (private: only they can open it).
+        Route::get('/profile/photo', [\App\Http\Controllers\UserPhotoController::class, 'mine'])->name('profile.photo.show');
         // Deleting their own account: what it would do (shown first), then the deletion itself (password again).
         Route::get('/account/erase-info', [ProfileApiController::class, 'eraseInfo'])->name('account.erase-info');
         Route::post('/profile/delete', [ProfileApiController::class, 'destroy'])->middleware('throttle:10,1,erase-account')->name('profile.delete');
