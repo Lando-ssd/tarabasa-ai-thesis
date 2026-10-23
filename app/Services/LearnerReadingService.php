@@ -349,6 +349,13 @@ class LearnerReadingService
                 continue;
             }
 
+            // A letter said as one word with the letter before it uses no spoken word of its own (LetterNames).
+            if (! empty($entry['covered'])) {
+                $words[] = ['text' => $entry['reference'] ?? '', 'status' => 'correct', 'heard' => null];
+
+                continue;
+            }
+
             $isRepeat = isset($repeatedSpokenIndexes[$spokenIndex]);
             $spokenIndex++;
 

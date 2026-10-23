@@ -87,6 +87,7 @@ class HowItWorksController extends Controller
             'outcomeSame' => ClassActivityOutcomes::SAME_WITHIN,
             'tiers' => ReadingLevel::TIER_RUNGS,
             'check' => $this->firstCheck(),
+            'letterNameCount' => count(config('reading_words.letter_names', [])),
             'games' => [
                 'rounds' => (int) $gameConfig['rounds'],
                 'perRound' => (int) $gameConfig['per_round'],

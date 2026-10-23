@@ -130,14 +130,15 @@
     <span class="k">What it decides</span>
     <p>Which words were read right, which were skipped, and which were said as a different word.</p>
     <span class="k">The rule</span>
-    <p>The recording goes to a speech recognition service (Vosk), which writes down the words it heard. TaraBasa lines those words up against the activity's words. Each word is right, skipped or a different word, and extra words are noted. Three fairness rules are applied before the score:</p>
+    <p>The recording goes to a speech recognition service (Vosk), which writes down the words it heard. TaraBasa lines those words up against the activity's words. Each word is right, skipped or a different word, and extra words are noted. Four fairness rules are applied before the score:</p>
     <ul>
       <li>Words that sound the same (sun and son), spelling variants, numbers (2 and two), a missing apostrophe, and one word written as two (sand and castle) are accepted.</li>
+      <li><b>Letter names.</b> When a child names letters aloud (the first check's letters step, and a row of letters in Word Train), the recognizer often writes a letter name as another word ("are" for R, "see" for C) or writes two letters as one word ("hr" for H then R, "cb" for C then B). TaraBasa keeps the service's own matching and repairs only the letters it marked as a different word or as skipped. A heard word is accepted for a letter when it is a spelling of that letter's name (listed for <span class="num">{{ $letterNameCount }}</span> letters), or when it is made of the names of that letter and the letters next to it that the service marked as skipped, in that order. A word that is not the name of the asked letter is still a mistake, a letter that was not asked for never earns anything, nothing is moved to another place in the row (so a row said in the wrong order gets no extra credit), and this step can only add credit: a reading never scores lower because of it. The service's own score is kept next to it.</li>
       <li>A word the recognizer heard as a different word, but only faintly (confidence under <span class="num">{{ $unsureConfidence }}</span>), is marked <b>Not sure</b>. It is left out of the score, the word bank and the alerts. At most <span class="num">{{ $unsureShare }} percent</span> of the words can be Not sure, least confident first, so this can never hide a reading that is mostly wrong. A skipped word is never Not sure.</li>
       <li>Near misses, such as ripe and right, or hit and hat, stay mistakes.</li>
     </ul>
     <span class="k">Honest limits</span>
-    <p>Names and rare same-sound words can still be marked wrong. The Not sure numbers were first set with synthesized voices and have to be checked with children's recordings before they are called final. They are in <code>config/reading.php</code>.</p>
+    <p>Names and rare same-sound words can still be marked wrong. The Not sure numbers were first set with synthesized voices and have to be checked with children's recordings before they are called final. They are in <code>config/reading.php</code>. The letter names were measured the same way: what the live speech service wrote for each letter said alone and for rows of letters, with two synthesized voices (23 October 2026). A child's voice will make the recognizer write other words, so the list (<code>config/reading_words.php</code>) has to be extended from real recordings. This is a written rule, not a trained model.</p>
   </div>
 
   <h2 id="patterns">5. Mistake patterns</h2>

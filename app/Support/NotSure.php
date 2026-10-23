@@ -60,6 +60,13 @@ class NotSure
                 continue;
             }
 
+            // A letter said as one word with the letter before it (LetterNames) uses no spoken word of its own.
+            if (! empty($entry['covered'])) {
+                $correct++;
+
+                continue;
+            }
+
             if ($status === 'correct') {
                 $correct++;
             } elseif ($status === 'substitution') {

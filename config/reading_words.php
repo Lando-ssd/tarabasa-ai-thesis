@@ -53,6 +53,49 @@ return [
         ['dad', 'daddy'], ['tv', 'television'], ['alright', 'allright'],
     ],
 
+    /**
+     * How the speech service writes a LETTER NAME when a child names letters aloud (App\Support\LetterNames,
+     * used only for the first check's letters step and a letters row in Word Train). The service writes
+     * words, so the letter R comes back as "are" or "our". The letter itself is always accepted; these are
+     * the other spellings, and a word is only credited to the letter that was asked for at that place.
+     *
+     * Two kinds of entry, both plain so a teacher can read and correct them:
+     *  - STANDARD: the usual dictionary spellings of a letter's name (bee, see, dee, eff, gee, aitch,
+     *    eye, jay, kay, el, em, en, oh, pee, cue, are, ess, tea, you, vee, ex, why, zee). Not measured.
+     *  - HEARD: what the live service actually wrote for a letter said alone, measured 2026-10-23 with two
+     *    synthesized voices (Zira, David): be for B; he for E; an, and, in for N; our for R; as for S; you
+     *    for U; why for Y; oh for O. A child's voice will give other spellings; add them when they are read
+     *    from real recordings.
+     * W has no single-word spelling ("double you"), so only the letter itself counts.
+     */
+    'letter_names' => [
+        'a' => ['ay'],
+        'b' => ['be', 'bee'],
+        'c' => ['see', 'sea', 'cee'],
+        'd' => ['dee'],
+        'e' => ['ee', 'he'],
+        'f' => ['eff', 'ef'],
+        'g' => ['gee', 'jee'],
+        'h' => ['aitch'],
+        'i' => ['eye', 'aye'],
+        'j' => ['jay'],
+        'k' => ['kay'],
+        'l' => ['el', 'ell'],
+        'm' => ['em'],
+        'n' => ['en', 'an', 'and', 'in'],
+        'o' => ['oh', 'owe'],
+        'p' => ['pee', 'pea'],
+        'q' => ['cue', 'queue'],
+        'r' => ['are', 'ar', 'our'],
+        's' => ['as', 'es', 'ess'],
+        't' => ['tea', 'tee'],
+        'u' => ['you', 'ewe', 'yew'],
+        'v' => ['vee'],
+        'x' => ['ex'],
+        'y' => ['why', 'wye'],
+        'z' => ['zee', 'zed'],
+    ],
+
     'numbers' => [
         '0' => 'zero', '1' => 'one', '2' => 'two', '3' => 'three', '4' => 'four', '5' => 'five', '6' => 'six', '7' => 'seven',
         '8' => 'eight', '9' => 'nine', '10' => 'ten', '11' => 'eleven', '12' => 'twelve', '13' => 'thirteen', '14' => 'fourteen',

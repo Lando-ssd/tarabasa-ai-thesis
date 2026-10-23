@@ -209,7 +209,15 @@ class ReadingAiClient
 
         // Words read correctly that the recognizer wrote differently (same sound, spelling variants,
         // numbers, one word written as two) are put right here, once, for every screen.
-        return ['unclear' => false, 'result' => \App\Support\SpeechNormalizer::apply($result)];
+        $result = \App\Support\SpeechNormalizer::apply($result);
+
+        // Letter names are written as other words ("are" for R) or run together ("hr" for H, R): when the item is
+        // a row of letters, look again at what was heard (it can only add credit, never take it away).
+        if (\App\Support\LetterNames::appliesTo($activity)) {
+            $result = \App\Support\LetterNames::apply($result, (string) ($activity->reference_text ?? $activity->passage_text));
+        }
+
+        return ['unclear' => false, 'result' => $result];
     }
 
     /**
