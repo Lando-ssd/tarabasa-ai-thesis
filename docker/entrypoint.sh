@@ -27,17 +27,20 @@ php artisan admin:sync || true
 # minute to answer and must not delay the site starting.
 (php artisan services:check --quiet || true) &
 
-# php artisan serve is single-threaded by default — it can only handle one
-# request at a time. That's fatal in production: while it's blocked on a
-# slow real external API call (Gemini for activity generation, Vosk for
-# reading scoring — both routinely take several seconds), it can't also
-# answer Railway's own health check on /up. Enough missed health checks
-# and Railway restarts the container mid-request, silently killing the
-# in-flight request and wiping the file-based session — confirmed as the
-# real cause of a live production bug (see CLAUDE.md). PHP's built-in
-# server supports a real multi-worker mode for exactly this; baked in
-# here rather than left as a Railway dashboard variable, which already
-# proved easy to lose by accident once.
+# php artisan serve is single-threaded by default: it can only handle one request at a time. That is fatal in
+# production. While it is blocked on a slow real call (Gemini for activity generation, Vosk for reading scoring, both
+# routinely take several seconds, and a sleeping service can take a minute), it cannot answer anything else, including
+# the host's own health check, and the host then stops sending visitors to it (a 502 for everyone). Render's events on
+# 2026-10-22 and 2026-10-23 were all "HTTP health check failed (timed out after 5 seconds)".
+#
+# PHP's built-in server has a real multi-worker mode, PHP_CLI_SERVER_WORKERS, baked in here rather than left as a host
+# dashboard variable, which already proved easy to lose by accident once. BUT Laravel's `artisan serve` ONLY honours it
+# together with --no-reload (the flag that stops it restarting the server when .env changes, which a container does not
+# have). Without the flag it prints "Unable to respect the PHP_CLI_SERVER_WORKERS environment variable without the
+# --no-reload flag. Only creating a single server." and runs ONE worker. That is exactly what ran in production, silently,
+# until the deploy log was read on 2026-10-23: the setting below looked fine and did nothing. Keep --no-reload on the
+# serve line, and check that the host's deploy log does NOT contain that warning (tests/Feature/ServerStartupTest.php
+# pins the flag).
 export PHP_CLI_SERVER_WORKERS=4
 
 # The background worker. Writing activities with the AI takes one to several minutes, far longer
@@ -54,4 +57,4 @@ export PHP_CLI_SERVER_WORKERS=4
     done
 ) &
 
-exec php artisan serve --host=0.0.0.0 --port="${PORT:-8080}"
+exec php artisan serve --host=0.0.0.0 --port="${PORT:-8080}" --no-reload

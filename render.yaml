@@ -24,8 +24,9 @@ services:
     # NO healthCheckPath, on purpose (it used to be /up). Render then only checks that the port accepts a connection, which a busy
     # server still does. With an HTTP path, Render asked /up every few seconds and, when it was not answered within 5 SECONDS, stopped
     # sending traffic to the instance after 15 seconds (every visitor gets a 502) and restarted it after 60 seconds. The server is
-    # `php artisan serve` with 4 workers on a 0.1 CPU free instance, so a handful of slow requests (a recording being scored, a sleeping
-    # service being woken) are enough to leave /up unanswered. Render's Events on 2026-10-22 and 2026-10-23 were all
+    # `php artisan serve` on a 0.1 CPU free instance, and it ran ONE worker, not the 4 that docker/entrypoint.sh asked for: Laravel
+    # ignores PHP_CLI_SERVER_WORKERS unless it is also given --no-reload (the deploy log said "Only creating a single server"). So a
+    # single slow request (a recording being scored, a sleeping service being woken) left /up, and everyone else, unanswered. Render's Events on 2026-10-22 and 2026-10-23 were all
     # "HTTP health check failed (timed out after 5 seconds) while running your code", each followed by "Service recovered".
     # The setting that counts is the one in the Render dashboard (Settings, Health Check Path): clear it there as well.
     # The cost: a server that hangs completely, with the port still open, is no longer restarted by Render by itself.
