@@ -77,6 +77,29 @@ A full offline copy of the code history (all branches) was saved on 2026-10-23 a
 `git clone tarabasa-ai-thesis-all-branches.bundle tarabasa-copy`, then `cd tarabasa-copy` and `git branch -a`.
 This is the same code as the public repository: it contains no passwords. Keep this copy on a USB drive or cloud folder too.
 
+## 7. If the teammate's three services ever disappear
+
+The app cannot score a reading, write an activity or recommend a story without them (section 1). Their code is public on GitHub, and a full copy of
+all three was saved on 2026-10-23 in `D:\TaraBasa-BACKUP-2026-10-23\teammate-services\` (with the same recipe in its `READ-ME-FIRST.txt`):
+
+| Service | Repository | Copied at commit | What it needs to run |
+|---|---|---|---|
+| Reading-api | `BldZeuz/Reading-api` | `fa4905b` (6 Oct 2026) | a Docker build; it downloads the free Vosk model `vosk-model-small-en-us-0.15` from alphacephei.com; no password |
+| Activity writer | `BldZeuz/gemini_activity_gen` | `c5cc308` (22 Sept 2026) | `GEMINI_API_KEY` (your own, free from Google AI Studio), `APP_API_KEY` (a secret you invent), `GEMINI_MODEL`, has `render.yaml` |
+| Recommender | `BldZeuz/Adaptive_Recommendator` | `f7a801e` (6 Oct 2026) | `APP_API_KEY` (a secret you invent), has `render.yaml` |
+
+How to rebuild (a plan, NOT tested):
+1. Put each service in a repository on your team's own GitHub. There is no license file, so ask the author before publishing a copy.
+2. On your own Render account: New > Web Service > that repository > the FREE instance. Choose "Docker" for Reading-api (its first build takes several minutes).
+3. Type the settings from the table above in each new service. Check that the model named in `GEMINI_MODEL` still exists at Google; models get retired.
+4. In this website's Render service (`tarabasa-ai`) > Environment, replace `READING_AI_URL`, `ACTIVITY_AI_URL`, `ADAPTIVE_RECOMMENDER_URL`,
+   `ACTIVITY_AI_KEY` (the writer's `APP_API_KEY`) and `ADAPTIVE_RECOMMENDER_KEY` (the recommender's `APP_API_KEY`), then Save, rebuild, and deploy.
+5. Check: Admin > System health > Check services now. All four cards should be green; then try a reading and an activity.
+6. Update the three addresses in `.github/workflows/keep-awake.yml` (it pings them) and in section 1 of this file.
+
+The copies are the latest on GitHub, which may not be exactly the version running on Render today (the app copes with the recommender in
+version 1 or 2).
+
 ## Sources checked on 2026-10-23
 
 - Render free tier terms: https://render.com/docs/free (15 minute spin down, 750 free hours per user or team a month, no persistent disk on free services)
