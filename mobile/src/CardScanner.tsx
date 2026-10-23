@@ -3,6 +3,7 @@ import { Linking, Modal, StyleSheet, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, H2, Icon, IconBtn, P } from './ui';
+import { noCardMessage, readCardsFromPhotos } from './cardPhoto';
 import { isGoodCard, normalizeCode } from './learnerCode';
 import { colors, fonts, size, space } from './theme';
 import { s } from './scale';
@@ -50,6 +51,24 @@ export function CardScanner({ visible, onClose, onCard }: Props) {
     }
   }
 
+  /** "Use a photo of my card": the code read from a picture in the phone's photos, with the same checks as the live camera. */
+  async function fromPhoto() {
+    if (locked.current) return;
+    locked.current = true;
+    setProblem(null);
+    const r = await readCardsFromPhotos(false);
+    if (r.kind === 'cards' && r.codes.length > 0) {
+      setFound(r.codes[0]);
+      setTimeout(() => onCard(r.codes[0]), 800);
+      return;
+    }
+    if (r.kind !== 'cancelled') {
+      setProblem(r.kind === 'error' ? r.message : noCardMessage(1));
+      setTimeout(() => setProblem(null), 4000);
+    }
+    locked.current = false;
+  }
+
   const blocked = permission && !permission.granted && !permission.canAskAgain;
 
   return (
@@ -88,6 +107,8 @@ export function CardScanner({ visible, onClose, onCard }: Props) {
               ) : (
                 <Btn label="Allow the camera" onPress={() => requestPermission()} />
               )}
+              {problem ? <P style={{ textAlign: 'center', color: colors.bad }}>{problem}</P> : null}
+              <Btn label="Use a photo of my card" icon="camera" tone="ghost" onPress={fromPhoto} />
               <Btn label="Type my code instead" tone="ghost" onPress={onClose} />
             </View>
           </View>
@@ -98,6 +119,7 @@ export function CardScanner({ visible, onClose, onCard }: Props) {
             <Text style={[styles.hint, problem && { color: '#ffd2cf' }]} accessibilityLiveRegion="polite">
               {found ? `Got it: ${found}` : (problem ?? 'Hold your card inside the box. Keep still for a moment.')}
             </Text>
+            {!found ? <Btn label="Use a photo of my card" icon="camera" tone="ghost" compact onPress={fromPhoto} style={{ marginTop: space[10] }} /> : null}
           </View>
         ) : null}
       </View>

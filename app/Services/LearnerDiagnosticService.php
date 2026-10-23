@@ -7,6 +7,7 @@ use App\Models\Learner;
 use App\Models\Notification;
 use App\Models\ReadingSession;
 use App\Support\DiagnosticPlacement;
+use App\Support\ReadingLevel;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 
@@ -320,7 +321,8 @@ class LearnerDiagnosticService
         Notification::notifyForLearner(
             $learner,
             Notification::TYPE_LEVEL_CONFIRMED,
-            "{$learner->first_name}'s starting reading level has been confirmed: {$finalLevel}.",
+            // Parents read the child's own step name (what the child sees on their Home screen), not the stored level.
+            "{$learner->first_name}'s first reading check is done. {$learner->first_name} starts on the ".ReadingLevel::stepName($learner).' step.',
             includeTeacher: false
         );
 

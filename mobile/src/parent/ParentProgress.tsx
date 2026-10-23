@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as api from '../api';
 import { H2, Icon, P, Panel, Screen, Small } from '../ui';
 import { Loading, TonePill, Tile, TopBar, useLoad } from '../teacher/kit';
-import { BAND_TONE, Card, ChildChips, ChildFace, Meter } from './kit';
+import { Card, ChildChips, ChildFace, LevelPill, Meter } from './kit';
 import { Reading } from './ParentHome';
 import { colors, fonts, space } from '../theme';
 import { s } from '../scale';
@@ -49,13 +49,17 @@ export function ParentProgress({ childId, onPick, refreshKey, onProfile, go }: P
               <View style={st.who}>
                 <ChildFace child={c} px={s(52)} />
                 <View style={{ flex: 1, gap: space[4] }}>
-                  <H2>Reading level</H2>
-                  <TonePill text={c.level.band === 'unchecked' ? 'First check not done' : c.level.label} tone={BAND_TONE[c.level.band] ?? 'grey'} />
+                  <H2>{c.level.stepNumber === undefined ? 'Reading level' : 'Reading step'}</H2>
+                  <LevelPill level={c.level} />
                 </View>
               </View>
               <P style={{ color: colors.ink }}>{c.level.plain}</P>
               {c.level.step ? <Small>{c.level.step}</Small> : null}
-              <Small>Levels follow the Department of Education's reading levels (Phil-IRI). They describe where reading is today, not what a child can become.</Small>
+              {c.level.stepNumber === undefined ? (
+                <Small>Levels follow the Department of Education's reading levels (Phil-IRI). They describe where reading is today, not what a child can become.</Small>
+              ) : (
+                <Small>{`These are the same four steps ${c.firstName} sees on their own Home screen: Letter Explorer, Word Builder, Sentence Reader and Story Reader.`}</Small>
+              )}
             </Card>
 
             {c.home ? (

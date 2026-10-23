@@ -18,8 +18,8 @@ const TONES: Record<Tone, { bg: string; fg: string }> = {
 };
 
 /** A small coloured tag ("Needs support", "8 learners"). The words carry the meaning; the colour only helps. */
-export function TonePill({ text, tone = 'blue' }: { text: string; tone?: Tone }) {
-  const t = TONES[tone];
+export function TonePill({ text, tone = 'blue', palette }: { text: string; tone?: Tone; palette?: { bg: string; fg: string } }) {
+  const t = palette ?? TONES[tone];
   return (
     <View style={[st.pill, { backgroundColor: t.bg }]}>
       <Text maxFontSizeMultiplier={1.25} style={[st.pillText, { color: t.fg }]}>

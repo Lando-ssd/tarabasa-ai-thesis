@@ -1,10 +1,11 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import type { Home as HomeData } from './api';
 import { ReadingPath } from './ReadingPath';
 import { useSession } from './session';
+import { StatSheet, type StatKind } from './StatSheet';
 import { Avatar, Btn, Busy, H2, Icon, Notice, Panel, Pill, Screen, Small } from './ui';
 import { colors, fonts, size, space } from './theme';
 import { s } from './scale';
@@ -13,8 +14,10 @@ import { s } from './scale';
  * Home: who is signed in, days in a row and points, the reading path with the child's own step marked, one big button to
  * start reading, then the weekly goal and a small week chart. The numbers come from the same place as the website's Home.
  */
-export function Home({ onStartReading }: { onStartReading: () => void }) {
+export function Home({ onStartReading, onOpenBadges }: { onStartReading: () => void; onOpenBadges?: () => void }) {
   const { learner, home, homeError, reloadHome, signOut } = useSession();
+  // Which number's card is open (the flame or the star at the top). Null = none.
+  const [stat, setStat] = useState<StatKind | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const actionBottom = useRef<number | null>(null);
   const brought = useRef(false);
@@ -53,9 +56,25 @@ export function Home({ onStartReading }: { onStartReading: () => void }) {
           </Text>
           {learner.gradeLevel ? <Small>{learner.gradeLevel}</Small> : null}
         </View>
-        <Pill icon="fire" color={colors.orange} text={String(home?.streak.days ?? learner.dayStreak)} label={`${home?.streak.days ?? learner.dayStreak} days in a row`} />
-        <Pill icon="star" color={colors.goldDeep} text={String(learner.points)} label={`${learner.points} points`} />
+        <Pill icon="fire" color={colors.orange} text={String(home?.streak.days ?? learner.dayStreak)} label={`${home?.streak.days ?? learner.dayStreak} days in a row`} onPress={() => setStat('streak')} />
+        <Pill icon="star" color={colors.goldDeep} text={String(learner.points)} label={`${learner.points} points`} onPress={() => setStat('points')} />
       </View>
+
+      <StatSheet
+        kind={stat}
+        days={home?.streak.days ?? learner.dayStreak}
+        week={home?.streak.week ?? []}
+        points={learner.points}
+        onClose={() => setStat(null)}
+        onViewBadges={() => {
+          setStat(null);
+          (onOpenBadges ?? onStartReading)();
+        }}
+        onStartReading={() => {
+          setStat(null);
+          onStartReading();
+        }}
+      />
 
       {!home ? (
         homeError ? (

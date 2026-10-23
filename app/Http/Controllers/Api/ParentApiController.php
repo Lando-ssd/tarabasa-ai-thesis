@@ -187,11 +187,8 @@ class ParentApiController extends Controller
                 ->orderByDesc('timestamp')
                 ->get();
 
-            $level = ParentInsights::level($selected);
-
-            // array_merge, not +, so the longer `level` (with the plain sentence) replaces the short one childRow() carries.
+            // childRow() already carries the child's step and the plain sentence (ParentInsights::level).
             $child = array_merge($this->childRow($selected, $flagged[$selected->id] ?? false), [
-                'level' => ['band' => $level['band'], 'label' => $level['label'], 'short' => $level['short'], 'step' => $level['step'], 'plain' => $level['plain']],
                 'home' => ParentInsights::homePractice($selected),
                 'summary' => ChildSummary::for($selected),
                 'sources' => $this->sources($selected),
@@ -368,7 +365,8 @@ class ParentApiController extends Controller
 
     private function childRow(Learner $l, bool $flagged): array
     {
-        $level = ReadingLevel::forAdult($l);
+        // What a parent sees is the child's own four steps (Letter Explorer ... Story Reader), the same names as on the child's Home.
+        $level = ParentInsights::level($l);
 
         return [
             'id' => $l->id,
@@ -379,7 +377,12 @@ class ParentApiController extends Controller
             'code' => $l->learner_code,
             'avatar' => $l->avatar_id,
             'flagged' => $flagged,
-            'level' => ['band' => $level['band'], 'label' => $level['label'], 'short' => $level['short'], 'step' => $level['step']],
+            'level' => [
+                // band, label, short and step are the older keys: label and short carry the step name so an app built before this
+                // change still shows the right words, and band is only a colour hint for those builds.
+                'band' => $level['band'], 'label' => $level['label'], 'short' => $level['short'], 'step' => $level['step'],
+                'stepNumber' => $level['stepNumber'], 'name' => $level['name'], 'skill' => $level['skill'], 'plain' => $level['plain'],
+            ],
         ];
     }
 
@@ -402,7 +405,9 @@ class ParentApiController extends Controller
             'accuracy' => $s->accuracy_percent !== null ? (int) round($s->accuracy_percent) : null,
             'wcpm' => $s->wcpm !== null ? (int) round($s->wcpm) : null,
             'flagged' => (bool) $s->flagged_needs_attention,
-            'moved' => $s->level_before !== null && $s->level_after !== null && $s->level_before !== $s->level_after ? $s->level_after : null,
+            // The step the child moved to with this reading (older builds print "moved to <this>"), and the same thing as a sentence.
+            'moved' => ParentInsights::stepMoveText($s->rung_before, $s->rung_after) !== null ? ReadingLevel::stepNameForRung((int) $s->rung_after) : null,
+            'movedText' => ParentInsights::stepMoveText($s->rung_before, $s->rung_after),
             'day' => LearnerClock::dayLabel($s->timestamp),
             'at' => $s->timestamp->toIso8601String(),
         ];

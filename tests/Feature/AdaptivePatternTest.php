@@ -178,18 +178,22 @@ class AdaptivePatternTest extends TestCase
         return $u;
     }
 
-    public function test_a_parent_sees_the_level_in_plain_words_and_one_thing_to_try_at_home(): void
+    public function test_a_parent_sees_the_childs_step_in_plain_words_and_one_thing_to_try_at_home(): void
     {
         $t = $this->teacher();
         $a = $this->activity($t, 'Plain', 'cat dog pig hen cow');
         $kid = $this->childWith($t, $a);
-        $kid->forceFill(['mastery_level' => 'Developing', 'first_name' => 'Mara'])->save();
+        $kid->forceFill(['mastery_level' => 'Developing', 'first_name' => 'Mara', 'reading_rung' => 3])->save();
+        ReadingSession::create(['learner_id' => $kid->id, 'activity_id' => $a->id, 'session_type' => 'Diagnostic', 'initiated_by' => 'Teacher', 'accuracy_percent' => 80]);
         $this->endingMistakes($kid, $a, 4);
 
+        // A parent reads the child's own four steps (what the child sees on their Home), never the school's Phil-IRI words.
         $this->actingAs($this->parentOf($kid))
             ->get(route('parent.progress'))->assertOk()
-            ->assertSee('Reading level')->assertSee('Instructional level')->assertSee('Mara reads well with some help')
-            ->assertSee('Phil-IRI')
+            ->assertSee('Reading step')->assertSee('Sentence Reader')->assertSee('Step 3 of 4: Reading Sentences')
+            ->assertSee('Mara is reading sentences and growing steadily')
+            ->assertSee('Letter Explorer, Word Builder, Sentence Reader and Story Reader')
+            ->assertDontSee('Instructional')->assertDontSee('Independent')->assertDontSee('Phil-IRI')
             ->assertSee('Practise at home')->assertSee('Mara leaves off or changes the ends of words')
             ->assertSee('Try this:')->assertSee('Point to the last letters')
             ->assertSee('EN2PWS-II-2')->assertSee('Words to practise together')

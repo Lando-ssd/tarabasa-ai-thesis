@@ -422,6 +422,10 @@ class LearnerReadingService
     {
         $accuracy = round($session->accuracy_percent);
         $summary = "{$learner->first_name} read \"{$activity->title}\" with {$accuracy}% accuracy";
+        // The parent's sentence says the same thing in the child's own step names (Letter Explorer ... Story Reader), never the
+        // school's reading levels, which are for the teacher.
+        $forParent = $summary;
+        $stepAfter = isset($progress['rungAfter']) ? ReadingLevel::stepNameForRung((int) $progress['rungAfter']) : null;
         if ($progress['moved'] === 'up') {
             $summary .= ", and moved up to {$progress['rungLabelAfter']} ({$progress['stepAfter']})";
             // When the move crosses into a higher reading level, say so: the child joins the next reading group in their class.
@@ -429,13 +433,20 @@ class LearnerReadingService
             $summary .= $after !== ReadingLevel::bandForRung($progress['rungBefore'])
                 ? ', now at the '.ReadingLevel::bandShort($after).' level.'
                 : '.';
+            $forParent .= ReadingLevel::stepForRung((int) $progress['rungAfter']) !== ReadingLevel::stepForRung((int) $progress['rungBefore'])
+                ? ", and moved up to {$stepAfter}."
+                : '.';
         } elseif ($progress['moved'] === 'down') {
             $summary .= ", and was moved back to {$progress['rungLabelAfter']} for more practice.";
+            $forParent .= ReadingLevel::stepForRung((int) $progress['rungAfter']) !== ReadingLevel::stepForRung((int) $progress['rungBefore'])
+                ? ", and moved back to {$stepAfter} for more practice."
+                : '.';
         } else {
             $summary .= '.';
+            $forParent .= '.';
         }
 
-        Notification::notifyForLearner($learner, Notification::TYPE_SESSION_SUMMARY, $summary);
+        Notification::notifyForLearner($learner, Notification::TYPE_SESSION_SUMMARY, $summary, parentMessage: $forParent);
 
         if ($session->flagged_needs_attention) {
             Notification::notifyForLearner(

@@ -61,10 +61,10 @@
 
   <div class="two" style="margin-top:16px">
     <div class="card level-card">
-      <div class="eyebrow">@include('learner._badge-icon', ['icon' => 'book', 'class' => 'ico']) Reading level</div>
+      <div class="eyebrow">@include('learner._badge-icon', ['icon' => 'book', 'class' => 'ico']) Reading step</div>
       <p class="headline" style="font-size:22px">{{ $level['label'] }}@if ($level['step']) <span class="hint">({{ $level['step'] }})</span>@endif</p>
       <p class="hint" style="margin-top:6px">{{ $level['plain'] }}</p>
-      <p class="hint" style="margin-top:8px">Level names come from the Philippine Informal Reading Inventory (Phil-IRI) that schools use.</p>
+      <p class="hint" style="margin-top:8px">These are the same four steps {{ $selectedLearner->first_name }} sees on their own Home screen: Letter Explorer, Word Builder, Sentence Reader and Story Reader.</p>
     </div>
     <div class="card home-card">
       <div class="eyebrow">@include('learner._badge-icon', ['icon' => 'house', 'class' => 'ico']) Practise at home</div>
@@ -117,7 +117,7 @@
         <div class="item">
           <div class="item-body">
             <div class="item-title">{{ $session->activity->title ?? 'Reading activity' }} <span class="tag {{ $session->initiated_by === 'Parent' ? 'parent' : '' }}">{{ $session->initiated_by }}</span></div>
-            <div class="item-sub">{{ $session->level_before ?? 'New' }} to {{ $session->level_after ?? 'New' }} &middot; {{ \App\Support\LearnerClock::local($session->timestamp)->format('M j, g:i A') }}</div>
+            <div class="item-sub">{{ \App\Support\LearnerClock::local($session->timestamp)->format('M j, g:i A') }}@if ($moveText = \App\Support\ParentInsights::stepMoveText($session->rung_before, $session->rung_after)) &middot; {{ ucfirst($moveText) }}@endif</div>
           </div>
           <span class="pill {{ $session->accuracy_percent >= 80 ? 'ok' : 'amber' }}" style="font-size:20px;padding:7px 14px 6px">{{ round($session->accuracy_percent) }}%</span>
         </div>

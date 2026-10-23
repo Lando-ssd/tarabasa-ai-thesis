@@ -70,22 +70,29 @@ class Notification extends Model
      * $includeTeacher is false for the diagnostic case (Step 7 says
      * Parent(s) only — no Teacher is involved in a diagnostic at all).
      */
-    public static function notifyForLearner(Learner $learner, string $type, string $message, bool $includeTeacher = true, ?int $exceptUserId = null): void
+    /**
+     * $parentMessage: what the child's parents read, when it differs from the teacher's sentence. A teacher reads the school's words
+     * (reading levels such as Instructional); a parent reads the child's own four steps (Letter Explorer, Word Builder, Sentence
+     * Reader, Story Reader). When it is null everyone reads $message.
+     */
+    public static function notifyForLearner(Learner $learner, string $type, string $message, bool $includeTeacher = true, ?int $exceptUserId = null, ?string $parentMessage = null): void
     {
-        $recipientUserIds = collect();
-
+        $teacherUserId = null;
         if ($includeTeacher && $learner->class_id !== null) {
             $teacherUserId = $learner->schoolClass?->teacher?->user_id;
-            if ($teacherUserId) {
-                $recipientUserIds->push($teacherUserId);
-            }
         }
 
-        $recipientUserIds = $recipientUserIds->concat(
-            $learner->parents()->get()->pluck('user_id')
-        );
+        // user id => the sentence that person reads
+        $recipients = [];
+        if ($teacherUserId) {
+            $recipients[$teacherUserId] = $message;
+        }
+        foreach ($learner->parents()->get()->pluck('user_id') as $parentUserId) {
+            // A person who is both (the same account cannot be) keeps the teacher's wording; otherwise a parent gets the parent's.
+            $recipients[$parentUserId] ??= $parentMessage ?? $message;
+        }
 
-        foreach ($recipientUserIds->unique() as $userId) {
+        foreach ($recipients as $userId => $text) {
             // The person who did the thing does not need telling about it.
             if ($exceptUserId !== null && (int) $userId === $exceptUserId) {
                 continue;
@@ -95,7 +102,7 @@ class Notification extends Model
                 'recipient_user_id' => $userId,
                 'learner_id' => $learner->id,
                 'type' => $type,
-                'message' => $message,
+                'message' => $text,
             ]);
         }
     }

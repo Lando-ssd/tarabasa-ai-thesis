@@ -170,14 +170,48 @@ export function Panel({ children, style }: { children: ReactNode; style?: StyleP
   return <View style={[st.panel, style]}>{children}</View>;
 }
 
-export function Pill({ icon, text, color = colors.ink, label }: { icon?: string; text: string; color?: string; label?: string }) {
-  return (
-    <View style={st.pill} accessible accessibilityLabel={label ?? text}>
+export function Pill({
+  icon,
+  text,
+  color = colors.ink,
+  label,
+  onPress,
+}: {
+  icon?: string;
+  text: string;
+  color?: string;
+  label?: string;
+  /** When given, the pill is a button (it opens a card that explains the number). */
+  onPress?: () => void;
+}) {
+  const inside = (
+    <>
       {icon ? <Icon name={icon} size={s(20)} color={color} /> : null}
       <Text maxFontSizeMultiplier={FONT_CAP} style={st.pillText}>
         {text}
       </Text>
-    </View>
+    </>
+  );
+  if (!onPress) {
+    return (
+      <View style={st.pill} accessible accessibilityLabel={label ?? text}>
+        {inside}
+      </View>
+    );
+  }
+  // The pill looks 36 tall, but a finger needs a 48 point target: the extra comes from hitSlop, so nothing moves.
+  const extra = Math.max(0, Math.ceil((size.touch - s(36)) / 2));
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label ?? text}
+      accessibilityHint="Opens a card that explains this number"
+      onPress={onPress}
+      hitSlop={{ top: extra, bottom: extra, left: space[4], right: space[4] }}
+      style={({ pressed }) => [st.pill, pressed && { opacity: 0.65 }]}
+    >
+      {inside}
+    </Pressable>
   );
 }
 

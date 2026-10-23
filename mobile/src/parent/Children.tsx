@@ -6,7 +6,7 @@ import { Chips, Consent, Field } from '../fields';
 import { LEGAL_URLS } from '../config';
 import { Btn, Icon, IconBtn, Notice, P, Panel, Screen, Small } from '../ui';
 import { Loading, TonePill, TopBar, useLoad } from '../teacher/kit';
-import { BAND_TONE, ChildFace } from './kit';
+import { ChildFace, LevelPill } from './kit';
 import { colors, fonts, space } from '../theme';
 import { s } from '../scale';
 
@@ -56,7 +56,7 @@ function ChildRow({ c, onPress }: { c: api.ParentChildRow; onPress: () => void }
         </Text>
         <Small>{[c.grade, c.className ?? 'Not in a class yet'].join(' · ')}</Small>
         <View style={st.rowTags}>
-          <TonePill text={c.level.short === 'Not checked' ? 'Not checked' : c.level.short} tone={BAND_TONE[c.level.band] ?? 'grey'} />
+          <LevelPill level={c.level} />
           {c.dayStreak > 0 ? <TonePill text={`${c.dayStreak} ${c.dayStreak === 1 ? 'day' : 'days'} in a row`} tone="green" /> : null}
         </View>
       </View>

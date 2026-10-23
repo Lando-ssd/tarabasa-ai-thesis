@@ -38,11 +38,8 @@
           </div>
         </div>
         <div class="pills">
-          @if ($learner->mastery_level)
-            <span class="pill lv-{{ strtolower($learner->mastery_level) }}">{{ $learner->mastery_level }}</span>
-          @else
-            <span class="pill">Not assessed yet</span>
-          @endif
+          @php $step = \App\Support\ParentInsights::step($learner); @endphp
+          <span class="pill {{ $step['class'] }}">{{ $step['pill'] }}</span>
           <span class="pill">@include('learner._badge-icon', ['icon' => 'star', 'class' => 'ico']) {{ $learner->points }} points</span>
           <span class="pill">@include('learner._badge-icon', ['icon' => 'fire', 'class' => 'ico']) {{ $learner->readingDayStreak() }} {{ $learner->readingDayStreak() === 1 ? 'day' : 'days' }} in a row</span>
           @if ($learner->learning_style)<span class="pill">{{ $learner->learning_style }}</span>@endif

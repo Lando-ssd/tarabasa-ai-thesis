@@ -250,7 +250,7 @@ export function AddChild({ onBack, onDone, onCard }: Props) {
             <>
               <P>{first.trim() || 'Your child'} uses this PIN, with their Learner Code or card, to open their own app. Choose 4 digits and keep them private.</P>
               <Field label="PIN" value={pin} onChangeText={(t) => (clear('pin'), setPin(t.replace(/\D/g, '').slice(0, 4)))} keyboardType="number-pad" maxLength={4} password error={errors.pin} />
-              <Field label="PIN again" value={again} onChangeText={(t) => (clear('pin_confirmation'), setAgain(t.replace(/\D/g, '').slice(0, 4)))} keyboardType="number-pad" maxLength={4} password error={errors.pin_confirmation} />
+              <Field label="Confirm PIN" value={again} onChangeText={(t) => (clear('pin_confirmation'), setAgain(t.replace(/\D/g, '').slice(0, 4)))} keyboardType="number-pad" maxLength={4} password error={errors.pin_confirmation} />
               {/* The parent's consent for the child's information. What it covers is on the Parent and Guardian Consent page; nothing is kept without it. */}
               <View style={{ gap: space[8], marginTop: space[8] }}>
                 <Text maxFontSizeMultiplier={1.25} style={st.label}>

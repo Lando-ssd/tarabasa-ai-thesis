@@ -114,12 +114,12 @@
   </div>
 
   <h2 id="levels">3. What the level names mean</h2>
-  <p class="sub">The words teachers and parents see.</p>
+  <p class="sub">The words a teacher sees, and the steps a child and a parent see.</p>
   <div class="rule">
     <span class="k">What it decides</span>
     <p>The name shown for how a child reads now.</p>
     <span class="k">The rule</span>
-    <p>Teachers and parents see the Department of Education's Phil-IRI words. For one reading of a passage: <span class="num">Independent</span> is 97 percent or more, <span class="num">Instructional</span> is 90 to 96 percent, and <span class="num">Frustration</span> is under 90 percent. A <span class="num">Non-reader</span> is a child whose first check did not get past letters. A child never sees these words: a child sees four friendly steps, Letter Explorer, Word Builder, Sentence Reader and Story Reader.</p>
+    <p>Teachers see the Department of Education's Phil-IRI words. For one reading of a passage: <span class="num">Independent</span> is 97 percent or more, <span class="num">Instructional</span> is 90 to 96 percent, and <span class="num">Frustration</span> is under 90 percent. A <span class="num">Non-reader</span> is a child whose first check did not get past letters. A child never sees these words: a child sees four friendly steps, Letter Explorer, Word Builder, Sentence Reader and Story Reader. A parent sees the same four steps as their child, with a plain sentence about what that step means, and never the school's words or the system's own level names.</p>
     <span class="k">Where it comes from</span>
     <p>DepEd Order No. 14, s. 2018 (Phil-IRI). The three bands were confirmed on DepEd schools' own reports that cite the order; the order itself was not opened. One source says the 2018 manual is written for Grades 3 to 6, so using the bands for a single passage read by a Grade 1 or Grade 2 child is the team's own extension. The app's own moving up and down rule (section 2) is separate from these bands, and the two are shown side by side, never claimed to be the same thing.</p>
   </div>

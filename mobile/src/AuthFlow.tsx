@@ -345,7 +345,7 @@ function PasswordFields({ p }: { p: ReturnType<typeof usePersonFields> }) {
   return (
     <>
       <Field label="Password" value={form.password} onChangeText={set('password')} error={errors.password} hint="At least 8 characters." password autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" />
-      <Field label="Type it again" value={form.password_confirmation} onChangeText={set('password_confirmation')} error={errors.password_confirmation} password autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" />
+      <Field label="Confirm password" value={form.password_confirmation} onChangeText={set('password_confirmation')} error={errors.password_confirmation} password autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" />
     </>
   );
 }

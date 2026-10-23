@@ -18,6 +18,15 @@ export const REQUEST_TIMEOUT_MS = 90_000;
 // 100 seconds for it to wake, then scores), so an upload is given much longer than a plain request.
 export const UPLOAD_TIMEOUT_MS = 240_000;
 
+// A failed upload is tried again by itself only when the connection failed this quickly (so nothing reached the server),
+// after these pauses. A request that waited longer is never repeated by itself, so a reading cannot be scored twice.
+export const UPLOAD_QUICK_FAILURE_SECONDS = 10;
+export const UPLOAD_RETRY_PAUSES_MS = [3_000, 6_000];
+
+// The version of this build. Keep it equal to "version" in app.json (tests/Feature/MobileVersionTest.php checks). It is shown in the
+// technical note of a failed send, so a screenshot says which build it came from.
+export const APP_VERSION = '0.6.0';
+
 /**
  * The part of the page address after the #, browser only. The hosted preview puts the screen to show in a global instead
  * (window.__TB_HASH), because the frame it draws the app in has no address of its own.

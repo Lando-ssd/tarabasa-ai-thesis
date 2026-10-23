@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import type { ParentChild } from '../api';
+import type { ParentChild, ParentLevel } from '../api';
 import { Avatar } from '../ui';
-import type { Tone } from '../teacher/kit';
+import { TonePill, type Tone } from '../teacher/kit';
 import { colors, fonts, size, space } from '../theme';
 import { s } from '../scale';
 
@@ -10,6 +10,27 @@ import { s } from '../scale';
 
 /** The colour of a Phil-IRI band. The words carry the meaning; the colour only helps. */
 export const BAND_TONE: Record<string, Tone> = { independent: 'green', instructional: 'blue', frustration: 'amber', non: 'blue', unchecked: 'grey' };
+
+/**
+ * The colours of the child's four steps. A step is a place on a road, not a grade, so none of them looks like a warning.
+ * Plain grey is for a child who has not done the first reading check.
+ */
+const STEP_PALETTE: Record<number, { bg: string; fg: string }> = {
+  1: { bg: '#e6f4ff', fg: '#0f5fae' },
+  2: { bg: '#e3f6ef', fg: '#137a63' },
+  3: { bg: '#fff0dd', fg: '#a4510a' },
+  4: { bg: '#f1e8ff', fg: '#6b3fa0' },
+};
+
+/** The tag that says where a child is: the step name the child sees on their own Home ("Word Builder"). */
+export function LevelPill({ level }: { level: ParentLevel }) {
+  // A server from before the four steps sends the school's words in label and short, drawn the old way.
+  if (level.stepNumber === undefined) {
+    return <TonePill text={level.short === 'Not checked' ? 'First check not done' : level.short} tone={BAND_TONE[level.band] ?? 'grey'} />;
+  }
+  if (!level.stepNumber) return <TonePill text="First check not done" tone="grey" />;
+  return <TonePill text={level.name ?? level.short} tone="grey" palette={STEP_PALETTE[level.stepNumber]} />;
+}
 
 /** A white card with a lip, for a block that holds coloured tags (a blue Panel would swallow a blue tag). */
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {

@@ -233,7 +233,7 @@ function Password() {
       <H2>Change your password</H2>
       <Field label="Current password" value={current} onChangeText={setCurrent} password error={err('current_password')} autoComplete="current-password" />
       <Field label="New password" value={next} onChangeText={setNext} password error={err('password')} hint="At least 8 characters." autoComplete="new-password" />
-      <Field label="New password again" value={again} onChangeText={setAgain} password error={local.password_confirmation} autoComplete="new-password" />
+      <Field label="Confirm new password" value={again} onChangeText={setAgain} password error={local.password_confirmation} autoComplete="new-password" />
       {sv.message ? <Notice tone="info" text={sv.message} /> : null}
       {sv.problem ? <Notice text={sv.problem} /> : null}
       <Btn label="Change password" onPress={save} loading={sv.busy} />

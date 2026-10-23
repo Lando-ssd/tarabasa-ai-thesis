@@ -303,6 +303,57 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - **Set `API_CONSENT_REQUIRED=true` on Render only after every tester has 0.5.5**; until then the server accepts a sign up without the boxes.
 - **Not proven:** a real phone, the real microphone, the consent screens on a small phone, the Android keyboard with the new boxes.
 
+## Versions 0.5.7 and 0.5.8 (2026-10-23): a failed send, tappable stats, and sending the recording as bytes
+
+- **0.5.7**: a quick network failure while sending a reading is retried by itself (two more tries, 3 s and 6 s apart; a timeout is never
+  retried, so a reading cannot be scored twice); the failed-send screen ends with a small "Technical note"; "Confirm password" and
+  "Confirm PIN" wording; the flame (days in a row) and the star (points) on Home open a card (`StatSheet.tsx`).
+- **0.5.8**: a teammate's real-phone video (first reading check, Letters step) showed the send failing INSTANTLY (under half a
+  second) with "We could not reach TaraBasa" on a phone that had just loaded the check from the server. That cannot be slow internet
+  or a sleeping server, which would hold the request for seconds. It points at the phone's file upload: the old way gave React
+  Native the file's address (`{ uri, name, type }`), and on Android a file it cannot open makes the request fail at once with a
+  generic "Network request failed". That upload path had only ever been tested in the browser preview, never on a real phone.
+  Now `uploadAudio` (in `src/api.ts`) reads the recording with expo-file-system and sends it as plain bytes first (method A,
+  hand-built multipart in `src/multipart.ts`, a body of known length), and keeps the old way as the backup (method B). If the file is
+  gone it says so plainly. The technical note now says what each method really reported, for example
+  `A: TypeError: Network request failed after 0 s; B: ... after 0 s, recording 183204 bytes read`, so a screenshot names the cause.
+- **Checked on a computer, not on a phone:** the multipart body parses back byte for byte (Node's own parser, 300 KB, awkward bytes,
+  accents); a real local server accepted it and the live reading service answered; the browser preview still loads. **Not
+  proven:** that this fixes the teammate's phone. If it still fails, the technical note is the next clue.
+- APK: `D:\tools\apk-out\TaraBasa-AI-0.5.8-test18.apk` (built from `D:\tb`, gradle with `--max-workers=2` because of low memory).
+
+## Version 0.5.9 (2026-10-23): a parent sees the child's own four steps
+
+- **0.5.9** (0.5.8 plus this; 0.5.8 was never sent to anyone, use 0.5.9): the Parent screens used to show the system's own stored level
+  (Beginning, Developing, Proficient) on the website and the school's Phil-IRI words on the phone. A parent now sees the same four steps their
+  child sees on their Home: **Letter Explorer, Word Builder, Sentence Reader, Story Reader**, with a plain sentence. A child who has not done the
+  first reading check shows "First check not done" (the level on their record is only a guess from the parent's answers). Teachers keep the
+  Phil-IRI words. One helper decides it for every Parent screen: `App\Support\ParentInsights::step()` and `::level()`.
+- **Where it shows:** the website's Children list, Home and Progress (and the "moved up to Sentence Reader" lines in the recent readings), the
+  phone's Children, Home and Progress (`LevelPill` in `src/parent/kit.tsx`), and the alerts a parent receives (a parent's alert after a reading
+  and after the first check now says "moved up to Story Reader" and "starts on the Word Builder step").
+- **Older app builds** keep working: the server still sends `label` and `short`, now carrying the step name. A newer app talking to an older
+  server falls back to what that server sends (no `stepNumber`), so it never shows an empty pill.
+- A migration (`2026_10_23_000200_reword_old_parent_alerts`) rewords old alerts addressed to parents so they stop showing the old words; teachers'
+  alerts are untouched.
+
+## Version 0.6.0 (2026-10-23): "Add a learner" like the website, and a photo of the card
+
+- **0.6.0** (0.5.9 plus this; send 0.6.0): the Teacher's class screen now has ONE button, **Add a learner**, which opens a sheet in the same order as the
+  website's window: **Scan QR codes** (the camera, one card after another), **Use a photo of the code** (pick photos of cards from the phone's gallery,
+  for example a picture a parent sent; several at once), then **OR TYPE THE CODE** with the one-grade note, the class's reading level note and the live
+  code check (`src/teacher/AddLearner.tsx`; the typed panel moved there from `ClassScreen.tsx`). Every route goes through the same server rules (one grade
+  per class, the reading level guard, the parent is told).
+- A child's **Scan my card** screen has the same photo option ("Use a photo of my card", in the camera view and on the permission screen).
+- **How a photo is read:** `src/cardPhoto.ts` opens the gallery with `expo-image-picker` (new package, `~57.0.20`; the config plugin is in `app.json`
+  and must NOT be given `microphonePermission: false`, which would block every recording) and reads the QR with `expo-camera`'s `scanFromURLAsync`
+  (Google ML Kit on the phone, so it needs Google Play services). Only a real TaraBasa card counts (shape and check digit), each photo has a 15 second
+  limit, and the picture never leaves the phone. Guarded by `tests/Feature/MobileVersionTest.php`.
+- **Checked in the browser preview, not on a phone:** the sheet looks and behaves like the website's; the live typed check shows "Keep typing" and the
+  server's reason; a picture with no QR gives "No TaraBasa learner card was found in that photo"; a picture of a real card QR added a throwaway child
+  ("PhotoTest Qr added to Sampaguita", since removed). The phone's own gallery picker and ML Kit decoding have not been tried.
+- Preview tip: start it with plain `npx expo start --web --port 8081`. With `CI=1` it does not watch files and keeps serving the old screens.
+
 ## Next steps, in order
 0. **RESOLVED 2026-10-12 (blocker found and fixed the same evening): the live server now has the newer phone endpoints.** Render was
    on `66ebc30`, which lacked practice tries, My Shelf, Games, the warm-up call and the new Home numbers. With the owner's yes,

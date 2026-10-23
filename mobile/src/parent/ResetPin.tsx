@@ -121,7 +121,7 @@ export function ResetPin({ child, onBack, onDone }: { child: api.ParentChild; on
             <>
               <Field label="New PIN" value={pin} onChangeText={(t) => (clear('pin'), setPin(t.replace(/\D/g, '').slice(0, 4)))} keyboardType="number-pad" maxLength={4} password error={errors.pin} />
               <Field
-                label="Type it again"
+                label="Confirm PIN"
                 value={again}
                 onChangeText={(t) => (clear('pin_confirmation'), setAgain(t.replace(/\D/g, '').slice(0, 4)))}
                 keyboardType="number-pad"

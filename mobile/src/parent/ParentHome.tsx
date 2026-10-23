@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as api from '../api';
 import { Btn, H2, Icon, P, Panel, Screen, Small } from '../ui';
 import { Banner, ListRow, Loading, TonePill, Tile, useLoad } from '../teacher/kit';
-import { BAND_TONE, Card, ChildChips, ChildFace, Meter } from './kit';
+import { Card, ChildChips, ChildFace, LevelPill, Meter } from './kit';
 import { colors, fonts, size, space } from '../theme';
 import { s } from '../scale';
 
@@ -92,7 +92,7 @@ export function ParentHome({ account, childId, onPick, refreshKey, onProfile, on
                         {c.firstName}
                       </Text>
                       <Small>{[c.grade, c.className ?? 'Not in a class yet'].join(' · ')}</Small>
-                      <TonePill text={c.level.short === 'Not checked' ? 'First check not done' : c.level.short} tone={BAND_TONE[c.level.band] ?? 'grey'} />
+                      <LevelPill level={c.level} />
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', gap: space[10] }}>
@@ -178,7 +178,7 @@ function Source({ label, s: x }: { label: string; s: { count: number; average: n
 
 /** One reading, as the parent sees it: the activity, the accuracy and who started it. Never a harsh word for a low score. */
 export function Reading({ r }: { r: api.ParentSession }) {
-  const sub = r.flagged ? 'Flagged for extra support' : r.moved ? `${r.accuracy ?? 0}% accuracy, moved to ${r.moved}` : r.accuracy !== null ? `${r.accuracy}% accuracy` : 'No score';
+  const sub = r.flagged ? 'Flagged for extra support' : r.movedText ? `${r.accuracy ?? 0}% accuracy, ${r.movedText}` : r.moved ? `${r.accuracy ?? 0}% accuracy, moved to ${r.moved}` : r.accuracy !== null ? `${r.accuracy}% accuracy` : 'No score';
   return (
     <ListRow
       lead={<Icon name={r.flagged ? 'warning-circle' : 'check-circle'} size={s(28)} color={r.flagged ? colors.bad : colors.ok} />}

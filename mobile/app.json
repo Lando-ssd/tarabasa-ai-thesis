@@ -2,7 +2,7 @@
   "expo": {
     "name": "TaraBasa AI",
     "slug": "tarabasa-ai",
-    "version": "0.5.5",
+    "version": "0.6.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.tarabasaai.app",
-      "versionCode": 15,
+      "versionCode": 20,
       "adaptiveIcon": {
         "backgroundColor": "#0062CF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -45,6 +45,12 @@
           "cameraPermission": "TaraBasa AI uses the camera to scan your learner card.",
           "barcodeScannerEnabled": true,
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TaraBasa AI reads the code on a learner card from a photo you choose."
         }
       ],
       "expo-font",

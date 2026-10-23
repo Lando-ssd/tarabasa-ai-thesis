@@ -81,7 +81,10 @@ h3{ margin:0; font:700 22px/1.15 var(--font-game); }
 
 .pill{ display:inline-flex; align-items:center; gap:6px; padding:5px 12px 4px; border-radius:999px; font:600 16px/1 var(--font-game); letter-spacing:.04em; background:#eef3f8; color:#4a5f73; white-space:nowrap; }
 .pill .ico{ font-size:16px; }
-.pill.lv-beginning{ background:#e6f4ff; color:#0f5fae; } .pill.lv-developing{ background:var(--green-bg); color:#137a63; } .pill.lv-proficient{ background:var(--orange-bg); color:var(--orange-ink); }
+/* The child's own four steps (Letter Explorer, Word Builder, Sentence Reader, Story Reader). A step is a place on a road, not a grade, so the
+   colours are friendly and none of them looks like a warning. A child with no first check yet stays plain grey. */
+.pill.step-1{ background:#e6f4ff; color:#0f5fae; } .pill.step-2{ background:var(--green-bg); color:#137a63; } .pill.step-3{ background:var(--orange-bg); color:var(--orange-ink); } .pill.step-4{ background:#f1e8ff; color:#6b3fa0; }
+.pill.step-new{ background:#eef3f8; color:#4a5f73; }
 .pill.warn{ background:var(--danger-bg); color:var(--danger); } .pill.ok{ background:var(--green-bg); color:#137a63; } .pill.amber{ background:var(--amber-bg); color:var(--amber); }
 
 .chips{ display:flex; gap:10px; flex-wrap:wrap; }

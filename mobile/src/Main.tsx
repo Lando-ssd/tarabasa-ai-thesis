@@ -89,7 +89,7 @@ export function Main() {
 
   let screen: React.ReactNode;
   if (tab === 'home') {
-    screen = <Home onStartReading={() => goTab('read')} />;
+    screen = <Home onStartReading={() => goTab('read')} onOpenBadges={() => goTab('badges')} />;
   } else if (tab === 'read') {
     if (route.name === 'story') {
       screen = (

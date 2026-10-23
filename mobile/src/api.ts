@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
-import { API_URL, REQUEST_TIMEOUT_MS, UPLOAD_TIMEOUT_MS } from './config';
+import { File } from 'expo-file-system';
+import { buildMultipart, newBoundary, type MultipartPart } from './multipart';
+import { API_URL, APP_VERSION, REQUEST_TIMEOUT_MS, UPLOAD_QUICK_FAILURE_SECONDS, UPLOAD_RETRY_PAUSES_MS, UPLOAD_TIMEOUT_MS } from './config';
 import { discardRecording } from './recordingFiles';
 import * as storage from './storage';
 
@@ -17,10 +19,18 @@ export class ApiError extends Error {
     message: string,
     public status: number,
     public body: unknown = null,
+    // 'network' = the request never got an answer (no connection); 'timeout' = it waited too long and the phone gave up;
+    // 'server' = the server answered (any status); 'file' = the recording could not be found on the phone.
+    public kind: 'network' | 'timeout' | 'server' | 'file' = 'server',
+    public seconds = 0,
+    // What the phone itself said went wrong (for example "Network request failed"). Only used for the technical note.
+    public detail = '',
   ) {
     super(message);
   }
 }
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export type LearnerPayload = {
   id: number;
@@ -265,12 +275,21 @@ async function request<T>(path: string, init: RequestInit = {}, options: { withT
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+  const startedAt = Date.now();
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
   let response: Response;
   try {
     response = await fetch(`${API_URL}${path}`, { ...init, headers, signal: controller.signal });
-  } catch {
-    throw new ApiError('We could not reach TaraBasa. Check the internet and try again.', 0);
+  } catch (err) {
+    const seconds = Math.round((Date.now() - startedAt) / 1000);
+    const detail = (err instanceof Error ? `${err.name}: ${err.message}` : String(err)).slice(0, 140);
+    throw timedOut
+      ? new ApiError('TaraBasa did not answer in time. Wait a moment and try again.', 0, null, 'timeout', seconds, detail)
+      : new ApiError('We could not reach TaraBasa. Check the internet and try again.', 0, null, 'network', seconds, detail);
   } finally {
     clearTimeout(timer);
   }
@@ -294,22 +313,108 @@ async function request<T>(path: string, init: RequestInit = {}, options: { withT
 
 /** Sends one recording (and any quiz answers) to a scoring endpoint as a multipart upload. */
 async function uploadAudio<T>(path: string, uri: string, answers?: string[], fields?: Record<string, string>): Promise<T> {
-  const form = new FormData();
-  if (Platform.OS === 'web') {
-    // A browser needs a real file object; a phone takes the file's address.
-    form.append('audio', await (await fetch(uri)).blob(), 'recording.m4a');
-  } else {
-    form.append('audio', { uri, name: 'recording.m4a', type: 'audio/mp4' } as unknown as Blob);
-  }
-  (answers ?? []).forEach((choice, i) => form.append(`answers[${i}]`, choice));
-  Object.entries(fields ?? {}).forEach(([name, value]) => form.append(name, value));
+  const buildForm = async () => {
+    const form = new FormData();
+    if (Platform.OS === 'web') {
+      // A browser needs a real file object; a phone takes the file's address.
+      form.append('audio', await (await fetch(uri)).blob(), 'recording.m4a');
+    } else {
+      form.append('audio', { uri, name: 'recording.m4a', type: 'audio/mp4' } as unknown as Blob);
+    }
+    (answers ?? []).forEach((choice, i) => form.append(`answers[${i}]`, choice));
+    Object.entries(fields ?? {}).forEach(([name, value]) => form.append(name, value));
+    return form;
+  };
 
-  // No Content-Type header on purpose: the phone adds the multipart boundary itself.
-  const result = await request<T>(path, { method: 'POST', body: form }, { timeoutMs: UPLOAD_TIMEOUT_MS });
-  // The server answered, so the copy of the child's voice on the phone is not needed any more. If the send FAILED the
-  // file is kept on purpose, so "Send Again" works; the cache sweep removes it later.
-  discardRecording(uri);
-  return result;
+  // On a phone: look at the file first, and read it into memory so it can be sent as plain bytes (method A). The
+  // file's address method (B) stays as the backup. What each one said goes into the technical note.
+  let file = { found: true as boolean | null, bytes: null as Uint8Array | null, size: null as number | null };
+  if (Platform.OS !== 'web') file = await readRecording(uri);
+  if (file.found === false) {
+    throw new ApiError(
+      `That recording is no longer on this phone. Please read it again.\nTechnical note: the recording file was not found, app version ${APP_VERSION}.`,
+      0, null, 'file', 0,
+    );
+  }
+
+  let tries = 0;
+  for (;;) {
+    tries += 1;
+    const notes: string[] = [];
+    try {
+      let result: T | undefined;
+      let done = false;
+
+      if (file.bytes) {
+        try {
+          const boundary = newBoundary();
+          const parts: MultipartPart[] = [{ name: 'audio', filename: 'recording.m4a', type: 'audio/mp4', bytes: file.bytes }];
+          (answers ?? []).forEach((choice, i) => parts.push({ name: `answers[${i}]`, value: choice }));
+          Object.entries(fields ?? {}).forEach(([name, value]) => parts.push({ name, value }));
+          result = await request<T>(
+            path,
+            { method: 'POST', headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` }, body: buildMultipart(parts, boundary) as unknown as BodyInit },
+            { timeoutMs: UPLOAD_TIMEOUT_MS },
+          );
+          done = true;
+        } catch (a) {
+          if (!(a instanceof ApiError) || a.status !== 0) throw a;
+          // Method A never got an answer. A timeout means the server may be busy scoring it, so do not send a second copy.
+          if (a.kind !== 'network') throw a;
+          notes.push(`A: ${a.detail || 'failed'} after ${a.seconds} s`);
+        }
+      }
+
+      if (!done) {
+        try {
+          // No Content-Type header on purpose: the phone adds the multipart boundary itself.
+          result = await request<T>(path, { method: 'POST', body: await buildForm() }, { timeoutMs: UPLOAD_TIMEOUT_MS });
+          done = true;
+        } catch (b) {
+          if (b instanceof ApiError && b.status === 0) notes.push(`B: ${b.detail || 'failed'} after ${b.seconds} s`);
+          throw b;
+        }
+      }
+      // The server answered, so the copy of the child's voice on the phone is not needed any more. If the send FAILED the
+      // file is kept on purpose, so "Send Again" works; the cache sweep removes it later.
+      discardRecording(uri);
+      return result as T;
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 0) throw e;
+      // A connection that failed within a few seconds never reached the server (a Wi-Fi blip, a mobile data hiccup, the
+      // server restarting), so trying again by itself is safe. A request that had waited longer might have been
+      // scored already, so that one is left to the child's own "Send Again".
+      const neverReachedServer = e.kind === 'network' && e.seconds <= UPLOAD_QUICK_FAILURE_SECONDS;
+      if (neverReachedServer && tries <= UPLOAD_RETRY_PAUSES_MS.length) {
+        await sleep(UPLOAD_RETRY_PAUSES_MS[tries - 1]);
+        continue;
+      }
+      const what = e.kind === 'timeout' ? `no answer after ${e.seconds} s` : `no connection (${e.seconds} s)`;
+      const fileNote = Platform.OS === 'web' ? '' : `, recording ${file.size ?? '?'} bytes${file.bytes ? ' read' : ' not read'}`;
+      const how = notes.length ? `, ${notes.join('; ')}` : e.detail ? `, ${e.detail}` : '';
+      throw new ApiError(
+        `${e.message}\nTechnical note: ${what}, tried ${tries} time${tries === 1 ? '' : 's'}${fileNote}${how}, app version ${APP_VERSION}.`,
+        0, null, e.kind, e.seconds, e.detail,
+      );
+    }
+  }
+}
+
+/** Reads one recording from the phone's cache. found: true or false, or null when the phone would not say. */
+async function readRecording(uri: string): Promise<{ found: boolean | null; bytes: Uint8Array | null; size: number | null }> {
+  try {
+    const f = new File(uri);
+    if (!f.exists) return { found: false, bytes: null, size: null };
+    let bytes: Uint8Array | null = null;
+    try {
+      bytes = await f.bytes();
+    } catch {
+      bytes = null; // the file's address method still gets its chance
+    }
+    return { found: true, bytes, size: typeof f.size === 'number' ? f.size : bytes ? bytes.length : null };
+  } catch {
+    return { found: null, bytes: null, size: null };
+  }
 }
 
 export function login(learnerCode: string, pin: string) {
@@ -704,7 +809,24 @@ export type PromotionsData = {
 
 // ------------------------------------------------------------------ Parent
 
-export type ParentLevel = { band: string; label: string; short: string; step: string | null };
+/**
+ * What a parent sees about how a child reads: the child's own four steps (Letter Explorer, Word Builder, Sentence Reader, Story Reader).
+ * label and short carry the step name; band is only a colour hint. stepNumber, name, skill and plain come from servers that know the
+ * four steps; a server from before that change leaves them out and sends the school's words in label and short instead.
+ */
+export type ParentLevel = {
+  band: string;
+  label: string;
+  short: string;
+  /** For example "Step 2 of 4: Sounding Out Words", or null before the first check. */
+  step: string | null;
+  /** 1 to 4, or null before the first check. Undefined means an older server. */
+  stepNumber?: number | null;
+  name?: string;
+  skill?: string | null;
+  /** One sentence in a parent's words. */
+  plain?: string;
+};
 
 /** One of the parent's children, as every Parent screen lists them. */
 export type ParentChild = {
@@ -730,8 +852,10 @@ export type ParentSession = {
   accuracy: number | null;
   wcpm: number | null;
   flagged: boolean;
-  /** The level the child moved to with this reading, when it changed. */
+  /** The step the child moved to with this reading, when it changed. */
   moved: string | null;
+  /** The same as a sentence: "moved up to Sentence Reader". Missing on an older server. */
+  movedText?: string | null;
   day: string;
   at: string;
 };

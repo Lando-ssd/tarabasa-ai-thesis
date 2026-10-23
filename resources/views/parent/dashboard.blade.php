@@ -46,7 +46,8 @@
     <div>
       <h2>
         {{ $selectedLearner->first_name }}
-        @if ($selectedLearner->mastery_level)<span class="pill lv-{{ strtolower($selectedLearner->mastery_level) }}">{{ $selectedLearner->mastery_level }}</span>@endif
+        @php $step = \App\Support\ParentInsights::step($selectedLearner); @endphp
+        <span class="pill {{ $step['class'] }}">{{ $step['pill'] }}</span>
         @if ($childData['is_flagged'])<span class="pill warn">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico']) Flagged</span>@endif
       </h2>
       <div class="meta">{{ $selectedLearner->grade_level }} &middot; {{ $selectedLearner->schoolClass->name ?? 'Not in a class yet' }} &middot; Code {{ $selectedLearner->learner_code }}</div>
@@ -85,8 +86,8 @@
             <div class="item-sub">
               @if ($session->flagged_needs_attention)
                 Flagged for extra support
-              @elseif ($session->level_before !== $session->level_after)
-                {{ round($session->accuracy_percent) }}% accuracy, moved to {{ $session->level_after }}
+              @elseif ($moveText = \App\Support\ParentInsights::stepMoveText($session->rung_before, $session->rung_after))
+                {{ round($session->accuracy_percent) }}% accuracy, {{ $moveText }}
               @else
                 {{ round($session->accuracy_percent) }}% accuracy
               @endif
