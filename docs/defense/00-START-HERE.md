@@ -36,7 +36,7 @@ Every basis in this kit carries one of three labels. Learn them, because they ar
 
 1. **Never say the AI was trained.** No model was trained, because there is no collection of children's recordings. The system is a speech recognition
    service (Vosk), an AI language model that writes activity drafts (Gemini), and **written rules and formulas**. Say it before they ask.
-2. **Never say it was tested with real children.** It was tested with automated tests (788 passing), with computer voices, and in live use by the team.
+2. **Never say it was tested with real children.** It was tested with automated tests (799 passing), with computer voices, and in live use by the team.
    Real-child testing is the next step and the first limitation. Fill in the results of your teacher survey and user acceptance test **only** with the real
    numbers from your appendices.
 3. **Never say DepEd approved it.** It follows DepEd documents. It is not made or endorsed by the Department of Education (the home page says so).
@@ -66,5 +66,5 @@ Every basis in this kit carries one of three labels. Learn them, because they ar
 
 Use this shape, it works for any question: **(1) what we did, (2) what the data or the source shows, (3) what we did not measure, (4) what we would do next.**
 
-Example: "Did it improve reading scores?" Answer: "We built and tested the system and it works as designed (788 automated tests). We did not run a
+Example: "Did it improve reading scores?" Answer: "We built and tested the system and it works as designed (799 automated tests). We did not run a
 long-term study, so we cannot claim reading scores improved. The next step is a classroom pilot that compares children's Phil-IRI results before and after."

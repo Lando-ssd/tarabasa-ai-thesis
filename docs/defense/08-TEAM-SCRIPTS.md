@@ -61,7 +61,7 @@ Show the network picture (file 2, section 2) on paper or a slide.
 
 1. "One Laravel server on Render, one TiDB database. Three small services do three jobs: a reading service with Vosk speech recognition, an activity writer using Gemini, and a recommender that is only formulas. Gmail sends the confirmation emails. The website and the phone app share the same rules on the server."
 2. "Everything adaptive is a written rule with a reason. No model was trained, because there is no collection of children's recordings to train on. We say so before you ask. It is our first limit and our next step."
-3. "We have 788 automated tests, live runs with computer voices through the real speech service, and we use the website ourselves. The phone app is in its first real-phone test now. We have not tested with real children over time."
+3. "We have 799 automated tests, live runs with computer voices through the real speech service, and we use the website ourselves. The phone app is in its first real-phone test now. We have not tested with real children over time."
 4. "Privacy: the parent consents, recordings are deleted when scoring ends, there are no ads and no trackers, and a parent can delete a child's profile."
 5. "The business: a school subscription. Our cash cost for a steady school is about PHP 3,000 a month, mostly fixed, so two schools at PHP 1,500 would cover it. Those prices are assumptions we have not tested; the pilot is how we test them."
 6. **Hand-off to A:** "[A] will close."
