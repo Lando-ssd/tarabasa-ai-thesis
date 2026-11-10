@@ -133,7 +133,11 @@ class EmailVerificationLinkTest extends TestCase
     public function test_the_link_in_the_real_registration_email_verifies_the_account_behind_the_hosts_proxy(): void
     {
         \Illuminate\Support\Facades\Notification::fake();
-        $proxy = ['X-Forwarded-Proto' => 'https', 'X-Forwarded-Host' => 'tarabasa-ai.onrender.com', 'X-Forwarded-Port' => '443'];
+        // As on the live site: APP_URL is the https address, and the proxy only says the request came in over https.
+        // (The forwarded HOST header is not trusted any more: see tests/Feature/HostHeaderTest.php.)
+        \App\Support\PublicUrl::pin('https://tarabasa-ai.onrender.com');
+        $this->beforeApplicationDestroyed(fn () => \App\Support\PublicUrl::reset());
+        $proxy = ['X-Forwarded-Proto' => 'https', 'X-Forwarded-Port' => '443'];
 
         $this->withHeaders($proxy)->post(route('register.teacher.submit'), [
             'first_name' => 'Pinky', 'last_name' => 'Reyes', 'email' => 'pinky@example.com', 'password' => 'Passw0rd!', 'password_confirmation' => 'Passw0rd!',

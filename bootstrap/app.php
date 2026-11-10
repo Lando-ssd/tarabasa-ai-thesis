@@ -17,7 +17,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // HTTP internally — without this, Laravel can't tell the request
         // was actually HTTPS, which breaks secure-cookie flags and any
         // absolute URL generation that checks $request->secure().
-        $middleware->trustProxies(at: '*');
+        //
+        // The forwarded HOST header is deliberately NOT trusted: trusting it let anyone choose the address written into
+        // password reset and confirmation emails. The host the system uses comes from APP_URL instead (see
+        // App\Support\PublicUrl, App\Http\Middleware\CanonicalHost and tests/Feature/HostHeaderTest.php).
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
+        // First of all: with an https APP_URL, every request is treated as sent to that host (does nothing otherwise).
+        $middleware->prepend(\App\Http\Middleware\CanonicalHost::class);
 
         // A list in a page address is refused everywhere (it used to crash a few screens).
         $middleware->append(\App\Http\Middleware\RejectNestedQuery::class);

@@ -28,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Every link we write starts with our own https address, never with a host taken from the request
+        // (a forged host header could otherwise put a stranger's site into a password reset email).
+        \App\Support\PublicUrl::pin(config('app.url'));
+
         // The Parent menu bar shows how many alerts are unread on every Parent page, so the
         // count is worked out once here instead of by each controller.
         View::composer('layouts.parent-shell', function ($view) {
