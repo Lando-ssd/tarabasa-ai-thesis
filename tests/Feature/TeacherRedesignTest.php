@@ -410,6 +410,24 @@ class TeacherRedesignTest extends TestCase
         $this->assertSame([$g2->id, 'Grade 2'], [$kid->fresh()->class_id, $kid->fresh()->grade_level]);
     }
 
+    /** A teacher sees Phil-IRI level names everywhere. The Promotions list used to print the internal word (Beginning, Proficient). */
+    public function test_the_promotions_list_names_each_learners_level_the_way_the_rest_of_the_teacher_screens_do(): void
+    {
+        [$user, $teacher] = $this->teacher();
+        $g1 = $this->klass($teacher, ['name' => 'One', 'grade_level' => 'Grade 1']);
+        $weak = $this->learner($g1, ['first_name' => 'Weak', 'grade_level' => 'Grade 1']);
+        $strong = $this->learner($g1, ['first_name' => 'Strong', 'grade_level' => 'Grade 1']);
+        $new = $this->learner($g1, ['first_name' => 'Fresh', 'grade_level' => 'Grade 1']);
+        $weak->forceFill(['mastery_level' => 'Beginning', 'reading_rung' => 2])->save();
+        $strong->forceFill(['mastery_level' => 'Proficient', 'reading_rung' => 5])->save();
+        $new->forceFill(['mastery_level' => null, 'reading_rung' => null])->save();
+        $this->actingAs($user);
+
+        $this->get(route('teacher.promotions.index'))->assertOk()
+            ->assertSee('Frustration level')->assertSee('Independent level')->assertSee('Not checked yet')
+            ->assertDontSee('One · Beginning', false)->assertDontSee('One · Proficient', false)->assertDontSee('One · New', false);
+    }
+
     public function test_the_menu_bar_counts_open_alerts_and_claimable_learners(): void
     {
         [$user, $teacher] = $this->teacher();

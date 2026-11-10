@@ -61,7 +61,7 @@
             @php $gradeNumber = (int) substr($l->grade_level, 6); @endphp
             <div class="lrow static" data-class="{{ $c->id }}" data-search="{{ strtolower($l->first_name.' '.$l->last_name.' '.$l->learner_code) }}" hidden>
               @include('teacher._avatar', ['learner' => $l])
-              <span class="lname"><b>{{ $l->first_name }} {{ $l->last_name }}</b><small>{{ $l->grade_level }} · {{ $c->name }} · {{ $l->mastery_level ?? 'New' }}</small></span>
+              <span class="lname"><b>{{ $l->first_name }} {{ $l->last_name }}</b><small>{{ $l->grade_level }} · {{ $c->name }} · {{ \App\Support\ReadingLevel::forAdult($l)['label'] }}</small></span>
               @if ($gradeNumber >= 3)
                 <span class="pill" style="margin-left:auto">Final year</span>
               @elseif ($isActive)
