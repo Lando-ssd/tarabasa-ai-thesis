@@ -337,6 +337,23 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - A migration (`2026_10_23_000200_reword_old_parent_alerts`) rewords old alerts addressed to parents so they stop showing the old words; teachers'
   alerts are untouched.
 
+## Version 0.6.2 (2026-11-18): easy PIN refused when adding a child, class list names
+
+- **0.6.2** (0.6.1 plus this; send 0.6.2): (1) **Add a child, last step:** a PIN of four of the same number (1111) or a straight run (1234, 4321) is refused with a sentence
+  under the PIN box, and the helper line says so (`easyPin()` in `src/parent/AddChild.tsx`). It is the same rule the server now has when a child is added (`PinRules`, in
+  `ParentChildService`, live since commit `c0a5d7a`) and when a guardian makes a new PIN. (2) **Class list:** a learner's tag (Needs support, Ready to move up...) now sits
+  UNDER the name (`ListRow` has a new `below` prop in `src/teacher/kit.tsx`), so a long tag no longer squeezes the name into a few letters per line.
+- APK: `D:\tools\apk-out\TaraBasa-AI-0.6.2-test22.apk` (42.6 MB, versionCode 22, SHA-256 `55c148393215bdae5b3248f328848ec1930aa5375eacecbd63c184803f2523fc`). Tester pack:
+  `D:\tools\apk-out\TaraBasa-0.6.2-tester-pack.zip` (the APK, its checksum, START-HERE and the two checklists with the two new things to look at).
+- Checked inside the file (`aapt2 dump badging` and the JS bundle): package `com.tarabasaai.app`, versionName 0.6.2, versionCode 22, arm64-v8a only, the same permissions as 0.6.1
+  (camera, microphone, internet, vibrate, wake lock, network state, audio settings, foreground service for sound), the live address in the bundle, no localhost, both new PIN
+  sentences present. Before the build: `tsc --noEmit` clean, `MobileVersionTest` passes (app.json and `APP_VERSION` agree), the class list checked in the browser at 360, 390
+  and 430 px, and the PIN sentence seen in the real wizard. NOT checked on a real phone.
+- **Build note.** The first attempt (from a copy in `D:\tb`, as above) stopped in Gradle: the C++ compiler crashed ("Exception Code: 0xC000001D", "IO failure on output
+  stream") while this computer had only about 0.8 GB of its 7.7 GB of memory free. Running Gradle again in the same folder with 3 CPU cores (`ProcessorAffinity` 7), one worker
+  (`--max-workers=1`) and `-Xmx1536m` built it cleanly (the retry took about 50 minutes). If it happens again, close Chrome and other programs first.
+- The release is still signed with the debug key (fine for testers, not for the Play Store).
+
 ## Version 0.6.1 (2026-10-24): a profile photo for Teachers and Parents
 
 - **0.6.1** (0.6.0 plus this; send 0.6.1, not 0.6.0): My profile (Teacher and Parent) has a new **Profile photo** card at the top: Choose a photo, Change photo and
