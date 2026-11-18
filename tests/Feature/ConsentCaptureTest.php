@@ -55,7 +55,7 @@ class ConsentCaptureTest extends TestCase
     {
         return $o + [
             'first_name' => 'Maria', 'last_name' => 'Perez', 'grade_level' => 'Grade 1', 'avatar_id' => '🦁', 'reading_stage' => 'letters',
-            'q1' => 'yes', 'q2' => 'no', 'q3' => 'no', 'pin' => '1234', 'pin_confirmation' => '1234',
+            'q1' => 'yes', 'q2' => 'no', 'q3' => 'no', 'pin' => '2580', 'pin_confirmation' => '2580',
         ];
     }
 
@@ -220,7 +220,7 @@ class ConsentCaptureTest extends TestCase
 
         $user = $this->parentUser('p2@example.com');
         $token = $user->createToken('mobile')->plainTextToken;
-        $child = ['first_name' => 'Ben', 'last_name' => 'Santos', 'grade_level' => 'Grade 1', 'avatar_id' => '🐰', 'reading_stage' => 'blending', 'q1' => 'yes', 'q2' => 'yes', 'q3' => 'no', 'pin' => '4321', 'pin_confirmation' => '4321'];
+        $child = ['first_name' => 'Ben', 'last_name' => 'Santos', 'grade_level' => 'Grade 1', 'avatar_id' => '🐰', 'reading_stage' => 'blending', 'q1' => 'yes', 'q2' => 'yes', 'q3' => 'no', 'pin' => '2580', 'pin_confirmation' => '2580'];
 
         $this->withToken($token)->postJson('/api/parent/children', $child)->assertStatus(422)->assertJsonValidationErrors('parent_consent');
         $this->withToken($token)->postJson('/api/parent/children', $child + ['parent_consent' => true])->assertCreated();

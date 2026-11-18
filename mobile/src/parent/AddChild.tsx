@@ -16,6 +16,15 @@ const STEPS = ['About your child', 'Choose a character', 'How they read now', 'A
 /** Letters (any language), spaces, hyphens and apostrophes only: the same rule the server enforces, for quick feedback. */
 const NAME = /^[\p{L}\s'-]+$/u;
 
+/** The same two rules the server has for a child's PIN (App\Support\PinRules): not four of the same number, not a straight run. */
+function easyPin(pin: string): string | null {
+  if (new Set(pin).size === 1) return 'Choose a PIN that is not four of the same number, like 1111.';
+  const d = pin.split('').map(Number);
+  const up = d.every((v, i) => i === 0 || v === d[i - 1] + 1);
+  const down = d.every((v, i) => i === 0 || v === d[i - 1] - 1);
+  return up || down ? 'Choose a PIN that is not a run of numbers, like 1234 or 4321.' : null;
+}
+
 /** Which step a field's message belongs to, so a refusal from the server brings the parent to the right screen. */
 const STEP_OF: Record<string, number> = {
   first_name: 0, middle_name: 0, last_name: 0, grade_level: 0, home_language: 0,
@@ -109,6 +118,7 @@ export function AddChild({ onBack, onDone, onCard }: Props) {
     if (at === 3 && ['q1', 'q2', 'q3'].some((k) => !answers[k])) found.q1 = 'Please answer all three. "Not sure" is fine.';
     if (at === 4) {
       if (!/^\d{4}$/.test(pin)) found.pin = 'The PIN is 4 digits.';
+      else if (easyPin(pin)) found.pin = easyPin(pin) as string;
       else if (pin !== again) found.pin_confirmation = 'The two PINs are not the same.';
       if (!agreed) found.parent_consent = "Please tick the box to confirm you are this child's parent or guardian and you agree, or we cannot add the child.";
     }
@@ -248,7 +258,7 @@ export function AddChild({ onBack, onDone, onCard }: Props) {
 
           {step === 4 ? (
             <>
-              <P>{first.trim() || 'Your child'} uses this PIN, with their Learner Code or card, to open their own app. Choose 4 digits and keep them private.</P>
+              <P>{first.trim() || 'Your child'} uses this PIN, with their Learner Code or card, to open their own app. Choose 4 digits and keep them private. Not four of the same number (1111) and not a run (1234 or 4321).</P>
               <Field label="PIN" value={pin} onChangeText={(t) => (clear('pin'), setPin(t.replace(/\D/g, '').slice(0, 4)))} keyboardType="number-pad" maxLength={4} password error={errors.pin} />
               <Field label="Confirm PIN" value={again} onChangeText={(t) => (clear('pin_confirmation'), setAgain(t.replace(/\D/g, '').slice(0, 4)))} keyboardType="number-pad" maxLength={4} password error={errors.pin_confirmation} />
               {/* The parent's consent for the child's information. What it covers is on the Parent and Guardian Consent page; nothing is kept without it. */}

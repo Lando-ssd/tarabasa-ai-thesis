@@ -166,7 +166,7 @@
       <div class="step step-hidden" id="step5">
         <div class="step-eyebrow">Last step</div>
         <h1>Set a 4-digit PIN</h1>
-        <p class="sub"><span class="child-name-ref">Your child</span> will use this PIN, along with their avatar, to open their own dashboard, with no typing needed.</p>
+        <p class="sub"><span class="child-name-ref">Your child</span> will use this PIN, along with their avatar, to open their own dashboard, with no typing needed. Not four of the same number (1111) and not a run (1234 or 4321).</p>
         <div class="pin-boxes" id="pinBoxes">
           <div class="pin-box" data-i="0"></div>
           <div class="pin-box" data-i="1"></div>
@@ -476,6 +476,10 @@
       const pin = document.getElementById('pin').value;
       const confirm = document.getElementById('pin_confirmation').value;
       if (pin.length < 4){ showInlineError('Please enter a 4-digit PIN.'); return false; }
+      // The same two rules the server has for a PIN (App\Support\PinRules): not four of the same number, not a straight run.
+      const digits = pin.split('').map(Number);
+      if (new Set(digits).size === 1){ showInlineError('Choose a PIN that is not four of the same number, like 1111.'); return false; }
+      if (digits.every((v, i) => i === 0 || v === digits[i - 1] + 1) || digits.every((v, i) => i === 0 || v === digits[i - 1] - 1)){ showInlineError('Choose a PIN that is not a run of numbers, like 1234 or 4321.'); return false; }
       if (confirm.length < 4 || confirm !== pin){ showInlineError("PINs don't match. Try again."); return false; }
       if (!document.getElementById('parent_consent').checked){ showInlineError("Please tick the box to confirm you are this child's parent or guardian and you agree."); return false; }
       if (avatarMode === 'photo' && photoReady && !document.getElementById('photo_consent').checked){ showInlineError('Please tick the photo box, or go back and choose a character instead.'); return false; }

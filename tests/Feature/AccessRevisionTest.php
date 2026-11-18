@@ -308,7 +308,7 @@ class AccessRevisionTest extends TestCase
     {
         return $o + [
             'first_name' => 'Maria', 'last_name' => 'Perez', 'grade_level' => 'Grade 1', 'avatar_id' => '🦁', 'reading_stage' => 'letters',
-            'q1' => 'yes', 'q2' => 'no', 'q3' => 'no', 'pin' => '1234', 'pin_confirmation' => '1234', 'parent_consent' => '1',
+            'q1' => 'yes', 'q2' => 'no', 'q3' => 'no', 'pin' => '2580', 'pin_confirmation' => '2580', 'parent_consent' => '1',
         ];
     }
 

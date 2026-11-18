@@ -8,6 +8,8 @@ use App\Models\LearnerPhoto;
 use App\Models\Notification;
 use App\Models\User;
 use App\Support\LearnerCode;
+use App\Support\PinRules;
+use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -82,7 +84,12 @@ class ParentChildService
             'q1' => ['required', Rule::in(['yes', 'no', 'unsure'])],
             'q2' => ['required', Rule::in(['yes', 'no', 'unsure'])],
             'q3' => ['required', Rule::in(['yes', 'no', 'unsure'])],
-            'pin' => ['required', 'digits:4'],
+            // The same rule a new PIN has when a guardian makes one later (PinRules): not four of the same number, not a run like 1234.
+            'pin' => ['bail', 'required', 'digits:4', function (string $attribute, mixed $value, Closure $fail): void {
+                if (($why = PinRules::refusal((string) $value)) !== null) {
+                    $fail($why);
+                }
+            }],
             'pin_confirmation' => ['required', 'same:pin'],
         ];
     }

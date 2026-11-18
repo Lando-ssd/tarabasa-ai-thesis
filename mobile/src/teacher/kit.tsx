@@ -48,6 +48,7 @@ export function ListRow({
   lead,
   title,
   sub,
+  below,
   right,
   onPress,
   chevron = true,
@@ -56,6 +57,8 @@ export function ListRow({
   lead?: ReactNode;
   title: string;
   sub?: string;
+  /** A tag that goes UNDER the title and line, for words too long to sit beside the name (they would squeeze the name to a few letters per line). */
+  below?: ReactNode;
   right?: ReactNode;
   onPress?: () => void;
   chevron?: boolean;
@@ -69,6 +72,7 @@ export function ListRow({
           {title}
         </Text>
         {sub ? <Small>{sub}</Small> : null}
+        {below ? <View style={{ alignSelf: 'flex-start', marginTop: space[4] }}>{below}</View> : null}
       </View>
       {right}
       {onPress && chevron ? <Icon name="caret-right" size={s(20)} color={colors.slate} /> : null}

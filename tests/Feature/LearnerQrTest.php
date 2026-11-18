@@ -73,12 +73,12 @@ class LearnerQrTest extends TestCase
 
         $page = $this->post(route('parent.children.store'), [
             'first_name' => 'Maria', 'last_name' => 'Perez', 'grade_level' => 'Grade 1', 'avatar_id' => '🦁', 'reading_stage' => 'letters',
-            'q1' => 'yes', 'q2' => 'no', 'q3' => 'no', 'pin' => '1234', 'pin_confirmation' => '1234', 'parent_consent' => '1',
+            'q1' => 'yes', 'q2' => 'no', 'q3' => 'no', 'pin' => '2580', 'pin_confirmation' => '2580', 'parent_consent' => '1',
         ])->assertOk();
 
         $kid = Learner::where('first_name', 'Maria')->firstOrFail();
         $page->assertSee('QR code for learner code '.$kid->learner_code, false)->assertSee('Print Maria', false)->assertSee(route('parent.children.card', $kid), false);
-        $this->assertStringNotContainsString('1234', preg_replace('/TB\d{2}-\d{5}/', '', strip_tags(\App\Support\LearnerQr::svg($kid->learner_code))), 'the QR holds the code only');
+        $this->assertStringNotContainsString('2580', preg_replace('/TB\d{2}-\d{5}/', '', strip_tags(\App\Support\LearnerQr::svg($kid->learner_code))), 'the QR holds the code only');
     }
 
     public function test_only_a_linked_parent_can_open_a_childs_card(): void

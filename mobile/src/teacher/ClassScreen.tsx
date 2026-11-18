@@ -121,7 +121,7 @@ export function LearnerRow({ learner, onPress }: { learner: api.RosterLearner; o
       lead={<Initial name={learner.firstName} />}
       title={learner.name}
       sub={[learner.level, learner.step].filter(Boolean).join(' · ')}
-      right={learner.tag ? <TonePill text={learner.tag.label} tone={learner.tag.tone} /> : undefined}
+      below={learner.tag ? <TonePill text={learner.tag.label} tone={learner.tag.tone} /> : undefined}
       onPress={onPress}
     />
   );

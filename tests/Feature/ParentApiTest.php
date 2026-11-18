@@ -177,7 +177,7 @@ class ParentApiTest extends TestCase
     {
         return array_merge([
             'first_name' => 'Ben', 'last_name' => 'Santos', 'grade_level' => 'Grade 1', 'avatar_id' => '🐰', 'reading_stage' => 'blending',
-            'q1' => 'yes', 'q2' => 'yes', 'q3' => 'no', 'pin' => '4321', 'pin_confirmation' => '4321', 'home_language' => 'Filipino', 'supports' => ['games'], 'interests' => ['animals'],
+            'q1' => 'yes', 'q2' => 'yes', 'q3' => 'no', 'pin' => '2580', 'pin_confirmation' => '2580', 'home_language' => 'Filipino', 'supports' => ['games'], 'interests' => ['animals'],
         ], $over);
     }
 
@@ -193,10 +193,10 @@ class ParentApiTest extends TestCase
         $this->assertSame('blending', $kid->reading_stage);
         $this->assertSame(['q1' => 'yes', 'q2' => 'yes', 'q3' => 'no'], $kid->placement_answers);
         $this->assertSame(['animals'], $kid->interests);
-        $this->assertTrue(Hash::check('4321', $kid->pin), 'the PIN is stored hashed');
-        $this->assertNotSame('4321', $kid->pin);
+        $this->assertTrue(Hash::check('2580', $kid->pin), 'the PIN is stored hashed');
+        $this->assertNotSame('2580', $kid->pin);
         $this->assertTrue((bool) $p->learners()->whereKey($kid->id)->first()->pivot->is_creator);
-        $this->assertStringNotContainsString('4321', json_encode($r->json()), 'the PIN is never sent back');
+        $this->assertStringNotContainsString('2580', json_encode($r->json()), 'the PIN is never sent back');
     }
 
     public function test_every_answer_not_sure_starts_at_the_neutral_level_and_three_yes_at_the_top(): void
