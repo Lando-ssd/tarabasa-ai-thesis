@@ -37,6 +37,10 @@
         <env name="READING_AI_READY_WAIT" value="0"/>
         <env name="ACTIVITY_AI_READY_WAIT" value="0"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <!-- Many tests break a service on purpose to see how the app answers, and each one used to write a warning or an error into the
+             real storage/logs/laravel.log (it reached 50 MB of made-up errors). Tests write no log now. To see the log of one failing
+             test, start the run with LOG_CHANNEL=single in front of the test command and filter to that one test. -->
+        <env name="LOG_CHANNEL" value="null"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

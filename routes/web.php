@@ -157,8 +157,8 @@ Route::middleware('learner.auth')->prefix('learner')->name('learner.')->group(fu
         Route::get('/games/sentence-stars', [GameController::class, 'sentenceStars'])->name('games.sentence-stars');
         Route::get('/games/syllable-steps', [GameController::class, 'syllableSteps'])->name('games.syllable-steps');
         // The two games they replaced (spelling and card matching were not reading): an old link or bookmark lands on the Games page.
-        Route::redirect('/games/word-builder', '/learner/games');
-        Route::redirect('/games/letter-match', '/learner/games');
+        Route::redirect('/games/word-builder', '/learner/games')->name('games.word-builder.old');
+        Route::redirect('/games/letter-match', '/learner/games')->name('games.letter-match.old');
         // Something read aloud (a word, a row, a sentence) checked by the same service that scores readings. Practice only: nothing is saved.
         Route::post('/games/check-text', [GameController::class, 'checkText'])->middleware(['throttle:learner-game-check', 'scoring.slots'])->name('games.check-text');
         Route::post('/games/check-word', [GameController::class, 'checkWord'])->middleware(['throttle:learner-game-check', 'scoring.slots'])->name('games.check-word');
