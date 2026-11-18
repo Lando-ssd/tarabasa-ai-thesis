@@ -7,7 +7,7 @@ and a real teacher have used it: the app was only ever tested with computer voic
 Tick the boxes as you go. Where it says "Render" it means https://dashboard.render.com, service `tarabasa-ai`.
 
 Where the details live (read these before asking anyone for help):
-- `CLAUDE.md`: every decision, rule and known limit in the project, newest at the bottom.
+- `CLAUDE.md`: the short, current page (stack, rules in force, traps, state). `docs/HISTORY.md`: every decision, test and known limit since August 2026, newest at the bottom.
 - `mobile/HANDOVER.md`: how to build the phone app and what each version contains.
 - `docs/legal/LEGAL-RISK-REGISTER.md` and `docs/legal/DATA-INVENTORY.md`: the legal list and the facts behind it.
 - `docs/manuscript-update/00_README_START_HERE.docx`: the manuscript update pack.

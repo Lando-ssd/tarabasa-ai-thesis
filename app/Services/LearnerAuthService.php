@@ -21,7 +21,7 @@ use Illuminate\Validation\ValidationException;
  * repository-unlocked + Adaptive_Recommendator's pick) — extracted out of
  * LearnerAuthController so the exact same logic backs both the web
  * session-cookie login and the mobile Sanctum-token login, and both the
- * web Blade picker and the mobile JSON picker. See CLAUDE.md's "Mobile
+ * web Blade picker and the mobile JSON picker. See docs/HISTORY.md's "Mobile
  * API layer" entry.
  */
 class LearnerAuthService

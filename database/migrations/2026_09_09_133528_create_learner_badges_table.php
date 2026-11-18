@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Badges — deferred at Sprint 4 for lack of defined content, built for
- * real now (see CLAUDE.md's "Real Badges" entry). Badge DEFINITIONS
+ * real now (see docs/HISTORY.md's "Real Badges" entry). Badge DEFINITIONS
  * (name/description/emoji/threshold) deliberately do NOT get their own
  * table — they're fixed content nobody edits through a UI, so they live
  * in config/badges.php instead (same pattern as MASTERY_TO_RESULT_LABEL).

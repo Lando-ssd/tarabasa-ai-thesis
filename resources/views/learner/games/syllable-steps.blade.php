@@ -13,7 +13,7 @@
   non-words, so a part is never sent to it: steps 1 to 3 are listening, tapping and joining, and the checker hears a whole word
   inside a sentence. The answer is only "heard" or "again", never "wrong", the same as every other game.
 
-  Built from what is known about children this age (see CLAUDE.md, "Syllable Steps"): one finger taps instead of dragging or
+  Built from what is known about children this age (see docs/HISTORY.md, "Syllable Steps"): one finger taps instead of dragging or
   sliding, because small children manage a tap far more reliably; Tara SAYS every instruction (the line of text is only a backup,
   and a speaker button says it again); the next thing to tap glows; every tap answers at once. The browser only lets a page speak
   after the child has tapped something, so the very first instruction waits for the speaker button, which glows.

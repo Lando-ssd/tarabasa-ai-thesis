@@ -17,7 +17,7 @@ use Illuminate\Http\Request;
 /**
  * Mobile Learner API — login/dashboard/activity-picker. Thin JSON
  * wrappers over LearnerAuthService, the exact same logic
- * LearnerAuthController (web) calls — see CLAUDE.md's "Mobile API layer"
+ * LearnerAuthController (web) calls — see docs/HISTORY.md's "Mobile API layer"
  * entry. Learner-only: Teacher/Parent/Admin stay web-only, matching the
  * mobile app's own scope.
  */

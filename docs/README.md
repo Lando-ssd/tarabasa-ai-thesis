@@ -4,6 +4,12 @@ Everything in here is read-only reference material, not application code.
 It's organized by how trustworthy/current each thing is, exactly like the
 "current vs. stale" distinction established for this project from the start.
 
+## HISTORY.md — the project log (not instructions)
+
+Every decision, test, bug and limit from August to November 2026, written as it happened (it was the root `CLAUDE.md`
+until 2026-11-18, kept word for word). Search it by section title. It records what was true on each date; the root
+`CLAUDE.md` is the short current page and the code is the source of truth.
+
 ## manuscript/ — HIGHEST AUTHORITY
 
 `TARABASA-AI-Final-Manuscript23.pdf` is the actual graded thesis manuscript.

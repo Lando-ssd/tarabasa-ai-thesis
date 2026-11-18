@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 /**
  * Mobile Learner API — the first-login diagnostic. Thin JSON wrappers
  * over LearnerDiagnosticService, the exact same logic
- * LearnerDiagnosticController (web) calls — see CLAUDE.md's "Mobile API
+ * LearnerDiagnosticController (web) calls — see docs/HISTORY.md's "Mobile API
  * layer" entry. NOT gated by 'learner.diagnostic.api' (see routes/api.php)
  * — this is how a Learner completes it, so it can't require itself to
  * already be complete.

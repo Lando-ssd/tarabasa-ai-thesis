@@ -12,7 +12,7 @@ use Illuminate\View\View;
 
 /**
  * Practice Games: standalone free-play reading practice, deliberately outside the manuscript's "gameType attached to a
- * Teacher-approved Activity" model (see the Activity Generation provisional-conflict note in CLAUDE.md: same root cause,
+ * Teacher-approved Activity" model (see the Activity Generation provisional-conflict note in docs/HISTORY.md: same root cause,
  * gemini_activity_gen's real API has no game_type/content JSON concept to build that model against). No points, no scoring,
  * no ReadingSession row: a clean separation from the real reading-achievement system, confirmed with the user before
  * building. The one thing a finished session reports to the server is a `game_plays` row (see finish()), which exists only

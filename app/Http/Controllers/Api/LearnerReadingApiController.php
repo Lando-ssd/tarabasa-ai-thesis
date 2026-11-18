@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 /**
  * Mobile Learner API — real Practice reading submission. Thin JSON
  * wrapper over LearnerReadingService, the exact same logic
- * LearnerReadingController (web) calls — see CLAUDE.md's "Mobile API
+ * LearnerReadingController (web) calls — see docs/HISTORY.md's "Mobile API
  * layer" entry. For a comprehension activity the app sends the picked
  * choice text per question in 'answers'; the score is worked out here on
  * the server against the stored answers (the activity detail endpoint

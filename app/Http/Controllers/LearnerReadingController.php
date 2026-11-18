@@ -20,7 +20,7 @@ use Illuminate\View\View;
  *
  * A thin Blade-rendering wrapper — the actual scoring/mastery/adaptive
  * logic lives in LearnerReadingService, shared verbatim with the mobile
- * API's Api\LearnerReadingApiController. See CLAUDE.md's "Mobile API
+ * API's Api\LearnerReadingApiController. See docs/HISTORY.md's "Mobile API
  * layer" entry for why this was extracted.
  */
 class LearnerReadingController extends Controller

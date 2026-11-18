@@ -13,7 +13,7 @@ return new class extends Migration
      * single difficulty_tier per row with curriculum_guide_id grounding;
      * the real API returns 3 difficulty tiers per call, has no gameType
      * concept, and has no curriculum-guide grounding at all. See
-     * CLAUDE.md's "PROVISIONAL, NOT FINAL" section for the full conflict
+     * docs/HISTORY.md's "PROVISIONAL, NOT FINAL" section for the full conflict
      * and why this is a stopgap, not a settled decision.
      *
      * One row is saved per (difficulty tier × variant) the API returns

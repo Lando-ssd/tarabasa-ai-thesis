@@ -10,7 +10,7 @@ The phone app talks to the same Laravel server and database as the website throu
 | Phone app code | `mobile/` (this folder) |
 | Phone API (server side) | `routes/api.php`, `app/Http/Controllers/Api/`, tests in `tests/Feature/MobileApiTest.php` |
 | The numbers on Home, shared with the website | `app/Support/LearnerHome.php` |
-| Full project notes | `CLAUDE.md`, section "Mobile app, Part 2" |
+| Full project notes | `docs/HISTORY.md`, section "Mobile app, Part 2" |
 
 ## Run it (browser preview, no phone needed)
 1. Install Node 22 and run `npm install` inside `mobile/`.
@@ -200,7 +200,7 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 ## Version 0.4.1 (2026-10-14): the layout pass 2 fixes
 - **File:** `D:/tools/apk-out/TaraBasa-AI-0.4.1-test8.apk` (41.9 MiB, arm64 only, versionCode 8, SHA-256
   `4cea7652b33680c3536a32e8b496f6ad652cde9094b595c229ebae0624663058`, built from `D:	b` in about 12 minutes). It carries the layout pass
-  (see CLAUDE.md "Phone app: layout pass 2 and the hosted preview"): the spacing ladder, tap targets never under 48dp, the six letter tiles
+  (see docs/HISTORY.md "Phone app: layout pass 2 and the hosted preview"): the spacing ladder, tap targets never under 48dp, the six letter tiles
   three to a row, the warm-up, "Your turn" and Balloon Pop fitting common phones, a thin line above a pinned button only when the page scrolls.
 - **Checked inside:** versionName 0.4.1 / versionCode 8; the same 10 permissions as 0.4.0; the live address is present; Word Train, Sentence
   Stars and the check-text call are present; Letter Match, the emulator address and ALL of the preview's sample data (sample child code, sample
@@ -216,7 +216,7 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 ## Version 0.4.2 (2026-10-14): the smallest phone fit
 - **File:** `D:/tools/apk-out/TaraBasa-AI-0.4.2-test9.apk` (41.9 MiB, arm64 only, versionCode 9, SHA-256
   `4a2a53bd0681715fe031d5e2e49d021f00bdf2b8cab2e9080d892bd329ab4141`, built from `D:	b` in 14.1 minutes on the first try, with only
-  about 1 GB of free memory). It carries everything in 0.4.1 plus the smallest phone fit (CLAUDE.md "Smallest phone fit"): the quiz one
+  about 1 GB of free memory). It carries everything in 0.4.1 plus the smallest phone fit (docs/HISTORY.md "Smallest phone fit"): the quiz one
   question at a time, the warm-up "quiet" state, "Your turn" and Balloon Pop fitting a 360x640 phone, and the first check's six letter
   tiles three to a row on every width.
 - **Checked inside:** versionName 0.4.2 / versionCode 9; the same 10 permissions as 0.4.0 and 0.4.1; the live address is present and the
@@ -230,7 +230,7 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
   `71eb982a952ce3047c00b23902a9c8848bfab81a062c6e203f013cd00a9889d6`, built from `D:	b` in 17 min 37 s). It carries everything in 0.4.2 plus the
   whole Teacher app (Home, Classes with camera scan, Activities review with level buttons, Generate for a class, Alerts, More with Analytics,
   Promotions and My profile) and the whole Parent app (Home, Children with the QR card, add a child in five steps, link a child with code and
-  PIN, Progress, Activities with unlock and rating, Alerts, profile). See CLAUDE.md "Phone app: the rest of the Teacher screens and the whole
+  PIN, Progress, Activities with unlock and rating, Alerts, profile). See docs/HISTORY.md "Phone app: the rest of the Teacher screens and the whole
   Parent side". Source: branch `mobile-app`, commit `1470694` (the APK was built from exactly that code).
 - **Checked inside:** versionName 0.5.0 / versionCode 10; the same 10 permissions as 0.4.x; the live address is present and `localhost:8123` and
   the emulator address are absent; the Teacher and Parent texts and their API paths are present ("Write new activities", "Add my child",

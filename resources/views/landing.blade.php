@@ -484,7 +484,7 @@
   }
 
   /* The adapted city-banner scene - originally clipped to a 345x59 rounded
-     pill (see CLAUDE.md for the real matte-removal fix), now rendered at
+     pill (see docs/HISTORY.md for the real matte-removal fix), now rendered at
      its own full natural rectangular frame and scaled up as a unit
      (width:100%, aspect-ratio preserved) to span the section, rather than
      distorting it to a different ratio. */
@@ -1005,7 +1005,7 @@
         <!-- Small decorative Lottie plane orbiting near the text via a CSS
              keyframe loop layered on top of its own baked-in motion (this
              asset is a raster frame-sequence with no separate position
-             data to sync a path to - see CLAUDE.md). -->
+             data to sync a path to - see docs/HISTORY.md). -->
         <div class="plane-stage">
           <div id="planeLottie" class="plane-lottie" role="img" aria-label="A small paper plane"></div>
         </div>

@@ -237,7 +237,7 @@
 
   // A real friendly chime when the child taps in — reuses the same
   // Mixkit-licensed "correct.mp3" already cleared/shipped for Practice
-  // Games (see CLAUDE.md), not a new asset. Fires on the first genuine
+  // Games (see docs/HISTORY.md), not a new asset. Fires on the first genuine
   // user gesture (focusing the code field), since browsers block
   // autoplay without one.
   (function () {

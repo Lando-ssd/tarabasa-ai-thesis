@@ -200,7 +200,7 @@ class SyllableStepsGameTest extends TestCase
         $this->child(3);
 
         $page = $this->get(route('learner.games.syllable-steps'))->assertOk();
-        // One finger taps: small children manage a tap far more reliably than a slide or a drag (see CLAUDE.md).
+        // One finger taps: small children manage a tap far more reliably than a slide or a drag (see docs/HISTORY.md).
         $page->assertSee('data-act="jtap"', false)->assertSee('Tap the first part. Then tap the next part.')
             ->assertSee('Start with the first part.')->assertSee('Now tap the next part.')
             ->assertDontSee('type="range"', false)->assertDontSee('draggable', false);

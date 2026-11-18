@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Log;
  * web controller (renders a Blade view) and the mobile API controller
  * (renders JSON). Nothing about the scoring math, mastery thresholds, or
  * Adaptive_Recommendator calls changed in this extraction — every method
- * here is a straight move, not a rewrite. See CLAUDE.md's "Mobile API
+ * here is a straight move, not a rewrite. See docs/HISTORY.md's "Mobile API
  * layer" entry for the reasoning.
  *
  * The "3 unclear attempts" counter used to live in the web session
@@ -311,7 +311,7 @@ class LearnerReadingService
     /**
      * Maps Reading-api's real word_feedback statuses onto the five the
      * results screen shows — correct/skip/mispronounced/sub/repeated. See
-     * the original LearnerReadingController history in CLAUDE.md for the
+     * the original LearnerReadingController history in docs/HISTORY.md for the
      * full reasoning; unchanged here, just relocated.
      */
     private function buildWordBreakdown(array $wordFeedback, array $wordTimestamps): array

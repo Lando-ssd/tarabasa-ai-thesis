@@ -128,7 +128,7 @@ return [
         // speech model reliably confuses are left out on purpose: Y (heard as
         // "why"), Z ("c"), X, Q, U ("you"), and F directly before H (run together).
         // Each set was read back by two synthesized voices through the real scoring
-        // service (see CLAUDE.md).
+        // service (see docs/HISTORY.md).
         'sets' => [
             ['label' => 'A', 'letters' => ['S', 'A', 'T', 'P', 'I', 'N']],
             ['label' => 'B', 'letters' => ['M', 'D', 'O', 'G', 'C', 'B']],

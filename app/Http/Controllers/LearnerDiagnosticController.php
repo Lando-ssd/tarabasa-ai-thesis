@@ -16,7 +16,7 @@ use Illuminate\View\View;
  * Sprint 4 Slice 4 — the first-login diagnostic
  * (TaraBasaAI_PlacementDiagnostic_Addition.txt +
  * TaraBasaAI_AdaptiveDiagnostic_Correction.txt). PROVISIONAL scope cut
- * recorded prominently in CLAUDE.md: the staircase adapts WITHIN the
+ * recorded prominently in docs/HISTORY.md: the staircase adapts WITHIN the
  * Learner's own grade only. It starts where the Parent said the child is
  * (config/diagnostic.php): Grade 1 pre-readers are asked for letters only,
  * and every reading item is phonics.
@@ -24,7 +24,7 @@ use Illuminate\View\View;
  * A thin Blade-rendering wrapper — the actual staircase logic (bundle
  * generation, scoring, mastery-level finalization, Adaptive_Recommendator
  * initialize()) lives in LearnerDiagnosticService, shared verbatim with
- * the mobile API's Api\LearnerDiagnosticApiController. See CLAUDE.md's
+ * the mobile API's Api\LearnerDiagnosticApiController. See docs/HISTORY.md's
  * "Mobile API layer" entry for why this was extracted.
  */
 class LearnerDiagnosticController extends Controller

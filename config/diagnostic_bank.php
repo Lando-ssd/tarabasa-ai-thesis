@@ -22,7 +22,7 @@
  *  - Subjects are a child's own world (home, school, market, farm, beach, rain). No hard
  *    names, places or brands, and only English first names that a speech model hears reliably.
  *  - Each item was read back by two synthesized voices through the real scoring service, and an
- *    item that was not heard cleanly was reworded (see CLAUDE.md for the results).
+ *    item that was not heard cleanly was reworded (see docs/HISTORY.md for the results).
  *
  * STILL TO DO BEFORE THE THESIS RELIES ON IT: a Grade 1 and a Grade 2 teacher should review
  * the texts. They were written by the team, not by a curriculum committee.

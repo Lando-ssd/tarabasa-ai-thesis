@@ -4,7 +4,7 @@ The system can stay alive through 2027 on the free setup. "Alive" does not mean 
 services to sleep, and you wake them with the keep-awake button (see section 5). What can kill the system is mostly
 outside the code: accounts, keys and other people's services. This file lists them, most dangerous first.
 
-Read this together with `docs/FINISH-CHECKLIST.md` (what is left to do) and `CLAUDE.md` (every decision and limit).
+Read this together with `docs/FINISH-CHECKLIST.md` (what is left to do) and `CLAUDE.md` (the current rules and state; the full log of every decision and limit is `docs/HISTORY.md`).
 
 ## 1. What runs where
 

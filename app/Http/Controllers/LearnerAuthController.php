@@ -16,7 +16,7 @@ use Illuminate\View\View;
  * A thin Blade-rendering wrapper — the actual credential-check/throttle
  * logic and the "what should I read?" picker resolution both live in
  * LearnerAuthService, shared verbatim with the mobile API's
- * Api\LearnerApiController. See CLAUDE.md's "Mobile API layer" entry for
+ * Api\LearnerApiController. See docs/HISTORY.md's "Mobile API layer" entry for
  * why this was extracted.
  */
 class LearnerAuthController extends Controller

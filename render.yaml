@@ -2,7 +2,7 @@
 #
 # This file is only used by Render. Railway keeps deploying exactly as before from railway.json and
 # the same Dockerfile; nothing here changes how Railway builds or runs the app, so the two hosts can
-# be switched between by changing where the variables point (see "How to switch hosts" in CLAUDE.md).
+# be switched between by changing where the variables point (see "How to switch hosts" in docs/HISTORY.md).
 #
 # Values marked `sync: false` are secrets or per-account details: Render asks for them in its
 # dashboard when the Blueprint is created. They are never stored in this file.
