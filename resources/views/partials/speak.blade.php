@@ -15,16 +15,27 @@
   var synth = ('speechSynthesis' in window) ? window.speechSynthesis : null;
   window.tbCanSpeak = !!synth;
 
+  /* Which of the device's English voices to use. A voice does not say whether it is a woman's or a man's, and the old robotic voices of a
+     computer sound very different from the natural ones, so the voices are ranked by what their names say: Philippine English first (Microsoft's
+     "Rosa", for one), then natural or online voices, then women's names, and known men's names last. The best one wins. */
+  function rank(v) {
+    var n = (v.name || '').toLowerCase(), lang = v.lang || '', s = 0;
+    if (/^en/i.test(lang)) s += 10;
+    if (/^en[-_]ph/i.test(lang) || n.indexOf('philippines') > -1) s += 14;
+    if (/en[-_]us/i.test(lang)) s += 2;
+    if (/natural|online|neural/.test(n)) s += 8;
+    if (/rosa\b/.test(n)) s += 6;
+    if (/aria|jenny|ava\b|emma|sonia|libby|samantha|zira|susan|allison|karen|tessa|moira|serena|victoria|google us english|female/.test(n)) s += 6;
+    if (/david|mark\b|guy\b|ryan|james|george|male\b|alex|fred|daniel|tom\b|eric|brian|christopher|davis|tony/.test(n)) s -= 8;
+    return s;
+  }
+
   function pickVoice() {
     if (!synth) return null;
-    var voices = synth.getVoices() || [];
-    var pref = ['en-PH', 'en-US', 'en-GB', 'en'];
-    for (var i = 0; i < pref.length; i++) {
-      for (var j = 0; j < voices.length; j++) {
-        if (voices[j].lang && voices[j].lang.indexOf(pref[i]) === 0) return voices[j];
-      }
-    }
-    return null;
+    var voices = (synth.getVoices() || []).filter(function (v) { return v.lang && /^en/i.test(v.lang); });
+    if (!voices.length) return null;
+    voices.sort(function (a, b) { return rank(b) - rank(a); });
+    return voices[0];
   }
 
   window.tbStopSpeaking = function () { try { if (synth) synth.cancel(); } catch (e) {} };

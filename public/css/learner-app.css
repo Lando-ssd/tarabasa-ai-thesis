@@ -1317,3 +1317,11 @@ button.bdg-chip{ font-family:var(--font-game); cursor:pointer; }
   background-color:transparent; --dlip:#36927a; color:#fff;
   box-shadow:0 6px 0 var(--dlip), 0 16px 20px -12px rgba(0,0,0,.3), inset 0 -7px 10px rgba(0,0,0,.08);
 }
+
+/* ---- Sound Hunt's card on the Games page: the same raised card, in a mint family ---- */
+.gm-mint{ --top:#e9f8f0; --bot:#bfe9d4; --rim:#d6f1e4; --lip:#79c2a0; --glow:rgba(20,120,90,.42); --inner:rgba(40,150,110,.2); --well:#a8dcc3; --wtext:#0f5a43; --wshadow:rgba(20,110,80,.4); }
+.gm-mint .gm-icon{
+  background-image:radial-gradient(circle at 28% 22%, rgba(255,255,255,.8), rgba(255,255,255,0) 46%), linear-gradient(180deg,#ffe790,#ffbf40);
+  background-color:transparent; --dlip:#cf8d10; color:#fff;
+  box-shadow:0 6px 0 var(--dlip), 0 16px 20px -12px rgba(0,0,0,.3), inset 0 -7px 10px rgba(0,0,0,.08);
+}

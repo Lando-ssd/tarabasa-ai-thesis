@@ -60,7 +60,7 @@ class PracticeGamesVoiceTest extends TestCase
 
     // ------------------------------------------------------------- the hub and the pages
 
-    public function test_the_games_hub_offers_three_read_aloud_games_and_says_games_are_never_graded(): void
+    public function test_the_games_hub_offers_the_games_and_says_games_are_never_graded(): void
     {
         $this->child();
 
@@ -68,8 +68,11 @@ class PracticeGamesVoiceTest extends TestCase
             ->assertSee('Balloon Pop')->assertSee('A balloon shows a word. Say the word out loud to pop it!')
             ->assertSee('Word Train')->assertSee('Read the words on the train cars out loud')
             ->assertSee('Sentence Stars')->assertSee('Read a sentence out loud to catch a star.')
-            ->assertSee('Every game ends with you reading out loud')
-            ->assertSee('what you read in a game is not graded')
+            // Four games are read aloud; the fifth, Sound Hunt, is listen and tap, so the note no longer says every game is read aloud.
+            ->assertSee('Sound Hunt')->assertSee('Listen to the sounds in words. Tap the word that matches!')
+            ->assertSee('In most games you read out loud')
+            ->assertSee('what you read or tap in a game is not graded')
+            ->assertSee(route('learner.games.sound-hunt'), false)
             ->assertSee(route('learner.games.balloon-pop'), false)
             ->assertSee(route('learner.games.word-train'), false)
             ->assertSee(route('learner.games.sentence-stars'), false)
@@ -121,7 +124,8 @@ class PracticeGamesVoiceTest extends TestCase
     public function test_the_hub_leads_with_the_game_that_fits_the_childs_step_and_words(): void
     {
         $kid = $this->child(['reading_rung' => 0]);
-        $this->get(route('learner.games.index'))->assertOk()->assertSee('Your reading path starts with letters.');
+        // On the letters step the hub leads with Sound Hunt (listening for sounds), which needs no microphone and no words yet.
+        $this->get(route('learner.games.index'))->assertOk()->assertSee('Your reading path starts with sounds and letters.')->assertSee('Sound Hunt helps you hear the sounds in words');
 
         $kid->update(['reading_rung' => 1]);
         $this->get(route('learner.games.index'))->assertSee('You are reading your first words.');

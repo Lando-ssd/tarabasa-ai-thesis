@@ -8,6 +8,7 @@ use App\Models\Learner;
 use App\Support\ErrorPatterns;
 use App\Support\NotSure;
 use App\Support\ReadingLevel;
+use App\Support\SoundHunt;
 use App\Support\SyllableMethod;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
@@ -227,6 +228,33 @@ class PracticeGameService
         }
 
         return $levels;
+    }
+
+    /**
+     * What Sound Hunt offers (config/sound_hunt.php, App\Support\SoundHunt): the questions of each of its three levels, the level it starts a
+     * child at, and whether the cards show the written word. It has no microphone and sends nothing to the speech checker.
+     *
+     * The child's own missed words (from their real readings) are used as targets first, and the starting level follows their step on the
+     * reading path, or their usual kind of mistake when it is about first sounds, last sounds or the middle sound.
+     *
+     * @return array{startLevel: int, readsWords: bool, levels: array<int, list<array<string, mixed>>>}
+     */
+    public function soundHunt(Learner $learner): array
+    {
+        $rung = ReadingLevel::rung($learner);
+        $pattern = ErrorPatterns::mainPattern(ErrorPatterns::forLearner($learner));
+        $own = app(WordBank::class)->practiceWords($learner)->map(fn ($w) => strtolower((string) $w))->all();
+
+        $levels = [];
+        foreach ([1, 2, 3] as $level) {
+            $levels[$level] = SoundHunt::questions($level, $own);
+        }
+
+        return [
+            'startLevel' => SoundHunt::startLevel($rung, $pattern),
+            'readsWords' => SoundHunt::readsWords($rung),
+            'levels' => $levels,
+        ];
     }
 
     /** The lowercase words of a sentence, with its punctuation taken off: what the speech checker is asked to listen for. */

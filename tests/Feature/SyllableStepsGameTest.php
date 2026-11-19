@@ -92,7 +92,7 @@ class SyllableStepsGameTest extends TestCase
             ->assertSee(route('learner.games.syllable-steps'), false)
             // Still free play, and the other three games are unchanged.
             ->assertSee('Balloon Pop')->assertSee('Word Train')->assertSee('Sentence Stars')
-            ->assertSee('what you read in a game is not graded');
+            ->assertSee('what you read or tap in a game is not graded');
 
         $this->get(route('learner.games.syllable-steps'))->assertOk();
     }

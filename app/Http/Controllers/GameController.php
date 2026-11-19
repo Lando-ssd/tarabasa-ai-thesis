@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\GamePlay;
 use App\Services\PracticeGameService;
 use App\Services\ReadingAiClient;
+use App\Support\ReadingLevel;
+use App\Support\SoundHunt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,9 +42,13 @@ class GameController extends Controller
         $learner = $request->user('learner');
 
         return view('learner.games.index', [
-            'recommendedGame' => $learner->recommendedGameFocus(),
+            'recommendedGame' => $learner->recommendedGameFocus(true, true),
             // Syllable Steps has no word level for a child still on the Letters step, so its card is not shown to them.
             'showSyllableSteps' => $games->syllableStartLevel($learner) !== null,
+            // Sound Hunt is for every child. Its card is only hidden (by the page) on a device that has no way to make a sound.
+            'soundHuntHasClips' => SoundHunt::clips() !== [],
+            // A child on the Letters step (or with no step yet) is told Sound Hunt suits them; the others get a plain "New" tag.
+            'goodForYou' => ! SoundHunt::readsWords(ReadingLevel::rung($learner)) || ReadingLevel::rung($learner) === 1,
         ]);
     }
 
@@ -102,6 +108,19 @@ class GameController extends Controller
             'levels' => $games->syllableLevels($learner),
             'startLevel' => $startLevel,
             'repeat' => (int) config('syllable_method.repeat', 4),
+        ]);
+    }
+
+    /**
+     * Sound Hunt: listen and tap, no microphone (config/sound_hunt.php). Tara asks which of three words rhymes with, starts like or ends like a
+     * word; each card says its word when tapped. Free play like the other games. Every question is built here (App\Support\SoundHunt) so the
+     * website and the phone ask exactly the same things; nothing is sent back except the usual finished game (finish()).
+     */
+    public function soundHunt(Request $request, PracticeGameService $games): View
+    {
+        return view('learner.games.sound-hunt', $games->soundHunt($request->user('learner')) + [
+            'clips' => SoundHunt::clips(),
+            'levelNames' => collect(SoundHunt::levels())->map(fn ($l) => $l['name'])->all(),
         ]);
     }
 
