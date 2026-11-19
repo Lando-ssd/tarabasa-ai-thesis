@@ -170,7 +170,7 @@ Foundational: 0.80 accuracy + 0.20 speed. Fluency: 0.40 accuracy + 0.35 speed + 
 Worked example: 87.5 x 0.40 + 100 x 0.35 + 55 x 0.25 = 83.75; 97.4 x 0.70 + 83.75 x 0.30 = 93.3.
 
 ### Games and word bank (T)
-Round of 3 things; 2 tries each; 2 right first time to climb; up to 3 rounds; "heard" at 66 percent; 4 games. Word bank: Mastered after 3 correct readings; at most 4 new words per reading. Syllable method: 27 words, 4 steps, only the last scored.
+Round of 3 things; 2 tries each; 2 right first time to climb; up to 3 rounds; "heard" at 66 percent; 5 games (Sound Hunt has no microphone: 3 levels, 3 cards a question). Word bank: Mastered after 3 correct readings; at most 4 new words per reading. Syllable method: 27 words, 4 steps, only the last scored.
 
 ### Rewards (T)
 100 badges in 10 groups; weekly goal 5 real readings; streak = days in a row (Philippine time).
@@ -182,7 +182,7 @@ Sign in: 5 tries then wait. PIN reset: 3 per child per day. Class code lookup: 2
 Tap target 48 points (phone) or 44 pixels (web). Passage text 23 pixels or more. Five text sizes.
 
 ### The size of the work
-4 user roles; 821 automated tests passing (18 November 2026); 100 badges; 10 mistake patterns; 4 games; 7 rungs; 4 child steps; 3 recommender skills; 3 outside AI services; 1 hosting provider; 1 database.
+4 user roles; 853 automated tests passing (19 November 2026); 100 badges; 10 mistake patterns; 5 games; 7 rungs; 4 child steps; 3 recommender skills; 3 outside AI services; 1 hosting provider; 1 database.
 
 ### Money (file 04)
 Cash cost for a steady school about USD 48 to 55 a month (about PHP 3,000 at 58 per USD, an assumption); example school fee PHP 1,500 a month; break-even two schools at that price.

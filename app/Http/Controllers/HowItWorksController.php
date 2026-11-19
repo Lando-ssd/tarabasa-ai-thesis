@@ -9,7 +9,9 @@ use App\Services\WordBank;
 use App\Support\ClassLevel;
 use App\Support\ErrorPatterns;
 use App\Support\GenerationBasis;
+use App\Support\LetterVoice;
 use App\Support\ReadingLevel;
+use App\Support\SoundHunt;
 use App\Support\SyllableMethod;
 use Illuminate\View\View;
 
@@ -20,7 +22,7 @@ use Illuminate\View\View;
  *
  * The numbers are read from the same constants and config files the rules run on (config/progression.php,
  * config/activity_fit.php, config/reading.php, TeacherAlerts, ErrorPatterns, ClassLevel, GenerationBasis,
- * ClassActivityOutcomes, config/practice_games.php, WordBank), so this page cannot say one thing while the app does another. A test pins that.
+ * ClassActivityOutcomes, config/practice_games.php, WordBank, config/sound_hunt.php, config/voice.php), so this page cannot say one thing while the app does another. A test pins that.
  *
  * It says plainly that none of this is a trained model: the project has no dataset of children's readings to train
  * one on, so the "expert" is a set of written rules that a teacher can read, argue with and change in one place.
@@ -113,7 +115,37 @@ class HowItWorksController extends Controller
                 'sources' => $syllableConfig['sources'],
                 'data' => $syllableConfig['data'],
             ],
+            'sound' => $this->soundHunt(),
         ]);
+    }
+
+    /** Sound Hunt, read from config/sound_hunt.php, config/voice.php and the classes the game runs on (App\Support\SoundHunt, LetterVoice). */
+    private function soundHunt(): array
+    {
+        $sound = config('sound_hunt');
+        $levelName = fn (int $level) => strtolower((string) $sound['levels'][$level]['name']);
+        $clipsWanted = count(SoundHunt::clipKeys()) + count(LetterVoice::clipKeys());
+
+        return [
+            'levels' => collect($sound['levels'])->map(fn (array $l, int $n) => ['level' => $n, 'name' => $l['name'], 'ask' => $l['ask'], 'code' => $l['code'], 'codeText' => $l['codeText']])->values(),
+            'choices' => (int) $sound['choices'],
+            'wordCount' => count(SoundHunt::words()),
+            'rhymeFamilies' => count($sound['rhymes']),
+            'firstGroups' => count($sound['first']),
+            'lastGroups' => count($sound['last']),
+            // Where a child starts: the Letters step, the Words step, and every step above (SoundHunt::startLevel).
+            'startLetters' => SoundHunt::startLevel(0),
+            'startLettersName' => $levelName(SoundHunt::startLevel(0)),
+            'startWords' => SoundHunt::startLevel(1),
+            'startWordsName' => $levelName(SoundHunt::startLevel(1)),
+            'startAbove' => SoundHunt::startLevel(2),
+            'startAboveName' => $levelName(SoundHunt::startLevel(2)),
+            'voice' => $sound['clips']['voice'],
+            'letterCount' => count(config('voice.letters')),
+            'clipsWanted' => $clipsWanted,
+            'clipsMade' => count(SoundHunt::clips()) + count(LetterVoice::existing()),
+            'sources' => $sound['sources'],
+        ];
     }
 
     /** The first reading check's staircase, read from the config and the service it runs on. */

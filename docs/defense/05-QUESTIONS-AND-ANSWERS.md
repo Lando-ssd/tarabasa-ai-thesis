@@ -375,6 +375,15 @@ A background program that takes jobs from a list (score a recording, write activ
 **K4. Why should we believe your numbers are right?**
 "We don't ask you to: they are our settings, in one file, with the reason next to each. The first thing a pilot will do is check them. Where a number comes from DepEd (97 and 90), we say so."
 
+**K5a. Does the app teach the sounds of letters, or only reading whole words?**
+"Both, in a limited way. The reading games practise whole words, rows and sentences. Sound Hunt practises the sounds inside words by listening: which word rhymes, starts or ends like another. It uses three codes from DepEd's Grade 1 guide. What it cannot do is play a single sound such as /s/, because a voice adds a vowel to it. That would need sounds recorded by a person. We say that, and the word lists still need a Grade 1 teacher's review."
+
+**K5b. The voice said the letters A and I the same. Why, and what did you do?**
+"We spelled the letter A as 'ay' for the voice. A Philippine English voice reads 'ay' like the Tagalog word, which sounds like 'eye'. So A and I came out the same. We now spell it differently, in one list that the website, the phone and the voice-clip maker all share, and a test fails if two letters ever share a spelling. We chose the new spelling by reading, not by listening, so a person has to check it by ear. The real fix is recorded letter clips, which do not depend on a spelling, and those are not made yet."
+
+**K5c. Is the voice a real person?**
+"No. Today each device reads with its own voice, which we rank so natural and Philippine English voices come first. We plan recorded clips from a text to speech voice so every phone sounds the same, after we have read the provider's terms for shipping that audio in a children's app. A recorded person would be clearer for the sounds, and would need a speaker's consent."
+
 **K5. What happens when a reading is scored wrongly because of accent?**
 "The teacher sees the evidence and the words heard, one reading never moves a child, and 'Not sure' words are left out. We list accent and child voices as a limitation and as the main thing to measure in a pilot."
 

@@ -7,7 +7,10 @@ use App\Services\TeacherAlerts;
 use App\Support\ClassLevel;
 use App\Support\ErrorPatterns;
 use App\Support\GenerationBasis;
+use App\Support\LetterVoice;
+use App\Support\SoundHunt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
@@ -150,6 +153,61 @@ class HowItWorksTest extends TestCase
         $this->assertStringContainsString('has not been tried on a real phone yet', $html);
         // The Ehri source says what it is about and what it is not.
         $this->assertStringContainsString('It does not set the order of letters, words, sentences and stories', $html);
+    }
+
+    public function test_the_sound_hunt_section_follows_its_config_and_the_game_rules(): void
+    {
+        config(['practice_games.per_round' => 5, 'practice_games.tries' => 4, 'sound_hunt.choices' => 4]);
+
+        $html = $this->get('/how-it-works')->assertOk()->getContent();
+
+        $this->assertStringContainsString('There are five Practice Games', $html);
+        $this->assertStringContainsString('The game, Sound Hunt', $html);
+        $this->assertStringContainsString('For Sound Hunt (section 12)', $html);
+
+        // The three levels, each with its curriculum code, from the config.
+        foreach (config('sound_hunt.levels') as $level) {
+            $this->assertStringContainsString(e($level['name']), $html);
+            $this->assertStringContainsString($level['code'], $html);
+        }
+        // The word lists are counted, not typed.
+        $this->assertStringContainsString('<span class="num">'.count(SoundHunt::words()).'</span> words in <span class="num">'.count(config('sound_hunt.rhymes')).'</span> rhyme families', $html);
+        // The round numbers are the other games' numbers, and the number of cards is the game's own.
+        $this->assertStringContainsString('<span class="num">5</span> questions, up to <span class="num">4</span> tries', $html);
+        $this->assertStringContainsString('Tara asks which of <span class="num">4</span> words', $html);
+        // Where a child starts.
+        $this->assertStringContainsString('a child on the Letters step at level 1 (rhymes), a child on the Words step at level 2 (first sounds) and every higher step at level 3 (last sounds)', $html);
+        // The honest limits, and sources marked as found by search.
+        $this->assertStringContainsString('not by a real child and not on a real phone', $html);
+        $this->assertStringContainsString('chosen by reading, not by listening', $html);
+        $this->assertStringContainsString('Ehri, L. C.', $html);
+        $this->assertStringContainsString('found by search, not read in full', $html);
+        // The letter A is not spelled the way that made it sound like I.
+        $this->assertStringContainsString('The letter A is not spelled "ay"', html_entity_decode($html));
+    }
+
+    public function test_the_sound_hunt_section_tells_the_truth_about_the_voice_clips(): void
+    {
+        $wanted = count(SoundHunt::clipKeys()) + count(LetterVoice::clipKeys());
+
+        // No clips made: it says so and says what the device does instead.
+        $html = $this->get('/how-it-works')->assertOk()->getContent();
+        $this->assertStringContainsString('<span class="num">'.$wanted.'</span> short recorded clips', $html);
+        $this->assertStringContainsString('The clips have not been made yet', $html);
+
+        // Some made: it says how many, and that a line needs every clip it uses.
+        $dir = 'audio/sound-hunt-test-'.uniqid();
+        config(['sound_hunt.clips.directory' => $dir]);
+        File::ensureDirectoryExists(public_path($dir));
+        try {
+            File::put(public_path("$dir/w-cat.mp3"), 'x');
+            File::put(public_path("$dir/l-a.mp3"), 'x');
+            $html = $this->get('/how-it-works')->assertOk()->getContent();
+            $this->assertStringNotContainsString('The clips have not been made yet', $html);
+            $this->assertStringContainsString('<span class="num">2</span> of them have been made so far', $html);
+        } finally {
+            File::deleteDirectory(public_path($dir));
+        }
     }
 
     public function test_the_copy_follows_the_app_rules_no_emoji_and_no_dashes(): void
