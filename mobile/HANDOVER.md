@@ -343,7 +343,17 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - **Needs the live server from `cb9fed0` or later** (it has the new routes). An older server would answer 404 for the Sound Hunt screen; the Games list handles an old server (no card flag), but Sound Hunt itself needs the new one. The live site was on `cb9fed0` from 2026-11-19.
 - **What to look at on a real phone** (nobody has tried any of this on a phone): the Sound Hunt card and a whole game with sound on; whether the voice that speaks is a clear one and not a robotic one (Settings, Text-to-speech output, on the phone, decides which voices exist); Word Train on a Letters step child: A and I must sound different; a 360x640 phone must show all three cards and the button without scrolling (checked in a browser only).
 - **Not in this build:** the recorded voice clips (not made yet; the owner runs `tools/make-voice-clips.py` with their own Azure key). The permissions, the live address and the signing are the same as 0.6.2.
-- APK: see the line added after the build below (file name, size, SHA-256 and what was checked inside the file).
+- APK: `D:\tools\apk-out\TaraBasa-AI-0.6.3-test23.apk` (44,721,836 bytes, about 45 MB, versionCode 23, SHA-256 `cd106faa8b0fbae5ef3855f61db8cf738b1edc799bb516224c7d225b7a3a7082`). Tester pack:
+  `D:\tools\apk-out\TaraBasa-0.6.3-tester-pack.zip` (27.4 MB: the APK, its checksum, START-HERE and the two checklists; the Learner checklist starts with a "New in 0.6.3" part for Sound Hunt, the voice and A versus I).
+  Nothing has been sent or installed.
+- Checked inside the file (`aapt2 dump badging` and the JS bundle): package `com.tarabasaai.app`, versionName 0.6.3, versionCode 23, arm64-v8a only, the same permissions as 0.6.2, the live address in the bundle, and the
+  Sound Hunt strings (`games/sounds`, `sounds=1`, "Which one rhymes with", "Good for you", "eigh", the letter clip keys). The word "localhost" appears once in the bundle, but it is a library string that is
+  identical in 0.6.1 and 0.6.2; the app's own code only mentions it in comments and never calls it. The "Let's listen again" line is not in the bundle on purpose: the server sends it. Before the build: `tsc --noEmit` clean,
+  `MobileVersionTest` passes, the full suite passed (853 tests) on the committed code, and Sound Hunt was played in the browser preview at 390x844 and 360x640 (hear-only and hear-and-read). NOT checked on a real phone.
+- **Build note.** Built from `D:\tb` with 3 CPU cores, one Gradle worker and `-Xmx1536m` (only about 0.5 to 0.8 GB of memory was free), in about 31 minutes. The build script reported "failed" at the end, but only because
+  PowerShell turned an Expo warning ("The NODE_ENV environment variable is required but was not specified") into an error after Gradle had started; Gradle finished by itself and the APK is complete. In a script, do not
+  set `$ErrorActionPreference = 'Stop'` around `gradlew.bat`, or check the APK file rather than the script's exit code.
+- The release is still signed with the debug key (fine for testers, not for the Play Store).
 
 ## Version 0.6.2 (2026-11-18): easy PIN refused when adding a child, class list names
 
