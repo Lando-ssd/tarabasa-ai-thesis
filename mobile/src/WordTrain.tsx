@@ -56,6 +56,8 @@ export function configFor(data: api.TrainLevels): ReadGameConfig<Train> {
       });
     },
     hear: (t) => (letters ? t.words.map((l) => LETTER_NAMES[l] ?? l).join(', ') : t.words.join(', ')),
+    // Letters are said from Tara's recorded letter names when the server has all 26 (see App\Support\LetterVoice); otherwise the spelling above is read.
+    hearClips: letters && data.clips && Object.keys(data.clips).length > 0 ? (t) => ({ keys: t.words.map((l) => `l-${l}`), clips: data.clips ?? {} }) : undefined,
     stage: (t, { matched, caught }) => <TrainView train={t} letters={letters} matched={matched} caught={caught} key={t.text} />,
   };
 }

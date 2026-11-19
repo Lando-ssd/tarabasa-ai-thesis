@@ -9,8 +9,18 @@ export type GameKey = api.GameName;
 
 type Card = { key: GameKey; title: string; text: string; chips: string[]; icon: string; bg: string; fg: string; isNew?: boolean };
 
-// The same four games and the same words as the website's Games page. Every game ends with the child reading out loud.
+// The same five games and the same words as the website's Games page. Four games end with the child reading out loud; Sound Hunt has no microphone.
 const CARDS: Card[] = [
+  {
+    key: 'sound-hunt',
+    title: 'Sound Hunt',
+    text: 'Listen to the sounds in words. Tap the word that matches!',
+    chips: ['Listen', 'Tap', '3 levels'],
+    icon: 'magnifying-glass',
+    bg: colors.mint,
+    fg: colors.ok,
+    isNew: true,
+  },
   {
     key: 'balloon-pop',
     title: 'Balloon Pop',
@@ -54,6 +64,7 @@ const CARDS: Card[] = [
 
 const TIPS: Record<string, string> = {
   letters: 'Your reading path starts with letters. Word Train has letters on its cars, just for you!',
+  sounds: 'Your reading path starts with sounds and letters. Sound Hunt helps you hear the sounds in words. No microphone, just listen and tap!',
   'own-words': 'You have some words that are still tricky. Balloon Pop uses your own tricky words!',
   'first-words': 'You are reading your first words. Word Train is a great place to practise them!',
   sentences: 'You are reading sentences. Try Sentence Stars!',
@@ -120,6 +131,10 @@ export function Games({ onPlay }: { onPlay: (game: GameKey) => void }) {
                   <Icon name="star" size={s(16)} color={colors.white} />
                   <Text style={styles.ribbonText}>Recommended</Text>
                 </View>
+              ) : card.key === 'sound-hunt' && info?.goodForYou ? (
+                <View style={[styles.ribbon, { backgroundColor: colors.ok }]}>
+                  <Text style={styles.ribbonText}>Good for you</Text>
+                </View>
               ) : card.isNew ? (
                 <View style={[styles.ribbon, { backgroundColor: colors.ok }]}>
                   <Text style={styles.ribbonText}>New</Text>
@@ -146,8 +161,8 @@ export function Games({ onPlay }: { onPlay: (game: GameKey) => void }) {
         ))}
       </View>
 
-      <Small style={{ marginTop: space[14] }}>Every game ends with you reading out loud. What you read comes first from the words you missed in your readings, then from the list for your reading step.</Small>
-      <Small style={{ marginTop: space[6] }}>Games are practice. They never change your points, your streak or your level, and what you read in a game is not graded.</Small>
+      <Small style={{ marginTop: space[14] }}>Most games end with you reading out loud. Sound Hunt is for listening and tapping. What you read comes first from the words you missed in your readings, then from the list for your reading step.</Small>
+      <Small style={{ marginTop: space[6] }}>Games are practice. They never change your points, your streak or your level, and what you read or tap in a game is not graded.</Small>
     </Screen>
   );
 }

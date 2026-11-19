@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import * as Speech from 'expo-speech';
 import * as api from './api';
 import { Celebrate, Dots, GameDone, GameHeader, playSfx, prepareSounds } from './gameKit';
 import { SayText } from './SayText';
 import type { SayResult } from './SayWord';
 import { s } from './scale';
+import { playLine, say as speak, stopSaying } from './speech';
 import { Btn, Busy, Notice, Screen, Small } from './ui';
 import { colors, fonts, space } from './theme';
 
@@ -33,6 +33,11 @@ export type ReadGameConfig<T extends { text: string }> = {
   makeTargets: (level: number) => T[];
   /** What the phone's voice says for "Hear it". */
   hear: (target: T) => string;
+  /**
+   * When Tara has recorded clips for what `hear` says (the letter names of Word Train's letters), the clip keys in order and the address of each.
+   * They play only if every key has an address; otherwise the phone's own voice reads `hear`, so a line never mixes two voices.
+   */
+  hearClips?: (target: T) => { keys: string[]; clips: Record<string, string> } | null;
   micLabel: string;
   tapLabel: string;
   /** Draws the thing to read. `matched` says which of the words asked were heard (null before any try), `caught` is true as it is celebrated. */
@@ -80,15 +85,16 @@ export function ReadGame<T extends { text: string }>({
     void prepareSounds();
     return () => {
       timers.current.forEach(clearTimeout);
-      void Speech.stop();
+      stopSaying();
     };
   }, []);
 
   const target = targets[pos];
 
   const hear = (t: T) => {
-    void Speech.stop();
-    Speech.speak(config.hear(t), { language: 'en-US', rate: 0.75 });
+    const recorded = config.hearClips?.(t);
+    if (recorded) playLine({ parts: recorded.keys, text: config.hear(t) }, recorded.clips, 0.75);
+    else speak(config.hear(t), 0.75);
   };
 
   // The next thing is read aloud as it appears, once the child has tapped something (the first waits for "Hear it").

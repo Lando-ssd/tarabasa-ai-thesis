@@ -14,6 +14,8 @@ import type {
   LearnerPayload,
   ReadingOutcome,
   SentenceLevels,
+  SoundHuntData,
+  SoundQuestion,
   SyllableLevels,
   TrainLevels,
   WordLevels,
@@ -128,7 +130,7 @@ const books: Book[] = [
   { id: 14, title: 'The Big Rain', wordCount: 38, timesRead: 2, lastRead: '2026-10-08T08:00:00Z' },
 ];
 
-const gamesInfo: GamesInfo = { recommended: 'word-train', reason: 'first-words', startLevel: 1, syllableSteps: true };
+const gamesInfo: GamesInfo = { recommended: 'word-train', reason: 'first-words', startLevel: 1, syllableSteps: true, goodForYou: true };
 
 const pool = (struggling: string[], fallback: string[]) => ({ struggling, favoured: [], fallback });
 const wordLevels: WordLevels = {
@@ -172,6 +174,57 @@ const syllableLevels: SyllableLevels = {
       level: [sw('lemon', ['lem', 'on'], 'The lemon is sour.'), sw('cabin', ['cab', 'in'], 'We sleep in a cabin.'), sw('robin', ['rob', 'in'], 'A robin sat on the fence.')],
       review: [sw('cupcake', ['cup', 'cake'], 'I like a cupcake.')],
     },
+  },
+};
+
+// Sound Hunt: a few questions in the shape the server builds them. No clips in the demo, so the phone's own voice reads every line.
+const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
+function soundQ(kind: SoundQuestion['kind'], target: string, answer: string, choices: string[], mark: number, shared: string): SoundQuestion {
+  const ask = { rhyme: 'Which one rhymes with', first: 'Which one starts like', last: 'Which one ends like' }[kind];
+  const verb = { rhyme: 'rhymes with', first: 'starts like', last: 'ends like' }[kind];
+  const join = { rhyme: ' rhyme.', first: ' both start the same.', last: ' both end the same.' }[kind];
+  const line = (text: string) => ({ parts: [], text });
+  const askText = `${ask} ${target}?`;
+  return {
+    kind,
+    target,
+    answer,
+    choices,
+    mark,
+    say: {
+      ask: line(askText),
+      again: line(`Let's listen again. ${askText}`),
+      right: line(`Yes! ${cap(answer)} and ${target}${join}`),
+      reveal: line(`${cap(answer)} ${verb} ${target}. On to the next one!`),
+    },
+    screen: {
+      right: kind === 'rhyme' ? `Yes! ${cap(answer)} and ${target} rhyme.` : `Yes! ${cap(answer)} and ${target} both ${kind === 'first' ? 'start' : 'end'} with ${shared}.`,
+      again: "Let's listen again.",
+      reveal: `${cap(answer)} ${verb} ${target}. On to the next one!`,
+    },
+  };
+}
+const soundData: SoundHuntData = {
+  startLevel: 1,
+  readsWords: true,
+  levelNames: { '1': 'Rhymes', '2': 'First sounds', '3': 'Last sounds' },
+  clips: {},
+  levels: {
+    '1': [
+      soundQ('rhyme', 'cat', 'hat', ['sun', 'hat', 'pig'], 2, 'at'),
+      soundQ('rhyme', 'sun', 'run', ['run', 'bed', 'cat'], 2, 'un'),
+      soundQ('rhyme', 'pig', 'big', ['dog', 'big', 'cup'], 2, 'ig'),
+    ],
+    '2': [
+      soundQ('first', 'sun', 'sit', ['dog', 'sit', 'hat'], 1, 's'),
+      soundQ('first', 'dog', 'dig', ['dig', 'pen', 'sun'], 1, 'd'),
+      soundQ('first', 'map', 'man', ['cup', 'bed', 'man'], 1, 'm'),
+    ],
+    '3': [
+      soundQ('last', 'cat', 'sit', ['sun', 'sit', 'dog'], 1, 't'),
+      soundQ('last', 'dog', 'pig', ['pig', 'cup', 'sun'], 1, 'g'),
+      soundQ('last', 'sun', 'pen', ['hat', 'pen', 'bed'], 1, 'n'),
+    ],
   },
 };
 
@@ -229,6 +282,7 @@ async function answer(path: string, init?: RequestInit): Promise<Response> {
   if (path === '/api/learner/games/train') return json(trainLevels);
   if (path === '/api/learner/games/sentences') return json(sentenceLevels);
   if (path === '/api/learner/games/syllables') return json(syllableLevels);
+  if (path === '/api/learner/games/sounds') return json(soundData);
   if (/^\/api\/learner\/games\/[a-z-]+\/finish$/.test(path) && method === 'POST') return json({ newBadges: [] });
   if (path === '/api/learner/games/check-word') return json({ status: 'heard' });
   if (path === '/api/learner/games/check-text') {

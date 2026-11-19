@@ -166,6 +166,8 @@ export type GamesInfo = {
   startLevel: number;
   /** False for a child still on the Letters step (no word level yet): the Syllable Steps card is not shown to them. Missing on an older server. */
   syllableSteps?: boolean;
+  /** True when the child is on the Letters step or the first words step: Sound Hunt is marked "Good for you". Missing on an older server. */
+  goodForYou?: boolean;
 };
 
 /** The words a game can use at each level (the child's own missed words first, then ones that practise their kind of mistake, then the level's list). */
@@ -182,6 +184,8 @@ export type TrainLevels = {
   /** How many cars at each level. */
   cars: Record<string, number>;
   levels: Record<string, WordPool>;
+  /** Tara's recorded letter clips, key (l-a to l-z) => address, only when ALL 26 exist. Empty (or missing on an older server) otherwise. */
+  clips?: Record<string, string>;
 };
 
 /** Sentence Stars: the level's sentences, and the ones that suit this child listed first as "preferred". */
@@ -200,8 +204,36 @@ export type SyllableLevels = {
   levels: Record<string, { own: SyllableWord[]; level: SyllableWord[]; review: SyllableWord[] }>;
 };
 
-/** Every game ends with the child reading something out loud. */
-export type GameName = 'balloon-pop' | 'word-train' | 'sentence-stars' | 'syllable-steps';
+/**
+ * Sound Hunt: listen and tap, no microphone. Every question and every line Tara says is built by the server (App\Support\SoundHunt), so the
+ * phone asks exactly what the website asks. A line is the clips that make it (keys into `clips`) and the plain words to read with the
+ * phone's own voice when a clip is missing.
+ */
+export type SoundLine = { parts: string[]; text: string };
+export type SoundQuestion = {
+  kind: 'rhyme' | 'first' | 'last';
+  target: string;
+  answer: string;
+  /** Three words, one of them the answer, already in a random order. */
+  choices: string[];
+  /** How many letters at the end of a rhyming word are the part that rhymes (a first or last sound is one letter). */
+  mark: number;
+  say: { ask: SoundLine; again: SoundLine; right: SoundLine; reveal: SoundLine };
+  /** What the screen writes after an answer. */
+  screen: { right: string; again: string; reveal: string };
+};
+export type SoundHuntData = {
+  startLevel: number;
+  /** False for a child on the Letters step: the cards only play their word, they do not show it until the answer. */
+  readsWords: boolean;
+  levels: Record<string, SoundQuestion[]>;
+  levelNames: Record<string, string>;
+  /** Tara's recorded clips that exist, key => address. Empty until the clips have been made: the phone's own voice reads every line then. */
+  clips: Record<string, string>;
+};
+
+/** Syllable Steps and Sound Hunt are the two games whose cards a build must know about; the others are older. */
+export type GameName = 'balloon-pop' | 'word-train' | 'sentence-stars' | 'syllable-steps' | 'sound-hunt';
 
 /** What a finished game tells the server, so the Games badges can be earned. */
 export type GameFinishBody = { level_reached: number; top_level_cleared: boolean; had_perfect_round: boolean; rounds: number };
@@ -1203,12 +1235,16 @@ export function rereadBook(id: number, uri: string) {
 }
 
 export function games() {
-  // `syllables=1` says this build has Syllable Steps, so the server may point the child to it.
-  return request<GamesInfo>('/api/learner/games?syllables=1');
+  // `syllables=1` and `sounds=1` say this build has Syllable Steps and Sound Hunt, so the server may point the child to them.
+  return request<GamesInfo>('/api/learner/games?syllables=1&sounds=1');
 }
 
 export function gameSyllables() {
   return request<SyllableLevels>('/api/learner/games/syllables');
+}
+
+export function gameSounds() {
+  return request<SoundHuntData>('/api/learner/games/sounds');
 }
 
 export function gameWords() {

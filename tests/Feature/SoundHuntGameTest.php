@@ -7,6 +7,7 @@ use App\Models\Learner;
 use App\Models\ReadingSession;
 use App\Services\DiagnosticBank;
 use App\Support\LearnerCode;
+use App\Support\LetterVoice;
 use App\Support\SoundHunt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -339,15 +340,19 @@ class SoundHuntGameTest extends TestCase
 
             Artisan::call('sound-hunt:clips', ['--json' => true]);
             $all = json_decode(Artisan::output(), true);
-            $this->assertSame(SoundHunt::clipKeys(), $all['clips']);
-            $this->assertSame(count(SoundHunt::clipKeys()), $all['total']);
+            // Sound Hunt's phrases and words, and the 26 letter names (Word Train's letters), all in one list for the script.
+            $wanted = SoundHunt::clipKeys() + LetterVoice::clipKeys();
+            $this->assertSame($wanted, $all['clips']);
+            $this->assertSame(count($wanted), $all['total']);
             $this->assertSame(['w-cat'], $all['existing']);
             $this->assertSame(config('sound_hunt.clips.voice'), $all['voice']);
+            $this->assertSame(array_keys(LetterVoice::clipKeys()), array_keys($all['letters']), 'the script is told which clips are letters');
+            $this->assertSame('eɪ', $all['letters']['l-a']);
 
             Artisan::call('sound-hunt:clips', ['--json' => true, '--missing' => true]);
             $missing = json_decode(Artisan::output(), true);
             $this->assertArrayNotHasKey('w-cat', $missing['clips']);
-            $this->assertCount(count(SoundHunt::clipKeys()) - 1, $missing['clips']);
+            $this->assertCount(count($wanted) - 1, $missing['clips']);
         } finally {
             File::deleteDirectory(public_path($dir));
         }

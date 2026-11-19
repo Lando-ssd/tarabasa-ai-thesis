@@ -15,8 +15,11 @@
     - a microphone that is blocked, missing or unreachable just means the game carries on without
       the speaking step
 
-  window.tarabasaSayLetter(letter)   read a letter's NAME aloud ("ay", "bee"; reading the bare
-                                     letter would give a word like "a" or "I")
+  window.tarabasaSayLetter(letter)   say a letter's NAME ("bee", "see"; reading the bare letter would
+                                     give a word like "a" or "I"). From Tara's recorded letter clips when
+                                     all 26 exist, otherwise the device voice reads the spelling in
+                                     config/voice.php (A is not spelled "ay": a Philippine voice reads
+                                     that like "eye")
   window.tarabasaSayWord(word)       read a word aloud, slowly
   window.tarabasaSayText(text)       read a row of words or a sentence aloud, slowly
   window.tarabasaCanListen           true when this browser can record at all
@@ -34,15 +37,26 @@
 @include('partials.speak')
 <script>
 (function () {
-  var LETTER_NAMES = {
-    A: 'ay', B: 'bee', C: 'see', D: 'dee', E: 'ee', F: 'eff', G: 'jee', H: 'aitch', I: 'eye', J: 'jay',
-    K: 'kay', L: 'el', M: 'em', N: 'en', O: 'oh', P: 'pee', Q: 'cue', R: 'are', S: 'ess', T: 'tee',
-    U: 'you', V: 'vee', W: 'double you', X: 'ex', Y: 'why', Z: 'zee'
-  };
+  // How each letter's NAME is spelled for the device's voice (config/voice.php: one list for the website, the phone and the clip maker), and the
+  // recorded letter clips when ALL 26 exist (App\Support\LetterVoice). With the clips the letter is said by Tara's own voice, the same on every
+  // device; without them the device's voice reads the spelling.
+  var LETTER_NAMES = @json(\App\Support\LetterVoice::names());
+  var LETTER_CLIPS = @json((object) \App\Support\LetterVoice::clips());
+  var letterAudio = null;
 
   window.tarabasaSayLetter = function (letter) {
-    var name = LETTER_NAMES[String(letter || '').toUpperCase()];
-    if (name) window.tbSpeak(name, { rate: 0.8 });
+    var l = String(letter || '').toLowerCase();
+    try { if (letterAudio) { letterAudio.pause(); letterAudio = null; } } catch (e) {}
+    var url = LETTER_CLIPS['l-' + l];
+    var viaVoice = function () { var name = LETTER_NAMES[l]; if (name) window.tbSpeak(name, { rate: 0.8 }); };
+    if (!url) { viaVoice(); return; }
+    try {
+      window.tbStopSpeaking();
+      letterAudio = new Audio(url);
+      letterAudio.onerror = viaVoice;
+      var p = letterAudio.play();
+      if (p && p.catch) p.catch(viaVoice);
+    } catch (e) { viaVoice(); }
   };
   window.tarabasaSayWord = function (word) {
     if (word) window.tbSpeak(String(word), { rate: 0.7 });

@@ -2,12 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Support\LetterVoice;
 use App\Support\SoundHunt;
 use Illuminate\Console\Command;
 
 /**
- * Lists the voice clips Sound Hunt would like to play: the key and the words of each one (every word the game can say, and Tara's short
- * phrases), and which of them already exist in public/audio/sound-hunt. tools/make-voice-clips.py reads this list (`--json`) to make the
+ * Lists the voice clips the games would like to play: the key and the words of each one (every word Sound Hunt can say, Tara's short
+ * phrases, and the 26 letter names Word Train says), and which of them already exist in public/audio/sound-hunt. tools/make-voice-clips.py reads this list (`--json`) to make the
  * missing ones with a text to speech voice, so the game and the script can never disagree about what has to be recorded.
  *
  *   php artisan sound-hunt:clips             a readable list, with the clips still to make
@@ -22,8 +23,9 @@ class SoundHuntClips extends Command
 
     public function handle(): int
     {
-        $all = SoundHunt::clipKeys();
-        $have = SoundHunt::clips();
+        // Sound Hunt's phrases and words, and the 26 letter names (Word Train's letters), all made into the same folder.
+        $all = SoundHunt::clipKeys() + LetterVoice::clipKeys();
+        $have = SoundHunt::clips() + LetterVoice::existing();
         $clips = $this->option('missing') ? array_diff_key($all, $have) : $all;
 
         if ($this->option('json')) {
@@ -34,6 +36,11 @@ class SoundHuntClips extends Command
                 'total' => count($all),
                 'existing' => array_keys($have),
                 'clips' => $clips,
+                // The keys that are letter names (said as letters, not read as words) and how each one sounds, for the script.
+                'letters' => array_combine(
+                    array_map(fn ($l) => LetterVoice::key($l), array_keys(LetterVoice::ipa())),
+                    array_values(LetterVoice::ipa())
+                ),
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
             return self::SUCCESS;

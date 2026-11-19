@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import * as Speech from 'expo-speech';
 import { LevelBar } from './LevelBar';
 import { MicButton } from './MicButton';
 import { levelShare, VOICE_DB, WARM_MAX_SECONDS, WARM_VOICE_SAMPLES } from './recording';
 import { discardRecording } from './recordingFiles';
+import { say as speak } from './speech';
 import { Animation, Btn, Icon, IconBtn, Panel, Pill, Screen, Small } from './ui';
 import { colors, fonts, space } from './theme';
 import { COMPACT_HEIGHT, s, SHORT_HEIGHT } from './scale';
@@ -99,7 +99,7 @@ export function WarmUp({
           <Text maxFontSizeMultiplier={1.2} style={styles.direction}>
             {direction}
           </Text>
-          <IconBtn icon="speaker-high" label="Hear the directions" onPress={() => Speech.speak(direction, { language: 'en-US', rate: 0.85 })} />
+          <IconBtn icon="speaker-high" label="Hear the directions" onPress={() => speak(direction, 0.85)} />
         </View>
         <View style={[styles.wordCard, tight && styles.wordCardShort]} accessible accessibilityLabel={letters ? 'The letter A' : 'The word sun'}>
           <Text maxFontSizeMultiplier={1.1} style={[styles.word, tight && styles.wordShort]}>

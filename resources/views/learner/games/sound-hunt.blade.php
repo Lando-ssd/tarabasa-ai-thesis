@@ -158,7 +158,7 @@
     var CLIPS = @json($clips);
     var READS = @json((bool) $readsWords);
     var MAX_ATTEMPTS = {{ (int) config('practice_games.rounds') }};     // rounds in one sitting (config/practice_games.php)
-    var PER = {{ (int) config('practice_games.per_round') }};              // questions in a round
+    var QUESTIONS = {{ (int) config('practice_games.per_round') }};        // questions in a round
     var CLEAN_HITS = {{ (int) config('practice_games.clean_hits') }};     // questions right the first time that make a round clean and move up a level
     var MAX_TRIES = {{ (int) config('practice_games.tries') }};            // tries for one question: pick, pick again, then Tara says the answer
 
@@ -219,7 +219,7 @@
     }
     function renderDots() {
       var box = $('progressDots'); box.innerHTML = '';
-      for (var i = 0; i < PER; i++) {
+      for (var i = 0; i < QUESTIONS; i++) {
         var d = document.createElement('div');
         d.className = 'pdot' + (i < pos ? ' done' : (i === pos ? ' current' : ''));
         box.appendChild(d);
@@ -233,7 +233,7 @@
     function takeRound() {
       var list = LEVELS[level] || [];
       var out = [];
-      for (var i = 0; i < PER && list.length; i++) { out.push(list[taken[level] % list.length]); taken[level]++; }
+      for (var i = 0; i < QUESTIONS && list.length; i++) { out.push(list[taken[level] % list.length]); taken[level]++; }
       return out;
     }
     function startRound() {
@@ -244,7 +244,7 @@
     }
     function startQuestion() {
       sel = null; tries = 0; missed = []; phase = 'ask';
-      $('progressLabel').textContent = 'Question ' + (pos + 1) + ' of ' + PER;
+      $('progressLabel').textContent = 'Question ' + (pos + 1) + ' of ' + QUESTIONS;
       renderDots();
       render('');
       // Tara asks on her own once the child has tapped something; only if this question is still the one on the screen a moment later.
@@ -289,7 +289,7 @@
       var confirmBtn = $('confirmBtn'), nextBtn = $('nextBtn');
       confirmBtn.hidden = done; nextBtn.hidden = !done;
       confirmBtn.disabled = !sel;
-      nextBtn.textContent = pos >= PER - 1 ? 'Finish round' : 'Next';
+      nextBtn.textContent = pos >= QUESTIONS - 1 ? 'Finish round' : 'Next';
       // The glow: the Listen pill until the child has tapped something, then the button that comes next.
       confirmBtn.classList.remove('cue'); nextBtn.classList.remove('cue');
       if (userActive) { if (done) nextBtn.classList.add('cue'); else if (sel) confirmBtn.classList.add('cue'); }
@@ -339,7 +339,7 @@
     $('nextBtn').addEventListener('click', function () {
       stopAll();
       pos++;
-      if (pos >= PER) finishAttempt(); else startQuestion();
+      if (pos >= QUESTIONS) finishAttempt(); else startQuestion();
     });
 
     // ----- rounds and the end, the same as the other games
@@ -347,7 +347,7 @@
       stopAll();
       var wasAtCeiling = level >= 3;
       if (wasAtCeiling) topLevelCleared = true;
-      if (firstTryHits === PER) hadPerfectRound = true;
+      if (firstTryHits === QUESTIONS) hadPerfectRound = true;
       var leveledUp = firstTryHits >= CLEAN_HITS && level < 3;
       if (leveledUp) { level++; leveledUpDuringSession = true; }
       attempt++;

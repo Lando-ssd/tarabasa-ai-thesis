@@ -534,6 +534,77 @@ class MobileApiTest extends TestCase
         $this->assertArrayNotHasKey('hasCompetencyData', $games->json());
     }
 
+    public function test_only_a_build_that_asks_is_told_to_lead_with_sound_hunt(): void
+    {
+        // A child on the Letters step: an older phone build (it never sends sounds=1) keeps the answer it always had.
+        [$kid] = $this->child(['reading_rung' => 0]);
+        Sanctum::actingAs($kid, ['*']);
+        $old = $this->getJson('/api/learner/games?syllables=1')->assertOk();
+        $this->assertSame(['word-train', 'letters'], [$old->json('recommended'), $old->json('reason')]);
+
+        $new = $this->getJson('/api/learner/games?syllables=1&sounds=1')->assertOk();
+        $this->assertSame(['sound-hunt', 'sounds'], [$new->json('recommended'), $new->json('reason')]);
+        $this->assertTrue($new->json('goodForYou'));
+
+        // The first words step is "good for you" but keeps its own recommendation; above it nothing is said.
+        foreach ([[1, true, 'word-train'], [4, false, 'sentence-stars']] as [$rung, $good, $game]) {
+            [$kid] = $this->child(['reading_rung' => $rung]);
+            Sanctum::actingAs($kid, ['*']);
+            $answer = $this->getJson('/api/learner/games?sounds=1')->assertOk();
+            $this->assertSame([$good, $game], [$answer->json('goodForYou'), $answer->json('recommended')], "step {$rung}");
+        }
+    }
+
+    public function test_sound_hunt_sends_its_questions_the_start_level_and_whether_the_cards_show_words(): void
+    {
+        [$kid] = $this->child(['reading_rung' => 0]);
+        Sanctum::actingAs($kid, ['*']);
+
+        $sounds = $this->getJson('/api/learner/games/sounds')->assertOk();
+        $this->assertSame([1, false], [$sounds->json('startLevel'), $sounds->json('readsWords')]);
+        $this->assertSame(['1' => 'Rhymes', '2' => 'First sounds', '3' => 'Last sounds'], $sounds->json('levelNames'));
+        $this->assertSame([], $sounds->json('clips'), 'no voice clips are shipped until they have been made');
+
+        $this->assertSame(['1', '2', '3'], array_map('strval', array_keys($sounds->json('levels'))));
+        foreach ($sounds->json('levels') as $level => $questions) {
+            $this->assertCount((int) config('sound_hunt.pool'), $questions, "level {$level}");
+            foreach ($questions as $q) {
+                $this->assertSame(['kind', 'target', 'answer', 'choices', 'mark', 'say', 'screen'], array_keys($q));
+                $this->assertContains($q['answer'], $q['choices']);
+                $this->assertSame(['ask', 'again', 'right', 'reveal'], array_keys($q['say']));
+                $this->assertSame(['parts', 'text'], array_keys($q['say']['ask']));
+            }
+        }
+
+        // A child who reads sees the words, and starts one level higher.
+        [$kid] = $this->child(['reading_rung' => 1]);
+        Sanctum::actingAs($kid, ['*']);
+        $sounds = $this->getJson('/api/learner/games/sounds')->assertOk();
+        $this->assertSame([2, true], [$sounds->json('startLevel'), $sounds->json('readsWords')]);
+    }
+
+    public function test_sound_hunt_lists_the_clips_that_exist_and_a_finished_game_is_reported(): void
+    {
+        $dir = 'audio/sound-hunt-test-'.uniqid();
+        config(['sound_hunt.clips.directory' => $dir]);
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(public_path($dir));
+        try {
+            \Illuminate\Support\Facades\File::put(public_path("$dir/w-cat.mp3"), 'x');
+            [$kid] = $this->child(['reading_rung' => 2]);
+            Sanctum::actingAs($kid, ['*']);
+
+            $clips = $this->getJson('/api/learner/games/sounds')->assertOk()->json('clips');
+            $this->assertSame(['w-cat'], array_keys($clips));
+            $this->assertStringEndsWith("$dir/w-cat.mp3", $clips['w-cat']);
+        } finally {
+            \Illuminate\Support\Facades\File::deleteDirectory(public_path($dir));
+        }
+
+        $this->postJson('/api/learner/games/sound-hunt/finish', ['level_reached' => 3, 'top_level_cleared' => true, 'had_perfect_round' => true, 'rounds' => 1])
+            ->assertOk()->assertJsonStructure(['newBadges']);
+        $this->assertSame(1, \App\Models\GamePlay::where('learner_id', $kid->id)->where('game', 'sound-hunt')->count());
+    }
+
     public function test_the_word_levels_come_with_the_childs_own_missed_words_first_by_length(): void
     {
         [$kid] = $this->child();

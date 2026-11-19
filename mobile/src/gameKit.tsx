@@ -47,9 +47,13 @@ export function playSfx(name: Sfx, volume = 0.5) {
 
 // ------------------------------------------------------------------ letters
 
-/** A letter's NAME as it is said ("ay", "bee"): reading the bare letter would give a word like "a" or "I". */
+/**
+ * A letter's NAME as it is spelled for the phone's read-aloud voice: reading the bare letter would give a word like "a" or "I". This is the same list
+ * as config/voice.php on the server (a test fails if the two differ). A is "eigh", not "ay": a Philippine English voice reads "ay" like the Tagalog
+ * word, which sounds like "eye", so A and I came out the same. Tara's recorded letter clips, when all 26 exist, are used instead (see WordTrain).
+ */
 export const LETTER_NAMES: Record<string, string> = {
-  a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay',
+  a: 'eigh', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'jee', h: 'aitch', i: 'eye', j: 'jay',
   k: 'kay', l: 'el', m: 'em', n: 'en', o: 'oh', p: 'pee', q: 'cue', r: 'are', s: 'ess', t: 'tee',
   u: 'you', v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zee',
 };

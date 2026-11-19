@@ -48,7 +48,7 @@ class GameController extends Controller
             // Sound Hunt is for every child. Its card is only hidden (by the page) on a device that has no way to make a sound.
             'soundHuntHasClips' => SoundHunt::clips() !== [],
             // A child on the Letters step (or with no step yet) is told Sound Hunt suits them; the others get a plain "New" tag.
-            'goodForYou' => ! SoundHunt::readsWords(ReadingLevel::rung($learner)) || ReadingLevel::rung($learner) === 1,
+            'goodForYou' => SoundHunt::goodForYou(ReadingLevel::rung($learner)),
         ]);
     }
 

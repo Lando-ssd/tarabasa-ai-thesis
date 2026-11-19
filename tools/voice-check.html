@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice check | TaraBasa AI</title>
+<style>
+  :root { --ink:#17324d; --slate:#56697a; --line:#d7e3ef; --sky:#eaf4ff; --orange:#dd7014; --orange-dark:#b45a0c; --ok:#2e8b57; --page:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px 16px 48px; background:var(--page); color:var(--ink); font:17px/1.5 "Segoe UI", system-ui, sans-serif; }
+  main { max-width:760px; margin:0 auto; }
+  h1 { font-size:28px; margin:0 0 4px; }
+  h2 { font-size:20px; margin:28px 0 8px; }
+  p { margin:6px 0; color:var(--slate); }
+  .box { background:var(--sky); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin:14px 0; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  select { font:inherit; padding:8px 10px; border-radius:10px; border:1px solid var(--line); max-width:100%; }
+  button { font:inherit; font-weight:600; min-height:48px; padding:8px 18px; border:0; border-radius:12px; background:var(--orange); color:#fff; border-bottom:4px solid var(--orange-dark); cursor:pointer; }
+  button:active { transform:translateY(2px); }
+  button.ghost { background:#fff; color:var(--ink); border:1px solid var(--line); border-bottom:4px solid var(--line); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(112px, 1fr)); gap:10px; }
+  .grid button small { display:block; font-weight:400; opacity:.85; font-size:13px; }
+  .pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .pair .box { margin:0; }
+  b.name { color:var(--ok); }
+  @media (max-width:520px) { .pair { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Voice check</h1>
+  <p>Open this page in the browser you use for TaraBasa. Press a button and listen. It uses only this computer's own read-aloud voice; nothing is sent anywhere.</p>
+
+  <div class="box">
+    <div class="row">
+      <label for="voice"><b>Voice</b></label>
+      <select id="voice" aria-label="Voice"></select>
+    </div>
+    <p id="picked"></p>
+  </div>
+
+  <h2>1. Does A sound different from I?</h2>
+  <p>The letter A used to be spelled "ay" for the voice. A Philippine English voice can read that like the Tagalog word "ay", which sounds like "eye". The app now uses the first spelling below. Listen to each one next to "eye" and tell me which one says the letter A properly.</p>
+  <div class="pair">
+    <div class="box"><b>For the letter A</b>
+      <div class="row" style="margin-top:8px">
+        <button data-say="eigh">eigh <small>(the app now)</small></button>
+        <button data-say="hey" class="ghost">hey</button>
+        <button data-say="ay" class="ghost">ay (old)</button>
+        <button data-say="A." class="ghost">A.</button>
+      </div>
+    </div>
+    <div class="box"><b>For the letter I</b>
+      <div class="row" style="margin-top:8px">
+        <button data-say="eye">eye <small>(the app)</small></button>
+      </div>
+    </div>
+  </div>
+  <p>Good: A sounds like the start of "eight" and I sounds like "eye". Not good: they sound the same, or A sounds like "uh" or "eh".</p>
+
+  <h2>2. All the letters, as the app spells them</h2>
+  <div class="grid" id="letters"></div>
+
+  <h2>3. A few words</h2>
+  <div class="row" id="words"></div>
+  <p>The word clips for Sound Hunt, and the letter clips, are the real fix: they are made once with a studio voice and do not depend on this computer. See tools/make-voice-clips.py.</p>
+</main>
+
+<script>
+(function () {
+  var synth = window.speechSynthesis;
+  // The same spelling list as config/voice.php. If you change a spelling here to test it, change it there too.
+  var LETTERS = { a:'eigh', b:'bee', c:'see', d:'dee', e:'ee', f:'eff', g:'jee', h:'aitch', i:'eye', j:'jay', k:'kay', l:'el', m:'em', n:'en', o:'oh', p:'pee', q:'cue', r:'are', s:'ess', t:'tee', u:'you', v:'vee', w:'double you', x:'ex', y:'why', z:'zee' };
+  var WORDS = ['cat', 'hat', 'pig', 'big', 'sock', 'pet', 'Which one rhymes with cat?'];
+  var sel = document.getElementById('voice'), picked = document.getElementById('picked');
+
+  // The same ranking the app uses (resources/views/partials/speak.blade.php).
+  function rank(v) {
+    var n = (v.name || '').toLowerCase(), lang = v.lang || '', s = 0;
+    if (/^en/i.test(lang)) s += 10;
+    if (/^en[-_]ph/i.test(lang) || n.indexOf('philippines') > -1) s += 14;
+    if (/en[-_]us/i.test(lang)) s += 2;
+    if (/natural|online|neural/.test(n)) s += 8;
+    if (/rosa\b/.test(n)) s += 6;
+    if (/aria|jenny|ava\b|emma|sonia|libby|samantha|zira|susan|allison|karen|tessa|moira|serena|victoria|google us english|female/.test(n)) s += 6;
+    if (/david|mark\b|guy\b|ryan|james|george|male\b|alex|fred|daniel|tom\b|eric|brian|christopher|davis|tony/.test(n)) s -= 8;
+    return s;
+  }
+
+  function english() {
+    return (synth ? synth.getVoices() : []).filter(function (v) { return v.lang && /^en/i.test(v.lang); }).sort(function (a, b) { return rank(b) - rank(a); });
+  }
+
+  function fill() {
+    var list = english();
+    sel.innerHTML = '';
+    list.forEach(function (v, i) {
+      var o = document.createElement('option');
+      o.value = i; o.textContent = v.name + ' (' + v.lang + ')' + (i === 0 ? ' (the one the app would use)' : '');
+      sel.appendChild(o);
+    });
+    picked.textContent = list.length ? 'The app would use: ' + list[0].name + ' (' + list[0].lang + ').' : 'This browser has no English voice, so the app would stay silent here.';
+  }
+
+  function say(text) {
+    if (!synth) { return; }
+    synth.cancel();
+    var u = new SpeechSynthesisUtterance(text), v = english()[Number(sel.value) || 0];
+    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
+    u.rate = 0.8; u.pitch = 1.05;
+    synth.speak(u);
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-say]');
+    if (b) { say(b.getAttribute('data-say')); }
+  });
+
+  var grid = document.getElementById('letters');
+  Object.keys(LETTERS).forEach(function (k) {
+    var b = document.createElement('button');
+    b.className = 'ghost'; b.setAttribute('data-say', LETTERS[k]);
+    b.innerHTML = k.toUpperCase() + ' <small>' + LETTERS[k] + '</small>';
+    grid.appendChild(b);
+  });
+  var words = document.getElementById('words');
+  WORDS.forEach(function (w) {
+    var b = document.createElement('button');
+    b.className = 'ghost'; b.setAttribute('data-say', w); b.textContent = w;
+    words.appendChild(b);
+  });
+
+  fill();
+  if (synth && synth.addEventListener) { synth.addEventListener('voiceschanged', fill); }
+})();
+</script>
+</body>
+</html>

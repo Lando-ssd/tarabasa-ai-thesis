@@ -61,16 +61,20 @@ class PracticeGameRulesTest extends TestCase
         $syllables = $this->get(route('learner.games.syllable-steps'))->assertOk();
         $syllables->assertSee('var MAX_ATTEMPTS = 4;', false)->assertSee('var WORDS = 5;', false)
             ->assertSee('var CLEAN_HITS = 3;', false)->assertSee('var MAX_TRIES = 3;', false);
+
+        $sounds = $this->get(route('learner.games.sound-hunt'))->assertOk();
+        $sounds->assertSee('var MAX_ATTEMPTS = 4;', false)->assertSee('var QUESTIONS = 5;', false)
+            ->assertSee('var CLEAN_HITS = 3;', false)->assertSee('var MAX_TRIES = 3;', false);
     }
 
     public function test_no_game_page_keeps_its_own_hard_coded_round_number(): void
     {
         $dir = base_path('resources/views/learner/games');
 
-        foreach (['balloon-pop', 'read-game', 'syllable-steps'] as $name) {
+        foreach (['balloon-pop', 'read-game', 'syllable-steps', 'sound-hunt'] as $name) {
             $source = file_get_contents("{$dir}/{$name}.blade.php");
 
-            foreach (['MAX_ATTEMPTS', 'TARGETS_PER_ROUND', 'TARGETS', 'WORDS', 'CLEAN_HITS', 'MAX_TRIES'] as $constant) {
+            foreach (['MAX_ATTEMPTS', 'TARGETS_PER_ROUND', 'TARGETS', 'WORDS', 'QUESTIONS', 'CLEAN_HITS', 'MAX_TRIES'] as $constant) {
                 $this->assertDoesNotMatchRegularExpression(
                     '/\b(?:const|var)\s+'.$constant.'\s*=\s*\d/',
                     $source,
@@ -95,6 +99,7 @@ class PracticeGameRulesTest extends TestCase
             'ReadGame.tsx' => ['TARGETS' => $perRound],
             'BalloonPop.tsx' => ['TARGETS' => $perRound],
             'SyllableSteps.tsx' => ['WORDS' => $perRound],
+            'SoundHunt.tsx' => ['QUESTIONS' => $perRound],
         ];
 
         foreach ($files as $file => $extra) {

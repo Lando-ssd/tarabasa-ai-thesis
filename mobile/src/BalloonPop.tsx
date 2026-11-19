@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import * as Speech from 'expo-speech';
 import * as api from './api';
 import { Celebrate, Dots, GameDone, GameHeader, pickWords, playSfx, prepareSounds, shuffle } from './gameKit';
 import { SayWord, type SayResult } from './SayWord';
 import { useSession } from './session';
+import { say as speak, stopSaying } from './speech';
 import { Btn, Busy, Icon, IconBtn, Notice, Screen, Small } from './ui';
 import { colors, fonts, size, space } from './theme';
 import { COMPACT_HEIGHT, s, SHORT_HEIGHT } from './scale';
@@ -42,7 +42,7 @@ export function BalloonPop({ onExit }: { onExit: () => void }) {
   useEffect(() => {
     load();
     prepareSounds();
-    return () => void Speech.stop();
+    return () => stopSaying();
   }, [load]);
 
   if (error) {
@@ -101,10 +101,7 @@ function Play({ data, firstName, onExit }: { data: api.WordLevels; firstName: st
   const target = order[pos];
   const word = words[target] ?? '';
 
-  const say = (w: string) => {
-    Speech.stop();
-    Speech.speak(w, { language: 'en-US', rate: 0.7 });
-  };
+  const say = (w: string) => speak(w, 0.7);
 
   // The marked word is read aloud as each balloon is marked, once the child has tapped something (the first waits for Hear).
   useEffect(() => {

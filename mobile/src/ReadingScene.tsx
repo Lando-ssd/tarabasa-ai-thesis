@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import * as Speech from 'expo-speech';
+import { say as speak, stopSaying } from './speech';
 import { Animation, IconBtn, Panel, Pill, Screen, Small } from './ui';
 import { colors, fonts, READING_BASE, readingSteps, size, space } from './theme';
 import { useSession } from './session';
@@ -40,23 +40,17 @@ export function ReadingScene({ eyebrow, pill, steps, dots, direction, passage, b
   const [gridW, setGridW] = useState(0);
 
   // Stop talking when the screen goes away.
-  useEffect(() => () => void Speech.stop(), []);
+  useEffect(() => () => stopSaying(), []);
 
   function toggleSpeech() {
     if (!speakText) return;
     if (speaking) {
-      Speech.stop();
+      stopSaying();
       setSpeaking(false);
       return;
     }
     setSpeaking(true);
-    Speech.speak(speakText, {
-      language: 'en-US',
-      rate: 0.85,
-      onDone: () => setSpeaking(false),
-      onStopped: () => setSpeaking(false),
-      onError: () => setSpeaking(false),
-    });
+    speak(speakText, 0.85, () => setSpeaking(false));
   }
 
   const step = readingSteps[Math.min(Math.max(fontStep, 1), 5) - 1];

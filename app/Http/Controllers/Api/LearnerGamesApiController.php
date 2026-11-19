@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\GamePlay;
 use App\Services\PracticeGameService;
 use App\Services\ReadingAiClient;
+use App\Support\LetterVoice;
+use App\Support\ReadingLevel;
+use App\Support\SoundHunt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,13 +23,13 @@ class LearnerGamesApiController extends Controller
     /**
      * What the Games screen needs: which game leads (and why), the level a game starts at, and whether Syllable Steps is offered.
      *
-     * A phone build that has Syllable Steps asks for it with `?syllables=1`. An older build never does, so it is never told to lead with
-     * a game it does not have (and the extra field is ignored by it).
+     * A phone build that has Syllable Steps asks for it with `?syllables=1`, and one that has Sound Hunt with `?sounds=1`. An older build never
+     * does, so it is never told to lead with a game it does not have (and the extra fields are ignored by it).
      */
     public function index(Request $request, PracticeGameService $games): JsonResponse
     {
         $learner = $request->user();
-        $pick = $learner->recommendedGameFocus($request->boolean('syllables'));
+        $pick = $learner->recommendedGameFocus($request->boolean('syllables'), $request->boolean('sounds'));
 
         return response()->json([
             // 'balloon-pop', 'word-train', 'sentence-stars' (or 'syllable-steps' for a build that asked for it) when the child's own reading says one would help most. Never a gate.
@@ -35,6 +38,22 @@ class LearnerGamesApiController extends Controller
             'startLevel' => $games->startLevel($learner),
             // False for a child still on the Letters step: they have no word level yet, so the card is not shown.
             'syllableSteps' => $games->syllableStartLevel($learner) !== null,
+            // True for a child on the Letters or first words step: Sound Hunt gets a "Good for you" tag when it is not the recommended game.
+            'goodForYou' => SoundHunt::goodForYou(ReadingLevel::rung($learner)),
+        ]);
+    }
+
+    /**
+     * Sound Hunt: listen and tap, no microphone (config/sound_hunt.php). The questions of all three levels (three lists, none repeated inside
+     * a level), the level to start at, whether the cards show the written word, the names of the levels, and the voice clips that exist
+     * (key => address; empty until they have been made, and then the phone reads each line with the device's own voice). Free play like the
+     * other games: nothing is graded or kept, and a finished game is reported with finish() as usual.
+     */
+    public function sounds(Request $request, PracticeGameService $games): JsonResponse
+    {
+        return response()->json($games->soundHunt($request->user()) + [
+            'levelNames' => collect(SoundHunt::levels())->map(fn ($l) => $l['name'])->all(),
+            'clips' => (object) SoundHunt::clips(),
         ]);
     }
 
@@ -71,7 +90,11 @@ class LearnerGamesApiController extends Controller
     {
         $learner = $request->user();
 
-        return response()->json($games->trainLevels($learner) + ['startLevel' => $games->startLevel($learner)]);
+        return response()->json($games->trainLevels($learner) + [
+            'startLevel' => $games->startLevel($learner),
+            // Tara's recorded letter names, all 26 or none (App\Support\LetterVoice); without them the phone's own voice reads the spelling.
+            'clips' => (object) LetterVoice::clips(),
+        ]);
     }
 
     /** Sentence Stars' sentences at each of the three levels, the ones that suit this child first. */

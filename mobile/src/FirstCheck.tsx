@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import * as Speech from 'expo-speech';
 import * as api from './api';
 import { Feedback } from './Feedback';
 import { MicButton } from './MicButton';
 import { ReadingScene } from './ReadingScene';
+import { say as speak, stopSaying } from './speech';
 import { Animation, Btn, H1, IconBtn, Notice, P, Screen } from './ui';
 import { WarmUp } from './WarmUp';
 import { SendFailed, Waiting } from './Waiting';
@@ -36,7 +36,7 @@ export function FirstCheck({ firstName, onDone }: { firstName: string; onDone: (
   // Wake the scoring service while the child reads the welcome, so the first recording is not slow.
   useEffect(() => {
     api.warm().catch(() => {});
-    return () => void Speech.stop();
+    return () => stopSaying();
   }, []);
 
   async function loadItem() {
@@ -69,7 +69,7 @@ export function FirstCheck({ firstName, onDone }: { firstName: string; onDone: (
           anchor="content"
           footer={
             <View style={{ flexDirection: 'row', gap: space[10], alignItems: 'center' }}>
-              <IconBtn icon="speaker-high" label="Read it to me" onPress={() => Speech.speak(`Let's read together, ${firstName}! ${WELCOME}`, { language: 'en-US', rate: 0.85 })} />
+              <IconBtn icon="speaker-high" label="Read it to me" onPress={() => speak(`Let's read together, ${firstName}! ${WELCOME}`, 0.85)} />
               <Btn label="I'm Ready" style={{ flex: 1 }} onPress={loadItem} loading={phase.name === 'loading'} />
             </View>
           }

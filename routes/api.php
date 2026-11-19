@@ -162,6 +162,7 @@ Route::middleware(['auth:sanctum', 'token.actor:learner'])->prefix('learner')->n
         Route::get('/games/train', [LearnerGamesApiController::class, 'train'])->name('games.train');
         Route::get('/games/sentences', [LearnerGamesApiController::class, 'sentences'])->name('games.sentences');
         Route::get('/games/syllables', [LearnerGamesApiController::class, 'syllables'])->name('games.syllables');
+        Route::get('/games/sounds', [LearnerGamesApiController::class, 'sounds'])->name('games.sounds');
         Route::post('/games/check-text', [LearnerGamesApiController::class, 'checkText'])->middleware(['throttle:90,1', 'scoring.slots'])->name('games.check-text');
         Route::post('/games/check-word', [LearnerGamesApiController::class, 'checkWord'])->middleware(['throttle:90,1', 'scoring.slots'])->name('games.check-word');
         Route::post('/games/{game}/finish', [LearnerGamesApiController::class, 'finish'])->middleware('throttle:30,1')->name('games.finish');

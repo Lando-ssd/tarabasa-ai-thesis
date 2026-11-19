@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
-import * as Speech from 'expo-speech';
 import * as api from './api';
 import { Dots, GameDone, GameHeader, playSfx, prepareSounds, shuffle } from './gameKit';
 import { GameLoader } from './ReadGame';
@@ -8,6 +7,7 @@ import { SayText } from './SayText';
 import type { SayResult } from './SayWord';
 import { s } from './scale';
 import { useSession } from './session';
+import { prepareVoice, say as speak, stopAll } from './speech';
 import { Btn, Busy, Icon, IconBtn, Screen, Small } from './ui';
 import { colors, fonts, space } from './theme';
 
@@ -119,12 +119,13 @@ function SyllableGame({ data, firstName, onExit }: { data: api.SyllableLevels; f
 
   useEffect(() => {
     void prepareSounds();
+    void prepareVoice();
     AccessibilityInfo.isReduceMotionEnabled()
       .then(setReduceMotion)
       .catch(() => {});
     return () => {
       timers.current.forEach(clearTimeout);
-      void Speech.stop();
+      stopAll();
     };
   }, []);
 
@@ -132,10 +133,8 @@ function SyllableGame({ data, firstName, onExit }: { data: api.SyllableLevels; f
   const n = word?.parts.length ?? 2;
   const instruction = word ? instructionFor(step, n, repeat, tapMode) : '';
 
-  const say = (text: string, rate = 0.75) => {
-    void Speech.stop();
-    Speech.speak(text, { language: 'en-US', rate });
-  };
+  // The same ranked voice as every other game (speech.ts), a little slower than normal.
+  const say = (text: string, rate = 0.75) => speak(text, rate);
 
   // Tara says the instruction of a step as it opens, and again when the word changes.
   useEffect(() => {
@@ -553,7 +552,7 @@ function StepBar({ step }: { step: number }) {
  * The glow on whatever the child should tap next: a ring that pulses (a still ring when the phone is set to reduce motion), so the next
  * tap is always clear. It never blocks a tap.
  */
-function Cue({ on, children, round, style }: { on: boolean; children: ReactNode; round?: boolean; style?: object }) {
+export function Cue({ on, children, round, style }: { on: boolean; children: ReactNode; round?: boolean; style?: object }) {
   const pulse = useRef(new Animated.Value(0)).current;
   const [reduce, setReduce] = useState(false);
 
@@ -592,7 +591,7 @@ function Cue({ on, children, round, style }: { on: boolean; children: ReactNode;
 }
 
 /** A short full-stage message between rounds ("Round complete!", "Level up!"). */
-function Overlay({ text, big }: { text: string; big?: boolean }) {
+export function Overlay({ text, big }: { text: string; big?: boolean }) {
   return (
     <View style={styles.overlay} accessibilityLiveRegion="polite">
       <Text maxFontSizeMultiplier={1.2} style={[styles.overlayText, big && { fontSize: s(34) }]}>

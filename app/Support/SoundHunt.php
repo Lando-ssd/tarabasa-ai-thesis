@@ -52,6 +52,12 @@ class SoundHunt
         return $rung !== null && $rung >= 1;
     }
 
+    /** Whether the Games page tells this child Sound Hunt suits them: the Letters step (or no step yet) and the first words step. */
+    public static function goodForYou(?int $rung): bool
+    {
+        return ! self::readsWords($rung) || $rung === 1;
+    }
+
     /**
      * The questions of one level, as many as config('sound_hunt.pool'), none with the same target twice. Words the child has missed in their
      * readings (`own`, lowercase) are used as targets first when the level has a group for them.
