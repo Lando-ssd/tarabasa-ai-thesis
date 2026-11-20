@@ -1,8 +1,8 @@
 {{--
-  The Refund Policy (public). TaraBasa AI takes NO real payments. The "paid" activities in the Open Repository use either a simulated
-  unlock ("simulated payment, no gateway": ParentRepositoryService) or, when test payments are switched on (config/payments.php,
-  PaymentService), a TEST payment on the payment provider's own test page with pretend money. This page is true in both states, so
-  it does not depend on the switch. If REAL payments are ever added, this page must be replaced BEFORE they go live, with refund rights
+  The Refund Policy (public). TaraBasa AI takes NO real payments. The "paid" activities in the Open Repository use a simulated
+  unlock ("simulated payment, no gateway": ParentRepositoryService) or, when payments are switched on (PAYMENTS_MODE in config/payments.php,
+  PaymentService), either TaraBasa's own DEMO checkout page or a TEST payment on the payment provider's own test page, both with pretend money.
+  This page is true in all three states, so it does not depend on the setting. If REAL payments are ever added, this page must be replaced BEFORE they go live, with refund rights
   that follow Philippine consumer law, and the Terms must change too.
   tests/Feature/LegalPagesTest.php fails if a payment library appears in composer.json, and tests/Feature/PaymentsTest.php fails if a live key is accepted.
 --}}
@@ -23,7 +23,7 @@
 @section('summary')
   <ul>
     <li>TaraBasa AI is free. It does not charge parents, teachers or children, and it does not collect card, bank or e-wallet details.</li>
-    <li>The prices you may see on shared activities are in test mode. The "payment" step is either a simulated payment on our own page or a test payment on a payment provider's test page. Either way it uses pretend money and never takes real money.</li>
+    <li>The prices you may see on shared activities are in test mode. The "payment" step is a simulated payment on our own page, a demo checkout on our own page, or a test payment on a payment provider's test page. In every case it uses pretend money and never takes real money.</li>
     <li>Because nothing real is charged, there is nothing to refund.</li>
     <li>If anyone asks you to pay "TaraBasa AI", it is not us. Please tell us.</li>
   </ul>
@@ -33,14 +33,15 @@
 
 <section id="free">
   <h2>TaraBasa AI is free</h2>
-  <p>You do not pay to create an account, add a child, read, play, or use any teacher tool. TaraBasa AI has no place to enter a card number, bank account, or e-wallet details. In test mode, the payment provider's own test page may ask for test numbers. Please never type a real card or wallet number there.</p>
+  <p>You do not pay to create an account, add a child, read, play, or use any teacher tool. TaraBasa AI has no place to enter a card number, bank account, or e-wallet details. Our demo checkout has no box for a number at all. In test mode, the payment provider's own test page may ask for test numbers. Please never type a real card or wallet number there.</p>
 </section>
 
 <section id="prices">
   <h2>Prices on shared activities</h2>
-  <p>A teacher can share an activity to the Open Repository as free or with a price in pesos. In this version, the price is only an example of how a paid library could work, and every payment is in test mode, so <b>no money is charged</b> and no money moves. Depending on how the service is set up, unlocking a paid activity works in one of two ways:</p>
+  <p>A teacher can share an activity to the Open Repository as free or with a price in pesos. In this version, the price is only an example of how a paid library could work, and every payment is in test mode, so <b>no money is charged</b> and no money moves. Depending on how the service is set up, unlocking a paid activity works in one of three ways:</p>
   <ul>
     <li><b>A simulated payment.</b> The screen says "This is a simulated payment, so nothing is charged." The unlock only adds that activity to one child's list.</li>
+    <li><b>A demo checkout.</b> The parent goes to a checkout page of TaraBasa AI itself, picks Card, GCash or Maya, and approves a pretend payment. Nothing is sent to any other company, and there is no place to type a number. The activity is unlocked only after the demo payment is approved. If the parent declines or cancels, or the time runs out, nothing is unlocked.</li>
     <li><b>A test payment.</b> The parent goes to the payment provider's test page (PayMongo), pays with pretend money, and comes back. We send the provider only the price, the title of the activity and a reference number, and never receive a card or wallet number. The activity is unlocked only after the provider confirms the test payment. If the parent cancels, or the time runs out, nothing is unlocked.</li>
   </ul>
   <ul>

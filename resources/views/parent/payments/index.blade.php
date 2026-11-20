@@ -7,34 +7,31 @@
 @section('title', 'Payment history | TaraBasa AI')
 
 @section('content')
+@php $word = \App\Services\PaymentService::word(); @endphp
 <h1>Payment history</h1>
-<p class="sub">Test payments for shared activities. They use pretend money, so nothing real was ever charged.</p>
+<p class="sub">{{ ucfirst($word) }} payments for shared activities. They use pretend money, so nothing real was ever charged.</p>
 
 @if (! $paymentsOn)
-  <div class="pay-banner">Test payments are switched off at the moment. Paid activities use the simulated step instead.</div>
+  <div class="pay-banner">{{ ucfirst($word) }} payments are switched off at the moment. Paid activities use the simulated step instead.</div>
 @endif
 
 @if ($payments->isEmpty())
   <div class="card empty-hero">
     <div class="empty-ico">@include('learner._badge-icon', ['icon' => 'storefront', 'class' => 'ico'])</div>
     <h2>No payments yet</h2>
-    <p>When you pay for a paid activity in test mode, each attempt is listed here.</p>
+    <p>When you pay for a paid activity in {{ $word }} mode, each attempt is listed here.</p>
     <div class="actions"><a href="{{ route('parent.repository.index') }}" class="btn">Go to activities</a></div>
   </div>
 @else
   <div class="pay-list">
     @foreach ($payments as $payment)
-      @php
-        $tagClass = ['paid' => 'pay-paid', 'pending' => 'pay-pending', 'cancelled' => 'pay-cancelled', 'expired' => 'pay-expired', 'failed' => 'pay-failed'][$payment->status] ?? 'pay-pending';
-        $tagText = ['paid' => 'Paid', 'pending' => 'Pending', 'cancelled' => 'Cancelled', 'expired' => 'Expired', 'failed' => 'Not started'][$payment->status] ?? 'Pending';
-      @endphp
       <div class="card pay-row">
         <div>
           <b>{{ $payment->listing?->activity?->title ?? 'An activity' }}</b>
-          <small>For {{ $payment->learner?->first_name ?? 'your child' }} &middot; {{ $payment->methodLabel() }} &middot; &#8369;{{ number_format($payment->pesos(), 2) }} (test)</small>
+          <small>For {{ $payment->learner?->first_name ?? 'your child' }} &middot; {{ $payment->methodLabel() }} &middot; &#8369;{{ number_format($payment->pesos(), 2) }} ({{ $payment->modeWord() }})</small>
           <small>{{ $payment->reference }} &middot; {{ $payment->created_at->timezone('Asia/Manila')->format('j M Y, g:i A') }}</small>
         </div>
-        <span class="tag {{ $tagClass }}">{{ $tagText }}</span>
+        <span class="tag {{ $payment->statusClass() }}">{{ $payment->statusLabel() }}</span>
       </div>
     @endforeach
   </div>

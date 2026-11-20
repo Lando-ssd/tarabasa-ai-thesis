@@ -20,6 +20,9 @@ use Illuminate\Validation\ValidationException;
  * Test mode payments for a paid activity (config/payments.php). The website's PaymentController and the provider's message
  * (Api\PaymongoWebhookController) both go through here, so one set of rules decides when an unlock is allowed.
  *
+ * Two ways to run them, chosen by PAYMENTS_MODE (mode()): 'paymongo' (the order of events below) and 'demo', TaraBasa's own demo checkout page with
+ * pretend money (demoPay): no account, no key, nothing sent to anyone. Both make the same Payment record and both unlock only through applyPaid().
+ *
  * The order of events (the approved preview, "How a transaction works"):
  *   1. start()        a record is made (status pending) and the provider is asked for a checkout address with only the price, the activity title
  *                     and a reference number. The parent is then sent to the provider's page, where card, GCash or Maya is chosen. TaraBasa never
@@ -40,16 +43,47 @@ class PaymentService
         private readonly ParentRepositoryService $repository,
     ) {}
 
-    /** The switch (PAYMENTS_ENABLED). Off by default: a paid unlock is then the old simulated step and nothing leaves the site. */
-    public static function enabled(): bool
+    /**
+     * Which payments run: 'off', 'demo' or 'paymongo' (PAYMENTS_MODE, config/payments.php). Off by default. Not set means the old PAYMENTS_ENABLED
+     * (true is PayMongo test mode). A word that is not one of the three means off, so a typo can never switch anything on.
+     */
+    public static function mode(): string
     {
-        return (bool) config('payments.enabled');
+        $mode = strtolower(trim((string) config('payments.mode')));
+
+        if ($mode === '') {
+            return config('payments.enabled') ? 'paymongo' : 'off';
+        }
+
+        return in_array($mode, ['demo', 'paymongo'], true) ? $mode : 'off';
     }
 
-    /** On, and a test key is in place. A live key is never accepted. */
+    /** Off by default: a paid unlock is then the old simulated step and nothing leaves the site. */
+    public static function enabled(): bool
+    {
+        return self::mode() !== 'off';
+    }
+
+    /** TaraBasa's own demo checkout page: pretend money, no outside company. */
+    public static function isDemo(): bool
+    {
+        return self::mode() === 'demo';
+    }
+
+    /** "demo" or "test": the word the pages use for the payment that runs now. */
+    public static function word(): string
+    {
+        return self::isDemo() ? 'demo' : 'test';
+    }
+
+    /** Switched on, and nothing more is needed. The demo needs no key. PayMongo needs a test key, and a live key is never accepted. */
     public static function ready(): bool
     {
-        return self::enabled() && str_starts_with((string) config('payments.paymongo.secret_key'), 'sk_test_');
+        return match (self::mode()) {
+            'demo' => true,
+            'paymongo' => str_starts_with((string) config('payments.paymongo.secret_key'), 'sk_test_'),
+            default => false,
+        };
     }
 
     // ------------------------------------------------------------------------------------------------------------- start
@@ -81,7 +115,7 @@ class PaymentService
         try {
             return Cache::lock('payment-start:'.$learner->id.':'.$listing->id, 30)->block(10, fn () => $this->begin($parent, $listing, $learner));
         } catch (LockTimeoutException) {
-            throw $this->refuse('Another test payment for this activity is being started. Please wait a moment and try again.');
+            throw $this->refuse('Another '.self::word().' payment for this activity is being started. Please wait a moment and try again.');
         }
     }
 
@@ -98,21 +132,30 @@ class PaymentService
         }
         // Another guardian of the same child already has one open: a second payment would buy nothing, since the unlock is one per child and activity.
         if ($open->isNotEmpty()) {
-            throw $this->refuse('A test payment for '.$learner->first_name.' and this activity is already open from another guardian. Please wait for it to finish.');
+            throw $this->refuse('A '.self::word().' payment for '.$learner->first_name.' and this activity is already open from another guardian. Please wait for it to finish.');
         }
 
+        $demo = self::isDemo();
+
         $payment = Payment::create([
-            'reference' => $this->newReference(),
+            'reference' => $this->newReference($demo ? 'TB-D-' : 'TB-T-'),
             'parent_id' => $parent->id,
             'learner_id' => $learner->id,
             'listing_id' => $listing->id,
-            'provider' => 'paymongo',
+            'provider' => $demo ? 'demo' : 'paymongo',
             'amount_centavos' => (int) round((float) $listing->price * 100),
             'currency' => (string) config('payments.currency', 'PHP'),
             'status' => Payment::PENDING,
             'is_test' => true,
             'expires_at' => now()->addMinutes(max((int) config('payments.min_session_minutes', 5), (int) config('payments.session_minutes', 30))),
         ]);
+
+        if ($demo) {
+            // TaraBasa's own checkout page: nothing is asked of anyone, nothing is sent anywhere. The "session" is only a unique name for the record.
+            $payment->update(['provider_session_id' => 'demo_'.Str::lower(Str::random(24)), 'checkout_url' => route('parent.payments.demo', $payment->reference)]);
+
+            return $payment;
+        }
 
         try {
             $session = $this->client->createCheckout([
@@ -164,7 +207,8 @@ class PaymentService
             return $payment;
         }
 
-        if ($payment->provider_session_id && self::ready()) {
+        // Only a PayMongo payment has anyone to ask. A demo payment is decided on TaraBasa's own checkout page.
+        if ($payment->provider === 'paymongo' && $payment->provider_session_id && self::ready()) {
             try {
                 $session = $this->client->retrieveCheckout($payment->provider_session_id);
                 $paid = $this->paidEntry((array) ($session['attributes'] ?? []));
@@ -223,6 +267,41 @@ class PaymentService
         return $rows;
     }
 
+    // ------------------------------------------------------------------------------------------------------------- the demo checkout
+
+    /**
+     * The parent's answer on TaraBasa's own demo checkout page: 'approve', 'decline' or 'cancel', with the way to pay they chose (a key of
+     * config('payments.demo.methods')). It follows the same rules as a PayMongo payment:
+     *   - only a payment that is still pending can be decided; a second press, or a payment that ran out of time, changes nothing;
+     *   - 'approve' goes through applyPaid(), the same and only door to an unlock, so the amount and the currency are checked there too;
+     *   - 'decline' leaves the activity locked and the payment as failed, with the reason 'declined';
+     *   - 'cancel' is the same as pressing "Cancel and go back".
+     * Nothing is sent to anyone and no card or wallet detail exists to keep.
+     */
+    public function demoPay(Payment $payment, string $method, string $outcome): Payment
+    {
+        abort_unless(self::isDemo() && $payment->isDemo(), 404);
+
+        $payment = $this->expireIfDue($payment->refresh());
+        if (! $payment->isPending()) {
+            return $payment;
+        }
+
+        if (! array_key_exists($method, (array) config('payments.demo.methods'))) {
+            throw ValidationException::withMessages(['method' => 'Choose how to pay.']);
+        }
+
+        if ($outcome === 'approve') {
+            $this->applyPaid($payment, $payment->amount_centavos, $payment->currency, $method, 'demo_'.Str::lower(Str::random(16)));
+        } elseif ($outcome === 'decline') {
+            $payment->update(['status' => Payment::FAILED, 'method' => $this->normalMethod($method), 'failure_reason' => 'declined']);
+        } else {
+            $this->cancel($payment);
+        }
+
+        return $payment->refresh();
+    }
+
     // ------------------------------------------------------------------------------------------------------------- the provider's message
 
     /**
@@ -264,7 +343,8 @@ class PaymentService
 
         $payment = $reference !== '' ? Payment::where('reference', $reference)->first() : null;
         $payment ??= $sessionId !== '' ? Payment::where('provider_session_id', $sessionId)->first() : null;
-        if (! $payment) {
+        // A demo payment belongs to TaraBasa's own checkout page and is never decided by a message from outside.
+        if (! $payment || $payment->provider !== 'paymongo') {
             return ['status' => 200, 'outcome' => 'unknown_payment'];
         }
         if ($sessionId !== '' && $payment->provider_session_id && $payment->provider_session_id !== $sessionId) {
@@ -371,7 +451,7 @@ class PaymentService
 
     private function closeAtProvider(Payment $payment): void
     {
-        if (! $payment->provider_session_id || ! self::ready()) {
+        if ($payment->provider !== 'paymongo' || ! $payment->provider_session_id || ! self::ready()) {
             return;
         }
 
@@ -383,10 +463,10 @@ class PaymentService
         }
     }
 
-    private function newReference(): string
+    private function newReference(string $prefix = 'TB-T-'): string
     {
         do {
-            $reference = 'TB-T-'.strtoupper(Str::random(8));
+            $reference = $prefix.strtoupper(Str::random(8));
         } while (Payment::where('reference', $reference)->exists());
 
         return $reference;

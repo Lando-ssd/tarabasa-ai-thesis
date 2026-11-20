@@ -67,6 +67,39 @@ class Payment extends Model
         return $this->amount_centavos / 100;
     }
 
+    /** Made on TaraBasa's own demo checkout page (no outside company), or on the payment provider's test page. */
+    public function isDemo(): bool
+    {
+        return $this->provider === 'demo';
+    }
+
+    /** "Demo" or "Test": the word the pages use next to the amount and in the banner. */
+    public function modeWord(): string
+    {
+        return $this->isDemo() ? 'demo' : 'test';
+    }
+
+    /** A demo payment that the parent turned down on the checkout page (the record keeps it as failed, with this reason). */
+    public function isDeclined(): bool
+    {
+        return $this->status === self::FAILED && $this->failure_reason === 'declined';
+    }
+
+    /** The status in words a parent knows. */
+    public function statusLabel(): string
+    {
+        return match (true) {
+            $this->isDeclined() => 'Declined',
+            default => [self::PAID => 'Paid', self::PENDING => 'Pending', self::CANCELLED => 'Cancelled', self::EXPIRED => 'Expired', self::FAILED => 'Not started'][$this->status] ?? 'Pending',
+        };
+    }
+
+    /** The CSS class of the status tag. */
+    public function statusClass(): string
+    {
+        return [self::PAID => 'pay-paid', self::PENDING => 'pay-pending', self::CANCELLED => 'pay-cancelled', self::EXPIRED => 'pay-expired', self::FAILED => 'pay-failed'][$this->status] ?? 'pay-pending';
+    }
+
     /** The way to pay in words a parent knows. */
     public function methodLabel(): string
     {

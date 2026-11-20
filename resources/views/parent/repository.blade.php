@@ -31,9 +31,9 @@
     <div class="flash error">{{ $errors->first() }}</div>
   @endif
   @if ($paymentsOn && $paymentsReady)
-    <div class="pay-banner">Test mode. Payments here use pretend money. Nothing real is charged. <a href="{{ route('parent.payments.index') }}">Payment history</a></div>
+    <div class="pay-banner">{{ ucfirst($paymentWord) }} mode. Payments here use pretend money. Nothing real is charged. <a href="{{ route('parent.payments.index') }}">Payment history</a></div>
   @elseif ($paymentsOn)
-    <div class="flash error">Test payments are switched on but not set up yet, so paid activities cannot be unlocked right now. Nothing is charged.</div>
+    <div class="flash error">{{ ucfirst($paymentWord) }} payments are switched on but not set up yet, so paid activities cannot be unlocked right now. Nothing is charged.</div>
   @endif
 
   @include('parent._child-chips', ['route' => 'parent.repository.index', 'extra' => array_filter(['filter' => $filter, 'best' => $onlyBest ? '1' : null])])
@@ -105,14 +105,18 @@
           @elseif ($paymentsOn)
             {{-- Test mode payments (config/payments.php): the parent leaves for the provider's own test page. Nothing is unlocked here. --}}
             @php $confirmId = 'confirm-'.$listing->id; $waiting = in_array($listing->id, $pendingListingIds, true); @endphp
-            @if ($waiting)<p class="note" style="margin:0">A test payment for {{ $selectedLearner->first_name }} is still open.</p>@endif
-            <button type="button" class="btn blue" data-toggle-confirm="{{ $confirmId }}" @disabled(! $paymentsReady)>@include('learner._badge-icon', ['icon' => 'lock-simple', 'class' => 'ico']) @if ($waiting)Continue to payment @else Unlock for &#8369;{{ number_format($listing->price) }} (test) @endif</button>
+            @if ($waiting)<p class="note" style="margin:0">A {{ $paymentWord }} payment for {{ $selectedLearner->first_name }} is still open.</p>@endif
+            <button type="button" class="btn blue" data-toggle-confirm="{{ $confirmId }}" @disabled(! $paymentsReady)>@include('learner._badge-icon', ['icon' => 'lock-simple', 'class' => 'ico']) @if ($waiting)Continue to payment @else Unlock for &#8369;{{ number_format($listing->price) }} ({{ $paymentWord }}) @endif</button>
             <div class="confirm" id="{{ $confirmId }}" hidden>
-              You will leave TaraBasa to pay on the payment provider's test page. We send them only the price, the activity title and a reference number. We do not send {{ $selectedLearner->first_name }}'s name, your name or your email.
+              @if ($paymentsDemo)
+                You will go to TaraBasa's demo checkout. It runs inside TaraBasa. We never ask for a card or wallet number, and nothing is sent to any other company. No real money is charged.
+              @else
+                You will leave TaraBasa to pay on the payment provider's test page. We send them only the price, the activity title and a reference number. We do not send {{ $selectedLearner->first_name }}'s name, your name or your email.
+              @endif
               <form method="POST" action="{{ route('parent.payments.start', $listing) }}">
                 @csrf
                 <input type="hidden" name="learner_id" value="{{ $selectedLearner->id }}">
-                <button type="submit" class="btn small" style="margin-top:10px">Go to test payment</button>
+                <button type="submit" class="btn small" style="margin-top:10px">{{ $paymentsDemo ? 'Go to demo checkout' : 'Go to test payment' }}</button>
               </form>
               <button type="button" class="btn ghost small" data-toggle-confirm="{{ $confirmId }}">Cancel</button>
             </div>

@@ -13,17 +13,25 @@
   $title = $payment->listing?->activity?->title ?? 'this activity';
   $first = $payment->learner?->first_name ?? 'your child';
   $status = $payment->status;
-  $tagClass = ['paid' => 'pay-paid', 'pending' => 'pay-pending', 'cancelled' => 'pay-cancelled', 'expired' => 'pay-expired', 'failed' => 'pay-failed'][$status] ?? 'pay-pending';
-  $tagText = ['paid' => 'Paid', 'pending' => 'Pending', 'cancelled' => 'Cancelled', 'expired' => 'Expired', 'failed' => 'Not started'][$status] ?? 'Pending';
+  $word = $payment->modeWord();
+  $demo = $payment->isDemo();
+  $tagClass = $payment->statusClass();
+  $tagText = $payment->statusLabel();
 @endphp
 <div class="pay-result">
-  <div class="pay-banner">Test mode. Pretend money only. Nothing real was charged.</div>
+  <div class="pay-banner">{{ ucfirst($word) }} mode. Pretend money only. Nothing real was charged.</div>
 
   @if ($status === 'paid')
     <div class="pay-hero">
       <div class="pay-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>
       <h1>Unlocked for {{ $first }}</h1>
-      <p>{{ $title }} is ready to read. This was a test payment, so no real money was charged.</p>
+      <p>{{ $title }} is ready to read. This was a {{ $word }} payment, so no real money was charged.</p>
+    </div>
+  @elseif ($status === 'pending' && $demo)
+    <div class="pay-hero">
+      <div class="pay-mark neutral" aria-hidden="true">&hellip;</div>
+      <h1>Your demo payment is not finished</h1>
+      <p>Nothing was unlocked and nothing was charged. You can carry on at the demo checkout.</p>
     </div>
   @elseif ($status === 'pending')
     <div class="pay-hero" id="payWaiting">
@@ -44,6 +52,12 @@
       <h1>The payment request ran out of time</h1>
       <p>Nothing was unlocked and nothing was charged. You can start again.</p>
     </div>
+  @elseif ($payment->isDeclined())
+    <div class="pay-hero">
+      <div class="pay-mark bad" aria-hidden="true">!</div>
+      <h1>The payment was declined</h1>
+      <p>Nothing was unlocked and nothing was charged. You can try again.</p>
+    </div>
   @else
     <div class="pay-hero">
       <div class="pay-mark bad" aria-hidden="true">!</div>
@@ -58,14 +72,22 @@
       <dt>Activity</dt><dd>{{ $title }}</dd>
       <dt>For</dt><dd>{{ $first }}</dd>
       <dt>Paid with</dt><dd>{{ $payment->methodLabel() }}</dd>
-      <dt>Amount</dt><dd>&#8369;{{ number_format($payment->pesos(), 2) }} (test)</dd>
+      <dt>Amount</dt><dd>&#8369;{{ number_format($payment->pesos(), 2) }} ({{ $word }})</dd>
       <dt>Reference</dt><dd>{{ $payment->reference }}</dd>
     </dl>
   </div>
 
   <div class="pay-actions">
-    @if ($status === 'pending')
+    @if ($status === 'pending' && $demo)
+      <a class="btn" href="{{ route('parent.payments.demo', $payment->reference) }}">Continue to demo checkout</a>
+    @elseif ($status === 'pending')
       <a class="btn ghost" href="{{ url()->current() }}" id="payCheckAgain" hidden>Check again</a>
+    @elseif ($payment->isDeclined() && $demo)
+      <form method="POST" action="{{ route('parent.payments.start', $payment->listing_id) }}">
+        @csrf
+        <input type="hidden" name="learner_id" value="{{ $payment->learner_id }}">
+        <button type="submit" class="btn" style="width:100%">Try again</button>
+      </form>
     @endif
     <a class="btn {{ $status === 'paid' ? '' : 'blue' }}" href="{{ route('parent.repository.index', ['learner_id' => $payment->learner_id]) }}">{{ $status === 'paid' ? 'Back to activities' : ($status === 'pending' ? 'Leave this page and go to activities' : 'Back to activities') }}</a>
     <a class="btn ghost" href="{{ route('parent.payments.index') }}">See payment history</a>
@@ -73,7 +95,7 @@
 </div>
 @endsection
 
-@if ($payment->status === 'pending')
+@if ($payment->status === 'pending' && ! $payment->isDemo())
 @push('scripts')
 <script>
   // While the answer is pending, ask quietly every few seconds. When it changes, show the new page. After about two minutes, say what is going on.

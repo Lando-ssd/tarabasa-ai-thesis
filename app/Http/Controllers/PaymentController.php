@@ -8,6 +8,7 @@ use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -61,6 +62,58 @@ class PaymentController extends Controller
         return $this->result($payment);
     }
 
+    // ------------------------------------------------------------------------------------------------------------- the demo checkout
+
+    /**
+     * TaraBasa's own demo checkout (PAYMENTS_MODE=demo): choose how to pay and what should happen in the demo. The payment must be this parent's,
+     * made by the demo, and still pending; otherwise the parent is sent to the result page, which shows what became of it.
+     */
+    public function demo(Request $request, string $reference): View|RedirectResponse
+    {
+        $payment = $this->ownedDemo($request, $reference);
+        if (! $payment->isPending()) {
+            return redirect()->route('parent.payments.back', $payment->reference);
+        }
+
+        return view('parent.payments.demo', [
+            'payment' => $payment,
+            'methods' => (array) config('payments.demo.methods'),
+            'outcomes' => self::OUTCOMES,
+            'method' => $request->old('method'),
+            'outcome' => $request->old('outcome', 'approve'),
+        ]);
+    }
+
+    /** The pretend step for the chosen way to pay: a read only card, or one approve button for a wallet. Nothing can be typed. */
+    public function demoStep(Request $request, string $reference): View|RedirectResponse
+    {
+        $payment = $this->ownedDemo($request, $reference);
+        if (! $payment->isPending()) {
+            return redirect()->route('parent.payments.back', $payment->reference);
+        }
+
+        $data = $request->validate($this->demoRules(), ['method.required' => 'Choose how to pay.', 'method.in' => 'Choose how to pay.']);
+
+        return view('parent.payments.demo-step', [
+            'payment' => $payment,
+            'methodKey' => $data['method'],
+            'methodName' => config('payments.demo.methods')[$data['method']],
+            'outcome' => $data['outcome'],
+            'outcomeName' => self::OUTCOMES[$data['outcome']],
+        ]);
+    }
+
+    /** "Pay (pretend)": the demo answer, then the result page like any other payment. */
+    public function demoPay(Request $request, string $reference): RedirectResponse
+    {
+        $payment = $this->ownedDemo($request, $reference);
+        $data = $request->validate($this->demoRules(), ['method.required' => 'Choose how to pay.', 'method.in' => 'Choose how to pay.']);
+
+        $this->payments->demoPay($payment, $data['method'], $data['outcome']);
+
+        return redirect()->route('parent.payments.back', $payment->reference);
+    }
+
     /** What the waiting page asks every few seconds. */
     public function status(Request $request, string $reference): JsonResponse
     {
@@ -78,6 +131,27 @@ class PaymentController extends Controller
             'payments' => $this->payments->history($parent),
             'paymentsOn' => PaymentService::enabled(),
         ]);
+    }
+
+    /** The endings a parent can choose on the demo checkout page, and the words for them. */
+    private const OUTCOMES = ['approve' => 'Approved', 'decline' => 'Declined', 'cancel' => 'Cancelled'];
+
+    /** @return array<string, mixed> */
+    private function demoRules(): array
+    {
+        return [
+            'method' => ['required', Rule::in(array_keys((array) config('payments.demo.methods')))],
+            'outcome' => ['required', Rule::in(array_keys(self::OUTCOMES))],
+        ];
+    }
+
+    /** This parent's payment, and only when it was made by the demo checkout and the demo is the mode that runs now (otherwise not found). */
+    private function ownedDemo(Request $request, string $reference): Payment
+    {
+        $payment = $this->owned($request, $reference);
+        abort_unless(PaymentService::isDemo() && $payment->isDemo(), 404);
+
+        return $this->payments->expireIfDue($payment)->loadMissing(['listing.activity', 'learner']);
     }
 
     private function owned(Request $request, string $reference): Payment

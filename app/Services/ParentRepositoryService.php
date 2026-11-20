@@ -93,7 +93,7 @@ class ParentRepositoryService
     public function unlock(ParentAccount $parent, OpenRepositoryListing $listing, Learner $learner): void
     {
         if ($listing->price_type === 'Paid' && PaymentService::enabled()) {
-            throw ValidationException::withMessages(['unlock' => 'This is a paid activity. Paid activities are unlocked on the website, with a test payment.']);
+            throw ValidationException::withMessages(['unlock' => 'This is a paid activity. Paid activities are unlocked on the website, with a '.PaymentService::word().' payment.']);
         }
 
         if ($listing->isUnlockedFor($learner->id)) {

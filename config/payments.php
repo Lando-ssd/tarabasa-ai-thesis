@@ -22,7 +22,21 @@
  * The keys are read from the environment and are never written in a file, printed, logged or sent anywhere except to PayMongo.
  */
 return [
+    // The old on/off switch. Kept so an existing PAYMENTS_ENABLED=true still means "PayMongo test mode". New settings use `mode` below.
     'enabled' => (bool) env('PAYMENTS_ENABLED', false),
+
+    // WHICH payments run (App\Services\PaymentService::mode). PAYMENTS_MODE is one of:
+    //   off      the old simulated step, nothing else changes (the default)
+    //   demo     TaraBasa's OWN demo checkout page (Card, GCash, Maya) with pretend money: no account, no keys, nothing is sent to anyone
+    //   paymongo PayMongo's hosted TEST page: needs the test key and the webhook secret below
+    // Not set: PAYMENTS_ENABLED=true means paymongo, anything else means off. A word that is not one of these means off.
+    'mode' => env('PAYMENTS_MODE'),
+
+    // The ways to pay on the demo checkout page: the key stored in payments.method, and the words a parent sees. There is no input box for
+    // any of them, so a real card or wallet number can never be typed there.
+    'demo' => [
+        'methods' => ['card' => 'Card', 'gcash' => 'GCash', 'maya' => 'Maya'],
+    ],
 
     'provider' => 'paymongo',
 

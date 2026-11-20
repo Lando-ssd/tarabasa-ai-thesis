@@ -72,6 +72,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('learner-warm', fn (Request $request) => Limit::perMinute(20)->by($perChild($request)));
         RateLimiter::for('learner-game-check', fn (Request $request) => Limit::perMinute(90)->by($perChild($request)));
 
+        // A parent starting or answering a payment (the PayMongo test path and the demo checkout, config/payments.php). A named limiter of its own:
+        // a plain "throttle:20,1" is one shared allowance for every route that uses it, so each new route would eat into the others.
+        RateLimiter::for('parent-payments', fn (Request $request) => Limit::perMinute(20)->by('parent-payments:'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+
         Mail::extend('gmail-api', function () {
             return new GmailApiTransport(
                 config('services.gmail_send.client_id'),

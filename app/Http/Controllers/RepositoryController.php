@@ -59,6 +59,8 @@ class RepositoryController extends Controller
             'rows' => $found['rows'],
             'paymentsOn' => PaymentService::enabled(),
             'paymentsReady' => PaymentService::ready(),
+            'paymentsDemo' => PaymentService::isDemo(),
+            'paymentWord' => PaymentService::word(),
             'pendingListingIds' => $pendingListingIds,
         ]);
     }

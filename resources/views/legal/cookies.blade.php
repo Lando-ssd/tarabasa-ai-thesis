@@ -24,7 +24,7 @@
 @section('summary')
   <ul>
     <li>We set <b>two small cookies</b>, both needed for the site to work: one keeps you signed in, the other protects forms.</li>
-    <li>We use <b>no analytics, advertising, social media or tracking cookies</b>, and we load nothing from other companies, not even fonts. The one time your browser goes to another company's website is when a parent presses "Go to test payment", if test payments are switched on: that page belongs to the payment provider, and any cookies it sets belong to the provider.</li>
+    <li>We use <b>no analytics, advertising, social media or tracking cookies</b>, and we load nothing from other companies, not even fonts. The one time your browser goes to another company's website is when a parent presses "Go to test payment", if PayMongo test payments are switched on: that page belongs to the payment provider, and any cookies it sets belong to the provider. The demo checkout ("Go to demo checkout") is a page of TaraBasa AI itself and sets no cookie of its own beyond the two listed here.</li>
     <li>Because we set only necessary cookies, there is no cookie banner to click. If that ever changes, we will ask first.</li>
     <li>The phone app does not use cookies.</li>
   </ul>
@@ -101,7 +101,8 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Version</th><th>What changed</th></tr></thead>
     <tbody>
-      <tr><td>{{ config('legal.version') }}</td><td>No change to the cookies TaraBasa AI sets. A parent who chooses to pay in test mode goes to the payment provider's own page, and any cookies set there belong to the provider. The Privacy Policy and the Refund Policy changed to match.</td></tr>
+      <tr><td>{{ config('legal.version') }}</td><td>No change to the cookies TaraBasa AI sets. The new demo checkout is a page of TaraBasa AI itself and uses only the two cookies listed above. The Privacy Policy, Terms and Refund Policy changed to match.</td></tr>
+      <tr><td>2026-11-20</td><td>No change to the cookies TaraBasa AI sets. A parent who chooses to pay in test mode goes to the payment provider's own page, and any cookies set there belong to the provider. The Privacy Policy and the Refund Policy changed to match.</td></tr>
       <tr><td>2026-10-24</td><td>No change to the cookies. The Privacy Policy changed: teachers and parents can add a profile photo of themselves, and the phone app can read a learner card from a picture you choose.</td></tr>
       <tr><td>2026-10-23</td><td>No change to the cookies. The Privacy Policy changed: a recording waits a few seconds in a temporary file while it is scored.</td></tr>
       <tr><td>2026-10-21.2</td><td>No change to the cookies. The Privacy Policy changed: where a child's photo is kept and who sees it.</td></tr>

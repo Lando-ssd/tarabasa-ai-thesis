@@ -194,6 +194,26 @@ class LegalPagesTest extends TestCase
         }
     }
 
+    public function test_the_pages_name_the_demo_checkout_and_say_it_sends_nothing_anywhere(): void
+    {
+        // The demo checkout (PAYMENTS_MODE=demo) is a page of TaraBasa itself. The pages must say so in every state of the setting.
+        foreach (['off', 'demo', 'paymongo'] as $mode) {
+            config(['payments.mode' => $mode]);
+
+            $refunds = $this->get('/refunds')->assertOk()->getContent();
+            $this->assertStringContainsString('A demo checkout.', $refunds);
+            $this->assertStringContainsString('Nothing is sent to any other company, and there is no place to type a number.', $refunds);
+            $this->assertStringContainsString('one of three ways', $refunds);
+
+            $this->get('/terms')->assertOk()->assertSee('a demo checkout on our own page', false);
+            $this->get('/privacy')->assertOk()->assertSee('Go to demo checkout', false)->assertSee('nothing about the parent or the child is sent to any other company', false);
+            $this->get('/cookies')->assertOk()->assertSee('Go to demo checkout', false)->assertSee('sets no cookie of its own', false);
+        }
+
+        // The earlier row keeps its own date, so it is not rewritten by a later version.
+        $this->get('/terms')->assertSee('2026-11-20</td>', false)->assertSee(config('legal.version').'</td>', false);
+    }
+
     public function test_the_only_company_a_page_can_send_a_browser_to_for_payment_is_named_and_only_in_test_mode(): void
     {
         // The provider's address is never written into a page: the checkout address comes from the provider at the moment a parent pays
