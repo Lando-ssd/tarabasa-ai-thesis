@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\OpenRepositoryListing;
+use App\Models\Payment;
 use App\Services\ParentRepositoryService;
+use App\Services\PaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -40,6 +42,13 @@ class RepositoryController extends Controller
 
         $found = $this->repository->rows($parent, $selectedLearner, $filter, $onlyBest);
 
+        // Test payments (config/payments.php): off by default, and then the page is exactly what it always was. When on, a paid activity goes
+        // to the provider's test page. A checkout that is still open for this child is offered again instead of starting a second one.
+        $pendingListingIds = $selectedLearner && PaymentService::enabled()
+            ? Payment::where('parent_id', $parent->id)->where('learner_id', $selectedLearner->id)->where('status', Payment::PENDING)
+                ->where('expires_at', '>', now())->whereNotNull('checkout_url')->pluck('listing_id')->all()
+            : [];
+
         return view('parent.repository', [
             'user' => $request->user(),
             'learners' => $learners,
@@ -48,6 +57,9 @@ class RepositoryController extends Controller
             'onlyBest' => $onlyBest,
             'hasMatching' => $found['hasMatching'],
             'rows' => $found['rows'],
+            'paymentsOn' => PaymentService::enabled(),
+            'paymentsReady' => PaymentService::ready(),
+            'pendingListingIds' => $pendingListingIds,
         ]);
     }
 

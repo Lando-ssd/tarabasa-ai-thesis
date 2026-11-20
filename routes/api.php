@@ -32,6 +32,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/learner/login', [LearnerApiController::class, 'login'])->name('api.learner.login');
 
+// The payment provider's signed message for a test payment (config/payments.php). No sign in: the signature is the proof.
+Route::post('/webhooks/paymongo', \App\Http\Controllers\Api\PaymongoWebhookController::class)->middleware('throttle:120,1')->name('api.webhooks.paymongo');
+
 // Teacher and Parent sign in and sign up (email and password, the website's own rules). A Learner signs in with code and PIN above.
 // An Admin is never accepted here: Admin screens are on the website only.
 Route::prefix('auth')->name('api.auth.')->group(function () {

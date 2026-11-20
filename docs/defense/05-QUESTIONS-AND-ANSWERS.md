@@ -40,7 +40,7 @@ What we do **not** claim: better speech accuracy than commercial products, or mo
 
 ### A7. What are your limitations?
 "Say these yourself, first. (1) **No testing with real children yet**; we used automated tests and computer voices. (2) **Speech recognition is weaker on children** and on names and same-sounding words; our scoring is forgiving, but it is not perfect. (3) The adaptive numbers are **our own settings**, not from DepEd; they need checking with real data.
-(4) It is **English reading only**. (5) It needs **internet**. (6) The three AI services run on free hosting, so the first use after a quiet period waits about a minute. (7) The payment in the Open Repository is **simulated**. (8) Nothing was **trained**: it is rules plus pretrained services.
+(4) It is **English reading only**. (5) It needs **internet**. (6) The three AI services run on free hosting, so the first use after a quiet period waits about a minute. (7) The payment in the Open Repository is **simulated or in test mode** (pretend money only). (8) Nothing was **trained**: it is rules plus pretrained services.
 Then say what you would do next: a consented classroom pilot."
 
 ### A8. How did you prove that it works?
@@ -357,7 +357,16 @@ A background program that takes jobs from a list (score a recording, write activ
 
 **J4. Why no ads?** Children use it; our policy says none.
 
-**J5. Is the payment real?** No, it is simulated.
+**J5. Is the payment real?** No. It is simulated, or in test mode with pretend money. Say "payments were tested in test mode", never "payments work".
+
+**J5a. How does a payment happen in your system?**
+"The parent presses Unlock on a paid activity and confirms. Our server asks the payment provider for a checkout page, sending only the price, the activity title and a reference number, never a name or an email. The parent is sent to the provider's page and pays there, so we never see a card or wallet number. The provider then tells our server the result with a signed message. Our server checks the signature, the reference and the exact amount, and only then unlocks the activity, once. The page the parent comes back to only shows the result. It cannot unlock anything. That is the same skeleton real card and e-wallet payments use."
+
+**J5b. What happens if the parent closes the browser, or pays twice, or someone fakes the message?**
+"If the browser is closed, the provider's message still unlocks it. If the same message arrives twice, or the parent presses twice, it is still one unlock, because the database allows one per child and activity. A faked message has no valid signature, or the wrong amount, and is ignored. A checkout that nobody finishes is closed by us after 30 minutes, and nothing is unlocked."
+
+**J5c. Which payment ways, and are they tested?**
+"Card, GCash and Maya, in the provider's test mode only, which uses test cards and a test approval page with no real wallet. QR Ph is left out on purpose, because the provider says its test QR codes are real. We tested our side with a pretend provider and automated tests. We have not yet done a run with the provider's own test key, and the live site has the switch off."
 
 ---
 

@@ -317,6 +317,13 @@ Route::middleware(['auth', 'parent'])->prefix('parent')->name('parent.')->group(
     Route::post('/repository/{listing}/unlock', [RepositoryController::class, 'unlock'])->name('repository.unlock');
     Route::post('/repository/{listing}/rate', [RepositoryController::class, 'rate'])->name('repository.rate');
 
+    // Test payments for a paid activity (config/payments.php, off by default). One parent sees only their own.
+    Route::post('/repository/{listing}/pay', [\App\Http\Controllers\PaymentController::class, 'start'])->whereNumber('listing')->middleware('throttle:20,1')->name('payments.start');
+    Route::get('/payments', [\App\Http\Controllers\PaymentController::class, 'index'])->name('payments.index');
+    Route::get('/payments/{reference}/back', [\App\Http\Controllers\PaymentController::class, 'back'])->where('reference', '[A-Za-z0-9-]+')->name('payments.back');
+    Route::get('/payments/{reference}/cancelled', [\App\Http\Controllers\PaymentController::class, 'cancelled'])->where('reference', '[A-Za-z0-9-]+')->name('payments.cancelled');
+    Route::get('/payments/{reference}/status', [\App\Http\Controllers\PaymentController::class, 'status'])->where('reference', '[A-Za-z0-9-]+')->middleware('throttle:60,1')->name('payments.status');
+
     // Notifications — Parent Actor Prompt Step 8.
     Route::get('/notifications', [NotificationController::class, 'parentIndex'])->name('notifications.index');
 

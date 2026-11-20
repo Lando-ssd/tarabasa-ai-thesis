@@ -17,6 +17,9 @@ Read this together with `docs/FINISH-CHECKLIST.md` (what is left to do) and `CLA
 | Recommender | Render, https://adaptive-recommendator.onrender.com | teammate BldZeuz (not verified) | same |
 | Email sending | Gmail account `tarabasaai.noreply@gmail.com` through Google's Gmail API | team | the token can expire (see section 2, item 2) |
 | Code | GitHub `Lando-ssd/tarabasa-ai-thesis` (public) | Lando-ssd | none; branches `claude/admin-dashboard-approvals-62dcd0` (deployed), `mobile-app`, `main` |
+| Test payments (switch OFF) | PayMongo in TEST mode, only if `PAYMENTS_ENABLED=true` (`config/payments.php`) | the owner makes the free PayMongo account | test keys cost nothing; a live key is refused by the app and needs a registered business |
+
+**Test payments (added 2026-11-20).** Off by default; while off, a paid unlock is the old simulated step and nothing leaves the site. To try them: make a PayMongo account, put the TEST secret key in Render as `PAYMONGO_SECRET_KEY`, make a webhook in the PayMongo dashboard (Developers, Webhooks) for `checkout_session.payment.paid` with the address `https://tarabasa-ai.onrender.com/api/webhooks/paymongo`, put its `whsk_` secret in `PAYMONGO_WEBHOOK_SECRET`, then set `PAYMENTS_ENABLED=true`. Only after the legal wording has been read (`docs/legal/LEGAL-RISK-REGISTER.md`, O16). To try them on one computer without an account: `tools/pretend-provider.py` (its header says how). If a payment looks stuck: the parent's Payment history lists every attempt with its status; a payment is only ever unlocked by PayMongo's signed message, or by asking PayMongo when the parent comes back. If the webhook is disabled in the PayMongo dashboard after repeated failures, re-enable it there. The keys never go in git or in a chat.
 
 Render deploys ONLY the branch `claude/admin-dashboard-approvals-62dcd0`. Every push to it rebuilds and restarts the site (about a minute).
 

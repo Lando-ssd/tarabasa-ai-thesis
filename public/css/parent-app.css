@@ -351,3 +351,32 @@ a.me-av{ text-decoration:none; }
 /* A Teacher's or Parent's own photo fills the little circles (sidebar, top bar, profile page) over their initial. */
 .me-av, .head-av{ position:relative; overflow:hidden; }
 .me-av img, .head-av img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:50%; }
+
+/* ---- Test payments (config/payments.php): the banner, the page a parent comes back to, and the list of attempts ---- */
+.pay-banner{ margin:0 0 16px; padding:12px 16px; border-radius:14px; background:var(--amber-bg); border:2px solid #f0d28a; color:#6d4a00; font-size:14.5px; font-weight:600; }
+.pay-banner a{ color:inherit; text-decoration:underline; margin-left:6px; }
+.pay-result{ max-width:520px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+.pay-hero{ text-align:center; padding:18px 12px 2px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.pay-hero h1{ font-size:32px; margin:0; }
+.pay-hero p{ margin:0; color:var(--muted); max-width:44ch; }
+.pay-mark{ width:64px; height:64px; border-radius:50%; display:grid; place-items:center; background:var(--green-bg); color:#137a63; font:700 32px/1 var(--font-game); }
+.pay-mark.neutral{ background:#eef1f5; color:#3d4f61; }
+.pay-mark.bad{ background:var(--danger-bg); color:var(--danger); }
+.pay-mark svg{ width:32px; height:32px; }
+.pay-spin{ width:48px; height:48px; border-radius:50%; border:5px solid var(--line); border-top-color:var(--blue); animation:payspin 1s linear infinite; }
+@keyframes payspin{ to{ transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce){ .pay-spin{ animation:none; border-right-color:var(--blue); } }
+.pay-note{ padding:14px 16px; border-radius:14px; background:#eef1f5; border:2px solid #b9c4d0; color:#3d4f61; font-size:14.5px; }
+.pay-record{ display:grid; grid-template-columns:auto minmax(0,1fr); gap:6px 14px; margin:0; font-size:14.5px; align-items:center; }
+.pay-record dt{ color:var(--muted); }
+.pay-record dd{ margin:0; font-weight:600; overflow-wrap:anywhere; }
+.pay-actions{ display:flex; flex-direction:column; gap:10px; }
+.pay-actions .btn{ text-align:center; text-decoration:none; display:block; }
+.pay-list{ display:flex; flex-direction:column; gap:10px; }
+.pay-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:14px 16px; }
+.pay-row b{ display:block; font-size:16px; }
+.pay-row small{ display:block; color:var(--muted); font-size:13.5px; line-height:1.4; }
+.tag.pay-paid{ background:var(--green-bg); color:#137a63; }
+.tag.pay-pending{ background:var(--blue-bg); color:var(--blue-ink); }
+.tag.pay-cancelled, .tag.pay-expired{ background:#eef1f5; color:#3d4f61; }
+.tag.pay-failed{ background:var(--danger-bg); color:var(--danger); }

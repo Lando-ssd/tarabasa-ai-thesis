@@ -81,14 +81,21 @@ class ParentRepositoryService
     }
 
     /**
-     * Free unlocks at once; Paid is confirmed in the app's own second step (a real payment gateway is out of scope: Step 6 calls it
+     * Free unlocks at once; Paid is confirmed in the app's own second step while test payments are switched off (Step 6 calls it
      * "simulated payment" verbatim). Either way this records the real unlock. Pressed twice at the same moment, the database refuses
      * the second, and so does this.
+     *
+     * With test payments switched ON (config/payments.php), a paid activity cannot be unlocked here at all, from the website or the phone:
+     * only a payment the provider has confirmed unlocks it (unlockPaid, called by PaymentService), so the payment step cannot be skipped.
      *
      * @throws ValidationException with the message under `unlock`
      */
     public function unlock(ParentAccount $parent, OpenRepositoryListing $listing, Learner $learner): void
     {
+        if ($listing->price_type === 'Paid' && PaymentService::enabled()) {
+            throw ValidationException::withMessages(['unlock' => 'This is a paid activity. Paid activities are unlocked on the website, with a test payment.']);
+        }
+
         if ($listing->isUnlockedFor($learner->id)) {
             throw ValidationException::withMessages(['unlock' => 'Already unlocked for '.$learner->first_name.'.']);
         }
@@ -102,6 +109,28 @@ class ParentRepositoryService
             ]);
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['unlock' => 'Already unlocked for '.$learner->first_name.'.']);
+        }
+    }
+
+    /**
+     * The unlock that a confirmed payment makes (App\Services\PaymentService::applyPaid, and nothing else). The amount is what was paid, in pesos.
+     * A child who already has the unlock keeps it: the second attempt changes nothing.
+     */
+    public function unlockPaid(ParentAccount $parent, OpenRepositoryListing $listing, Learner $learner, float $pesos): void
+    {
+        if ($listing->isUnlockedFor($learner->id)) {
+            return;
+        }
+
+        try {
+            RepositoryUnlock::create([
+                'listing_id' => $listing->id,
+                'parent_id' => $parent->id,
+                'learner_id' => $learner->id,
+                'amount_paid' => $pesos,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // Two confirmations at the same moment: the database kept one.
         }
     }
 

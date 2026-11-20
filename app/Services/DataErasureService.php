@@ -243,7 +243,7 @@ class DataErasureService
         // A recording still waiting to be scored is deleted with the child, not left in the temporary folder.
         \App\Models\ScoringJob::where('learner_id', $id)->get()->each->discardAudio();
 
-        foreach (['scoring_jobs', 'notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records', 'learner_photos'] as $table) {
+        foreach (['scoring_jobs', 'notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'payments', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records', 'learner_photos'] as $table) {
             DB::table($table)->where('learner_id', $id)->delete();
         }
 
@@ -321,6 +321,7 @@ class DataErasureService
         // What is left that is theirs: ratings they gave, unlocks for children who were deleted, and the links.
         DB::table('repository_ratings')->where('parent_id', $parent->id)->delete();
         DB::table('repository_unlocks')->where('parent_id', $parent->id)->delete();
+        DB::table('payments')->where('parent_id', $parent->id)->delete();
         DB::table('parent_learners')->where('parent_id', $parent->id)->delete();
         $parent->delete();
 
@@ -344,6 +345,7 @@ class DataErasureService
         if ($listingIds->isNotEmpty()) {
             DB::table('repository_ratings')->whereIn('listing_id', $listingIds)->delete();
             DB::table('repository_unlocks')->whereIn('listing_id', $listingIds)->delete();
+            DB::table('payments')->whereIn('listing_id', $listingIds)->delete();
             DB::table('open_repository_listings')->whereIn('id', $listingIds)->delete();
         }
 
@@ -372,6 +374,7 @@ class DataErasureService
         $relationship = $parent->learners()->where('learners.id', $learner->id)->first()?->pivot?->relationship;
 
         DB::table('repository_unlocks')->where('learner_id', $learner->id)->where('parent_id', $parent->id)->update(['parent_id' => $keeperParentId]);
+        DB::table('payments')->where('learner_id', $learner->id)->where('parent_id', $parent->id)->update(['parent_id' => $keeperParentId]);
         DB::table('notifications')->where('recipient_user_id', $user->id)->where('learner_id', $learner->id)->delete();
         DB::table('consent_records')->where('user_id', $user->id)->where('learner_id', $learner->id)->delete();
         $parent->learners()->detach($learner->id);

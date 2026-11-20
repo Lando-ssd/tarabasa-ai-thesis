@@ -119,6 +119,16 @@ services:
       - key: API_CONSENT_REQUIRED
         value: "false"
 
+      # ---- test payments for a paid activity (config/payments.php). OFF by default and TEST MODE ONLY (a key that does not start with sk_test_
+      # is refused). Do not turn on before the legal wording has been read (docs/legal/LEGAL-RISK-REGISTER.md, O16). Keys are secrets: set them
+      # only in Render's dashboard, never in this file. The webhook address to give PayMongo is https://<service>.onrender.com/api/webhooks/paymongo.
+      - key: PAYMENTS_ENABLED
+        value: "false"
+      - key: PAYMONGO_SECRET_KEY
+        sync: false
+      - key: PAYMONGO_WEBHOOK_SECRET
+        sync: false
+
       # ---- the one Admin account (created or updated at every start; 12+ characters)
       - key: ADMIN_EMAIL
         sync: false

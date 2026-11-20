@@ -3,7 +3,7 @@
 The panel may ask: "Is this only a system, or can it sustain itself? Where does the money come from, and is there profit?"
 This file gives you the Business Model Canvas (BMC), the revenue streams, the costs, a break-even calculation you can redo on paper, and the honest limits.
 
-**Read this first.** TaraBasa AI has **no paying customer yet**, no price has been tested with a school, and the payment feature in the app is **simulated** (no real money moves).
+**Read this first.** TaraBasa AI has **no paying customer yet**, no price has been tested with a school, and the payment feature in the app is **simulated or in test mode** (no real money moves; the test mode, with PayMongo's test page, was built on 20 November 2026 and is switched off until the owner turns it on).
 So the numbers below are a **plan with stated assumptions**, not results. Say that sentence before the panel asks. A panel respects a clear plan with honest assumptions;
 it does not respect an invented market size.
 
@@ -49,9 +49,9 @@ The update pack replaces them. This is the canvas as it should be defended:
 
 ### Stream 2: Sale of shared activities (the Open Repository)
 - **What it is.** An approved teacher lists an activity to the repository as **free or paid**. A parent unlocks it for a child. The platform could keep a **commission** and the teacher keeps the rest. Sharing an approved activity also earns a teacher 2 extra writing credits.
-- **What exists today.** The listing, the unlock, the rating and the "best match for your child first" order all work. **The payment is simulated: no real money moves, no payment provider is connected, and no commission is taken.**
+- **What exists today.** The listing, the unlock, the rating and the "best match for your child first" order all work. **The payment is simulated, or (when switched on) a test payment on PayMongo's own test page with pretend money: no real money moves, only a test key is accepted, and no commission is taken.** The test payment was rehearsed on one computer with a pretend provider and is covered by tests; it has not yet been tried with a real PayMongo test key.
 - **Why it is a supporting stream and not the main one.** A paid activity costs a parent a few pesos; even a lively repository brings little (section 4 shows the arithmetic). Its bigger job is to **reward teachers for sharing** and to build a library, which makes the school subscription worth paying for.
-- **What must be built before real money moves** [TO VALIDATE]: a payment provider (for example a local e-wallet or card gateway), the gateway's fees, the rules for a refund (the Refund page says what we do today), tax and business registration, and the Terms for sellers. Do not promise a date.
+- **What must be done before real money moves** [TO VALIDATE]: a live payment provider account (PayMongo's own page says live keys need a registered business type and individual accounts get test keys only, while another page says individuals can ask for QR Ph only: ask them), the gateway's fees (two of its pages give different figures), the rules for a refund (the Refund page says what we do today), tax and business registration, and the Terms for sellers. Do not promise a date.
 
 ### What we do not do
 - **No advertisements.** The Privacy Policy and the Terms say so. Removing the ads stream is a deliberate trade: less revenue, more trust.
@@ -185,7 +185,7 @@ A. "For a pilot, yes, with the keep-awake button, but a child waits about a minu
 A. "About PHP 10 a month at 300 learners per school, because the cost is mostly fixed."
 
 **Q. Is the payment real?**
-A. "No. It is simulated and the Refund page says so. A real payment provider, its fees, taxes and registration come before any real money."
+A. "No. It is simulated, or in test mode on PayMongo's test page with pretend money, and the Refund page says so. We tested the transaction in test mode: the parent is sent to the provider, the provider tells our server with a signed message, and only then is the activity unlocked. A real payment provider account, its fees, taxes and registration come before any real money."
 
 **Q. Is it a business or a thesis?**
 A. "It is a thesis first. We included the business model because a tool teachers cannot afford to keep running does not help children. The canvas shows how it could keep running."

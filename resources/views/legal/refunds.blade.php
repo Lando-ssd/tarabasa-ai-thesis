@@ -1,19 +1,20 @@
 {{--
-  The Refund Policy (public). TaraBasa AI takes NO real payments: the "paid" activities in the Open Repository use a
-  simulated unlock (RepositoryController / ParentRepositoryService, "simulated payment, no gateway"). So this page says
-  that plainly instead of promising refunds that cannot exist. If a real payment gateway is ever added, this page must be
-  replaced BEFORE it goes live, with refund rights that follow Philippine consumer law, and the Terms must change too.
-  tests/Feature/LegalPagesTest.php fails if a payment library appears in composer.json.
+  The Refund Policy (public). TaraBasa AI takes NO real payments. The "paid" activities in the Open Repository use either a simulated
+  unlock ("simulated payment, no gateway": ParentRepositoryService) or, when test payments are switched on (config/payments.php,
+  PaymentService), a TEST payment on the payment provider's own test page with pretend money. This page is true in both states, so
+  it does not depend on the switch. If REAL payments are ever added, this page must be replaced BEFORE they go live, with refund rights
+  that follow Philippine consumer law, and the Terms must change too.
+  tests/Feature/LegalPagesTest.php fails if a payment library appears in composer.json, and tests/Feature/PaymentsTest.php fails if a live key is accepted.
 --}}
 @extends('layouts.legal', [
     'doc' => 'refunds',
     'title' => 'Refund Policy',
-    'description' => 'TaraBasa AI is free and takes no payments, so there is nothing to refund. What the prices on shared activities mean, and what to do if someone asks you to pay.',
+    'description' => 'TaraBasa AI is free and no real money is ever charged, so there is nothing to refund. What the test mode prices on shared activities mean, and what to do if someone asks you to pay.',
     'sections' => [
         'free' => 'TaraBasa AI is free',
         'prices' => 'Prices on shared activities',
         'credits' => 'Teacher credits',
-        'future' => 'If payments are ever added',
+        'future' => 'If real payments are ever added',
         'scams' => 'If someone asks you to pay',
         'contact' => 'Contact',
     ],
@@ -22,8 +23,8 @@
 @section('summary')
   <ul>
     <li>TaraBasa AI is free. It does not charge parents, teachers or children, and it does not collect card, bank or e-wallet details.</li>
-    <li>The prices you may see on shared activities are examples. The "payment" step is a simulation that never takes money.</li>
-    <li>Because nothing is charged, there is nothing to refund.</li>
+    <li>The prices you may see on shared activities are in test mode. The "payment" step is either a simulated payment on our own page or a test payment on a payment provider's test page. Either way it uses pretend money and never takes real money.</li>
+    <li>Because nothing real is charged, there is nothing to refund.</li>
     <li>If anyone asks you to pay "TaraBasa AI", it is not us. Please tell us.</li>
   </ul>
 @endsection
@@ -32,16 +33,21 @@
 
 <section id="free">
   <h2>TaraBasa AI is free</h2>
-  <p>You do not pay to create an account, add a child, read, play, or use any teacher tool. We do not ask for, and the app has no place to enter, a card number, bank account, or e-wallet details.</p>
+  <p>You do not pay to create an account, add a child, read, play, or use any teacher tool. TaraBasa AI has no place to enter a card number, bank account, or e-wallet details. In test mode, the payment provider's own test page may ask for test numbers. Please never type a real card or wallet number there.</p>
 </section>
 
 <section id="prices">
   <h2>Prices on shared activities</h2>
-  <p>A teacher can share an activity to the Open Repository as free or with a price in pesos. In this version, the price is only an example of how a paid library could work. When a parent "unlocks" a paid activity, <b>no money is charged</b>, and the screen says so ("This is a simulated payment, so nothing is charged."). The unlock only adds that activity to one child's list.</p>
+  <p>A teacher can share an activity to the Open Repository as free or with a price in pesos. In this version, the price is only an example of how a paid library could work, and every payment is in test mode, so <b>no money is charged</b> and no money moves. Depending on how the service is set up, unlocking a paid activity works in one of two ways:</p>
   <ul>
-    <li>Because no money was paid, an unlock cannot be refunded.</li>
+    <li><b>A simulated payment.</b> The screen says "This is a simulated payment, so nothing is charged." The unlock only adds that activity to one child's list.</li>
+    <li><b>A test payment.</b> The parent goes to the payment provider's test page (PayMongo), pays with pretend money, and comes back. We send the provider only the price, the title of the activity and a reference number, and never receive a card or wallet number. The activity is unlocked only after the provider confirms the test payment. If the parent cancels, or the time runs out, nothing is unlocked.</li>
+  </ul>
+  <ul>
+    <li>Because nothing real was paid, an unlock cannot be refunded.</li>
     <li>If you unlocked an activity by mistake, nothing was charged to you. If you want it removed from a child's list, write to @include('partials.legal-contact').</li>
     <li>Teachers do not receive money for shared activities.</li>
+    <li>Never scan a QR code shown on a test page. In test mode a QR code can make a real payment.</li>
   </ul>
 </section>
 
@@ -51,7 +57,7 @@
 </section>
 
 <section id="future">
-  <h2>If payments are ever added</h2>
+  <h2>If real payments are ever added</h2>
   <p>If TaraBasa AI ever takes real payments, we will replace this policy, say clearly what is charged and how to get a refund, and ask for your agreement <b>before</b> anything is charged. Your rights as a buyer under Philippine consumer protection and e-commerce laws will apply, and nothing we write can take them away.</p>
 </section>
 

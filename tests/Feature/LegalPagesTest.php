@@ -165,6 +165,47 @@ class LegalPagesTest extends TestCase
         $this->assertStringContainsString('simulated payment', strtolower(file_get_contents(resource_path('views/parent/repository.blade.php'))));
     }
 
+    public function test_the_pages_say_that_payments_are_in_test_mode_whether_the_switch_is_on_or_off(): void
+    {
+        // Test payments (config/payments.php) are off by default. The pages are written to be true in BOTH states, so they never depend on the switch.
+        foreach ([false, true] as $switch) {
+            config(['payments.enabled' => $switch]);
+
+            $refunds = html_entity_decode(strip_tags($this->get('/refunds')->assertOk()->getContent()));
+            $this->assertStringContainsString('test mode', $refunds);
+            $this->assertStringContainsString('never takes real money', $refunds);
+            $this->assertStringContainsString('We send the provider only the price, the title of the activity and a reference number', $refunds);
+            $this->assertStringContainsString('Never scan a QR code shown on a test page', $refunds);
+
+            $terms = html_entity_decode(strip_tags($this->get('/terms')->assertOk()->getContent()));
+            $this->assertStringContainsString('takes no real payments', $terms);
+            $this->assertStringContainsString('test payment on a payment provider', $terms);
+            $this->assertStringContainsString('Teachers do not receive money', $terms);
+
+            $privacy = html_entity_decode(strip_tags($this->get('/privacy')->assertOk()->getContent()));
+            $this->assertStringContainsString('PayMongo', $privacy);
+            $this->assertStringContainsString('Never a name, an email, a learner code or anything about a child', $privacy);
+            $this->assertStringContainsString('Never a card number, a wallet number', $privacy);
+            $this->assertStringContainsString('the phone app does not take payments', $privacy);
+
+            $cookies = html_entity_decode(strip_tags($this->get('/cookies')->assertOk()->getContent()));
+            $this->assertStringContainsString('Go to test payment', $cookies);
+            $this->assertStringContainsString('any cookies it sets belong to the provider', $cookies);
+        }
+    }
+
+    public function test_the_only_company_a_page_can_send_a_browser_to_for_payment_is_named_and_only_in_test_mode(): void
+    {
+        // The provider's address is never written into a page: the checkout address comes from the provider at the moment a parent pays
+        // (PaymentService::start), and a live key is refused (PaymentsTest). So no legal page or view may carry a payment company's web address.
+        foreach (['views/privacy.blade.php', 'views/legal/refunds.blade.php', 'views/legal/terms.blade.php', 'views/legal/cookies.blade.php', 'views/parent/repository.blade.php'] as $file) {
+            $this->assertDoesNotMatchRegularExpression('/https?:\/\/[^\s"\']*paymongo/i', file_get_contents(resource_path($file)), "{$file} must not carry the provider's web address");
+        }
+
+        $this->assertSame('PHP', config('payments.currency'));
+        $this->assertFalse((require base_path('config/payments.php'))['enabled'], 'test payments are off unless a person switches them on');
+    }
+
     public function test_the_home_page_makes_no_claim_it_cannot_back_up(): void
     {
         // Claims removed in the 2026-10-21 review. They were stronger than what the app does: "checking every word as they go" (it scores

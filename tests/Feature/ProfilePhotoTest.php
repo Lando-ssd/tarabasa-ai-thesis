@@ -249,7 +249,8 @@ class ProfilePhotoTest extends TestCase
 
     public function test_the_privacy_page_says_so_and_the_version_moved(): void
     {
-        $this->assertSame('2026-10-24', config('legal.version'));
+        // The pages moved to 2026-10-24 for the profile photo and may have moved on since (2026-11-20: test payments): never back before it.
+        $this->assertGreaterThanOrEqual('2026-10-24', config('legal.version'));
 
         $this->get('/privacy')->assertOk()->assertSee('Your own profile photo', false)->assertSee('Remove photo', false)->assertSee('Use a photo of the code', false)
             ->assertSee('2026-10-24', false)->assertSee('2026-10-23', false);

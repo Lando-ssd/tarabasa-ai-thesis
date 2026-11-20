@@ -107,6 +107,8 @@ class DataErasureTest extends TestCase
         $owner = Teacher::create(['user_id' => User::create(['first_name' => 'Tess', 'last_name' => 'Owner', 'email' => 'owner'.++$this->seq.'@example.com', 'password' => 'Passw0rd!', 'user_type' => 'Teacher'])->id, 'school_name' => 'S', 'employee_id' => 'O'.$this->seq, 'status' => 'Active']);
         $listing = OpenRepositoryListing::create(['activity_id' => $this->activity($owner)->id, 'teacher_id' => $owner->id, 'price_type' => 'Free', 'price' => 0]);
         RepositoryRating::create(['listing_id' => $listing->id, 'parent_id' => ParentAccount::where('user_id', $guardian->id)->value('id'), 'learner_id' => $kid->id, 'rating' => 5, 'comment' => 'Mia loved it']);
+        // A test payment for the child (config/payments.php): the record goes with the child.
+        DB::table('payments')->insert(['reference' => 'TB-T-ERASE'.$kid->id, 'parent_id' => ParentAccount::where('user_id', $guardian->id)->value('id'), 'learner_id' => $kid->id, 'listing_id' => $listing->id, 'amount_centavos' => 5000, 'status' => 'paid', 'created_at' => now(), 'updated_at' => now()]);
         $kid->createToken('mobile');
     }
 
@@ -114,7 +116,7 @@ class DataErasureTest extends TestCase
     {
         $total = 0;
 
-        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records', 'learner_photos'] as $table) {
+        foreach (['notifications', 'personal_word_bank', 'learner_badges', 'game_plays', 'repository_unlocks', 'payments', 'repository_ratings', 'teacher_alert_actions', 'learner_pin_changes', 'promotion_records', 'activity_assignments', 'reading_sessions', 'parent_learners', 'consent_records', 'learner_photos'] as $table) {
             $total += DB::table($table)->where('learner_id', $kid->id)->count();
         }
 
