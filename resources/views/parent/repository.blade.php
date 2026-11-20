@@ -164,8 +164,17 @@
     form.addEventListener('submit', function (e) {
       var button = e.submitter || form.querySelector('button[type="submit"]');
       if (!button) { return; }
+      if (button.dataset.label === undefined) { button.dataset.label = button.textContent; }
       button.disabled = true;
       button.textContent = 'One moment';
+    });
+  });
+  // Paying leaves for another site. If the parent comes Back, the browser may bring this page back as it was left
+  // (a saved copy), with the buttons still on "One moment" and disabled: put them back.
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) { return; }
+    document.querySelectorAll('.item-card form button[type="submit"]').forEach(function (button) {
+      if (button.dataset.label !== undefined) { button.textContent = button.dataset.label; button.disabled = false; }
     });
   });
 </script>

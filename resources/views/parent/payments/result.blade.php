@@ -80,6 +80,8 @@
   (function () {
     var url = @json(route('parent.payments.status', $payment->reference));
     var tries = 0;
+    var maxTries = @json((int) config('payments.poll_tries', 40));
+    var gap = @json((int) config('payments.poll_seconds', 3) * 1000);
     function giveUp() {
       var note = document.getElementById('payWaitNote');
       if (note) { note.textContent = 'Still checking. You can leave this page. If you paid, the activity unlocks as soon as the payment provider confirms it.'; }
@@ -92,10 +94,10 @@
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
           if (d && d.status && d.status !== 'pending') { window.location.reload(); return; }
-          if (tries >= 40) { giveUp(); return; }
-          setTimeout(ask, 3000);
+          if (tries >= maxTries) { giveUp(); return; }
+          setTimeout(ask, gap);
         })
-        .catch(function () { if (tries >= 40) { giveUp(); } else { setTimeout(ask, 3000); } });
+        .catch(function () { if (tries >= maxTries) { giveUp(); } else { setTimeout(ask, gap); } });
     }
     setTimeout(ask, 2500);
   })();

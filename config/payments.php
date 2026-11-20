@@ -32,6 +32,21 @@ return [
     // message when one expires, so the closing is ours. Maya gives 30 minutes to approve and QR Ph 30 by default (PayMongo's key concepts page).
     'session_minutes' => (int) env('PAYMENTS_SESSION_MINUTES', 30),
 
+    // The shortest a checkout may stay open, whatever session_minutes says.
+    'min_session_minutes' => 5,
+
+    // The longest activity title sent to the provider (the line item's name).
+    'title_limit' => 80,
+
+    // The payment history shows this many attempts. Opening it closes at most `history_close_limit` out of time checkouts at the provider
+    // (each is a request that can be slow), so the page never waits on many; the rest are closed on a later visit.
+    'history_limit' => 50,
+    'history_close_limit' => 3,
+
+    // The page a parent comes back to asks the server every `poll_seconds` while the answer is pending, up to `poll_tries` times, then says to leave it.
+    'poll_seconds' => 3,
+    'poll_tries' => 40,
+
     'paymongo' => [
         // The secret key (starts with sk_test_). Only the hosting settings hold it.
         'secret_key' => env('PAYMONGO_SECRET_KEY'),

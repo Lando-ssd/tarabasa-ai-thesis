@@ -48,10 +48,15 @@ class PaymentController extends Controller
         return $this->result($payment);
     }
 
-    /** The provider sent the parent back through "cancel". */
+    /**
+     * The provider sent the parent back through "cancel". This is a GET (the provider redirects the browser), so a browser that only PRE-loads
+     * the address (a prefetch) must not cancel anything: it is shown the current state instead.
+     */
     public function cancelled(Request $request, string $reference): View
     {
-        $payment = $this->payments->cancel($this->owned($request, $reference));
+        $payment = $this->owned($request, $reference);
+        $prefetch = str_contains(strtolower($request->header('Sec-Purpose', '').' '.$request->header('Purpose', '')), 'prefetch');
+        $payment = $prefetch ? $this->payments->refresh($payment) : $this->payments->cancel($payment);
 
         return $this->result($payment);
     }

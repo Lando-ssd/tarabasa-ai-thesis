@@ -7,8 +7,10 @@ use App\Models\OpenRepositoryListing;
 use App\Models\ParentAccount;
 use App\Models\Payment;
 use App\Support\PaymongoSignature;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -75,11 +77,28 @@ class PaymentService
             throw $this->refuse('Already unlocked for '.$learner->first_name.'.');
         }
 
-        $open = Payment::where('parent_id', $parent->id)->where('learner_id', $learner->id)->where('listing_id', $listing->id)
+        // Two presses at the same moment (two tabs, a retry) must not make two checkouts: the check and the insert run one at a time for this child and activity.
+        try {
+            return Cache::lock('payment-start:'.$learner->id.':'.$listing->id, 30)->block(10, fn () => $this->begin($parent, $listing, $learner));
+        } catch (LockTimeoutException) {
+            throw $this->refuse('Another test payment for this activity is being started. Please wait a moment and try again.');
+        }
+    }
+
+    /** The part of start() that must not run twice at the same moment for the same child and activity. */
+    private function begin(ParentAccount $parent, OpenRepositoryListing $listing, Learner $learner): Payment
+    {
+        $open = Payment::where('learner_id', $learner->id)->where('listing_id', $listing->id)
             ->where('status', Payment::PENDING)->where('expires_at', '>', now())->whereNotNull('checkout_url')
-            ->latest('id')->first();
-        if ($open) {
-            return $open;
+            ->latest('id')->get();
+
+        // The same parent coming back: the open checkout is used again.
+        if ($mine = $open->firstWhere('parent_id', $parent->id)) {
+            return $mine;
+        }
+        // Another guardian of the same child already has one open: a second payment would buy nothing, since the unlock is one per child and activity.
+        if ($open->isNotEmpty()) {
+            throw $this->refuse('A test payment for '.$learner->first_name.' and this activity is already open from another guardian. Please wait for it to finish.');
         }
 
         $payment = Payment::create([
@@ -92,14 +111,14 @@ class PaymentService
             'currency' => (string) config('payments.currency', 'PHP'),
             'status' => Payment::PENDING,
             'is_test' => true,
-            'expires_at' => now()->addMinutes(max(5, (int) config('payments.session_minutes', 30))),
+            'expires_at' => now()->addMinutes(max((int) config('payments.min_session_minutes', 5), (int) config('payments.session_minutes', 30))),
         ]);
 
         try {
             $session = $this->client->createCheckout([
                 // Only the price, the activity title and a reference number. No name, no email, no learner code, nothing about the child.
                 'line_items' => [[
-                    'name' => Str::limit((string) $listing->activity->title, 80, ''),
+                    'name' => Str::limit((string) $listing->activity->title, (int) config('payments.title_limit', 80), ''),
                     'amount' => $payment->amount_centavos,
                     'currency' => $payment->currency,
                     'quantity' => 1,
@@ -184,11 +203,22 @@ class PaymentService
         return $payment->refresh();
     }
 
-    /** This parent's attempts, newest first. A pending one whose time is up is closed on the way. */
+    /**
+     * This parent's attempts, newest first. A pending one whose time is up is closed on the way, but at most `history_close_limit` per visit:
+     * closing means a request to the provider, and a page must never wait on many of them. The rest are closed on a later visit.
+     */
     public function history(ParentAccount $parent): Collection
     {
-        $rows = Payment::with(['listing.activity', 'learner'])->where('parent_id', $parent->id)->latest('id')->limit(50)->get();
-        $rows->each(fn (Payment $p) => $this->expireIfDue($p));
+        $rows = Payment::with(['listing.activity', 'learner'])->where('parent_id', $parent->id)->latest('id')->limit((int) config('payments.history_limit', 50))->get();
+
+        $closed = 0;
+        $cap = (int) config('payments.history_close_limit', 3);
+        foreach ($rows as $payment) {
+            if ($closed < $cap && $payment->isPending() && $payment->expires_at && $payment->expires_at->isPast()) {
+                $this->expireIfDue($payment);
+                $closed++;
+            }
+        }
 
         return $rows;
     }
@@ -203,12 +233,14 @@ class PaymentService
      */
     public function handleWebhook(string $rawBody, ?string $signatureHeader): array
     {
+        // Only a missing secret is "not ready". A genuine paid message is still applied when the switch has been turned off since the parent paid:
+        // answering 503 would lose that unlock and, after repeated failures, PayMongo would disable the webhook.
         $secret = (string) config('payments.paymongo.webhook_secret');
-        if (! self::enabled() || $secret === '') {
+        if ($secret === '') {
             return ['status' => 503, 'outcome' => 'not_ready'];
         }
         if (! PaymongoSignature::validTest($rawBody, $signatureHeader, $secret)) {
-            Log::warning('A payment message was refused: the signature did not match.');
+            Log::info('A payment message was refused: the signature did not match.');
 
             return ['status' => 401, 'outcome' => 'bad_signature'];
         }

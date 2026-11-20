@@ -391,7 +391,7 @@ class PaymentsTest extends TestCase
         $this->assertSame(0, RepositoryUnlock::count());
     }
 
-    public function test_a_message_is_not_answered_when_the_switch_is_off_or_the_secret_is_missing(): void
+    public function test_a_message_is_not_answered_when_the_secret_is_missing(): void
     {
         [$user, , $kid, $listing] = $this->world();
         $payment = $this->started($user, $listing, $kid);
@@ -399,10 +399,78 @@ class PaymentsTest extends TestCase
         config(['payments.paymongo.webhook_secret' => null]);
         $this->message($this->paidBody($payment))->assertStatus(503);
 
-        config(['payments.paymongo.webhook_secret' => self::SECRET, 'payments.enabled' => false]);
-        $this->message($this->paidBody($payment))->assertStatus(503);
-
         $this->assertSame(0, RepositoryUnlock::count());
+    }
+
+    public function test_a_real_paid_message_is_still_applied_after_the_switch_was_turned_off(): void
+    {
+        // A parent paid, then the owner switched payments off before the message arrived. Answering 503 would lose that unlock for good
+        // and, after repeated failures, the provider disables the webhook. A signed message about a real payment is applied.
+        [$user, , $kid, $listing] = $this->world();
+        $payment = $this->started($user, $listing, $kid);
+
+        config(['payments.enabled' => false]);
+        $this->message($this->paidBody($payment))->assertOk();
+
+        $this->assertSame('paid', $payment->refresh()->status);
+        $this->assertSame(1, RepositoryUnlock::count());
+
+        // A wrong signature is still refused with the switch off.
+        $this->message($this->paidBody($payment), 't=1700000000,te=deadbeef,li=')->assertStatus(401);
+    }
+
+    public function test_a_second_guardian_cannot_start_a_second_payment_for_the_same_child_and_activity(): void
+    {
+        [$user, $parent, $kid, $listing] = $this->world();
+        $this->started($user, $listing, $kid);
+
+        [$otherUser, $otherParent] = $this->parent();
+        $otherParent->learners()->attach($kid->id, ['relationship' => 'Father', 'is_creator' => false, 'linked_at' => now()]);
+
+        $this->pay($otherUser, $listing, $kid)->assertSessionHasErrors('unlock');
+        $this->assertSame(1, Payment::count());
+        Http::assertSentCount(1);
+    }
+
+    public function test_a_checkout_address_that_is_not_https_is_refused(): void
+    {
+        [$user, , $kid, $listing] = $this->world();
+        $this->createAnswer = ['data' => ['id' => 'cs_test_9', 'attributes' => ['checkout_url' => 'javascript:alert(1)']]];
+
+        $this->pay($user, $listing, $kid)->assertSessionHasErrors('unlock');
+        $this->assertSame(0, RepositoryUnlock::count());
+        $this->assertNull(Payment::first()?->checkout_url);
+    }
+
+    public function test_the_history_closes_only_a_few_out_of_time_checkouts_per_visit(): void
+    {
+        [$user, $parent, $kid, $listing] = $this->world();
+        config(['payments.history_close_limit' => 3]);
+
+        foreach (range(1, 5) as $i) {
+            Payment::create([
+                'reference' => "TBP-OLD{$i}", 'parent_id' => $parent->id, 'learner_id' => $kid->id, 'listing_id' => $listing->id,
+                'amount_centavos' => 5000, 'currency' => 'PHP', 'status' => Payment::PENDING, 'provider' => 'paymongo',
+                'provider_session_id' => "cs_old_{$i}", 'checkout_url' => "https://checkout.example.test/cs_old_{$i}", 'expires_at' => now()->subMinutes(10),
+            ]);
+        }
+
+        $this->asParent($user)->get(route('parent.payments.index'))->assertOk();
+
+        $this->assertSame(3, Payment::where('status', Payment::EXPIRED)->count());
+        $this->assertSame(2, Payment::where('status', Payment::PENDING)->count());
+    }
+
+    public function test_a_browser_that_only_pre_loads_the_cancel_address_does_not_cancel(): void
+    {
+        [$user, , $kid, $listing] = $this->world();
+        $payment = $this->started($user, $listing, $kid);
+
+        $this->asParent($user)->get(route('parent.payments.cancelled', $payment->reference), ['Sec-Purpose' => 'prefetch'])->assertOk();
+        $this->assertSame('pending', $payment->refresh()->status);
+
+        $this->asParent($user)->get(route('parent.payments.cancelled', $payment->reference))->assertOk();
+        $this->assertSame('cancelled', $payment->refresh()->status);
     }
 
     public function test_the_amount_must_be_exactly_what_was_asked_for(): void

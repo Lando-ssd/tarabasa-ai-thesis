@@ -30,6 +30,11 @@ class PaymongoClient
         if ($id === '' || $url === '') {
             throw new PaymentProviderException('The payment provider answered without a checkout address.');
         }
+        // The parent is sent to this address, so it must be an https address. A plain http address is only accepted away from production
+        // (the local rehearsal tool, tools/pretend-provider.py).
+        if (! str_starts_with($url, 'https://') && (app()->environment('production') || ! str_starts_with($url, 'http://'))) {
+            throw new PaymentProviderException('The payment provider answered with a checkout address that is not https.');
+        }
 
         return ['id' => $id, 'url' => $url];
     }
