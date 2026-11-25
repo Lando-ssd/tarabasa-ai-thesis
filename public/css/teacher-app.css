@@ -367,6 +367,8 @@ select.mini.wide{ min-width:140px; padding:10px 34px 9px 14px; font-size:15px; b
   @keyframes sheet{ from{ transform:translateY(40px); opacity:.4; } to{ transform:none; opacity:1; } }
   .win-head{ padding:16px 16px 8px 18px; } .win-titles h2{ font-size:30px; } .win-body{ padding:6px 18px 18px; } .win-foot{ padding:12px 18px calc(14px + env(safe-area-inset-bottom,0px)); }
   .win-foot .btn{ flex:1; } .win-foot .spacer{ margin-left:0; }
+  /* A longer label (Delete class) keeps to one line and gets a little more of the row than a short one (Close). */
+  .win-foot .btn.one-line{ white-space:nowrap; flex:1.7 1 0; }
 }
 @media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
 a.nav-item, a.tab{ text-decoration:none; }
@@ -577,7 +579,8 @@ table.rep{ width:100%; border-collapse:collapse; font-size:13.5px; } table.rep t
 .lrow .ltags .pill{ font-size:12px; padding:2px 8px 1px; white-space:nowrap; }
 .help.good{ background:var(--green-bg); border-color:#b7e2d6; color:#0f6a55; }
 .help.good .ico{ color:#13715d; } .help.good b{ color:#0f6a55; }
-
+.help.danger{ background:var(--danger-bg); border-color:#f0b3b3; color:#7d2b2b; }
+.help.danger .ico{ color:var(--danger); } .help.danger b{ color:#7d2b2b; }
 /* "Just starting to read" alert (Phil-IRI Non-reader level): calm blue, never the red of a problem. */
 .acard.start{ background:#eef5ff; border-color:#cfe0f7; } .acard.start .why{ color:#2f5f8c; }
 .notif-ico.begin{ background:var(--blue); }

@@ -219,7 +219,16 @@ class AccessAuditTest extends TestCase
 
             foreach (self::ROLES as $role) {
                 $this->as($role);
+                // A DELETE by a role that may use it really deletes the record the audit shares between visitors. Undo it, so the next
+                // visitor meets the same record (and the refusal under test) and not a 404 for something the visitor before just removed.
+                $undo = $method === 'DELETE';
+                if ($undo) {
+                    DB::beginTransaction();
+                }
                 $res = $this->call($method, $this->url($route), $method === 'GET' ? [] : ['_token' => csrf_token()]);
+                if ($undo) {
+                    DB::rollBack();
+                }
                 $status = $res->getStatusCode();
                 $where = "{$method} {$route->uri()} as ".($role ?? 'guest');
 
@@ -281,6 +290,10 @@ class AccessAuditTest extends TestCase
             ['POST', "/teacher/classes/{$f['cB']->id}/assign-activity", ['activity_id' => $f['actA']->id]],
             ['POST', "/teacher/classes/{$f['cB']->id}/join-learner", ['learner_code' => substr($f['lA']->learner_code, -5)]],
             ['POST', "/teacher/classes/{$f['cA']->id}/learners/{$f['lB']->id}/move", ['to_class_id' => $f['cA']->id]],
+            // Taking a learner out of a class and deleting a class: another teacher's class, and another teacher's learner through your own class.
+            ['DELETE', "/teacher/classes/{$f['cB']->id}/learners/{$f['lB']->id}", []],
+            ['DELETE', "/teacher/classes/{$f['cA']->id}/learners/{$f['lB']->id}", []],
+            ['DELETE', "/teacher/classes/{$f['cB']->id}", ['confirm_name' => 'BravoClass']],
             ['POST', "/teacher/alerts/{$f['lB']->id}/handled", ['kind' => 'support']],
             ['POST', "/teacher/alerts/{$f['lB']->id}/assign", ['kind' => 'support', 'activity_id' => $f['actA']->id]],
             ['POST', "/teacher/alerts/{$f['lA']->id}/assign", ['kind' => 'support', 'activity_id' => $f['actB']->id]],
@@ -360,6 +373,8 @@ class AccessAuditTest extends TestCase
         $actions = [
             ['POST', '/teacher/classes', ['name' => 'X', 'grade_level' => 'Grade 1', 'section' => 'A']],
             ['POST', "/teacher/classes/{$f['cA']->id}/join-learner", ['learner_code' => '12345']],
+            ['DELETE', "/teacher/classes/{$f['cA']->id}/learners/{$f['lA']->id}", []],
+            ['DELETE', "/teacher/classes/{$f['cA']->id}", ['confirm_name' => 'AlphaClass']],
             ['POST', "/teacher/activities/{$f['actA']->id}/assign", ['assign_learner_id' => $f['lA']->id]],
             ['POST', "/teacher/activities/{$f['actA']->id}/share", ['price_type' => 'Free']],
             ['POST', "/teacher/alerts/{$f['lA']->id}/assign", ['kind' => 'support', 'activity_id' => $f['actA']->id]],

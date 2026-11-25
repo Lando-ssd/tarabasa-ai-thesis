@@ -327,6 +327,40 @@ class ClassController extends Controller
         return $this->backToClass($class, 'learners')->with('status', "{$learner->first_name} {$learner->last_name} moved to \"{$target->name}\".");
     }
 
+    /**
+     * Take a learner out of this class (the trash button in the learner's window). The child is not deleted; see
+     * TeacherClassService::removeLearner for exactly what stays and who is told.
+     */
+    public function removeLearner(Request $request, SchoolClass $class, Learner $learner): RedirectResponse
+    {
+        $user = $request->user();
+
+        $this->classes->removeLearner($user, $user->teacher, $class, $learner);
+
+        return $this->backToClass($class, 'learners')->with('status', "{$learner->first_name} {$learner->last_name} was taken out of \"{$class->name}\". Their account and readings stay with their family, and their parents were told. Add them again any time with their Learner Code.");
+    }
+
+    /**
+     * Delete a class (the trash button in the class window). An empty class is simply deleted. A class with learners is deleted only
+     * when its name is typed, and its learners are released first, not deleted; see TeacherClassService::delete.
+     */
+    public function destroy(Request $request, SchoolClass $class): RedirectResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate(['confirm_name' => ['nullable', 'string', 'max:255']]);
+
+        $name = $class->name;
+        $year = $class->school_year;
+        $released = $this->classes->delete($user, $user->teacher, $class, $validated['confirm_name'] ?? null);
+
+        $message = $released === 0
+            ? "Class \"{$name}\" deleted."
+            : "Class \"{$name}\" deleted. {$released} ".($released === 1 ? 'learner was' : 'learners were').' released, not deleted: their accounts and readings stay with their families, and their parents were told.';
+
+        return redirect()->route('teacher.classes.index', ['school_year' => $year])->with('status', $message);
+    }
+
     /** Back to the Classes screen with the same class window open again, on the right tab. */
     private function backToClass(SchoolClass $class, string $tab): RedirectResponse
     {

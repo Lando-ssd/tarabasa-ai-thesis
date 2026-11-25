@@ -42,7 +42,7 @@
       <div class="win-tabs">@include('teacher.classes._tabs', ['active' => 'learners', 'nLearners' => $nLearners, 'nActs' => $acts->count()])</div>
       <div class="win-body">
         @if ($offGrade->isNotEmpty() && ! $past)
-          <div class="help">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>{{ $offGrade->count() === 1 ? 'One learner is' : $offGrade->count().' learners are' }} in a different grade.</b> {{ $offGrade->take(3)->map(fn ($x) => $x->first_name.' ('.$x->grade_level.')')->implode(', ') }}{{ $offGrade->count() > 3 ? ' and more' : '' }}. This is a {{ $c->grade_level }} class, and a class holds one grade. Open each learner and move them to a class of their own grade.</div></div>
+          <div class="help">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>{{ $offGrade->count() === 1 ? 'One learner is' : $offGrade->count().' learners are' }} in a different grade.</b> {{ $offGrade->take(3)->map(fn ($x) => $x->first_name.' ('.$x->grade_level.')')->implode(', ') }}{{ $offGrade->count() > 3 ? ' and more' : '' }}. This is a {{ $c->grade_level }} class, and a class holds one grade. Open each learner and move them to a class of their own grade, or take them out of this class.</div></div>
         @endif
         <div class="toolbar">
           <div class="search">
@@ -107,7 +107,12 @@
           <p class="note" data-empty hidden>No learner matches.</p>
         @endif
       </div>
-      <footer class="win-foot"><button type="button" class="btn ghost small" data-close>Close</button></footer>
+      <footer class="win-foot">
+        <button type="button" class="btn ghost small" data-close>Close</button>
+        @unless ($past)
+          <button type="button" class="btn small ghost danger spacer one-line" data-goto="delete">@include('learner._badge-icon', ['icon' => 'trash', 'class' => 'ico']) Delete class</button>
+        @endunless
+      </footer>
     </section>
 
     {{-- ---------- reading groups ---------- --}}
@@ -326,6 +331,51 @@
           <button type="button" class="btn ghost small" data-goto="learners">Cancel</button>
         </footer>
       </section>
+
+      {{-- ---------- delete the class ---------- --}}
+      @php
+          $impact = app(\App\Services\TeacherClassService::class)->deletionImpact($c);
+          $deleting = $isTarget && old('view') === 'delete';
+          $delLearners = $impact['learners'];
+          $delActs = $impact['activities'];
+      @endphp
+      <section class="win-view" data-view="delete" @if ($startView !== 'delete') hidden @endif>
+        <header class="win-head">
+          <div class="win-titles"><button type="button" class="back" data-goto="learners">@include('learner._badge-icon', ['icon' => 'caret-left', 'class' => 'ico']) {{ $c->name }}</button><h2>Delete this class?</h2><p class="win-meta">{{ $c->grade_level }} · {{ $c->section }} · SY {{ $c->school_year }}</p></div>
+          <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+        </header>
+        <div class="win-body">
+          @if ($delLearners > 0)
+            <div class="help danger">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>{{ $delLearners }} {{ $delLearners === 1 ? 'learner is' : 'learners are' }} in this class.</b> {{ $delLearners === 1 ? 'This learner is' : 'They are' }} released, not deleted.</div></div>
+          @endif
+          <ul class="erase-list">
+            @if ($delLearners > 0)
+              <li>Each learner keeps their account, readings and reading level. No child is deleted.</li>
+              <li>Their parents are told that the child is no longer in this class.</li>
+              <li>A learner can be added again any time with their Learner Code, in a class of their grade.</li>
+            @else
+              <li>This class is empty, so no child is affected.</li>
+            @endif
+            <li>@if ($delActs > 0){{ $delActs }} {{ $delActs === 1 ? 'activity' : 'activities' }} given to this class or its reading groups will no longer be listed here. The activities themselves stay in My activities.@else Nothing was given to this class, so nothing else changes.@endif</li>
+            <li>This cannot be undone.</li>
+          </ul>
+          <form id="delete-form-{{ $c->id }}" method="POST" action="{{ route('teacher.classes.destroy', $c) }}" data-busy="Deleting" autocomplete="off">
+            @csrf @method('DELETE')
+            <input type="hidden" name="form" value="class"><input type="hidden" name="target_class_id" value="{{ $c->id }}"><input type="hidden" name="view" value="delete">
+            @if ($delLearners > 0)
+              <div class="field">
+                <label for="dn-{{ $c->id }}">To confirm, type the class name: <b>{{ $c->name }}</b></label>
+                <input type="text" id="dn-{{ $c->id }}" name="confirm_name" placeholder="{{ $c->name }}" data-confirm-name="{{ $c->name }}" data-confirm-btn="#dbtn-{{ $c->id }}" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+                @if ($deleting) @error('confirm_name')<span class="field-error">{{ $message }}</span>@enderror @endif
+              </div>
+            @endif
+          </form>
+        </div>
+        <footer class="win-foot">
+          <button type="submit" form="delete-form-{{ $c->id }}" id="dbtn-{{ $c->id }}" class="btn small danger-fill one-line" @if ($delLearners > 0) disabled @endif>@include('learner._badge-icon', ['icon' => 'trash', 'class' => 'ico']) Delete class</button>
+          <button type="button" class="btn ghost small" data-goto="learners">Cancel</button>
+        </footer>
+      </section>
     @endunless
 
     {{-- ---------- one learner ---------- --}}
@@ -356,7 +406,7 @@
             <div class="help good">@include('learner._badge-icon', ['icon' => 'trend-up', 'class' => 'ico'])<div><b>{{ $l->first_name }} moved up to the {{ $movedUp['toLabel'] }} level.</b> {{ $l->first_name }} improved from {{ $movedUp['fromLabel'] }} on {{ $movedUp['at']->format('M j') }}, after repeated strong readings. {{ $l->first_name }} stays in {{ $c->name }}, because a class is a grade and a child's reading level never moves them out of it. {{ $l->first_name }} now reads with the {{ $movedUp['toLabel'] }} reading group, so activities given to that group reach {{ $l->first_name }} from now on. Anything given to the whole class or to {{ $l->first_name }} directly still reaches them.</div></div>
           @endif
           @if ($childGradeOff && ! $past)
-            <div class="help">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>{{ $l->first_name }} is in {{ $l->grade_level }}, and {{ $c->name }} is a {{ $c->grade_level }} class.</b> A class holds one grade. @if ($moveTo->isNotEmpty())Move {{ $l->first_name }} to a {{ $l->grade_level }} class below.@else Open a {{ $l->grade_level }} class (Classes, New class) and move {{ $l->first_name }} into it.@endif</div></div>
+            <div class="help">@include('learner._badge-icon', ['icon' => 'warning-circle', 'class' => 'ico'])<div><b>{{ $l->first_name }} is in {{ $l->grade_level }}, and {{ $c->name }} is a {{ $c->grade_level }} class.</b> A class holds one grade. @if ($moveTo->isNotEmpty())Move {{ $l->first_name }} to a {{ $l->grade_level }} class below.@else Open a {{ $l->grade_level }} class (Classes, New class) and move {{ $l->first_name }} into it.@endif You can also take {{ $l->first_name }} out of this class below.</div></div>
           @endif
           <div class="facts">
             <div class="fact"><b>{{ $practice->count() }}</b><span>Sessions</span></div>
@@ -453,6 +503,10 @@
                 @if ($isTarget && old('view') === 'learner-'.$l->id) @error('to_class_id')<span class="field-error">{{ $message }}</span>@enderror @endif
               </div>
             @endif
+            <div class="block"><span class="eyebrow">Take {{ $l->first_name }} out of this class</span>
+              <p class="note">{{ $l->first_name }} is not deleted. Only the link to {{ $c->name }} ends, and {{ $l->first_name }}'s readings stay.</p>
+              <div style="margin-top:8px"><button type="button" class="btn small ghost danger" data-goto="remove-{{ $l->id }}">@include('learner._badge-icon', ['icon' => 'user-minus', 'class' => 'ico']) Remove from class</button></div>
+            </div>
           @endunless
         </div>
         <footer class="win-foot">
@@ -460,6 +514,35 @@
           <button type="button" class="btn ghost small" data-goto="learners">Back to class</button>
         </footer>
       </section>
+
+      @unless ($past)
+        {{-- ---------- take this learner out of the class (the child is not deleted) ---------- --}}
+        <section class="win-view" data-view="remove-{{ $l->id }}" hidden>
+          <header class="win-head">
+            <div class="win-titles">
+              <button type="button" class="back" data-goto="learner-{{ $l->id }}">@include('learner._badge-icon', ['icon' => 'caret-left', 'class' => 'ico']) {{ $l->first_name }} {{ $l->last_name }}</button>
+              <h2>Take {{ $l->first_name }} out of {{ $c->name }}?</h2>
+              <p class="win-meta">{{ $l->learner_code }} · {{ $l->grade_level }}</p>
+            </div>
+            <button type="button" class="x" data-close aria-label="Close">@include('learner._badge-icon', ['icon' => 'x', 'class' => 'ico'])</button>
+          </header>
+          <div class="win-body">
+            <ul class="erase-list">
+              <li>{{ $l->first_name }} is not deleted. The account, readings and reading level stay with the family.</li>
+              <li>What was given to {{ $c->name }} or to its reading groups stops reaching {{ $l->first_name }}. What you gave {{ $l->first_name }} directly stays on {{ $l->first_name }}'s own list.</li>
+              <li>{{ $l->first_name }}'s parents are told.</li>
+              <li>To add {{ $l->first_name }} again, use the Learner Code {{ $l->learner_code }}, in this class or another {{ $l->grade_level }} class.</li>
+            </ul>
+            <form id="remove-form-{{ $l->id }}" method="POST" action="{{ route('teacher.classes.remove-learner', [$c, $l]) }}" data-busy="Removing">
+              @csrf @method('DELETE')
+            </form>
+          </div>
+          <footer class="win-foot">
+            <button type="submit" form="remove-form-{{ $l->id }}" class="btn small danger-fill one-line">@include('learner._badge-icon', ['icon' => 'user-minus', 'class' => 'ico']) Take out of class</button>
+            <button type="button" class="btn ghost small" data-goto="learner-{{ $l->id }}">Cancel</button>
+          </footer>
+        </section>
+      @endunless
     @endforeach
   </div>
 </dialog>

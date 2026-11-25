@@ -19,6 +19,9 @@ class Notification extends Model
 
     public const TYPE_CLASS_JOINED = 'Class Joined';
 
+    /** The other way round: a teacher took the child out of a class, or closed the class (told to the child's guardians). */
+    public const TYPE_CLASS_LEFT = 'Class Left';
+
     /** A guardian set a new PIN for the child (told to the OTHER guardians), and a child was locked out after five wrong PINs (told to every guardian). */
     public const TYPE_PIN_CHANGED = 'PIN Changed';
 

@@ -139,6 +139,18 @@
     var empty = $('[data-empty]', box.parentNode); if (empty) { empty.hidden = any; }
   });
 
+  // Deleting a class that still has learners: the button wakes up only when the class name is typed. The input carries the real name
+  // (data-confirm-name) and the button's selector (data-confirm-btn). Capital letters and extra spaces do not matter, as on the server,
+  // which checks it again whatever this page says.
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    var want = t.getAttribute && t.getAttribute('data-confirm-name');
+    if (want === null || want === undefined) { return; }
+    var clean = function (s) { return String(s).replace(/\s+/g, ' ').trim().toLowerCase(); };
+    var btn = $(t.getAttribute('data-confirm-btn'));
+    if (btn) { btn.disabled = !(clean(t.value) !== '' && clean(t.value) === clean(want)); }
+  });
+
   // The Generate window's AI service sleeps when idle; ask it to wake as the window opens.
   var warmed = false;
   function warm(d) {

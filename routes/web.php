@@ -230,6 +230,8 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     // Assign an Approved activity to a whole class, from the class window.
     Route::post('/classes/{class}/assign-activity', [ClassController::class, 'assignActivity'])->middleware('teacher.active')->name('classes.assign-activity');
     Route::post('/classes/{class}/learners/{learner}/move', [ClassController::class, 'moveLearner'])->middleware('teacher.active')->name('classes.move-learner');
+    Route::delete('/classes/{class}/learners/{learner}', [ClassController::class, 'removeLearner'])->middleware('teacher.active')->name('classes.remove-learner');
+    Route::delete('/classes/{class}', [ClassController::class, 'destroy'])->middleware('teacher.active')->name('classes.destroy');
 
     // Activity Generation — Teacher Actor Prompt Step 7. Generate has NO
     // 'teacher.active' guard: a Pending Teacher can use their 2 free

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\ClassLevel;
 use App\Support\LearnerCode;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -251,6 +252,100 @@ class TeacherClassService
         $learner->update(['class_id' => $target->id]);
 
         return $target;
+    }
+
+    /**
+     * Take a learner out of a class. The learner is NOT deleted: the account, the readings, the reading level and the family's links all
+     * stay, exactly as when a teacher releases a child for promotion (TeacherPromotionService::release). The child just has no class, so
+     * what was given to the class or to its reading groups stops reaching them (what was given to the learner directly still does), and
+     * the Learner Code can be used again to add them to this class or another of their grade. Deleting a CHILD is for the guardians and
+     * the Admin (DataErasureService), never for a teacher. The guardians are told, so a child never leaves a class without them knowing.
+     * A class of a past school year is a locked record and cannot lose a learner.
+     */
+    public function removeLearner(User $user, Teacher $teacher, SchoolClass $class, Learner $learner): void
+    {
+        abort_if($class->teacher_id !== $teacher->id, 403);
+        abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only.');
+        abort_if($learner->class_id !== $class->id, 404);
+
+        DB::transaction(function () use ($user, $teacher, $class, $learner) {
+            $learner->update(['class_id' => null]);
+            $this->tellGuardiansLeft($user, $teacher, $class, $learner, 'was taken out of');
+        });
+    }
+
+    /**
+     * What deleting this class would change, counted for the window to show BEFORE the button is pressed: the learners who would be
+     * released and the activities given to this class itself (or to one of its reading groups) that would go with it. An activity given
+     * through a focus group stays, because that group is shared with the Teacher's other classes.
+     *
+     * @return array{learners: int, activities: int}
+     */
+    public function deletionImpact(SchoolClass $class): array
+    {
+        return [
+            'learners' => $class->learners()->count(),
+            'activities' => ActivityAssignment::where('class_id', $class->id)->distinct()->count('activity_id'),
+        ];
+    }
+
+    /**
+     * Delete a class. An EMPTY class is simply removed. A class that still has learners is only deleted when the Teacher types its name
+     * (the "force"): every learner is released first, not deleted, exactly as removeLearner() does, and every guardian is told. The
+     * assignments made to the class itself go with it, and nothing else points at them (a reading is kept with the child, not the class).
+     * A promotion record that names the class keeps the history and just forgets the class (the foreign key sets it to null).
+     * A class of a past school year is a locked record and is never deleted. Returns how many learners were released.
+     *
+     * @throws ValidationException with the message under `confirm_name`
+     */
+    public function delete(User $user, Teacher $teacher, SchoolClass $class, ?string $typedName): int
+    {
+        abort_if($class->teacher_id !== $teacher->id, 403);
+        abort_if(SchoolClass::isYearPast($class->school_year), 403, 'Past school year classes are read-only and cannot be deleted.');
+
+        $learners = $class->learners()->get();
+
+        if ($learners->isNotEmpty() && ! $this->sameName($typedName, $class->name)) {
+            $n = $learners->count();
+
+            throw ValidationException::withMessages([
+                'confirm_name' => "Type the class name exactly as it is written, {$class->name}, to delete it and release {$n} ".($n === 1 ? 'learner' : 'learners').'.',
+            ]);
+        }
+
+        DB::transaction(function () use ($user, $teacher, $class, $learners) {
+            foreach ($learners as $learner) {
+                $learner->update(['class_id' => null]);
+                $this->tellGuardiansLeft($user, $teacher, $class, $learner, 'is no longer in');
+            }
+
+            ActivityAssignment::where('class_id', $class->id)->delete();
+            // A basis recorded as "written for this class" would point at nothing, and an id can be reused: let go of it.
+            DB::table('activity_generations')->where('class_id', $class->id)->update(['class_id' => null]);
+
+            $class->delete();
+        });
+
+        return $learners->count();
+    }
+
+    /** The same name, ignoring capital letters and the spaces around and between the words, so a careful typist is not refused for a slip of case. */
+    private function sameName(?string $typed, string $name): bool
+    {
+        $clean = fn (string $s) => mb_strtolower(trim(preg_replace('/\s+/u', ' ', $s)));
+
+        return $typed !== null && $clean($typed) !== '' && $clean($typed) === $clean($name);
+    }
+
+    /** One short sentence to every guardian of the child, who already read the same kind of sentence when the child was added. */
+    private function tellGuardiansLeft(User $user, Teacher $teacher, SchoolClass $class, Learner $learner, string $phrase): void
+    {
+        Notification::notifyForLearner(
+            $learner,
+            Notification::TYPE_CLASS_LEFT,
+            "{$learner->first_name} {$phrase} the class \"{$class->name}\" ({$user->first_name} {$user->last_name}".($teacher->school_name ? ", {$teacher->school_name}" : '').'). '."{$learner->first_name}'s account, readings and reading level are not changed.",
+            includeTeacher: false
+        );
     }
 
     /**
