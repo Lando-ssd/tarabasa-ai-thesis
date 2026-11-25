@@ -33,6 +33,11 @@ the rules are the team's own choices; they are in `config/*.php` so a teacher or
 - Never say "ready" while gaps remain. End an audit with three lists: fixed / still open / only a real test shows.
   The app has only ever been tested with computer voices: no real child, microphone or class has used it.
 - Show an approval preview (a published Artifact mock) BEFORE a redesign. Adult roles get a calmer look than the Learner.
+- **Every change to the website or the phone app, even a small one, gets a REAL preview** before it is committed, pushed or
+  merged (owner's rule, 2026-11-25): real screenshots of the changed screens from the running app (computer and phone size,
+  demo accounts only, never a real child), and a hosted preview link when the owner wants to click around. A hand-drawn mock does
+  not count. If a change has no visible screen (a server rule), say so and show the proof instead (the behaviour on the running app
+  and the tests). Say plainly what changed and what did not.
 - A new phone build (APK): say what it contains first. Do not send or install anything for the owner.
 - Do not create accounts on the LIVE site. Do not read `.env` values (the tool blocks it and it is never needed).
   Never put a real password in a file or a chat. Never commit `client_secret*.json`, key files or `.env*`.
