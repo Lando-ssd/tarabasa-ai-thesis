@@ -9,6 +9,7 @@ use App\Services\LearnerDiagnosticService;
 use App\Services\ReadingAiClient;
 use App\Support\DiagnosticPlacement;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -56,9 +57,16 @@ class LearnerDiagnosticController extends Controller
      * The current passage in the staircase, whichever tier/variant that
      * currently is per the tracked state.
      */
-    public function passage(Request $request, LearnerDiagnosticService $service): View
+    public function passage(Request $request, LearnerDiagnosticService $service): View|RedirectResponse
     {
         $learner = $request->user('learner');
+
+        // A child who has finished the first check goes home: asking for a passage again (the browser's back button) must not
+        // open a second check, which would lock her out of every other page until she read it and could place her again.
+        if ($service->hasGenuinelyCompletedDiagnostic($learner)) {
+            return redirect()->route('learner.dashboard');
+        }
+
         $state = $service->ensureBundleGenerated($learner);
 
         $activity = Activity::findOrFail($service->currentActivityId($state));

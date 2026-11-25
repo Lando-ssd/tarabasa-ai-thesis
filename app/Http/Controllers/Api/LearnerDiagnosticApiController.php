@@ -25,6 +25,14 @@ class LearnerDiagnosticApiController extends Controller
     public function passage(Request $request, LearnerDiagnosticService $service): JsonResponse
     {
         $learner = $request->user();
+
+        // A child who has finished the first check must not start another one by asking for a passage again (the Android back
+        // button, a stale screen): ensureBundleGenerated() would open a new check, which locks her out of every other screen
+        // until she reads it and can place her again. A check that is still in progress is not "completed", so it carries on.
+        if ($service->hasGenuinelyCompletedDiagnostic($learner)) {
+            return response()->json(['error' => 'diagnostic_done', 'message' => 'Your reading check is already done.'], 409);
+        }
+
         $state = $service->ensureBundleGenerated($learner);
 
         $activity = Activity::findOrFail($service->currentActivityId($state));
