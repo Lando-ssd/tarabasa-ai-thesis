@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Show the phone app on the laptop: setup guide</title>
+<style>
+  @page { size: A4; margin: 14mm 14mm 14mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.7pt; line-height: 1.44; color: #17324d; margin: 0; }
+  h1 { font-size: 22pt; line-height: 1.15; margin: 0 0 4px; color: #0f3d73; }
+  .sub { color: #56697a; margin: 0 0 14px; font-size: 11.5pt; }
+  h2 { font-size: 14pt; margin: 16px 0 5px; color: #0f3d73; border-bottom: 2px solid #d7e3ef; padding-bottom: 3px; page-break-after: avoid; }
+  h2 .n { display: inline-block; background: #dd7014; color: #fff; border-radius: 50%; width: 24px; height: 24px; text-align: center; line-height: 24px; font-size: 12pt; margin-right: 8px; }
+  p { margin: 6px 0; }
+  ol, ul { margin: 6px 0 6px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  code { font-family: Consolas, "Courier New", monospace; background: #eef4fb; padding: 1px 5px; border-radius: 4px; font-size: 10.4pt; }
+  .cmd { font-family: Consolas, "Courier New", monospace; background: #0f2236; color: #e8f1fb; padding: 9px 12px; border-radius: 8px; font-size: 10.6pt; margin: 8px 0; word-break: break-all; }
+  .box { border-radius: 10px; padding: 9px 13px; margin: 10px 0; page-break-inside: avoid; }
+  .info { background: #eaf4ff; border: 2px solid #bcdcf7; }
+  .warn { background: #fff3d6; border: 2px solid #f0d28a; }
+  .good { background: #e9f7f3; border: 2px solid #b7e2d6; }
+  .box b.t { display: block; margin-bottom: 2px; }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 10pt; page-break-inside: auto; }
+  th, td { border: 1.5px solid #d7e3ef; padding: 6px 8px; vertical-align: top; text-align: left; }
+  th { background: #eaf4ff; }
+  tr { page-break-inside: avoid; }
+  .check li { list-style: none; margin-left: -22px; padding-left: 26px; position: relative; }
+  .check li::before { content: ""; position: absolute; left: 0; top: 5px; width: 14px; height: 14px; border: 2px solid #17324d; border-radius: 3px; }
+  .foot { margin-top: 18px; color: #56697a; font-size: 9.5pt; border-top: 2px solid #d7e3ef; padding-top: 6px; }
+  .keep { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<h1>Show the phone app on the laptop</h1>
+<p class="sub">Setup guide for the teammate who handles the app. About 15 minutes, done once. Then rehearse the whole demo this way before the defense.</p>
+
+<div class="box info">
+  <b class="t">Why we need this</b>
+  Our defense instructions say every group must mirror its mobile app onto a laptop during the presentation, so the panel can see the phone screen on the projector. We use <b>scrcpy</b>, a free open source tool. It works over a USB cable, so it does not depend on the venue Wi-Fi. The group chat also lists a second tool, Screen Mirror (screenmirrorapp.com). We have not tried that one; use it only if scrcpy does not work on your phone.
+</div>
+
+<h2><span class="n">0</span>What you need</h2>
+<ul class="check">
+  <li>An <b>Android</b> phone with <b>TaraBasa AI 0.6.4</b> installed (the file <code>TaraBasa-AI-0.6.4-test24.apk</code>). An iPhone cannot be used: the app is Android only.</li>
+  <li>A <b>USB cable that carries data</b>. Some cables only charge. If the laptop does not see the phone, try another cable first.</li>
+  <li>A Windows 10 or 11 laptop with a free USB port (a Mac works too, see the note at the end).</li>
+  <li>Internet on the phone (Wi-Fi or mobile data), so the app can reach the live site.</li>
+</ul>
+
+<h2><span class="n">1</span>Get scrcpy on the laptop (about 5 minutes)</h2>
+<ol>
+  <li>Open the official page: <code>https://github.com/Genymobile/scrcpy/releases/tag/v4.1</code></li>
+  <li>Scroll down to <b>Assets</b> and download <code>scrcpy-win64-v4.1.zip</code> (about 11 MB). On an old 32 bit laptop, use <code>scrcpy-win32-v4.1.zip</code>.</li>
+  <li>Right click the zip, choose <b>Extract All</b>, and put the folder somewhere simple, like <code>C:\scrcpy</code>. There is nothing to install.</li>
+  <li>Open the folder. You should see <code>scrcpy.exe</code>, <code>adb.exe</code> and some <code>.dll</code> files.</li>
+</ol>
+<div class="box warn">
+  <b class="t">If Windows or your antivirus complains</b>
+  Windows may say "Windows protected your PC". Choose <b>More info</b>, then <b>Run anyway</b>. It is a well known open source tool from its official page. If your antivirus quietly removes a file, restore it and allow it.
+</div>
+<p>Shortcut: the owner's laptop already has an earlier copy (version 4.0) in <code>Downloads\scrcpy-win64-v4.0</code>. It works the same, and the folder can be copied to a USB stick.</p>
+
+<h2><span class="n">2</span>Prepare the phone (about 3 minutes, once)</h2>
+<ol>
+  <li><b>Install the app.</b> Copy the <code>.apk</code> to the phone and open it. If it says "install blocked", allow installs from that app (Files, Drive or Chrome) when asked. It installs over any older TaraBasa app.</li>
+  <li><b>Turn on Developer options.</b> Settings, About phone, then tap <b>Build number</b> seven times. (On Samsung: About phone, Software information, Build number. On Xiaomi or Redmi: tap the MIUI or OS version seven times.) Type the phone PIN if it asks.</li>
+  <li><b>Turn on USB debugging.</b> Settings, System (or Additional settings), Developer options, switch on <b>USB debugging</b>.</li>
+  <li><b>Keep the screen awake.</b> Settings, Display, Screen timeout, choose the longest time.</li>
+</ol>
+
+<h2><span class="n">3</span>Connect and mirror (about 2 minutes)</h2>
+<ol>
+  <li>Plug the phone into the laptop with the cable.</li>
+  <li>On the phone a box asks <b>"Allow USB debugging?"</b> Tick <b>"Always allow from this computer"</b> and tap <b>Allow</b>. If the phone shows a USB mode menu, choose <b>File transfer</b>.</li>
+  <li>On the laptop, open the scrcpy folder and double click <code>scrcpy.exe</code>. A window opens that shows the phone screen. You can click and type in it with the mouse and keyboard.</li>
+  <li>For the projector, press <b>Alt + F</b> for full screen, and again to leave it.</li>
+  <li>To stop, close the scrcpy window or unplug the cable.</li>
+</ol>
+
+<div class="box good keep">
+  <b class="t">Better way to start it (recommended)</b>
+  Open the scrcpy folder, click the address bar at the top, type <code>cmd</code> and press Enter. A black window opens. Type:
+  <div class="cmd">scrcpy --stay-awake --window-title "TaraBasa AI"</div>
+  <code>--stay-awake</code> stops the phone from falling asleep while it is plugged in. Other options you may want:
+  <ul>
+    <li><code>--no-audio</code> if the room has an echo or the app seems to hear the laptop speakers while a child reads. The phone then plays its own sound.</li>
+    <li><code>--max-size 1280</code> if the laptop is slow or the picture lags.</li>
+    <li><code>--record demo.mp4</code> to save the mirrored screen as a video. Use this to make the backup video (part 5).</li>
+  </ul>
+  On Android 11 or newer, scrcpy sends the phone's sound (Tara's voice and the read aloud) to the laptop. Test the sound and the microphone together in the real room, because the app listens to the reader.
+</div>
+
+<h2><span class="n">4</span>Demo day checklist</h2>
+<p><b>About 10 minutes before your turn</b></p>
+<ul class="check">
+  <li>Open <code>https://tarabasa-ai.onrender.com</code> in a browser, so the free site wakes up. It sleeps when nobody uses it.</li>
+  <li>Do one short practice reading in the app a few minutes before. The speech service also sleeps, and the first reading can take 30 to 40 seconds to answer.</li>
+  <li>Phone: Do Not Disturb on, notifications off, battery above 60 percent (the cable charges it), screen timeout long, brightness high, rotation locked to portrait.</li>
+  <li>Sign in to the accounts you will use <b>before</b> presenting, so nobody types a PIN or password on the big screen. The logins are not in this file. The owner sends them privately.</li>
+  <li>Laptop plugged in, other programs and browser tabs closed, sound volume tested.</li>
+  <li>Rehearse the full demo once through the mirror. Follow the 40 minute demo script in the Defense Script and Study Guide.</li>
+</ul>
+
+<h2><span class="n">5</span>Backup plan</h2>
+<ul>
+  <li><b>Record one perfect run beforehand</b> with <code>scrcpy --record demo.mp4</code> (stop it with Ctrl + C in the black window). Keep the video on the laptop and on a USB stick. Also keep a few screenshots from the phone.</li>
+  <li><b>If the mirror fails on the day</b>, show the website on the laptop instead: <code>https://tarabasa-ai.onrender.com</code>. It has the same Learner, Teacher and Parent screens, with the same demo accounts.</li>
+  <li><b>If the internet fails</b>, turn on the phone's mobile data hotspot and join it from the laptop, or use mobile data on the phone.</li>
+</ul>
+
+<h2><span class="n">6</span>If something goes wrong</h2>
+<table>
+  <tr><th style="width:32%">What you see</th><th>Try this</th></tr>
+  <tr><td>"no devices found", or scrcpy cannot find the phone</td><td>Unplug and plug in again. Try another cable (a charge only cable will not work) and another USB port. Pull down the phone's notifications and set the USB mode to <b>File transfer</b>. Check that USB debugging is on.</td></tr>
+  <tr><td>"device unauthorized"</td><td>Unplug, plug in, and tap <b>Allow</b> on the phone. If no box appears, go to Developer options, tap <b>Revoke USB debugging authorizations</b>, and plug in again.</td></tr>
+  <tr><td>The window is black or frozen</td><td>Close scrcpy, plug in again, and start it again. Make sure the phone screen is on and unlocked.</td></tr>
+  <tr><td>Windows does not recognize the phone at all</td><td>Install the phone maker's USB driver (Samsung, Xiaomi and others have one), or try another USB port.</td></tr>
+  <tr><td>Slow or laggy picture</td><td>Plug the cable straight into the laptop, not into a hub. Add <code>--max-size 1024</code>. Close other programs.</td></tr>
+  <tr><td>No sound on the laptop</td><td>Sound forwarding needs Android 11 or newer. On an older phone, use the phone's own speaker. Also check the laptop volume.</td></tr>
+  <tr><td>The app says it cannot reach TaraBasa</td><td>The phone has no internet, or the site is still waking up. Wait a minute and try again, and check Wi-Fi or mobile data.</td></tr>
+</table>
+
+<p><b>Mac laptop:</b> download <code>scrcpy-macos-aarch64-v4.1.tar.gz</code> (Apple chip) or <code>scrcpy-macos-x86_64-v4.1.tar.gz</code> (Intel) from the same page, extract it, open Terminal in that folder and run <code>./scrcpy</code>. The phone steps are the same.</p>
+
+<div class="foot">
+  Made 2026-11-25 for the Capstone 42 oral defense. Tool: scrcpy by Genymobile (open source). The group chat links version 4.1; the owner's laptop has 4.0. We checked that the scrcpy files are present on the owner's laptop, but have not yet tried mirroring on the real phone. Please test it and tell the owner what happened.
+</div>
+
+</body>
+</html>
