@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import * as api from '../api';
 import { Chips } from '../fields';
 import { Btn, Notice, H2, P, Panel, Screen, Small } from '../ui';
+import { RemoveLearnerSheet } from './ClassDanger';
 import { Initial, Loading, TonePill, TopBar, useLoad } from './kit';
 import { colors, fonts, space } from '../theme';
 import { s } from '../scale';
@@ -13,13 +14,15 @@ type Props = {
   onBack: () => void;
   /** The child was moved to another class: the app goes back to this class's page, which no longer lists them, and says what happened. */
   onMoved: (message: string) => void;
+  /** The child was taken out of this class (not deleted): the same, the app goes back to the class and says what happened. */
+  onRemoved: (message: string) => void;
 };
 
 /**
  * One learner, for the teacher: where the child reads now, what the parent shared, what suits them and how to teach it. The
  * website's learner window, in one column. Every line is worked out on the server, the same way the website works it out.
  */
-export function LearnerScreen({ classId, id, onBack, onMoved }: Props) {
+export function LearnerScreen({ classId, id, onBack, onMoved, onRemoved }: Props) {
   const { data, error, reload } = useLoad(() => api.teacherLearner(classId, id), [classId, id]);
 
   if (!data) {
@@ -137,6 +140,7 @@ export function LearnerScreen({ classId, id, onBack, onMoved }: Props) {
         ) : null}
 
         {data.canMove && (data.moveTargets ?? []).length > 0 ? <Move classId={classId} learner={l} targets={data.moveTargets ?? []} onMoved={onMoved} /> : null}
+        {data.canRemove ? <Remove classId={classId} className={data.class?.name ?? 'this class'} learner={l} onRemoved={onRemoved} /> : null}
       </View>
     </Screen>
   );
@@ -176,6 +180,33 @@ function Move({ classId, learner, targets, onMoved }: { classId: number; learner
       <Chips label="Class to move to" options={targets.map(label)} picked={chosen ? [label(chosen)] : []} onToggle={(name) => setPicked(targets.find((t) => label(t) === name)?.id ?? null)} />
       {error ? <Notice text={error} /> : null}
       <Btn label={chosen ? `Move ${learner.firstName} to ${chosen.name}` : 'Pick a class'} tone="ghost" compact disabled={!chosen} loading={busy} onPress={move} />
+    </View>
+  );
+}
+
+/**
+ * Take the child out of this class. The child is NOT deleted: the account and readings stay with the family, and the parents are told. The
+ * button only opens a sheet that says so in words; nothing happens until the red button on the sheet is pressed.
+ */
+function Remove({ classId, className, learner, onRemoved }: { classId: number; className: string; learner: api.RosterLearner; onRemoved: (message: string) => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <View style={st.card}>
+      <H2>{`Take ${learner.firstName} out of this class`}</H2>
+      <Small>{`${learner.firstName} is not deleted. Only the link to ${className} ends, and ${learner.firstName}'s readings stay.`}</Small>
+      <Btn label="Remove from class" tone="ghost" icon="user-minus" compact onPress={() => setOpen(true)} accessibilityHint="Opens a sheet that explains what changes. Nothing happens until you confirm." />
+      <RemoveLearnerSheet
+        visible={open}
+        classId={classId}
+        className={className}
+        learner={learner}
+        onClose={() => setOpen(false)}
+        onRemoved={(message) => {
+          setOpen(false);
+          onRemoved(message);
+        }}
+      />
     </View>
   );
 }

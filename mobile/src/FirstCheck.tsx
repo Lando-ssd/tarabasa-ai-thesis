@@ -45,6 +45,12 @@ export function FirstCheck({ firstName, onDone }: { firstName: string; onDone: (
       const item = await api.firstCheckPassage();
       setPhase(!warmedUp && item.passageNumber === 1 ? { name: 'warm', item } : { name: 'item', item });
     } catch (e) {
+      // The server says this child already finished the first check (409 diagnostic_done): there is nothing to do here, so go on to Home
+      // instead of showing an error to a child who did nothing wrong. (An older server never says this; it just starts a new check.)
+      if (e instanceof api.ApiError && e.status === 409 && (e.body as { error?: string } | null)?.error === 'diagnostic_done') {
+        onDone();
+        return;
+      }
       setPhase({ name: 'intro', error: e instanceof Error ? e.message : 'Something went wrong. Please try again.' });
     }
   }

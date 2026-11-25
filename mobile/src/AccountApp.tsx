@@ -190,21 +190,22 @@ function TeacherApp({ account: initial, onSignOut, onDeleted }: Props) {
             setRoute({ name: 'learner', classId: route.id, id });
           }}
           onEdit={(card) => setRoute({ name: 'edit', card })}
-        />
-      );
-    } else if (route.name === 'learner') {
-      screen = (
-        <LearnerScreen
-          classId={route.classId}
-          id={route.id}
-          onBack={() => setRoute({ name: 'class', id: route.classId })}
-          onMoved={(message) => {
+          onDeleted={(message) => {
+            // The class is gone: back to the list, which says what happened and fetches again.
             setClassFlash(message);
             setRefresh((n) => n + 1);
-            setRoute({ name: 'class', id: route.classId });
+            setRoute({ name: 'list' });
           }}
         />
       );
+    } else if (route.name === 'learner') {
+      // A child moved to another class or taken out of this one is not in this class any more: back to the class, which says what happened.
+      const leftThisClass = (message: string) => {
+        setClassFlash(message);
+        setRefresh((n) => n + 1);
+        setRoute({ name: 'class', id: route.classId });
+      };
+      screen = <LearnerScreen classId={route.classId} id={route.id} onBack={() => setRoute({ name: 'class', id: route.classId })} onMoved={leftThisClass} onRemoved={leftThisClass} />;
     } else if ((route.name === 'new' || route.name === 'edit') && meta) {
       screen = (
         <ClassForm
@@ -220,7 +221,24 @@ function TeacherApp({ account: initial, onSignOut, onDeleted }: Props) {
         />
       );
     } else {
-      screen = <Classes year={classYear} onYear={setClassYear} active={active} refreshKey={refresh} onOpen={(id) => setRoute({ name: 'class', id })} onNew={() => setRoute({ name: 'new' })} onLoaded={(list) => setMeta({ grades: list.grades, currentSchoolYear: list.currentSchoolYear })} />;
+      screen = (
+        <Classes
+          year={classYear}
+          onYear={setClassYear}
+          active={active}
+          refreshKey={refresh}
+          flash={classFlash}
+          onOpen={(id) => {
+            setClassFlash(null);
+            setRoute({ name: 'class', id });
+          }}
+          onNew={() => {
+            setClassFlash(null);
+            setRoute({ name: 'new' });
+          }}
+          onLoaded={(list) => setMeta({ grades: list.grades, currentSchoolYear: list.currentSchoolYear })}
+        />
+      );
     }
   } else {
     screen = null;

@@ -4,6 +4,7 @@ import * as api from '../api';
 import { Segmented } from '../fields';
 import { Btn, H2, IconBtn, Notice, P, Panel, Screen, Small } from '../ui';
 import { AddLearnerSheet } from './AddLearner';
+import { DeleteClassSheet } from './ClassDanger';
 import { Initial, ListRow, Loading, TonePill, TopBar, useLoad } from './kit';
 import { space } from '../theme';
 import { s } from '../scale';
@@ -15,6 +16,8 @@ type Props = {
   onBack: () => void;
   onLearner: (learnerId: number) => void;
   onEdit: (card: api.ClassCard) => void;
+  /** The class was deleted (its learners were released, not deleted): the app goes back to the class list and says what happened. */
+  onDeleted: (message: string) => void;
   refreshKey: number;
   /** What the last action said, such as a learner moved out of this class. */
   flash?: string | null;
@@ -27,10 +30,11 @@ const GROUP_OF: Record<string, 'support' | 'instructional' | 'independent'> = { 
  * One class: its learners (with a tag for the ones who need you), its reading groups and what it has been given, plus "Add a learner":
  * scan the printed cards, use a photo of a card, or type the last 5 characters of the code. All three go through the website's rules.
  */
-export function ClassScreen({ id, onBack, onLearner, onEdit, refreshKey, flash }: Props) {
+export function ClassScreen({ id, onBack, onLearner, onEdit, onDeleted, refreshKey, flash }: Props) {
   const { data, error, reload } = useLoad(() => api.teacherClass(id), [id, refreshKey]);
   const [tab, setTab] = useState<Tab>('learners');
   const [adding, setAdding] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const card = data?.class;
 
@@ -73,6 +77,11 @@ export function ClassScreen({ id, onBack, onLearner, onEdit, refreshKey, flash }
               ) : (
                 data.learners.map((l) => <LearnerRow key={l.id} learner={l} onPress={() => onLearner(l.id)} />)
               )}
+
+              {/* At the very end, away from the main buttons. It opens a sheet that says what changes; nothing is deleted until the red button there. */}
+              {data.canDelete && data.deletion ? (
+                <Btn label="Delete class" tone="ghost" icon="trash" compact onPress={() => setDeleting(true)} accessibilityHint="Opens a sheet that explains what changes. Learners are released, not deleted." style={{ marginTop: space[12] }} />
+              ) : null}
             </>
           ) : null}
 
@@ -111,6 +120,19 @@ export function ClassScreen({ id, onBack, onLearner, onEdit, refreshKey, flash }
           onLearner(learner.id);
         }}
       />
+
+      {card && data?.canDelete && data.deletion ? (
+        <DeleteClassSheet
+          visible={deleting}
+          card={card}
+          deletion={data.deletion}
+          onClose={() => setDeleting(false)}
+          onDeleted={(message) => {
+            setDeleting(false);
+            onDeleted(message);
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }

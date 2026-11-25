@@ -595,6 +595,10 @@ export type ClassList = { schoolYear: string; currentSchoolYear: string; /** Eve
 export type ClassDetail = {
   class: ClassCard;
   canAdd: boolean;
+  /** Deleting the class takes an Active teacher and a school year in progress. Optional so an older server just hides the button. */
+  canDelete?: boolean;
+  /** What deleting would change, counted by the server: the learners released (not deleted) and the activities given to this class itself. */
+  deletion?: { learners: number; activities: number };
   generalLevel: { label: string; source: 'learners' | 'grade' };
   learners: RosterLearner[];
   activities: { id: number; title: string; level: string | null; via: 'class' | 'band' | 'group'; band: string | null; tag: string | null }[];
@@ -608,8 +612,12 @@ export type MoveTarget = { id: number; name: string; grade: string; section: str
 
 export type LearnerPage = {
   learner: RosterLearner;
+  /** The class the child is in (optional so an older server is fine). */
+  class?: { id: number; name: string; section: string };
   /** Moving needs an Active teacher and a school year in progress. */
   canMove?: boolean;
+  /** Taking the child out of this class takes the same. Optional so an older server just hides the button. */
+  canRemove?: boolean;
   moveTargets?: MoveTarget[];
   profile: {
     stage: string | null;
@@ -652,6 +660,21 @@ export const createClass = (body: ClassBody & { school_year: string }) => reques
 
 export const moveLearner = (classId: number, learnerId: number, toClassId: number) =>
   request<{ message: string; class: { id: number; name: string } }>(`/api/teacher/classes/${classId}/learners/${learnerId}/move`, json({ to_class_id: toClassId }));
+
+/** Take a learner out of a class. The child is NOT deleted: the account and readings stay, and the parents are told. The answer is the sentence to show. */
+export const removeLearnerFromClass = (classId: number, learnerId: number) =>
+  request<{ message: string }>(`/api/teacher/classes/${classId}/learners/${learnerId}`, { method: 'DELETE' });
+
+/**
+ * Delete a class. An empty class goes at once; a class with learners only when its name is sent (a 422 under `confirm_name` otherwise).
+ * Its learners are released, not deleted. The server checks everything again, whatever the screen allowed.
+ */
+export const deleteClass = (id: number, confirmName?: string) =>
+  request<{ message: string; released: number }>(`/api/teacher/classes/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(confirmName ? { confirm_name: confirmName } : {}),
+  });
 
 export const updateClass = (id: number, body: ClassBody) =>
   request<{ class: ClassCard }>(`/api/teacher/classes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

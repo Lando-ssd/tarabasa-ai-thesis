@@ -19,6 +19,8 @@ type ListProps = {
   refreshKey: number;
   /** Tells the parent what the server said about grades and the current school year, for the New class form. */
   onLoaded?: (list: api.ClassList) => void;
+  /** What the last class action said, such as a class that was deleted (its learners released, not deleted). */
+  flash?: string | null;
 };
 
 /** "2026-2027" as "2026 to 2027", and "(this year)" on the one in progress. */
@@ -31,7 +33,7 @@ const GROUP_TONE: Record<string, Tone> = { support: 'red', instructional: 'blue'
 const GROUP_SHORT: Record<string, string> = { support: 'Support', instructional: 'Instructional', independent: 'Independent' };
 
 /** Classes: one card for each class of this school year. A class holds one grade, as on the website. */
-export function Classes({ year, onYear, active, onOpen, onNew, refreshKey, onLoaded }: ListProps) {
+export function Classes({ year, onYear, active, onOpen, onNew, refreshKey, onLoaded, flash }: ListProps) {
   const { data, error, reload } = useLoad(() => api.teacherClasses(year ?? undefined), [year, refreshKey]);
   useEffect(() => {
     if (data) onLoaded?.(data);
@@ -47,6 +49,7 @@ export function Classes({ year, onYear, active, onOpen, onNew, refreshKey, onLoa
           <Loading error={error} onRetry={reload} text="Getting your classes" />
         ) : (
           <>
+            {flash ? <Notice tone="info" text={flash} /> : null}
             {(data.years ?? []).length > 1 ? (
               <Chips
                 label="School year"

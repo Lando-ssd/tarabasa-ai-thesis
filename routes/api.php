@@ -106,6 +106,9 @@ Route::middleware(['auth:sanctum', 'token.actor:teacher'])->prefix('teacher')->n
         Route::post('/classes/{class}/learners', [TeacherApiController::class, 'joinLearner'])->whereNumber('class')->middleware('throttle:60,1')->name('classes.learners.join');
         Route::post('/classes/{class}/learners/check', [TeacherApiController::class, 'checkLearner'])->whereNumber('class')->middleware('throttle:120,1,check-learner')->name('classes.learners.check');
         Route::post('/classes/{class}/learners/{learner}/move', [TeacherApiController::class, 'moveLearner'])->whereNumber(['class', 'learner'])->name('classes.learners.move');
+        // Taking a learner out of a class and deleting a class. Neither deletes a child (TeacherClassService::removeLearner and ::delete).
+        Route::delete('/classes/{class}/learners/{learner}', [TeacherApiController::class, 'removeLearner'])->whereNumber(['class', 'learner'])->name('classes.learners.remove');
+        Route::delete('/classes/{class}', [TeacherApiController::class, 'deleteClass'])->whereNumber('class')->name('classes.destroy');
     });
 });
 

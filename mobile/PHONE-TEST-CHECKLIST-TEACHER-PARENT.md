@@ -32,6 +32,15 @@ Write down for each one: **worked / did not work / odd**, and what the screen sa
     where the child went. A class of another grade must never be offered. (If that card is missing, write it down: it needs the newest server.)
 5c. **School years.** On Classes, if the teacher has classes in more than one school year, chips appear at the top. A past year must say it
     can only be read and must have no New class button. (With only one year there are no chips: that is correct.)
+5d. **Take a learner out of a class (new in 0.6.4).** Use a made-up learner. Open a class, tap the learner, scroll to the end of their page: there is a card
+    **Take (name) out of this class** with a **Remove from class** button. It must only open a sheet ("Take (name) out of (class)?") that says the child is NOT deleted,
+    that the parents are told, and how to add the child again. Nothing may change until you press the RED **Take out of class** button. Then the app must go back to the class,
+    the child must be gone from the list, and a blue line must say what happened. **Cancel** and the X must close the sheet and change nothing. Then add the same child
+    again with the code (Add a learner) and check they come back with their level and readings. On the Parent's phone, check the parent got a "Class Left" alert.
+5e. **Delete a class (new in 0.6.4).** At the very end of the Learners tab there is a **Delete class** button. An EMPTY class: the sheet says nobody is affected and the red
+    **Delete class** button works at once. A class WITH learners: the sheet says how many are released (not deleted) and the red button stays grey until you type the class name
+    (capital letters do not matter). Delete a made-up class: the app must go back to the class list with a blue line, and the children must still exist (add one back by code).
+    A class of a past school year must have no Delete class button. Write down anything cut off or too small, especially with the keyboard open.
 6. **Write activities.** Activities, **Write new activities**. Pick a grade, a skill, a kind of reading and ONE level.
    Pick a class under **For a class** and read the box it shows. Press **Write**. It takes about two minutes (the free server may sleep
    first). Leave the screen, use another tab, come back: the blue notice should still be there with a timer. When it is done it turns

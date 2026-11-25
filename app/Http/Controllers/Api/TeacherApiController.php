@@ -96,6 +96,10 @@ class TeacherApiController extends Controller
             'class' => TeacherRoster::classCard($class, $byClass),
             // Putting a learner in needs an Active Teacher, a class from this year onward, and a grade the Teacher still handles.
             'canAdd' => $teacher->status === 'Active' && ! SchoolClass::isYearPast($class->school_year) && in_array($class->grade_level, $teacher->gradesAllowed(), true),
+            // Deleting the class takes an Active teacher and a school year in progress (a past year is a locked record). `deletion` is what
+            // it would change, counted by the server so the phone says the same as the website: the learners released, the activities lost.
+            'canDelete' => $teacher->status === 'Active' && ! SchoolClass::isYearPast($class->school_year),
+            'deletion' => $this->classes->deletionImpact($class),
             'generalLevel' => ['label' => $general['label'], 'source' => $general['source']],
             'learners' => $class->learners->sortBy(fn (Learner $l) => mb_strtolower($l->last_name.' '.$l->first_name))->map(fn (Learner $l) => TeacherRoster::learner($l, $tags, $flags))->values(),
             'activities' => collect($byClass[$class->id] ?? [])->map(fn (array $row) => [
@@ -185,9 +189,49 @@ class TeacherApiController extends Controller
 
         return response()->json([
             'learner' => TeacherRoster::learner($learner, TeacherRoster::tags($teacher), ReadingLevel::levelChecks($class->learners)),
+            // The class the child is in, so a screen can say "Take Mary out of Sampaguita?".
+            'class' => ['id' => $class->id, 'name' => $class->name, 'section' => $class->section],
             'profile' => LearnerProfile::forTeacher($learner),
             'canMove' => $canMove,
+            // Taking the child out of this class takes the same: an Active teacher and a school year in progress.
+            'canRemove' => $canMove,
             'moveTargets' => $canMove ? $this->classes->moveTargets($teacher, $class, $learner)->map(fn (SchoolClass $c) => ['id' => $c->id, 'name' => $c->name, 'grade' => $c->grade_level, 'section' => $c->section])->values() : [],
+        ]);
+    }
+
+    /**
+     * Take a learner out of this class. The child is NOT deleted: the account, readings and level stay, and the guardians are told (see
+     * TeacherClassService::removeLearner, the same rule as the website's "Remove from class").
+     */
+    public function removeLearner(Request $request, SchoolClass $class, Learner $learner): JsonResponse
+    {
+        $user = $request->user();
+        $this->mine($request, $class, writing: true);
+
+        $this->classes->removeLearner($user, $user->teacher, $class, $learner);
+
+        return response()->json(['message' => "{$learner->first_name} {$learner->last_name} was taken out of \"{$class->name}\". Their account and readings stay with their family, and their parents were told. Add them again any time with their Learner Code."]);
+    }
+
+    /**
+     * Delete a class. An empty class is deleted at once; a class with learners only when its name is sent in `confirm_name` (a 422 under
+     * that name otherwise). Its learners are released, not deleted. See TeacherClassService::delete.
+     */
+    public function deleteClass(Request $request, SchoolClass $class): JsonResponse
+    {
+        $user = $request->user();
+        $this->mine($request, $class, writing: true);
+
+        $validated = $request->validate(['confirm_name' => ['nullable', 'string', 'max:255']]);
+
+        $name = $class->name;
+        $released = $this->classes->delete($user, $user->teacher, $class, $validated['confirm_name'] ?? null);
+
+        return response()->json([
+            'message' => $released === 0
+                ? "Class \"{$name}\" deleted."
+                : "Class \"{$name}\" deleted. {$released} ".($released === 1 ? 'learner was' : 'learners were').' released, not deleted: their accounts and readings stay with their families, and their parents were told.',
+            'released' => $released,
         ]);
     }
 
