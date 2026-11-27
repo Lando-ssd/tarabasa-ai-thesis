@@ -164,7 +164,8 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Version</th><th>What changed</th></tr></thead>
     <tbody>
-      <tr><td>{{ config('legal.version') }}</td><td>The Payments section also names the demo checkout: a checkout page inside TaraBasa AI with pretend money, which sends nothing to any other company and has no place to type a card or wallet number. The Refund Policy, Privacy Policy and Cookie Policy changed to match.</td></tr>
+      <tr><td>{{ config('legal.version') }}</td><td>No change to these terms. The Privacy Policy changed: the phone app now also asks the speech and activity services to wake up, as the website already does.</td></tr>
+      <tr><td>2026-11-20.2</td><td>The Payments section also names the demo checkout: a checkout page inside TaraBasa AI with pretend money, which sends nothing to any other company and has no place to type a card or wallet number. The Refund Policy, Privacy Policy and Cookie Policy changed to match.</td></tr>
       <tr><td>2026-11-20</td><td>The Payments section now says that the payment step is in test mode: a simulated payment, or a test payment on a payment provider's test page. No real money is ever charged. The Refund Policy, Privacy Policy and Cookie Policy changed to match.</td></tr>
       <tr><td>2026-10-24</td><td>No change to these terms. The Privacy Policy changed: teachers and parents can add a profile photo of themselves, and the phone app can read a learner card from a picture you choose.</td></tr>
       <tr><td>2026-10-23</td><td>No change to these terms. The Privacy Policy changed: a recording waits a few seconds in a temporary file while it is scored.</td></tr>

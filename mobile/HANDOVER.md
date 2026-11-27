@@ -337,13 +337,21 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - A migration (`2026_10_23_000200_reword_old_parent_alerts`) rewords old alerts addressed to parents so they stop showing the old words; teachers'
   alerts are untouched.
 
+## Version 0.6.6 (2026-11-27): the phone wakes the reading checker itself
+
+- **Reported from a real phone:** the first reading check failed with "The reading checker is waking up or busy right now (error 429)".
+- **Cause:** the helper services sleep on free hosting after about 15 quiet minutes. The website wakes them from the visitor's browser; the app only asked our server, and a hosted server that calls a sleeping hosted service is refused (429) and does not wake it.
+- **Fix (`src/serviceWake.ts`):** the phone asks each public health page itself, with no token, cookie or data: as the reading screens and games open, as the Generate screen opens, and it WAITS for the reading checker before sending a recording (up to 90 seconds, then it sends anyway). After a refused recording, Send Again asks afresh. The addresses are in `src/config.ts` and must match `.github/workflows/keep-awake.yml` (a test checks).
+- The Privacy Policy and Terms say the app does this (legal version 2026-11-27). Those pages change on the website only when this is merged to the live branch. No server logic changed.
+- APK: `D:\tools\apk-out\TaraBasa-AI-0.6.6-test26.apk` (44,736,116 bytes, versionCode 26, SHA-256 `6f7171d8b303f42dabbf6daa3ab0cd687ea369379638a169a72db949eeb63769`), same permissions and signing key as 0.6.5, the three health addresses and the live address inside, no local one. **Not yet tried on a real phone.**
+
 ## Version 0.6.5 (2026-11-27): the "Oops! Tara got mixed up" crash on real phones
 
 - **Reported from a real phone on 0.6.4:** pressing Add a child, Generate activities, and a button in the first reading check showed the crash screen.
 - **Cause:** the shared page layout (`Screen` in `src/ui.tsx`) read the phone's layout event inside a state updater (`setBox((b) => ... e.nativeEvent ...)`). React Native reuses event objects and clears `nativeEvent` as soon as the handler returns; when another update was already waiting, the updater ran later, read `null`, and the whole screen crashed. A browser keeps the event, so every browser preview passed. The line dated from the layout pass of 2026-10-13 (`b2dc74f`), so earlier builds had it too.
 - **Fix:** the height is read inside the handler, then passed to the updater; an unchanged value no longer redraws. Rule for later: **never read an event inside a state updater, a timer or after an `await`; copy the value first.**
 - This build changes only that, plus the version number. No server change is needed.
-- APK: `D:	oolspk-out\TaraBasa-AI-0.6.5-test25.apk` (44,732,244 bytes, versionCode 25, SHA-256 `8a5705422389091f6d533c90dc3c2a7a479c99918ee111bd40665f093e0f21bd`), checked inside: package, version, arm64, same permissions and signing key as 0.6.4, the live address and no local one. Built from the 0.6.4 build folder with Gradle only (12 minutes). **The fix has not yet been confirmed on the real phone.**
+- APK: `D:\tools\apk-out\TaraBasa-AI-0.6.5-test25.apk` (44,732,244 bytes, versionCode 25, SHA-256 `8a5705422389091f6d533c90dc3c2a7a479c99918ee111bd40665f093e0f21bd`), checked inside: package, version, arm64, same permissions and signing key as 0.6.4, the live address and no local one. Built from the 0.6.4 build folder with Gradle only (12 minutes). **The fix has not yet been confirmed on the real phone.**
 
 ## Version 0.6.4 (2026-11-25): take a learner out of a class, delete a class, and a first check that goes home when it is already done
 

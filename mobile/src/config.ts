@@ -23,9 +23,22 @@ export const UPLOAD_TIMEOUT_MS = 240_000;
 export const UPLOAD_QUICK_FAILURE_SECONDS = 10;
 export const UPLOAD_RETRY_PAUSES_MS = [3_000, 6_000];
 
+// The three helper services (public health pages, no key and no data). The phone asks them itself so a sleeping one wakes:
+// see src/serviceWake.ts. Keep them the same as the addresses in .github/workflows/keep-awake.yml.
+export const SERVICE_HEALTH_URLS = {
+  reader: 'https://reading-api-v5fp.onrender.com/health',
+  recommender: 'https://adaptive-recommendator.onrender.com/health',
+  generator: 'https://acitvity-api.onrender.com/health',
+} as const;
+// A service that answered this recently is still awake (they sleep after about 15 quiet minutes).
+export const SERVICE_AWAKE_MS = 5 * 60_000;
+// The longest the app waits for a sleeping service before it sends a recording anyway, and the pause between two asks.
+export const SERVICE_WAKE_WAIT_MS = 90_000;
+export const SERVICE_RETRY_PAUSE_MS = 4_000;
+
 // The version of this build. Keep it equal to "version" in app.json (tests/Feature/MobileVersionTest.php checks). It is shown in the
 // technical note of a failed send, so a screenshot says which build it came from.
-export const APP_VERSION = '0.6.5';
+export const APP_VERSION = '0.6.6';
 
 /**
  * The part of the page address after the #, browser only. The hosted preview puts the screen to show in a global instead

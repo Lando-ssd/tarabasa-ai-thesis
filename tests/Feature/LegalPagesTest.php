@@ -265,6 +265,26 @@ class LegalPagesTest extends TestCase
         $this->get('/privacy')->assertSee('Wake up requests.', false);
     }
 
+    public function test_the_phone_app_wakes_the_services_the_way_the_privacy_policy_says(): void
+    {
+        // The phone asks the same public health pages itself (a hosted server cannot wake a sleeping one). The only other
+        // hosts it names must be bare health pages, asked without cookies, and the Privacy Policy must say the app does it.
+        $wake = file_get_contents(base_path('mobile/src/serviceWake.ts'));
+        $this->assertStringContainsString("credentials: 'omit'", $wake);
+        $this->assertStringNotContainsString('Authorization', $wake);
+
+        preg_match_all("#https://[a-z0-9.-]+\.onrender\.com[^'\"`]*#", file_get_contents(base_path('mobile/src/config.ts')), $found);
+        $others = array_values(array_diff($found[0], ['https://tarabasa-ai.onrender.com']));
+        $this->assertCount(3, $others);
+        $workflow = file_get_contents(base_path('.github/workflows/keep-awake.yml'));
+        foreach ($others as $url) {
+            $this->assertStringEndsWith('/health', $url);
+            $this->assertStringContainsString($url, $workflow, "{$url} should be the same address the keep awake workflow asks");
+        }
+
+        $this->get('/privacy')->assertSee('screens of the phone app', false)->assertSee('just before it sends a recording', false);
+    }
+
     public function test_the_consent_page_matches_the_boxes_and_the_records(): void
     {
         $page = $this->get('/parent-consent')->assertOk();

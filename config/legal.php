@@ -13,8 +13,8 @@
  * change the page in the same commit.
  */
 return [
-    'version' => '2026-11-20.2',
-    'updated' => '20 November 2026',
+    'version' => '2026-11-27',
+    'updated' => '27 November 2026',
 
     // Who is responsible. Printed on every page. Set LEGAL_OPERATOR_DETAIL (for example the school or university and a
     // postal address) as soon as the team knows what it may print; until then the pages say "the student team".

@@ -4,6 +4,7 @@ import { buildMultipart, newBoundary, type MultipartPart } from './multipart';
 import { API_URL, APP_VERSION, REQUEST_TIMEOUT_MS, UPLOAD_QUICK_FAILURE_SECONDS, UPLOAD_RETRY_PAUSES_MS, UPLOAD_TIMEOUT_MS } from './config';
 import { forgetPhotos } from './photoCache';
 import { discardRecording } from './recordingFiles';
+import { ensureAwake, forgetAwake, wake } from './serviceWake';
 import * as storage from './storage';
 
 const TOKEN_KEY = 'tarabasa_token';
@@ -372,6 +373,10 @@ async function uploadAudio<T>(path: string, uri: string, answers?: string[], fie
     );
   }
 
+  // The reading checker may be asleep, and our server cannot wake it: the phone does, and waits for its answer, before
+  // the recording is sent. The child already sees the "checking" screen. If it never answers, the recording is sent anyway.
+  await ensureAwake('reader');
+
   let tries = 0;
   for (;;) {
     tries += 1;
@@ -415,6 +420,8 @@ async function uploadAudio<T>(path: string, uri: string, answers?: string[], fie
       discardRecording(uri);
       return result as T;
     } catch (e) {
+      // The checker refused or failed: "Send Again" asks it afresh instead of trusting an answer from a moment ago.
+      if (e instanceof ApiError && (e.status === 429 || e.status >= 500)) forgetAwake('reader');
       if (!(e instanceof ApiError) || e.status !== 0) throw e;
       // A connection that failed within a few seconds never reached the server (a Wi-Fi blip, a mobile data hiccup, the
       // server restarting), so trying again by itself is safe. A request that had waited longer might have been
@@ -1125,7 +1132,10 @@ export const generationStatus = (id: number) => request<GenerationStatus>(`/api/
 export const dismissGeneration = (id: number) => request<{ ok: boolean }>(`/api/teacher/activities/generations/${id}/dismiss`, json({}));
 
 /** Wakes the sleeping activity writer as the Generate screen opens. Never throws. */
-export const warmGenerator = () => request<null>('/api/teacher/activities/warm').catch(() => null);
+export const warmGenerator = () => {
+  wake('generator');
+  return request<null>('/api/teacher/activities/warm').catch(() => null);
+};
 
 export const assignToClass = (classId: number, activityId: number, readingBand?: string | null) =>
   request<{ message: string }>(`/api/teacher/classes/${classId}/assign`, json({ activity_id: activityId, reading_band: readingBand ?? null }));
@@ -1226,6 +1236,7 @@ export function home() {
 
 /** Wakes the sleeping scoring service as a reading screen opens, so the first recording is not slow. */
 export function warm() {
+  wake('reader', 'recommender');
   return request<null>('/api/learner/warm');
 }
 
@@ -1258,6 +1269,7 @@ export function rereadBook(id: number, uri: string) {
 }
 
 export function games() {
+  wake('reader');
   // `syllables=1` and `sounds=1` say this build has Syllable Steps and Sound Hunt, so the server may point the child to them.
   return request<GamesInfo>('/api/learner/games?syllables=1&sounds=1');
 }
