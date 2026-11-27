@@ -38,7 +38,7 @@ export const SERVICE_RETRY_PAUSE_MS = 4_000;
 
 // The version of this build. Keep it equal to "version" in app.json (tests/Feature/MobileVersionTest.php checks). It is shown in the
 // technical note of a failed send, so a screenshot says which build it came from.
-export const APP_VERSION = '0.6.6';
+export const APP_VERSION = '0.6.7';
 
 /**
  * The part of the page address after the #, browser only. The hosted preview puts the screen to show in a global instead

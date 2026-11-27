@@ -15,7 +15,7 @@ import { s } from '../scale';
  */
 
 /** A full screen sheet: a close button and title at the top, the words in the middle, the buttons at the bottom where the thumb is. */
-function Sheet({ visible, title, sub, onClose, children, footer }: { visible: boolean; title: string; sub?: string; onClose: () => void; children: ReactNode; footer: ReactNode }) {
+export function Sheet({ visible, title, sub, onClose, children, footer }: { visible: boolean; title: string; sub?: string; onClose: () => void; children: ReactNode; footer: ReactNode }) {
   const insets = useSafeAreaInsets();
 
   return (

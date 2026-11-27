@@ -7,11 +7,13 @@ use App\Models\Learner;
 use App\Models\Notification;
 use App\Models\OpenRepositoryListing;
 use App\Models\ParentAccount;
+use App\Models\Payment;
 use App\Models\ReadingSession;
 use App\Services\DataErasureService;
 use App\Services\LearnerPinService;
 use App\Services\ParentChildService;
 use App\Services\ParentRepositoryService;
+use App\Services\PaymentService;
 use App\Support\ChildSummary;
 use App\Support\LearnerClock;
 use App\Support\LearnerQr;
@@ -21,6 +23,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * The phone app's Parent screens: Home, Children (and adding or linking one), Progress, Activities (the Open Repository) and Alerts.
@@ -227,7 +230,76 @@ class ParentApiController extends Controller
             'best' => $onlyBest,
             'hasMatching' => $found['hasMatching'],
             'listings' => $found['rows']->take(self::LIMIT)->map(fn (array $row) => $this->listingRow($row))->values(),
+            // Which payment step runs now ('off', 'demo' or 'paymongo'). The phone has screens for the demo only.
+            'payments' => ['mode' => PaymentService::mode(), 'ready' => PaymentService::ready()],
         ]);
+    }
+
+    // ------------------------------------------------------------------ the demo checkout (pretend money, PAYMENTS_MODE=demo)
+
+    /** "Pay with the demo checkout": the same record and rules as the website (PaymentService::start). Nothing is unlocked here. */
+    public function pay(Request $request, OpenRepositoryListing $listing, PaymentService $payments): JsonResponse
+    {
+        $parent = $this->parent($request);
+        $learner = $this->linked($request, $parent, $request->validate(['learner_id' => ['required', 'integer']])['learner_id']);
+
+        if (! PaymentService::isDemo()) {
+            throw ValidationException::withMessages(['unlock' => PaymentService::enabled()
+                ? 'This is a paid activity. Paid activities are unlocked on the website, with a test payment.'
+                : 'There is no demo checkout switched on right now.']);
+        }
+
+        $payment = $payments->start($parent, $listing, $learner);
+
+        return response()->json([
+            'payment' => $this->paymentRow($payment),
+            'methods' => collect((array) config('payments.demo.methods'))->map(fn (string $name, string $key) => ['key' => $key, 'name' => $name])->values(),
+        ]);
+    }
+
+    /** The parent's answer on the demo checkout: the chosen way to pay and how the demo ends. Only 'approve' unlocks. */
+    public function demoPay(Request $request, string $reference, PaymentService $payments): JsonResponse
+    {
+        $parent = $this->parent($request);
+        $payment = Payment::where('reference', $reference)->where('parent_id', $parent->id)->firstOrFail();
+        abort_unless(PaymentService::isDemo() && $payment->isDemo(), 404);
+
+        $data = $request->validate([
+            'method' => ['required', Rule::in(array_keys((array) config('payments.demo.methods')))],
+            'outcome' => ['required', Rule::in(['approve', 'decline', 'cancel'])],
+        ], ['method.required' => 'Choose how to pay.', 'method.in' => 'Choose how to pay.']);
+
+        $payment = $payments->demoPay($payment, $data['method'], $data['outcome']);
+
+        return response()->json(['payment' => $this->paymentRow($payment)]);
+    }
+
+    /** This parent's payment attempts, newest first (the website's Payment history). */
+    public function payments(Request $request, PaymentService $payments): JsonResponse
+    {
+        return response()->json([
+            'mode' => PaymentService::mode(),
+            'payments' => $payments->history($this->parent($request))->map(fn (Payment $p) => $this->paymentRow($p))->values(),
+        ]);
+    }
+
+    /** One payment as the phone shows it. No card or wallet detail exists to send. */
+    private function paymentRow(Payment $payment): array
+    {
+        $payment->loadMissing(['listing.activity', 'learner']);
+
+        return [
+            'reference' => $payment->reference,
+            'activity' => $payment->listing?->activity?->title ?? 'An activity',
+            'child' => $payment->learner?->first_name ?? 'your child',
+            'amount' => '₱'.number_format($payment->pesos(), 2),
+            'word' => $payment->modeWord(),
+            'status' => $payment->status,
+            'statusLabel' => $payment->statusLabel(),
+            'declined' => $payment->isDeclined(),
+            'method' => $payment->method ? $payment->methodLabel() : null,
+            'date' => ($payment->paid_at ?? $payment->created_at)?->timezone('Asia/Manila')->format('j M Y, g:i A'),
+        ];
     }
 
     /** Unlock for one child. Free at once; a paid one is confirmed on the phone first (the payment is simulated, nothing is charged). */
@@ -437,6 +509,10 @@ class ParentApiController extends Controller
             'mine' => $row['my_rating'] ? ['rating' => (int) $row['my_rating']->rating, 'comment' => $row['my_rating']->comment] : null,
             'matchesLevel' => (bool) $row['level_match'],
             'matchesPattern' => $row['pattern_match'],
+            'type' => $a->typeLabel(),
+            // The words to read are shown once the activity is unlocked for this child, never before.
+            'passage' => $row['is_unlocked'] ? $a->passage_text : null,
+            'receipt' => ($row['receipt'] ?? null) ? $this->paymentRow($row['receipt']) : null,
         ];
     }
 }

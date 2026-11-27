@@ -337,6 +337,14 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - A migration (`2026_10_23_000200_reword_old_parent_alerts`) rewords old alerts addressed to parents so they stop showing the old words; teachers'
   alerts are untouched.
 
+## Version 0.6.7 (2026-11-28): activities open, and the demo checkout in the app
+
+- **Asked by the owner for the presentation:** activities could not be opened, and the app had no payment step to show.
+- Tapping an activity opens it (`src/parent/ActivityFlow.tsx`): the words once unlocked for that child, a rating, and this parent's own receipt.
+- A paid activity goes to the **demo checkout** inside the app (pretend money, Card, GCash or Maya, a demo picker for Approved, Declined or Cancelled, no box to type a number), then the result and the Payment history. Only the server unlocks, through the same `PaymentService` the website uses.
+- **Needs the live server with the new routes** and `PAYMENTS_MODE=demo`. Against an older server the app shows the old behaviour (the server answers that paid activities are unlocked on the website).
+- Checked in the browser version of the app against a local server with demo accounts (approved and declined). **Not yet tried on a real phone.**
+
 ## Version 0.6.6 (2026-11-27): the phone wakes the reading checker itself
 
 - **Reported from a real phone:** the first reading check failed with "The reading checker is waking up or busy right now (error 429)".

@@ -41,7 +41,7 @@
   <p>A teacher can share an activity to the Open Repository as free or with a price in pesos. In this version, the price is only an example of how a paid library could work, and every payment is in test mode, so <b>no money is charged</b> and no money moves. Depending on how the service is set up, unlocking a paid activity works in one of three ways:</p>
   <ul>
     <li><b>A simulated payment.</b> The screen says "This is a simulated payment, so nothing is charged." The unlock only adds that activity to one child's list.</li>
-    <li><b>A demo checkout.</b> The parent goes to a checkout page of TaraBasa AI itself, picks Card, GCash or Maya, and approves a pretend payment. Nothing is sent to any other company, and there is no place to type a number. The activity is unlocked only after the demo payment is approved. If the parent declines or cancels, or the time runs out, nothing is unlocked.</li>
+    <li><b>A demo checkout.</b> The parent goes to a checkout page of TaraBasa AI itself (in the phone app, the same screens inside the app), picks Card, GCash or Maya, and approves a pretend payment. Nothing is sent to any other company, and there is no place to type a number. The activity is unlocked only after the demo payment is approved. If the parent declines or cancels, or the time runs out, nothing is unlocked.</li>
     <li><b>A test payment.</b> The parent goes to the payment provider's test page (PayMongo), pays with pretend money, and comes back. We send the provider only the price, the title of the activity and a reference number, and never receive a card or wallet number. The activity is unlocked only after the provider confirms the test payment. If the parent cancels, or the time runs out, nothing is unlocked.</li>
   </ul>
   <ul>

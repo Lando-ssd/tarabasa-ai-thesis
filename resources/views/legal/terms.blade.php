@@ -128,7 +128,7 @@
 
 <section id="payments">
   <h2>Payments</h2>
-  <p>TaraBasa AI is free and takes no real payments. Prices shown on shared activities are examples of how a paid library could work. The "payment" step is in test mode: it is a simulated payment on our own page, a demo checkout on our own page, or a test payment on a payment provider's test page, and in every case it uses pretend money and never charges anyone. A test payment unlocks an activity for one child only. Teachers do not receive money. The <a href="{{ route('refunds') }}">Refund Policy</a> explains this.</p>
+  <p>TaraBasa AI is free and takes no real payments. Prices shown on shared activities are examples of how a paid library could work. The "payment" step is in test mode: it is a simulated payment on our own page, a demo checkout on our own page (in the phone app, the same screens inside the app), or a test payment on a payment provider's test page, and in every case it uses pretend money and never charges anyone. A test payment unlocks an activity for one child only. Teachers do not receive money. The <a href="{{ route('refunds') }}">Refund Policy</a> explains this.</p>
 </section>
 
 <section id="availability">
@@ -164,7 +164,8 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Version</th><th>What changed</th></tr></thead>
     <tbody>
-      <tr><td>{{ config('legal.version') }}</td><td>No change to these terms. The Privacy Policy changed: the phone app now also asks the speech and activity services to wake up, as the website already does.</td></tr>
+      <tr><td>{{ config('legal.version') }}</td><td>The demo checkout named in the Payments section also runs in the phone app. The Privacy Policy and the Refund Policy changed to match.</td></tr>
+      <tr><td>2026-11-27</td><td>No change to these terms. The Privacy Policy changed: the phone app now also asks the speech and activity services to wake up, as the website already does.</td></tr>
       <tr><td>2026-11-20.2</td><td>The Payments section also names the demo checkout: a checkout page inside TaraBasa AI with pretend money, which sends nothing to any other company and has no place to type a card or wallet number. The Refund Policy, Privacy Policy and Cookie Policy changed to match.</td></tr>
       <tr><td>2026-11-20</td><td>The Payments section now says that the payment step is in test mode: a simulated payment, or a test payment on a payment provider's test page. No real money is ever charged. The Refund Policy, Privacy Policy and Cookie Policy changed to match.</td></tr>
       <tr><td>2026-10-24</td><td>No change to these terms. The Privacy Policy changed: teachers and parents can add a profile photo of themselves, and the phone app can read a learner card from a picture you choose.</td></tr>

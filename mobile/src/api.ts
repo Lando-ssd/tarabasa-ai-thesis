@@ -989,7 +989,27 @@ export type ParentListing = {
   mine: { rating: number; comment: string | null } | null;
   matchesLevel: boolean;
   matchesPattern: string | null;
+  // Newer servers only: the kind of reading, the words (once unlocked for this child) and this parent's own receipt.
+  type?: string;
+  passage?: string | null;
+  receipt?: DemoPayment | null;
 };
+
+/** One demo payment as the server describes it. No card or wallet detail exists. */
+export type DemoPayment = {
+  reference: string;
+  activity: string;
+  child: string;
+  amount: string;
+  word: string;
+  status: 'pending' | 'paid' | 'cancelled' | 'expired' | 'failed';
+  statusLabel: string;
+  declined: boolean;
+  method: string | null;
+  date: string | null;
+};
+
+export type DemoOutcome = 'approve' | 'decline' | 'cancel';
 
 export type ParentRepository = {
   children: ParentChild[];
@@ -998,6 +1018,8 @@ export type ParentRepository = {
   best: boolean;
   hasMatching: boolean;
   listings: ParentListing[];
+  // Which payment step the server runs now. An older server says nothing, which means the simulated step.
+  payments?: { mode: 'off' | 'demo' | 'paymongo'; ready: boolean };
 };
 
 export type ParentAlert = {
@@ -1084,6 +1106,16 @@ export const parentRepository = (learnerId: number | null, filter: 'all' | 'free
   request<ParentRepository>(withChild('/api/parent/repository', learnerId, { filter, ...(best ? { best: '1' } : {}) }));
 
 export const unlockListing = (listingId: number, learnerId: number) => request<{ message: string }>(`/api/parent/repository/${listingId}/unlock`, json({ learner_id: learnerId }));
+
+/** Opens the demo checkout: the server makes (or finds again) a pending payment. Nothing is unlocked by this. */
+export const startDemoPayment = (listingId: number, learnerId: number) =>
+  request<{ payment: DemoPayment; methods: { key: string; name: string }[] }>(`/api/parent/repository/${listingId}/pay`, json({ learner_id: learnerId }));
+
+/** The answer on the demo checkout. Only 'approve' unlocks, and the server checks the amount. */
+export const answerDemoPayment = (reference: string, method: string, outcome: DemoOutcome) =>
+  request<{ payment: DemoPayment }>(`/api/parent/payments/${reference}/demo/pay`, json({ method, outcome }));
+
+export const paymentHistory = () => request<{ mode: string; payments: DemoPayment[] }>('/api/parent/payments');
 
 export const rateListing = (listingId: number, learnerId: number, rating: number) =>
   request<{ message: string }>(`/api/parent/repository/${listingId}/rate`, json({ learner_id: learnerId, rating }));

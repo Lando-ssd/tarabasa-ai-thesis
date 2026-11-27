@@ -272,6 +272,28 @@ input[readonly]{ background:var(--bg); color:var(--muted); }
 input.error{ border-color:var(--danger); }
 .confirm .btn.ghost{ margin-top:8px; }
 .item-card form{ display:block; }
+
+/* An activity opened in a window (parent/_repository-window.blade.php). */
+.ra-card{ cursor:pointer; }
+.filters + .note{ margin-bottom:14px !important; }
+.ra-card:hover{ border-color:#b9d3ee; }
+.ra-title{ all:unset; cursor:pointer; }
+.ra-title:hover{ text-decoration:underline; }
+.ra-title:focus-visible, .ra-more:focus-visible, .ra-close:focus-visible{ outline:3px solid #f39b3d; outline-offset:2px; }
+.ra-more{ background:none; border:0; padding:6px; cursor:pointer; color:var(--blue-ink); font:600 15px/1.2 'Inter',system-ui,sans-serif; text-decoration:underline; }
+.ra-win{ border:0; padding:0; border-radius:22px; width:min(94vw,520px); max-height:min(90vh,760px); background:#fff; color:var(--ink); box-shadow:0 30px 70px -20px rgba(15,40,70,.45); }
+.ra-win::backdrop{ background:rgba(15,35,60,.55); }
+.ra-box{ display:flex; flex-direction:column; gap:12px; padding:20px 22px 22px; }
+.ra-head{ display:flex; gap:12px; align-items:flex-start; justify-content:space-between; }
+.ra-head h2{ margin:10px 0 4px; }
+.ra-close{ flex:none; width:44px; height:44px; border-radius:14px; border:2px solid var(--line); background:#fff; color:var(--muted); font-size:26px; line-height:1; cursor:pointer; }
+.ra-why{ margin:0; padding:10px 12px; border-radius:12px; background:var(--green-bg); color:#137a63; font-weight:600; }
+.ra-passage{ margin:0; padding:14px 16px; border-radius:14px; background:var(--bg); border:2px solid var(--line); font-size:19px; line-height:1.7; overflow-wrap:anywhere; }
+.ra-price{ font:700 34px/1.1 var(--font-game); }
+.ra-explain{ margin:0; padding:12px 14px; border-radius:14px; background:var(--amber-bg); border:2px solid #f0d28a; color:#6d4a00; font-size:14px; }
+.ra-win form{ margin:0; }
+.ra-win .btn{ width:100%; }
+.ra-receipt{ margin:0; }
 .hint{ color:var(--muted); font-size:14px; }
 .mark-all-form{ display:inline; }
 .notif-form{ display:block; margin:0; }

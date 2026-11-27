@@ -142,7 +142,9 @@ class DemoCheckoutTest extends TestCase
         [$user, , $kid] = $this->world();
 
         $page = $this->asParent($user)->get(route('parent.repository.index', ['learner_id' => $kid->id]))->assertOk();
-        $page->assertSee('Demo mode. Payments here use pretend money.', false)
+        // The list carries no banner for the demo (the owner asked, 2026-11-28); the checkout pages themselves still say pretend money.
+        $page->assertDontSee('Demo mode. Payments here use pretend money.', false)
+            ->assertSee('Payment history', false)->assertSee(route('parent.payments.index'), false)
             ->assertSee('Unlock for &#8369;50 (demo)', false)
             ->assertSee('Go to demo checkout', false)
             ->assertSee('It runs inside TaraBasa', false)

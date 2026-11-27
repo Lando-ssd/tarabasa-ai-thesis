@@ -133,6 +133,10 @@ Route::middleware(['auth:sanctum', 'token.actor:parent'])->prefix('parent')->nam
     Route::get('/repository', [ParentApiController::class, 'repository'])->name('repository.index');
     Route::post('/repository/{listing}/unlock', [ParentApiController::class, 'unlock'])->whereNumber('listing')->name('repository.unlock');
     Route::post('/repository/{listing}/rate', [ParentApiController::class, 'rate'])->whereNumber('listing')->name('repository.rate');
+    // The demo checkout in the phone app (config/payments.php, PAYMENTS_MODE=demo): pretend money, the same rules as the website.
+    Route::post('/repository/{listing}/pay', [ParentApiController::class, 'pay'])->whereNumber('listing')->middleware('throttle:parent-payments')->name('repository.pay');
+    Route::get('/payments', [ParentApiController::class, 'payments'])->name('payments.index');
+    Route::post('/payments/{reference}/demo/pay', [ParentApiController::class, 'demoPay'])->where('reference', '[A-Za-z0-9-]+')->middleware('throttle:parent-payments')->name('payments.demo.pay');
 
     Route::get('/alerts', [ParentApiController::class, 'alerts'])->name('alerts.index');
     Route::post('/alerts/read-all', [ParentApiController::class, 'markAllRead'])->name('alerts.read-all');

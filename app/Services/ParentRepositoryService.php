@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Learner;
 use App\Models\OpenRepositoryListing;
 use App\Models\ParentAccount;
+use App\Models\Payment;
 use App\Models\RepositoryRating;
 use App\Models\RepositoryUnlock;
 use App\Support\ErrorPatterns;
@@ -43,10 +44,16 @@ class ParentRepositoryService
             $missed = $profile['missedWords'];
         }
 
+        // This parent's own paid payments for this child, so an unlocked card can show its receipt. Never another guardian's.
+        $receipts = $learner
+            ? Payment::where('parent_id', $parent->id)->where('learner_id', $learner->id)->where('status', Payment::PAID)
+                ->orderByDesc('id')->get()->unique('listing_id')->keyBy('listing_id')
+            : collect();
+
         $rows = OpenRepositoryListing::with(['activity', 'teacher.user', 'ratings'])
             ->whereHas('activity', fn ($query) => $query->where('status', 'Approved'))
             ->get()
-            ->map(function (OpenRepositoryListing $listing) use ($learner, $parent, $wantedTier, $pattern, $missed) {
+            ->map(function (OpenRepositoryListing $listing) use ($learner, $parent, $wantedTier, $pattern, $missed, $receipts) {
                 $isUnlocked = $learner && $listing->isUnlockedFor($learner->id);
                 $myRating = $learner
                     ? RepositoryRating::where('listing_id', $listing->id)->where('parent_id', $parent->id)->first()
@@ -64,6 +71,7 @@ class ParentRepositoryService
                     'avg_rating' => $avg,
                     'rating_count' => $listing->ratings->count(),
                     'my_rating' => $myRating,
+                    'receipt' => $isUnlocked ? $receipts->get($listing->id) : null,
                     // Why this suits the child, said as short tags.
                     'level_match' => $levelMatch,
                     'pattern_match' => $patternMatch ? strtolower(ErrorPatterns::CATEGORIES[$pattern]['label']) : null,

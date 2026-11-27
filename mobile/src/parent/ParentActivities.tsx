@@ -4,6 +4,7 @@ import * as api from '../api';
 import { Segmented } from '../fields';
 import { Btn, Icon, Notice, P, Screen, Small } from '../ui';
 import { Loading, TonePill, TopBar, useLoad, type Tone } from '../teacher/kit';
+import { ActivityFlow, type FlowView, type PayMode } from './ActivityFlow';
 import { ChildChips } from './kit';
 import { colors, fonts, size, space } from '../theme';
 import { s } from '../scale';
@@ -21,8 +22,9 @@ type Props = {
 
 /**
  * Activities: what other teachers shared in the Open Repository, the ones that suit the child first (their reading level and the
- * kind of mistake they keep making), with a free or paid unlock for one child at a time and a star rating once unlocked. The payment
- * is simulated (nothing is charged), as in the website. An unlocked activity appears in the child's own app as extra practice.
+ * kind of mistake they keep making), with a free or paid unlock for one child at a time and a star rating once unlocked. Tapping
+ * an activity opens it (ActivityFlow). A paid one is paid with the demo checkout when the server runs it (pretend money), or the
+ * old simulated step; nothing real is ever charged. An unlocked activity appears in the child's own app as extra practice.
  */
 export function ParentActivities({ childId, onPick, refreshKey, onAdd }: Props) {
   const [filter, setFilter] = useState<Filter>('all');
@@ -31,9 +33,12 @@ export function ParentActivities({ childId, onPick, refreshKey, onAdd }: Props) 
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<number | null>(null);
+  const [view, setView] = useState<FlowView>(null);
   const { data, error, reload } = useLoad(() => api.parentRepository(childId, filter, best), [childId, filter, best, refreshKey]);
 
   const kid = data?.children.find((c) => c.id === data.selected) ?? null;
+  const mode: PayMode = data?.payments?.mode ?? 'off';
+  const opened = view && view.kind !== 'history' ? (data?.listings.find((l) => l.id === view.id) ?? null) : null;
 
   async function run(key: string, work: () => Promise<{ message: string }>) {
     if (busy) return;
@@ -91,6 +96,8 @@ export function ParentActivities({ childId, onPick, refreshKey, onAdd }: Props) 
               <Small>{kid.firstName} has not read enough yet for the app to say what suits them. The list is in the order teachers shared it.</Small>
             )}
 
+            {mode === 'demo' ? <Btn label="Payment history" tone="ghost" compact onPress={() => setView({ kind: 'history' })} /> : null}
+
             {message ? <Notice tone="info" text={message} /> : null}
             {problem ? <Notice text={problem} /> : null}
 
@@ -108,9 +115,28 @@ export function ParentActivities({ childId, onPick, refreshKey, onAdd }: Props) 
                   onCancel={() => setConfirm(null)}
                   onUnlock={() => run(`u${l.id}`, () => api.unlockListing(l.id, kid.id))}
                   onRate={(n) => run(`r${l.id}`, () => api.rateListing(l.id, kid.id, n))}
+                  mode={mode}
+                  onOpen={() => {
+                    setProblem(null);
+                    setView({ kind: 'detail', id: l.id });
+                  }}
+                  onCheckout={() => setView({ kind: 'checkout', id: l.id })}
                 />
               ))
             )}
+            <ActivityFlow
+              view={view}
+              setView={setView}
+              listing={opened}
+              learnerId={kid.id}
+              first={kid.firstName}
+              mode={mode}
+              busy={busy !== null}
+              problem={problem}
+              onUnlock={(l) => run(`u${l.id}`, () => api.unlockListing(l.id, kid.id))}
+              onRate={(l, n) => run(`r${l.id}`, () => api.rateListing(l.id, kid.id, n))}
+              onPaid={reload}
+            />
           </>
         )}
       </View>
@@ -118,9 +144,10 @@ export function ParentActivities({ childId, onPick, refreshKey, onAdd }: Props) 
   );
 }
 
-function Listing({ l, first, busy, confirming, onConfirm, onCancel, onUnlock, onRate }: { l: api.ParentListing; first: string; busy: string | null; confirming: boolean; onConfirm: () => void; onCancel: () => void; onUnlock: () => void; onRate: (n: number) => void }) {
+function Listing({ l, first, busy, confirming, onConfirm, onCancel, onUnlock, onRate, mode, onOpen, onCheckout }: { l: api.ParentListing; first: string; busy: string | null; confirming: boolean; onConfirm: () => void; onCancel: () => void; onUnlock: () => void; onRate: (n: number) => void; mode: PayMode; onOpen: () => void; onCheckout: () => void }) {
   return (
-    <View style={st.card}>
+    // The whole card opens the activity. It is not itself announced as a button: the buttons inside stay reachable on their own.
+    <Pressable accessible={false} onPress={onOpen} style={({ pressed }) => [st.card, pressed && { opacity: 0.85 }]}>
       <Text maxFontSizeMultiplier={1.25} style={st.title}>
         {l.title}
       </Text>
@@ -164,9 +191,10 @@ function Listing({ l, first, busy, confirming, onConfirm, onCancel, onUnlock, on
           </View>
         </View>
       ) : (
-        <Btn label={l.paid ? `Unlock for ${l.price}` : `Unlock for ${first}`} icon="lock-simple" tone={l.paid ? 'blue' : 'orange'} compact loading={busy === `u${l.id}`} disabled={busy !== null} onPress={l.paid ? onConfirm : onUnlock} />
+        <Btn label={l.paid ? `Unlock for ${l.price}` : `Unlock for ${first}`} icon="lock-simple" tone={l.paid ? 'blue' : 'orange'} compact loading={busy === `u${l.id}`} disabled={busy !== null} onPress={!l.paid ? onUnlock : mode === 'demo' ? onCheckout : mode === 'off' ? onConfirm : onOpen} />
       )}
-    </View>
+      <Btn label={l.unlocked ? 'Open activity' : 'View details'} tone="ghost" compact onPress={onOpen} />
+    </Pressable>
   );
 }
 

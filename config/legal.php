@@ -13,7 +13,7 @@
  * change the page in the same commit.
  */
 return [
-    'version' => '2026-11-27',
+    'version' => '2026-11-27.2',
     'updated' => '27 November 2026',
 
     // Who is responsible. Printed on every page. Set LEGAL_OPERATOR_DETAIL (for example the school or university and a

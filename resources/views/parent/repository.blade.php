@@ -30,9 +30,11 @@
   @if ($errors->any())
     <div class="flash error">{{ $errors->first() }}</div>
   @endif
-  @if ($paymentsOn && $paymentsReady)
+  {{-- The demo checkout says "pretend money" on its own pages, so this list carries no banner for it. Test mode leaves for
+       another company's page, so it still says so here. --}}
+  @if ($paymentsOn && $paymentsReady && ! $paymentsDemo)
     <div class="pay-banner">{{ ucfirst($paymentWord) }} mode. Payments here use pretend money. Nothing real is charged. <a href="{{ route('parent.payments.index') }}">Payment history</a></div>
-  @elseif ($paymentsOn)
+  @elseif ($paymentsOn && ! $paymentsReady)
     <div class="flash error">{{ ucfirst($paymentWord) }} payments are switched on but not set up yet, so paid activities cannot be unlocked right now. Nothing is charged.</div>
   @endif
 
@@ -44,6 +46,9 @@
     @endforeach
     @if ($hasMatching && ($rows->isNotEmpty() || $onlyBest))
       <a href="{{ route('parent.repository.index', array_filter(['learner_id' => $selectedLearner->id, 'filter' => $filter, 'best' => $onlyBest ? null : '1'])) }}" class="chip plain {{ $onlyBest ? 'on' : '' }}" @if ($onlyBest) aria-current="true" @endif>{{ $onlyBest ? 'Showing only matches for '.$selectedLearner->first_name : 'Only matches for '.$selectedLearner->first_name }}</a>
+    @endif
+    @if ($paymentsDemo)
+      <a href="{{ route('parent.payments.index') }}" class="chip plain ra-history">Payment history</a>
     @endif
   </div>
   @if ($hasMatching && ! $onlyBest && $rows->isNotEmpty())
@@ -60,7 +65,7 @@
     <div class="grid3">
       @foreach ($rows as $row)
         @php $listing = $row['listing']; $activity = $listing->activity; @endphp
-        <div class="card item-card">
+        <div class="card item-card ra-card" data-ra-card="ra-{{ $listing->id }}">
           <div class="tags">
             @if ($row['level_match'])<span class="tag match">Matches {{ $selectedLearner->first_name }}'s level</span>@endif
             @if ($row['pattern_match'])<span class="tag match">Practises {{ $row['pattern_match'] }}</span>@endif
@@ -74,14 +79,14 @@
               <span class="tag paid">&#8369;{{ number_format($listing->price) }}</span>
             @endif
           </div>
-          <p class="item-name">{{ $activity->title }}</p>
+          <p class="item-name"><button type="button" class="ra-title" data-ra-open="ra-{{ $listing->id }}" aria-haspopup="dialog">{{ $activity->title }}</button></p>
           <p class="note" style="margin:0">{{ $activity->grade_level }} &middot; {{ $activity->competency_label }}</p>
           <p class="rating {{ $row['avg_rating'] === null ? 'none' : '' }}">
             {{ $row['avg_rating'] !== null ? '★ '.$row['avg_rating'].' ('.$row['rating_count'].' rating'.($row['rating_count'] === 1 ? '' : 's').')' : 'No ratings yet' }}
           </p>
 
           @if ($row['is_unlocked'])
-            <button type="button" class="btn ghost" disabled>Ready to read</button>
+            <button type="button" class="btn ghost" data-ra-open="ra-{{ $listing->id }}" aria-haspopup="dialog">Ready to read &middot; Open</button>
 
             <form method="POST" action="{{ route('parent.repository.rate', $listing) }}" class="rate-form">
               @csrf
@@ -133,7 +138,11 @@
               <button type="button" class="btn ghost small" data-toggle-confirm="{{ $confirmId }}">Cancel</button>
             </div>
           @endif
+          @unless ($row['is_unlocked'])
+            <button type="button" class="ra-more" data-ra-open="ra-{{ $listing->id }}" aria-haspopup="dialog">View details</button>
+          @endunless
         </div>
+        @include('parent._repository-window')
       @endforeach
     </div>
   @endif
@@ -163,8 +172,33 @@
     });
   });
 
+  // An activity opens in a window: from its title, its "Open" or "View details" button, or a click on the card itself
+  // (never on a button, a field or a form inside it).
+  function raOpen(id) {
+    var win = document.getElementById(id);
+    if (!win) { return; }
+    if (typeof win.showModal === 'function') { win.showModal(); } else { win.setAttribute('open', ''); }
+  }
+  document.querySelectorAll('[data-ra-open]').forEach(function (button) {
+    button.addEventListener('click', function (e) { e.stopPropagation(); raOpen(button.dataset.raOpen); });
+  });
+  document.querySelectorAll('[data-ra-card]').forEach(function (card) {
+    card.addEventListener('click', function (e) {
+      if (e.target.closest('button, a, input, textarea, select, label, form, .confirm')) { return; }
+      raOpen(card.dataset.raCard);
+    });
+  });
+  document.querySelectorAll('.ra-win').forEach(function (win) {
+    win.addEventListener('click', function (e) {
+      // The close button, or a click on the shade around the window.
+      if (e.target === win || e.target.closest('[data-ra-close]')) {
+        if (typeof win.close === 'function') { win.close(); } else { win.removeAttribute('open'); }
+      }
+    });
+  });
+
   // A real loading state on every unlock and rate submission, so a second tap cannot double submit.
-  document.querySelectorAll('.item-card form').forEach(function (form) {
+  document.querySelectorAll('.item-card form, .ra-win form').forEach(function (form) {
     form.addEventListener('submit', function (e) {
       var button = e.submitter || form.querySelector('button[type="submit"]');
       if (!button) { return; }
@@ -177,7 +211,7 @@
   // (a saved copy), with the buttons still on "One moment" and disabled: put them back.
   window.addEventListener('pageshow', function (e) {
     if (!e.persisted) { return; }
-    document.querySelectorAll('.item-card form button[type="submit"]').forEach(function (button) {
+    document.querySelectorAll('.item-card form button[type="submit"], .ra-win form button[type="submit"]').forEach(function (button) {
       if (button.dataset.label !== undefined) { button.textContent = button.dataset.label; button.disabled = false; }
     });
   });

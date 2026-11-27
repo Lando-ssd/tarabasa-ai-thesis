@@ -101,7 +101,7 @@
   <div class="lg-scroll"><table class="lg-table">
     <thead><tr><th>Version</th><th>What changed</th></tr></thead>
     <tbody>
-      <tr><td>{{ config('legal.version') }}</td><td>No change to the cookies TaraBasa AI sets. The new demo checkout is a page of TaraBasa AI itself and uses only the two cookies listed above. The Privacy Policy, Terms and Refund Policy changed to match.</td></tr>
+      <tr><td>2026-11-20.2</td><td>No change to the cookies TaraBasa AI sets. The new demo checkout is a page of TaraBasa AI itself and uses only the two cookies listed above. The Privacy Policy, Terms and Refund Policy changed to match.</td></tr>
       <tr><td>2026-11-20</td><td>No change to the cookies TaraBasa AI sets. A parent who chooses to pay in test mode goes to the payment provider's own page, and any cookies set there belong to the provider. The Privacy Policy and the Refund Policy changed to match.</td></tr>
       <tr><td>2026-10-24</td><td>No change to the cookies. The Privacy Policy changed: teachers and parents can add a profile photo of themselves, and the phone app can read a learner card from a picture you choose.</td></tr>
       <tr><td>2026-10-23</td><td>No change to the cookies. The Privacy Policy changed: a recording waits a few seconds in a temporary file while it is scored.</td></tr>
