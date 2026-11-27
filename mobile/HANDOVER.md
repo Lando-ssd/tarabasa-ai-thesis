@@ -344,6 +344,7 @@ colours, fonts and layout rules. Built as `src/ReadingPath.tsx` (replaces the pl
 - A paid activity goes to the **demo checkout** inside the app (pretend money, Card, GCash or Maya, a demo picker for Approved, Declined or Cancelled, no box to type a number), then the result and the Payment history. Only the server unlocks, through the same `PaymentService` the website uses.
 - **Needs the live server with the new routes** and `PAYMENTS_MODE=demo`. Against an older server the app shows the old behaviour (the server answers that paid activities are unlocked on the website).
 - Checked in the browser version of the app against a local server with demo accounts (approved and declined). **Not yet tried on a real phone.**
+- APK: `D:\tools\apk-out\TaraBasa-AI-0.6.7-test27.apk` (44,751,580 bytes, versionCode 27, SHA-256 `ff831be2f274a7eee1a6cf3ef370d44194ee8546fc4764fdd08234e954961c8a`), same permissions and signing key as 0.6.6, the new screens inside, the live addresses and no local one. The live server has the new routes since `00c4ff7`.
 
 ## Version 0.6.6 (2026-11-27): the phone wakes the reading checker itself
 
