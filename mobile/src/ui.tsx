@@ -318,8 +318,14 @@ export function Screen({ children, footer, anchor = 'bottom', scroll = true, wit
           contentContainerStyle={{ flexGrow: 1, paddingHorizontal: size.gutter, paddingBottom: footer && !together ? s(16) : bottom + s(20) }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          onLayout={(e) => setBox((b) => ({ ...b, view: e.nativeEvent.layout.height }))}
-          onContentSizeChange={(_w, h) => setBox((b) => ({ ...b, content: h }))}
+          // Read the number NOW, never inside the updater below: a real phone clears the event as soon as this handler
+          // returns, and an updater can run later (when another update is already waiting), which crashed the screen
+          // ("Oops! Tara got mixed up"). A browser keeps the event, so this never showed in the web preview.
+          onLayout={(e) => {
+            const view = e.nativeEvent.layout.height;
+            setBox((b) => (b.view === view ? b : { ...b, view }));
+          }}
+          onContentSizeChange={(_w, h) => setBox((b) => (b.content === h ? b : { ...b, content: h }))}
         >
           {body}
         </ScrollView>
